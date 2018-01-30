@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -34,6 +35,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -151,6 +154,63 @@ public class EnterpriseSecurityModuleTest
         new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class), null, null );
     }
 
+    @Test
+    public void shouldNotFailWithPropertyLevelPermissions()
+    {
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( false, false );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME
+        );
+
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn( "smith=alias" );
+
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null );
+    }
+
+    @Test
+    public void shouldFailOnIllegalPropertyLevelPermissions()
+    {
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( false, false );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME
+        );
+
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn( "smithmalias" );
+
+        thrown.expect( IllegalArgumentException.class );
+        thrown.expectMessage(
+                "Illegal configuration: Property level authorization is enabled but there is a error in the permissions mapping." );
+
+        new EnterpriseSecurityModule().newAuthManager( config, mockLogProvider, mock( SecurityLog.class ), null, null );
+    }
+
+    @Test
+    public void shouldParsePropertyLevelPermissions()
+    {
+        nativeAuth( true, true );
+        ldapAuth( false, false );
+        pluginAuth( false, false );
+        authProviders(
+                SecuritySettings.NATIVE_REALM_NAME
+        );
+
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_permissions ) ).thenReturn(
+                "smith = alias;merovingian=alias ,location;\n abel=alias,\t\thasSilver" );
+
+        EnterpriseSecurityModule.SecurityConfig securityConfig = new EnterpriseSecurityModule.SecurityConfig( config );
+        securityConfig.validate();
+        assertThat( securityConfig.propertyBlacklist.get( "smith" ), equalTo( Collections.singletonList( "alias" ) ) );
+        assertThat( securityConfig.propertyBlacklist.get( "merovingian" ), equalTo( Arrays.asList( "alias", "location" ) ) );
+        assertThat( securityConfig.propertyBlacklist.get( "abel" ), equalTo( Arrays.asList( "alias", "hasSilver" ) ) );
+    }
+
     // --------- HELPERS ----------
 
     @Before
@@ -161,6 +221,7 @@ public class EnterpriseSecurityModuleTest
         Log mockLog = mock( Log.class );
         when( mockLogProvider.getLog( anyString() ) ).thenReturn( mockLog );
         when( mockLog.isDebugEnabled() ).thenReturn( true );
+        when( config.get( SecuritySettings.property_level_authorization_enabled ) ).thenReturn( false );
         when( config.get( SecuritySettings.auth_cache_ttl ) ).thenReturn( Duration.ZERO );
         when( config.get( SecuritySettings.auth_cache_max_capacity ) ).thenReturn( 10 );
         when( config.get( SecuritySettings.auth_cache_use_ttl ) ).thenReturn( true );

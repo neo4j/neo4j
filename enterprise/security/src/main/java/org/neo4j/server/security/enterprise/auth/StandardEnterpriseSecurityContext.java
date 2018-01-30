@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -79,7 +80,8 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
                 isAuthenticated && shiroSubject.isPermitted( TOKEN_CREATE ),
                 isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
-                queryForRoleNames()
+                queryForRoleNames(),
+                queryForPropertyPermissions()
             );
     }
 
@@ -121,6 +123,11 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
                 .collect( Collectors.toSet() );
     }
 
+    private Function<String,Boolean> queryForPropertyPermissions()
+    {
+        return authManager.getPropertyPermissions(roles());
+    }
+
     private static class StandardAccessMode implements AccessMode
     {
         private final boolean allowsReads;
@@ -129,9 +136,10 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         private final boolean allowsTokenCreates;
         private final boolean passwordChangeRequired;
         private final Set<String> roles;
+        private final Function<String,Boolean> propertyPermissions;
 
         StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsTokenCreates, boolean allowsSchemaWrites,
-                boolean passwordChangeRequired, Set<String> roles )
+                boolean passwordChangeRequired, Set<String> roles, Function<String,Boolean> propertyPermissions )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
@@ -139,6 +147,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
             this.allowsSchemaWrites = allowsSchemaWrites;
             this.passwordChangeRequired = passwordChangeRequired;
             this.roles = roles;
+            this.propertyPermissions = propertyPermissions;
         }
 
         @Override
@@ -163,6 +172,12 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         public boolean allowsSchemaWrites()
         {
             return allowsSchemaWrites;
+        }
+
+        @Override
+        public boolean allowsPropertyReads( String name )
+        {
+            return propertyPermissions.apply( name );
         }
 
         @Override
