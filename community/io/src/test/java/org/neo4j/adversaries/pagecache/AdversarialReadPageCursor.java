@@ -34,7 +34,7 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * A read {@linkplain PageCursor page cursor} that wraps another page cursor and an {@linkplain Adversary adversary}

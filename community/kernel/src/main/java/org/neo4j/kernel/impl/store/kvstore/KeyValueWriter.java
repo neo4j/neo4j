@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 class KeyValueWriter implements Closeable
 {

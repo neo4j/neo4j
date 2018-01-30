@@ -163,7 +163,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 

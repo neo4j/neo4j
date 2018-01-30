@@ -64,7 +64,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTemporalFunctions;
 

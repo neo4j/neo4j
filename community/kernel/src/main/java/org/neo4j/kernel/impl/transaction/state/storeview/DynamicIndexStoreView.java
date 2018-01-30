@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 /**

@@ -48,7 +48,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;

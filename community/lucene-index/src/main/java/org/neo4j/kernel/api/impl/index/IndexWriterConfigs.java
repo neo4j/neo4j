@@ -30,7 +30,7 @@ import org.apache.lucene.index.PooledConcurrentMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
 import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * Helper factory for standard lucene index writer configuration.

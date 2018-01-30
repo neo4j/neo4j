@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

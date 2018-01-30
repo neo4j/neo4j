@@ -71,15 +71,13 @@ import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;

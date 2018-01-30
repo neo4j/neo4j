@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * Lucene indexes merge scheduler that execute merges in a thread pool instead of starting separate thread for each

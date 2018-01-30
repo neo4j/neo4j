@@ -44,6 +44,11 @@ the relevant Commercial Agreement.
 
   <dependencies>
     <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>

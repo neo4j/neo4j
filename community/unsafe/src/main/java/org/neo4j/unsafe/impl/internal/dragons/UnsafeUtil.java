@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Always check that the Unsafe utilities are available with the {@link UnsafeUtil#assertHasUnsafe} method, before

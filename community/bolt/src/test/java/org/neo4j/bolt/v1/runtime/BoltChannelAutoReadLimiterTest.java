@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.logging.Log;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;

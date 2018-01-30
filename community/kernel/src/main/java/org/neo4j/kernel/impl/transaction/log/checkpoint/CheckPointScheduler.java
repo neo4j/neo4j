@@ -25,10 +25,10 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.scheduler.JobScheduler.Groups.checkPoint;

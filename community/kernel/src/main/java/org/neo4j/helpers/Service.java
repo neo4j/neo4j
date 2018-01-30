@@ -35,7 +35,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * A utility for locating services. This implements the same functionality as <a

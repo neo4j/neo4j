@@ -114,7 +114,7 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;

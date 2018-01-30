@@ -21,17 +21,17 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.EvictionEvent;
 import org.neo4j.io.pagecache.tracing.EvictionEventOpportunity;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
-import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * The PageList maintains the off-heap meta-data for the individual memory pages.

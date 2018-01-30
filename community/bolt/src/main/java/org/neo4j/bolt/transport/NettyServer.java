@@ -39,7 +39,7 @@ import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * Simple wrapper around Netty boss and selector threads, which allows multiple ports and protocols to be handled
