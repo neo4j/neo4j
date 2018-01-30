@@ -24,7 +24,8 @@ package org.neo4j.unsafe.impl.batchimport.cache;
  */
 public interface MemoryStatsVisitor
 {
-    Visitable NONE = visitor -> {   // report no memory
+    Visitable NONE = visitor ->
+    {   // report no memory
     };
 
     interface Visitable
