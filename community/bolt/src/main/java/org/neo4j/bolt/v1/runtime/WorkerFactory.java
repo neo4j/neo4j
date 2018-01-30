@@ -19,11 +19,13 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
 /**
  * Creates {@link BoltWorker}s. Implementations of this interface can decorate queues and their jobs
  * to monitor activity and enforce constraints.
  */
-public interface WorkerFactory
+public interface WorkerFactory extends Lifecycle
 {
     default BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor )
     {

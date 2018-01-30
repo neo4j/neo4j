@@ -48,7 +48,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private final ChannelInitializer<SocketChannel> channelInitializer;
     private final ReadWriteLock serviceLock = new ReentrantReadWriteLock();
     private final Log log;
-    private final Monitors monitors;
+    private final MessageQueueMonitor monitor;
 
     private JobScheduler.JobHandle jobHandle;
     private boolean senderServiceRunning;
@@ -59,8 +59,8 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
-        this.monitors = monitors;
         this.nonBlockingChannels = new NonBlockingChannels();
+        this.monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
     }
 
     @Override
@@ -90,7 +90,6 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
     private NonBlockingChannel channel( AdvertisedSocketAddress to )
     {
-        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
         NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );
 
         if ( nonBlockingChannel == null )

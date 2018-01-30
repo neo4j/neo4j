@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
@@ -141,7 +141,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
-        WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
+        WorkerFactory workerFactory = life.add( createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock ) );
 
         List<ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
                 .map( ( connConfig ) ->

@@ -54,6 +54,30 @@ public class MonitoredWorkerFactory implements WorkerFactory
         return delegate.newWorker( connectionDescriptor, queueMonitor, onClose );
     }
 
+    @Override
+    public void init() throws Throwable
+    {
+        delegate.init();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        delegate.start();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        delegate.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        delegate.shutdown();
+    }
+
     static class MonitoredBoltWorker implements BoltWorker
     {
         private final SessionMonitor monitor;
