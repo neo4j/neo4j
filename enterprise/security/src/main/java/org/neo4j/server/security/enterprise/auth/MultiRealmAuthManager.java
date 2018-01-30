@@ -40,8 +40,11 @@ import org.apache.shiro.util.Initializable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
@@ -62,9 +65,11 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     private final CacheManager cacheManager;
     private final SecurityLog securityLog;
     private final boolean logSuccessfulLogin;
+    private final boolean propertyAuthorization;
+    private final Map<String,List<String>> roleToPropertyBlacklist;
 
     MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager,
-            SecurityLog securityLog, boolean logSuccessfulLogin )
+            SecurityLog securityLog, boolean logSuccessfulLogin, boolean propertyAuthorization, Map<String,List<String>> roleToPropertyBlacklist )
     {
         this.userManager = userManager;
         this.realms = realms;
@@ -73,6 +78,8 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         securityManager = new DefaultSecurityManager( realms );
         this.securityLog = securityLog;
         this.logSuccessfulLogin = logSuccessfulLogin;
+        this.propertyAuthorization = propertyAuthorization;
+        this.roleToPropertyBlacklist = roleToPropertyBlacklist;
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
@@ -296,5 +303,25 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
             }
         }
         return infoList;
+    }
+
+    Function<String,Boolean> getPropertyPermissions( Set<String> roles )
+    {
+        if ( propertyAuthorization )
+        {
+            Set<String> blackListed = new HashSet<>();
+            for ( String role : roles )
+            {
+                if ( roleToPropertyBlacklist.containsKey( role ) )
+                {
+                    blackListed.addAll( roleToPropertyBlacklist.get( role ) );
+                }
+            }
+            return property -> !blackListed.contains( property );
+        }
+        else
+        {
+            return property -> true;
+        }
     }
 }

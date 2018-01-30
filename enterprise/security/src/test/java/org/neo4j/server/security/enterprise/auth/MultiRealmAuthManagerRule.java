@@ -81,7 +81,7 @@ public class MultiRealmAuthManagerRule implements TestRule
                     );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
-                new MemoryConstrainedCacheManager(), securityLog, true );
+                new MemoryConstrainedCacheManager(), securityLog, true, false, Collections.emptyMap() );
         manager.init();
     }
 

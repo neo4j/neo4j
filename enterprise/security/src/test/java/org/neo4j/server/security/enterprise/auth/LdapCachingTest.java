@@ -41,12 +41,12 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -82,7 +82,7 @@ public class LdapCachingTest
 
         fakeTicker = new FakeTicker();
         authManager = new MultiRealmAuthManager( internalFlatFileRealm, realms,
-                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10, true ), securityLog, false );
+                new ShiroCaffeineCache.Manager( fakeTicker::read, 100, 10, true ), securityLog, false, false, Collections.emptyMap() );
         authManager.init();
         authManager.start();
 

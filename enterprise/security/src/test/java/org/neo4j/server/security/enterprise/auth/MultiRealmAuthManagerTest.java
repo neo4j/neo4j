@@ -108,7 +108,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
                     );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
-                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications );
+                new MemoryConstrainedCacheManager(), new SecurityLog( log ), logSuccessfulAuthentications,
+                false, Collections.emptyMap() );
 
         manager.init();
         return manager;

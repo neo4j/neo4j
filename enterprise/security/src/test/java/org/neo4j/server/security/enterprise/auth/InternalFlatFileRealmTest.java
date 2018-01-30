@@ -93,7 +93,7 @@ public class InternalFlatFileRealmTest
         List<Realm> realms = listOf( testRealm );
 
         authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager(),
-                mock( SecurityLog.class ), true );
+                mock( SecurityLog.class ), true, false, Collections.emptyMap() );
 
         authManager.init();
         authManager.start();
