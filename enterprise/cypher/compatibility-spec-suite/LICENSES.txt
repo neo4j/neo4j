@@ -15,6 +15,7 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   Netty/All-in-One
   opencsv
+  openCypher TCK Features and Graphs
   parboiled-core
   parboiled-scala
 ------------------------------------------------------------------------------

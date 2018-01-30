@@ -1,0 +1,3 @@
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
