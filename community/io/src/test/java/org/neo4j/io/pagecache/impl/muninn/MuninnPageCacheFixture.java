@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageCacheTestSupport;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.memory.LocalMemoryTracker;
 
 public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnPageCache>
 {
@@ -37,7 +38,8 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
                                             PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
         long memory = MuninnPageCache.memoryRequiredForPages( maxPages );
-        MemoryAllocator allocator = MemoryAllocator.createAllocator( String.valueOf( memory ) );
+        MemoryAllocator allocator = MemoryAllocator.createAllocator( String.valueOf( memory ),
+                new LocalMemoryTracker() );
         return new MuninnPageCache( swapperFactory, allocator, tracer, cursorTracerSupplier );
     }
 

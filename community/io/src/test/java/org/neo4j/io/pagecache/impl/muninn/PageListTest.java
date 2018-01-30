@@ -50,6 +50,8 @@ import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -87,7 +89,7 @@ public class PageListTest
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = MemoryAllocator.createAllocator( "1 MiB" );
+        mman = MemoryAllocator.createAllocator( "1 MiB", new LocalMemoryTracker() );
     }
 
     @AfterClass
@@ -123,7 +125,7 @@ public class PageListTest
     public void setUp()
     {
         swappers = new SwapperSet();
-        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        long victimPage = VictimPageReference.getVictimPage( pageSize, GlobalMemoryTracker.INSTANCE );
         pageList = new PageList( pageIds.length, pageSize, mman, swappers, victimPage, ALIGNMENT );
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
@@ -134,7 +136,7 @@ public class PageListTest
     public void mustExposePageCount() throws Exception
     {
         int pageCount;
-        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        long victimPage = VictimPageReference.getVictimPage( pageSize, GlobalMemoryTracker.INSTANCE );
 
         pageCount = 3;
         assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
@@ -1195,7 +1197,8 @@ public class PageListTest
     @Test
     public void mustExposeCachePageSize() throws Exception
     {
-        PageList list = new PageList( 0, 42, mman, swappers, VictimPageReference.getVictimPage( 42 ), ALIGNMENT );
+        PageList list = new PageList( 0, 42, mman, swappers,
+                VictimPageReference.getVictimPage( 42, GlobalMemoryTracker.INSTANCE ), ALIGNMENT );
         assertThat( list.getCachePageSize(), is( 42 ) );
     }
 

@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.mem.MemoryAllocator;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -70,7 +71,7 @@ public abstract class PageSwapperTest
 
     private final ConcurrentLinkedQueue<PageSwapperFactory> openedFactories = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
-    private final MemoryAllocator mman = MemoryAllocator.createAllocator( "32 KiB" );
+    private final MemoryAllocator mman = MemoryAllocator.createAllocator( "32 KiB", new LocalMemoryTracker() );
 
     protected abstract PageSwapperFactory swapperFactory() throws Exception;
 

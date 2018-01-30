@@ -21,13 +21,16 @@ package org.neo4j.io.mem;
 
 import org.junit.Test;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class MemoryAllocatorTest
@@ -37,7 +40,7 @@ public class MemoryAllocatorTest
 
     protected MemoryAllocator createAllocator( String expectedMaxMemory )
     {
-        return MemoryAllocator.createAllocator( expectedMaxMemory );
+        return MemoryAllocator.createAllocator( expectedMaxMemory, new LocalMemoryTracker() );
     }
 
     @Test
@@ -113,5 +116,21 @@ public class MemoryAllocatorTest
         // Don't count the 16 byte alignment in our assertions since we might already be accidentally aligned.
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 97L ) ) );
         assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 97L ) ) );
+    }
+
+    @Test
+    public void trackMemoryAllocations()
+    {
+        LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
+        MemoryAllocator allocator = MemoryAllocator.createAllocator( "2m", memoryTracker );
+
+        assertEquals( 0, memoryTracker.usedDirectMemory() );
+
+        long pointer = allocator.allocateAligned( ByteUnit.mebiBytes( 1 ), 1 );
+
+        assertEquals( ByteUnit.mebiBytes( 1 ), memoryTracker.usedDirectMemory() );
+
+        allocator.close();
+        assertEquals( 0, memoryTracker.usedDirectMemory() );
     }
 }

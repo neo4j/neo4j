@@ -27,7 +27,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     private final int bytesPerKey;
     private final int bytesPerEntry;
     private final long dataSize;
-    private final long bytesToAllocate;
+    private final long allocatedBytes;
     // address which should be free when closing
     private final long allocatedAddress;
     // address which should be used to access the table, the address where the table actually starts at
@@ -58,8 +58,8 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
 
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            bytesToAllocate = dataSize;
-            this.allocatedAddress = this.address = allocateMemory( bytesToAllocate );
+            allocatedBytes = dataSize;
+            this.allocatedAddress = this.address = allocateMemory( allocatedBytes );
         }
         else
         {
@@ -74,8 +74,8 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
                         " yielding a bytesPerEntry:" + bytesPerEntry + ", which isn't 4-byte aligned." );
             }
 
-            bytesToAllocate = dataSize + Integer.BYTES - 1;
-            this.allocatedAddress = allocateMemory( bytesToAllocate );
+            allocatedBytes = dataSize + Integer.BYTES - 1;
+            this.allocatedAddress = allocateMemory( allocatedBytes );
             this.address = UnsafeUtil.alignedMemory( allocatedAddress, Integer.BYTES );
         }
 
@@ -228,14 +228,11 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
 
     private long allocateMemory( long bytesToAllocate )
     {
-        long address = UnsafeUtil.allocateMemory( bytesToAllocate );
-        allocationTracker.allocate( bytesToAllocate );
-        return address;
+        return UnsafeUtil.allocateMemory( bytesToAllocate, allocationTracker );
     }
 
     private void deallocateMemory()
     {
-        UnsafeUtil.free( allocatedAddress );
-        allocationTracker.deallocate( bytesToAllocate );
+        UnsafeUtil.free( allocatedAddress, allocatedBytes, allocationTracker );
     }
 }

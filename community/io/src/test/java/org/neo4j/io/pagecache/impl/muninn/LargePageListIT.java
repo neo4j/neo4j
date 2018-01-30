@@ -25,6 +25,8 @@ import java.util.stream.IntStream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.mem.MemoryAllocator;
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.LocalMemoryTracker;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -43,9 +45,9 @@ public class LargePageListIT
         long pageCacheSize = ByteUnit.gibiBytes( 513 ) + pageSize;
         int pages = Math.toIntExact( pageCacheSize / pageSize );
 
-        MemoryAllocator mman = MemoryAllocator.createAllocator( "2 GiB" );
+        MemoryAllocator mman = MemoryAllocator.createAllocator( "2 GiB", new LocalMemoryTracker() );
         SwapperSet swappers = new SwapperSet();
-        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        long victimPage = VictimPageReference.getVictimPage( pageSize, GlobalMemoryTracker.INSTANCE );
 
         PageList pageList = new PageList( pages, pageSize, mman, swappers, victimPage, Long.BYTES );
 
