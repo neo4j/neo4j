@@ -38,4 +38,51 @@ public interface RelationshipSelectionCursor extends AutoCloseable
     long sourceNodeReference();
 
     long targetNodeReference();
+
+    final class EMPTY implements RelationshipSelectionCursor
+    {
+        @Override
+        public boolean next()
+        {
+            return false;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public long relationshipReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public int type()
+        {
+            return -1;
+        }
+
+        @Override
+        public long otherNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public long sourceNodeReference()
+        {
+            return -1;
+        }
+
+        @Override
+        public long targetNodeReference()
+        {
+            return -1;
+        }
+    }
+
+    RelationshipSelectionCursor EMPTY = new EMPTY();
 }

@@ -166,6 +166,7 @@ trait MethodStructure[E] {
   def hasNextNode(iterVar: String): E
   def advanceNodeCursor(iterVar: String): E
   def advanceNodeLabelIndexCursor(iterVar: String): E
+  def advanceRelationshipSelectionCursor(iterVar: String): E
   def hasNextRelationship(iterVar: String): E
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit

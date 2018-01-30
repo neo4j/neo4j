@@ -19,9 +19,16 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.helpers.RelationshipDenseSelectionCursor;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSparseSelectionCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.storageengine.api.EntityType;
@@ -92,6 +99,69 @@ public final class CompiledCursorUtils
         singleNode( read, nodeCursor, node );
 
         return nodeCursor.labels().contains( label );
+    }
+
+    public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
+            long nodeId,
+            Direction direction, int[] relTypes )
+    {
+        read.singleNode( nodeId, node );
+        if ( !node.next() )
+        {
+            return RelationshipSelectionCursor.EMPTY;
+        }
+        if ( node.isDense() )
+        {
+            RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor();
+            node.relationships( groupCursor );
+            RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
+            RelationshipDenseSelectionCursor selectionCursor =
+                    new RelationshipDenseSelectionCursor();
+            switch ( direction )
+            {
+            case OUTGOING:
+                selectionCursor.outgoing( groupCursor, traversalCursor, relTypes );
+                break;
+            case INCOMING:
+                selectionCursor.incoming( groupCursor, traversalCursor, relTypes );
+                break;
+            case BOTH:
+                selectionCursor.all( groupCursor, traversalCursor, relTypes );
+                break;
+            default:
+                throw new IllegalStateException( "Code style is awesome" );
+            }
+            return selectionCursor;
+        }
+        else
+        {
+            RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
+            node.allRelationships( traversalCursor );
+            RelationshipSparseSelectionCursor selectionCursor =
+                    new RelationshipSparseSelectionCursor();
+            switch ( direction )
+            {
+            case OUTGOING:
+                selectionCursor.outgoing( traversalCursor, relTypes );
+                break;
+            case INCOMING:
+                selectionCursor.incoming( traversalCursor, relTypes );
+                break;
+            case BOTH:
+                selectionCursor.all( traversalCursor, relTypes );
+                break;
+            default:
+                throw new IllegalStateException( "Code style is awesome" );
+            }
+            return selectionCursor;
+        }
+    }
+
+    public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
+            long nodeId,
+            Direction direction )
+    {
+        return nodeGetRelationships( read, cursors, node, nodeId, direction, null );
     }
 
     private static void singleNode( Read read, NodeCursor nodeCursor, long node ) throws EntityNotFoundException

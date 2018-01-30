@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
@@ -44,6 +43,7 @@ import org.neo4j.cypher.internal.util.v3_4.{ParameterNotFoundException, symbols}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{RelationshipValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.{MapValue, NodeValue, RelationshipValue}
 
 import scala.collection.mutable
 
@@ -128,24 +128,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection,
                                        fromNodeVar: String,
                                        relVar: String) = {
-    val extractor = relExtractor(relVar)
-    val start = invoke(generator.load(extractor), startNode)
-    val end = invoke(generator.load(extractor), endNode)
-
-    generator.expression(
-      pop(
-        invoke(generator.load(iterVar), relationshipVisit,
-               invoke(generator.load(iterVar), fetchNextRelationship),
-               generator.load(extractor))))
-    generator.assign(typeRef[Long], toNodeVar, toGraphDb(direction) match {
-      case Direction.INCOMING => start
-      case Direction.OUTGOING => end
-      case Direction.BOTH => ternary(equal(start, generator.load(fromNodeVar)), end, start)
-    })
-    generator.assign(typeRef[Long], relVar, invoke(generator.load(extractor), getRelationship))
+    val cursor = relCursor(relVar)
+    generator.assign(typeRef[Long], toNodeVar, invoke(generator.load(cursor),
+                                                   method[RelationshipSelectionCursor, Long]("otherNodeReference")))
+    generator.assign(typeRef[Long], relVar, invoke(generator.load(cursor),
+                                                   method[RelationshipSelectionCursor, Long]("relationshipReference")))
   }
 
   private def relExtractor(relVar: String) = s"${relVar}Extractor"
+  private def relCursor(relVar: String) = s"${relVar}Iter"
 
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
     val extractor = relExtractor(relVar)
@@ -195,6 +186,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def advanceNodeLabelIndexCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Boolean]("next"))
+
+  override def advanceRelationshipSelectionCursor(iterVar: String) =
+    invoke(generator.load(iterVar), method[RelationshipSelectionCursor, Boolean]("next"))
 
   override def hasNextRelationship(iterVar: String) =
     invoke(generator.load(iterVar), hasMoreRelationship)
@@ -494,27 +488,32 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def toFloat(expression: Expression) = toDouble(expression)
 
   override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
-                                dir(direction)))
-    }{ fail =>
-      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
-    }
+    generator.assign(typeRef[RelationshipSelectionCursor], iterVar,
+                     invoke(
+                       methodReference(typeRef[CompiledCursorUtils], typeRef[RelationshipSelectionCursor],
+                                       "nodeGetRelationships",  typeRef[Read], typeRef[CursorFactory],
+                                       typeRef[NodeCursor], typeRef[Long], typeRef[Direction]),
+                       dataRead, cursors, nodeCursor, forceLong(nodeVar, nodeVarType), dir(direction))
+                     )
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType,
                                                          direction: SemanticDirection,
-                                                         typeVars: Seq[String]) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
-      body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
-                                forceLong(nodeVar, nodeVarType), dir(direction),
-                                newArray(typeRef[Int], typeVars.map(body.load): _*)))
 
-    }{ fail =>
-      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
-    }
+                                                         typeVars: Seq[String]) = {
+    generator.assign(typeRef[RelationshipSelectionCursor], iterVar,
+                     invoke(
+                       methodReference(typeRef[CompiledCursorUtils], typeRef[RelationshipSelectionCursor],
+                                       "nodeGetRelationships",  typeRef[Read], typeRef[CursorFactory],
+                                       typeRef[NodeCursor], typeRef[Long], typeRef[Direction], typeRef[Array[Int]]),
+                       dataRead, cursors, nodeCursor, forceLong(nodeVar, nodeVarType), dir(direction),
+                       newArray(typeRef[Int], typeVars.map(generator.load): _*)) )
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
