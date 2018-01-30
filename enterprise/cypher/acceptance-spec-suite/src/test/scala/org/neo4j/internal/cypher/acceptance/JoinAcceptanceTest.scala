@@ -88,4 +88,13 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     executeWith(expectSucceed, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.BackwardsCompatibility))
   }
+
+  test("optional match join should not crash") {
+    val query =
+      """MATCH (a:A)-->(b:B)-->(c:C)
+        |OPTIONAL MATCH (h)<--(g:G)<--(c)
+        |USING JOIN ON c
+        |RETURN a,b,c,g,h""".stripMargin
+    graph.execute(query) // should not crash
+  }
 }
