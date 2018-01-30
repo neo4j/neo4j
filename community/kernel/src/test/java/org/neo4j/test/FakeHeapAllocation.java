@@ -24,6 +24,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.resources.HeapAllocation;
 
 import static java.lang.Thread.currentThread;
@@ -31,7 +32,7 @@ import static org.neo4j.collection.primitive.Primitive.offHeapLongLongMap;
 
 public class FakeHeapAllocation extends HeapAllocation implements TestRule
 {
-    private final PrimitiveLongLongMap allocation = offHeapLongLongMap();
+    private final PrimitiveLongLongMap allocation = offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
 
     @Override
     public long allocatedBytes( long threadId )

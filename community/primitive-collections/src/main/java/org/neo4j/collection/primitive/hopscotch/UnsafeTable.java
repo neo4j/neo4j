@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
@@ -26,16 +27,19 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     private final int bytesPerKey;
     private final int bytesPerEntry;
     private final long dataSize;
+    private final long bytesToAllocate;
     // address which should be free when closing
     private final long allocatedAddress;
     // address which should be used to access the table, the address where the table actually starts at
     private final long address;
     protected final VALUE valueMarker;
+    protected final MemoryAllocationTracker allocationTracker;
 
-    protected UnsafeTable( int capacity, int bytesPerKey, VALUE valueMarker )
+    protected UnsafeTable( int capacity, int bytesPerKey, VALUE valueMarker, MemoryAllocationTracker allocationTracker )
     {
         super( capacity, 32 );
         UnsafeUtil.assertHasUnsafe();
+        this.allocationTracker = allocationTracker;
         this.bytesPerKey = bytesPerKey;
         this.bytesPerEntry = 4 + bytesPerKey;
         this.valueMarker = valueMarker;
@@ -54,7 +58,8 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
 
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            this.allocatedAddress = this.address = UnsafeUtil.allocateMemory( dataSize );
+            bytesToAllocate = dataSize;
+            this.allocatedAddress = this.address = allocateMemory( bytesToAllocate );
         }
         else
         {
@@ -69,7 +74,8 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
                         " yielding a bytesPerEntry:" + bytesPerEntry + ", which isn't 4-byte aligned." );
             }
 
-            this.allocatedAddress = UnsafeUtil.allocateMemory( dataSize + Integer.BYTES - 1 );
+            bytesToAllocate = dataSize + Integer.BYTES - 1;
+            this.allocatedAddress = allocateMemory( bytesToAllocate );
             this.address = UnsafeUtil.alignedMemory( allocatedAddress, Integer.BYTES );
         }
 
@@ -190,7 +196,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     @Override
     public void close()
     {
-        UnsafeUtil.free( allocatedAddress );
+        deallocateMemory();
     }
 
     protected static void alignmentSafePutLongAsTwoInts( long address, long value )
@@ -218,5 +224,18 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         long lsb = UnsafeUtil.getInt( address ) & 0xFFFFFFFFL;
         long msb = UnsafeUtil.getInt( address + Integer.BYTES ) & 0xFFFFFFFFL;
         return lsb | (msb << Integer.SIZE);
+    }
+
+    private long allocateMemory( long bytesToAllocate )
+    {
+        long address = UnsafeUtil.allocateMemory( bytesToAllocate );
+        allocationTracker.allocate( bytesToAllocate );
+        return address;
+    }
+
+    private void deallocateMemory()
+    {
+        UnsafeUtil.free( allocatedAddress );
+        allocationTracker.deallocate( bytesToAllocate );
     }
 }

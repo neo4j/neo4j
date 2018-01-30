@@ -42,6 +42,7 @@ import org.neo4j.collection.primitive.PrimitiveLongLongVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
@@ -984,7 +985,7 @@ public class PrimitiveLongMapTest
     {
         // GIVEN
         PrimitiveLongLongVisitor<RuntimeException> visitor;
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE ) )
         {
             map.put( 1, 100 );
             map.put( 2, 200 );
@@ -1007,7 +1008,7 @@ public class PrimitiveLongMapTest
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE ) )
         {
             map.put( 1, 100 );
             map.put( 2, 200 );
@@ -1188,7 +1189,7 @@ public class PrimitiveLongMapTest
     {
         // GIVEN
         PrimitiveLongVisitor<RuntimeException> visitor = mock( PrimitiveLongVisitor.class );
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE ) )
         {
             map.put( 1, 100 );
             map.put( 2, 200 );
@@ -1210,7 +1211,7 @@ public class PrimitiveLongMapTest
     {
         // GIVEN
         AtomicInteger counter = new AtomicInteger();
-        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap map = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE ) )
         {
             map.put( 1, 100 );
             map.put( 2, 200 );
@@ -1335,7 +1336,6 @@ public class PrimitiveLongMapTest
 
     @Test
     public void recursivePutGrowInterleavingShouldNotDropOriginalValuesEvenWhenFirstGrowAddsMoreValuesAfterSecondGrow()
-            throws Exception
     {
         // List of values that cause recursive growth like above, but this time the first grow wants to add more values
         // to the table *after* the second grow has occurred.

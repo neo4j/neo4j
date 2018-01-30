@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.memory.GlobalMemoryTracker;
+
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertArrayEquals;
@@ -54,7 +56,7 @@ public class PrimitiveIntCollectionsTest
     public void convertCollectionToLongArray()
     {
         PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
-        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet();
+        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet( GlobalMemoryTracker.INSTANCE );
         offHeapIntSet.add( 7 );
         offHeapIntSet.add( 8 );
         assertArrayEquals( new long[]{1, 2, 3}, PrimitiveIntCollections.asLongArray( heapSet ) );
