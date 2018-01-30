@@ -73,7 +73,7 @@ abstract class StringLayoutTestUtil extends LayoutTestUtil<StringSchemaKey,Nativ
     {
         Collection<String> duplicates = new ArrayList<>( asList( STRINGS ) );
         duplicates.addAll( asList( STRINGS ) );
-        return generateAddUpdatesFor( STRINGS );
+        return generateAddUpdatesFor( duplicates.toArray() );
     }
 
     @Override

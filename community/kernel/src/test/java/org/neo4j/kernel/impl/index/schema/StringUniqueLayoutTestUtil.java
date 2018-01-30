@@ -34,7 +34,7 @@ class StringUniqueLayoutTestUtil extends StringLayoutTestUtil
     @Override
     Layout<StringSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new StringLayoutNonUnique();
+        return new StringLayoutUnique();
     }
 
     @Override

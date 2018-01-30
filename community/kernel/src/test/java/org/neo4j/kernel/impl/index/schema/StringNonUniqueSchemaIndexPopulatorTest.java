@@ -25,19 +25,19 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+public class StringNonUniqueSchemaIndexPopulatorTest extends NativeNonUniqueSchemaIndexPopulatorTest<StringSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
-            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaIndexPopulator<StringSchemaKey,NativeSchemaValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
+            File indexFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor,
+                indexId );
     }
 
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<StringSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new NumberUniqueLayoutTestUtil();
+        return new StringNonUniqueLayoutTestUtil();
     }
 }

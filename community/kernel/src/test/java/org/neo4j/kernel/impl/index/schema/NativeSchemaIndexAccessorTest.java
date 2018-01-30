@@ -347,7 +347,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -362,7 +362,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -377,7 +377,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -392,7 +392,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -688,7 +688,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldNotSeeFilteredEntries() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
         layoutUtil.sort( updates );
         IndexReader reader = accessor.newReader();

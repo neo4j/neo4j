@@ -160,7 +160,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         return Stream.of( updates ).map( update -> update.values()[0] ).collect( Collectors.toSet() ).size();
     }
 
-    static int countUniqueValues( Number[] updates )
+    static int countUniqueValues( Object[] updates )
     {
         return Stream.of( updates ).collect( Collectors.toSet() ).size();
     }
