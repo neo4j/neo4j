@@ -19,24 +19,16 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.hamcrest.Matchers.equalTo;
 
 import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.HilbertCurve3D;
-import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.SubCurve3D;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointLeft;
 import static org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D.BinaryCoordinateRotationUtils3D.rotateNPointRight;
 
@@ -116,7 +108,6 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= ZOrderSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope, level );
-            System.out.println( "Max value at level " + level + ": " + curve.getValueWidth() );
             assertAtLevel( curve, envelope );
             assertRange( (int) curve.getWidth(), 0, curve, 0, (int) curve.getWidth() - 1 );
             assertRange( (int) curve.getWidth(), curve.getValueWidth() - 1, curve, (int) curve.getWidth() - 1, 0 );
@@ -159,14 +150,12 @@ public class SpaceFillingCurveTest
             ZOrderSpaceFillingCurve2D curve = new ZOrderSpaceFillingCurve2D( envelope, level );
             System.out.print( "Testing hilbert query at level " + level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
-            long start = System.currentTimeMillis();
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( -8, -8 + halfTile, 8 - halfTile, 8 ) ),
                     new SpaceFillingCurve.LongRange( 0, 0 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 8 - halfTile, 8, -8, -8 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() - 1, curve.getValueWidth() - 1 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 8 - halfTile, 8, 0, 0 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2 - 1, curve.getValueWidth() / 2 - 1 ) );
-            System.out.println( ", took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
@@ -241,7 +230,6 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-            System.out.println( "Max value at level " + level + ": " + curve.getValueWidth() );
             assertAtLevel( curve, envelope );
             assertRange( (int) curve.getWidth(), 0, curve, 0, 0 );
             assertRange( (int) curve.getWidth(), curve.getValueWidth() - 1, curve, (int) curve.getWidth() - 1, 0 );
@@ -328,16 +316,13 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= HilbertSpaceFillingCurve2D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-            System.out.print( "Testing hilbert query at level " + level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
-            long start = System.currentTimeMillis();
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( -8, -8 + halfTile, -8, -8 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( 0, 0 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 8 - halfTile, 8, -8, -8 + halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() - 1, curve.getValueWidth() - 1 ) );
             assertTiles( curve.getTilesIntersectingEnvelope( new Envelope( 0, halfTile, 0, halfTile ) ),
                     new SpaceFillingCurve.LongRange( curve.getValueWidth() / 2, curve.getValueWidth() / 2 ) );
-            System.out.println( ", took " + (System.currentTimeMillis() - start) + "ms" );
         }
     }
 
@@ -469,7 +454,6 @@ public class SpaceFillingCurveTest
         for ( int level = 1; level <= HilbertSpaceFillingCurve3D.MAX_LEVEL; level++ )
         {
             HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, level );
-            System.out.println( "Max value at level " + level + ": " + curve.getValueWidth() );
             assertAtLevel( curve, envelope );
             assertRange( (int) curve.getWidth(), 0, curve, 0, 0, 0 );
             assertRange( (int) curve.getWidth(), curve.getValueWidth() - 1, curve, (int) curve.getWidth() - 1, 0, 0 );
@@ -570,7 +554,6 @@ public class SpaceFillingCurveTest
             HilbertSpaceFillingCurve3D curve = new HilbertSpaceFillingCurve3D( envelope, level );
             System.out.print( "Testing hilbert query at level " + level );
             double halfTile = curve.getTileWidth( 0, level ) / 2.0;
-            long start = System.currentTimeMillis();
             assertTiles(
                     curve.getTilesIntersectingEnvelope( new Envelope( new double[]{-8, -8, -8}, new double[]{-8 + halfTile, -8 + halfTile, -8 + halfTile} ) ),
                     new SpaceFillingCurve.LongRange( 0, 0 ) );
@@ -581,18 +564,7 @@ public class SpaceFillingCurveTest
             // Suggestion to fix this with shallower traversals
             //assertTiles(curve.getTilesIntersectingEnvelope(new Envelope(new double[]{-8, -8, -8}, new double[]{8, 8, 8})),
             // new HilbertSpaceFillingCurve.LongRange(0, curve.getValueWidth() - 1));
-            System.out.println( ", took " + (System.currentTimeMillis() - start) + "ms" );
         }
-    }
-
-    @Ignore
-    public void printMappings()
-    {
-        Envelope envelope = new Envelope( new double[]{-8, -8, -8}, new double[]{8, 8, 8} );
-        HilbertSpaceFillingCurve3D mainCurve = new HilbertSpaceFillingCurve3D( envelope );
-        SpaceFillingCurve.CurveRule c = mainCurve.rootCurve();
-        populateChildren( c, 0 );
-        printMapping();
     }
 
     @Test
@@ -655,57 +627,11 @@ public class SpaceFillingCurveTest
         int badness = (int) (100 * badCount / (curve.getValueWidth() - 1));
         assertThat( "Bad distance percentage should never be greater than " + badnessThresholdPercentage + "%", badness,
                 lessThanOrEqualTo( badnessThresholdPercentage ) );
-        System.out.println( String.format( "Bad distance count for level: %d (%d/%d = %d%%)", level, badCount, curve.getValueWidth() - 1, badness ) );
     }
 
     //
     // Test utilities and grouped/complex assertions for 2D and 3D Hilbert Curves
     //
-
-    private void populateChildren( SpaceFillingCurve.CurveRule c, int level )
-    {
-        int sizeBefore = HilbertSpaceFillingCurve3D.curves.size();
-        for ( int i = 0; i < c.length(); ++i )
-        {
-            SpaceFillingCurve.CurveRule curve = c.childAt( i );
-            int sizeAfter = HilbertSpaceFillingCurve3D.curves.size();
-            if ( sizeAfter - sizeBefore > 0 )
-            {
-                populateChildren( curve, level + 1 );
-            }
-        }
-    }
-
-    private void printMapping()
-    {
-        HashMap<Integer,Map<SubCurve3D,HilbertCurve3D>> map = new HashMap<>();
-        for ( Map.Entry<SubCurve3D,HilbertCurve3D> entry : HilbertSpaceFillingCurve3D.curves.entrySet() )
-        {
-            int start = entry.getValue().npointForIndex( 0 );
-            Map<SubCurve3D,HilbertCurve3D> mapEntry;
-            if ( map.containsKey( start ) )
-            {
-                mapEntry = map.get( start );
-            }
-            else
-            {
-                mapEntry = new HashMap<>();
-                map.put( start, mapEntry );
-            }
-            mapEntry.put( entry.getKey(), entry.getValue() );
-        }
-        ArrayList<Integer> sortedKeys = new ArrayList<>();
-        sortedKeys.addAll( map.keySet() );
-        Collections.sort( sortedKeys );
-        for ( Integer start : sortedKeys )
-        {
-            System.out.println( HilbertCurve3D.binaryString( start ) + ":\t" + map.get( start ).size() );
-            for ( Map.Entry<SubCurve3D,HilbertCurve3D> mapEntry : map.get( start ).entrySet() )
-            {
-                System.out.println( "\t" + mapEntry.getKey() + ":\t" + Arrays.toString( mapEntry.getValue().children ) );
-            }
-        }
-    }
 
     private void assertTiles( List<SpaceFillingCurve.LongRange> results, SpaceFillingCurve.LongRange... expected )
     {

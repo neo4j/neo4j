@@ -589,7 +589,6 @@ public class PropertyConstraintsStressIT
             }
             catch ( QueryExecutionException e )
             {
-                System.out.println( "Constraint failed: " + e.getMessage() );
                 if ( Exceptions.rootCause( e ) instanceof ConstraintValidationException )
                 {
                     // Unable to create constraint since it is not consistent with existing data
@@ -599,11 +598,6 @@ public class PropertyConstraintsStressIT
                 {
                     throw e;
                 }
-            }
-
-            if ( !constraintCreationFailed )
-            {
-                System.out.println( "Constraint created: " + query );
             }
 
             return constraintCreationFailed;
