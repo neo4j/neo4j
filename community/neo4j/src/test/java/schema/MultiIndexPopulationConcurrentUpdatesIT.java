@@ -44,6 +44,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -61,12 +62,12 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -558,7 +559,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 {
                     for ( NodeUpdates update : updates )
                     {
-                        Iterable<IndexEntryUpdate<LabelSchemaDescriptor>> entryUpdates =
+                        Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates =
                                 indexService.convertToIndexUpdates( update );
                         DirectIndexUpdates directIndexUpdates = new DirectIndexUpdates( entryUpdates );
                         indexService.apply( directIndexUpdates );

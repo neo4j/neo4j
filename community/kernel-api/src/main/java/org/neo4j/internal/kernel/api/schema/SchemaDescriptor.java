@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api.schema;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
@@ -34,7 +35,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  * how this is done in eg. LabelSchemaDescriptor, and the SchemaProcessor and SchemaComputer interfaces need to be
  * extended with methods taking the new concrete type as argument.
  */
-public interface SchemaDescriptor
+public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
     /**
      * Computes some value by feeding this object into the given SchemaComputer.
@@ -72,11 +73,15 @@ public interface SchemaDescriptor
      */
     int[] getPropertyIds();
 
+    //TODO javadoc
+    int[] getEntityTokenIds();
+
     /**
      * Id of underlying schema descriptor key.
      * Key is part of schema unit that determines which resources with specified properties are applicable.
      * @return id of underlying key
      */
+    //TODO reduce usage to only locking
     int keyId();
 
     /**
@@ -92,13 +97,10 @@ public interface SchemaDescriptor
      * @return A predicate that returns {@code true} if it is given a schema descriptor supplier that supplies the
      * same schema descriptor as the given schema descriptor.
      */
-    static <T extends SchemaDescriptor.Supplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
+    static <T extends SchemaDescriptorSupplier> Predicate<T> equalTo( SchemaDescriptor descriptor )
     {
         return supplier -> descriptor.equals( supplier.schema() );
     }
 
-    interface Supplier
-    {
-        SchemaDescriptor schema();
-    }
+    EntityType entityType();
 }

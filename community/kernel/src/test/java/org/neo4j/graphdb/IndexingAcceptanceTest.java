@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
@@ -493,8 +493,8 @@ public class IndexingAcceptanceTest
               Statement statement = getStatement( (GraphDatabaseAPI) db ) )
         {
             ReadOperations ops = statement.readOperations();
-            SchemaIndexDescriptor descriptor = indexDescriptor( ops, index );
-            int propertyKeyId = descriptor.schema().getPropertyId();
+            IndexDescriptor descriptor = indexDescriptor( ops, index );
+            int propertyKeyId = descriptor.schema().getPropertyIds()[0];
             found.addAll( ops.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
         }
 
@@ -520,8 +520,8 @@ public class IndexingAcceptanceTest
             try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
             {
                 ReadOperations readOperations = statement.readOperations();
-                SchemaIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-                int propertyKeyId = descriptor.schema().getPropertyId();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyIds()[0];
                 found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
             }
         }
@@ -553,8 +553,8 @@ public class IndexingAcceptanceTest
             try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
             {
                 ReadOperations readOperations = statement.readOperations();
-                SchemaIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-                int propertyKeyId = descriptor.schema().getPropertyId();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyIds()[0];
                 found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
             }
         }
@@ -595,8 +595,8 @@ public class IndexingAcceptanceTest
             try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
             {
                 ReadOperations readOperations = statement.readOperations();
-                SchemaIndexDescriptor descriptor = indexDescriptor( readOperations, index );
-                int propertyKeyId = descriptor.schema().getPropertyId();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyIds()[0];
                 found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
             }
         }
@@ -618,7 +618,7 @@ public class IndexingAcceptanceTest
         return expected;
     }
 
-    private SchemaIndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
+    private IndexDescriptor indexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );

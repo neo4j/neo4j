@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
@@ -34,10 +34,10 @@ import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
 public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
 {
     private final IndexProvider.Descriptor providerDescriptor;
-    private final SchemaIndexDescriptor descriptor;
+    private final IndexDescriptor descriptor;
     private final Long owningConstraint;
 
-    public static IndexRule indexRule( long id, SchemaIndexDescriptor descriptor,
+    public static IndexRule indexRule( long id, IndexDescriptor descriptor,
                                        IndexProvider.Descriptor providerDescriptor )
     {
         return new IndexRule( id, providerDescriptor, descriptor, null );
@@ -64,13 +64,13 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
     }
 
     IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
-            SchemaIndexDescriptor descriptor, Long owningConstraint )
+            IndexDescriptor descriptor, Long owningConstraint )
     {
         this( id, providerDescriptor, descriptor, owningConstraint, null );
     }
 
     IndexRule( long id, IndexProvider.Descriptor providerDescriptor,
-            SchemaIndexDescriptor descriptor, Long owningConstraint, String name )
+            IndexDescriptor descriptor, Long owningConstraint, String name )
     {
         super( id, name );
         if ( providerDescriptor == null )
@@ -121,7 +121,7 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
         {
             throw new IllegalStateException( this + " is not a constraint index" );
         }
-        return constraintIndexRule( id, descriptor, providerDescriptor, constraintId );
+        return constraintIndexRule( id, descriptor.asSchemaDescriptor(), providerDescriptor, constraintId );
     }
 
     @Override
@@ -144,13 +144,13 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
     }
 
     @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return descriptor.schema();
     }
 
     @Override
-    public SchemaIndexDescriptor getIndexDescriptor()
+    public IndexDescriptor getIndexDescriptor()
     {
         return descriptor;
     }

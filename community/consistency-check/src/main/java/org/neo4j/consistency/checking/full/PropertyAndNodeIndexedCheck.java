@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -95,8 +96,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         PrimitiveIntObjectMap<PropertyBlock> nodePropertyMap = null;
         for ( IndexRule indexRule : indexes.onlineRules() )
         {
-            long labelId = indexRule.schema().getLabelId();
-            if ( labels.contains( labelId ) )
+            int[] labelIds = indexRule.schema().getEntityTokenIds();
+            if ( !Collections.disjoint( labels, Arrays.asList( labelIds ) ) )
             {
                 if ( nodePropertyMap == null )
                 {
@@ -130,7 +131,8 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
             CheckerEngine<NodeRecord,ConsistencyReport.NodeConsistencyReport> engine, IndexRule indexRule,
             IndexReader reader )
     {
-        IndexQuery[] query = seek( indexRule.schema(), propertyValues );
+        //TODO ugly as shit
+        IndexQuery[] query = seek( indexRule.getIndexDescriptor().asSchemaDescriptor().schema(), propertyValues );
 
         PrimitiveLongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
 

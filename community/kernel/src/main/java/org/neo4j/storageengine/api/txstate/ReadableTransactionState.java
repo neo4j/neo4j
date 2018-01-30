@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -119,9 +120,9 @@ public interface ReadableTransactionState
 
     // SCHEMA RELATED
 
-    ReadableDiffSets<SchemaIndexDescriptor> indexDiffSetsByLabel( int labelId );
+    ReadableDiffSets<IndexDescriptor> indexDiffSetsByLabel( int labelId );
 
-    ReadableDiffSets<SchemaIndexDescriptor> indexChanges();
+    ReadableDiffSets<IndexDescriptor> indexChanges();
 
     Iterable<SchemaIndexDescriptor> constraintIndexesCreatedInTx();
 
@@ -135,19 +136,19 @@ public interface ReadableTransactionState
 
     Long indexCreatedForConstraint( ConstraintDescriptor constraint );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForScan( SchemaIndexDescriptor index );
+    PrimitiveLongReadableDiffSets indexUpdatesForScan( IndexDescriptor index );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForSeek( SchemaIndexDescriptor index, ValueTuple values );
+    PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor index, ValueTuple values );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( SchemaIndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByNumber( IndexDescriptor index,
                                                              Number lower, boolean includeLower,
                                                              Number upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( SchemaIndexDescriptor index,
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByString( IndexDescriptor index,
                                                              String lower, boolean includeLower,
                                                              String upper, boolean includeUpper );
 
-    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( SchemaIndexDescriptor index, String prefix );
+    PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByPrefix( IndexDescriptor index, String prefix );
 
     NodeState getNodeState( long id );
 

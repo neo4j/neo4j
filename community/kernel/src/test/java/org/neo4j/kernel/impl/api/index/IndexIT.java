@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -149,7 +150,7 @@ public class IndexIT extends KernelIntegrationTest
         Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
         SchemaIndexDescriptor addedRule = statement.schemaWriteOperations()
                                             .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
-        Set<SchemaIndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
+        Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
         commit();
 
         // THEN
@@ -311,7 +312,7 @@ public class IndexIT extends KernelIntegrationTest
 
         // then/when
         ReadOperations readOperations = readOperationsInNewTransaction();
-        List<SchemaIndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
+        List<IndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
     }

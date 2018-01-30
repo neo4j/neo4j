@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -444,7 +445,7 @@ public class StoreUpgradeIT
         }
     }
 
-    private static Iterator<SchemaIndexDescriptor> getAllIndexes( Statement statement )
+    private static Iterator<IndexDescriptor> getAllIndexes( Statement statement )
     {
         return statement.readOperations().indexesGetAll();
     }

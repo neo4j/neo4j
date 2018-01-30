@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
@@ -121,9 +122,9 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
-        exclusiveLabelLock( state, descriptor.schema().getLabelId() );
+        exclusiveLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         schemaWriteDelegate.indexDrop( state, descriptor );
     }
@@ -158,7 +159,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Iterator<SchemaIndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
+    public Iterator<IndexDescriptor> indexesGetForLabel( KernelStatement state, int labelId )
     {
         sharedLabelLock( state, labelId );
         state.assertOpen();
@@ -166,80 +167,80 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public SchemaIndexDescriptor indexGetForSchema( KernelStatement state, LabelSchemaDescriptor descriptor )
+    public IndexDescriptor indexGetForSchema( KernelStatement state, SchemaDescriptor descriptor )
     {
-        sharedLabelLock( state, descriptor.getLabelId() );
+        sharedLabelLock( state, descriptor.keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetForSchema( state, descriptor );
     }
 
     @Override
-    public Iterator<SchemaIndexDescriptor> indexesGetAll( KernelStatement state )
+    public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
     {
         state.assertOpen();
         return Iterators.map( indexDescriptor ->
         {
-            sharedLabelLock( state, indexDescriptor.schema().getLabelId() );
+            sharedLabelLock( state, indexDescriptor.schema().keyId() );
             return indexDescriptor;
         }, schemaReadDelegate.indexesGetAll( state ) );
     }
 
     @Override
-    public InternalIndexState indexGetState( KernelStatement state, SchemaIndexDescriptor descriptor )
+    public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        sharedLabelLock( state, descriptor.schema().getLabelId() );
+        sharedLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetState( state, descriptor );
     }
 
     @Override
-    public IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public IndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        sharedLabelLock( state, descriptor.schema().getLabelId() );
+        sharedLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetProviderDescriptor( state, descriptor );
     }
 
     @Override
-    public PopulationProgress indexGetPopulationProgress( KernelStatement state, SchemaIndexDescriptor descriptor )
+    public PopulationProgress indexGetPopulationProgress( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
-        sharedLabelLock( state, descriptor.schema().getLabelId() );
+        sharedLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetPopulationProgress( state, descriptor );
     }
 
     @Override
-    public long indexSize( KernelStatement state, SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    public long indexSize( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        sharedLabelLock( state, descriptor.schema().getLabelId() );
+        sharedLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexSize( state, descriptor );
     }
 
     @Override
     public double indexUniqueValuesPercentage( KernelStatement state,
-            SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+            IndexDescriptor descriptor ) throws IndexNotFoundKernelException
     {
-        sharedLabelLock( state, descriptor.schema().getLabelId() );
+        sharedLabelLock( state, descriptor.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexUniqueValuesPercentage( state, descriptor );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, SchemaIndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
     {
-        sharedLabelLock( state, index.schema().getLabelId() );
+        sharedLabelLock( state, index.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, index );
     }
 
     @Override
-    public long indexGetCommittedId( KernelStatement state, SchemaIndexDescriptor index )
+    public long indexGetCommittedId( KernelStatement state, IndexDescriptor index )
             throws SchemaRuleNotFoundException
     {
-        sharedLabelLock( state, index.schema().getLabelId() );
+        sharedLabelLock( state, index.schema().keyId() );
         state.assertOpen();
         return schemaReadDelegate.indexGetCommittedId( state, index );
     }
@@ -415,6 +416,15 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public void fulltextIndexCreate( KernelStatement statement, IndexDescriptor fulltextIndexDescriptor )
+    {
+        //TODO locking
+//        exclusiveLabelLock( state, descriptor.getLabelId() );
+//        state.assertOpen();
+        schemaWriteDelegate.fulltextIndexCreate( statement, fulltextIndexDescriptor );
+    }
+
+    @Override
     public Value nodeSetProperty( KernelStatement state, long nodeId, int propertyKeyId, Value value )
             throws ConstraintValidationException, EntityNotFoundException, AutoIndexingKernelException,
             InvalidTransactionTypeKernelException
@@ -496,7 +506,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public String indexGetFailure( Statement state, SchemaIndexDescriptor descriptor )
+    public String indexGetFailure( Statement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {
         return schemaReadDelegate.indexGetFailure( state, descriptor );

@@ -703,8 +703,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         kernelToCypher(transactionalContext.statement.schemaWriteOperations().indexCreate(kernelDescriptor)))
     } catch {
       case _: AlreadyIndexedException =>
-        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForSchema(
-          SchemaDescriptorFactory.forLabel(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*))
+        val indexDescriptor = transactionalContext.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*))
         if (transactionalContext.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
           throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
        IdempotentResult(kernelToCypher(indexDescriptor), wasCreated = false)

@@ -75,7 +75,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.TokenAccess;
@@ -622,14 +622,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             return emptyResourceIterator();
         }
 
-        SchemaIndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
+        IndexDescriptor descriptor = findAnyIndexByLabelAndProperty( readOps, propertyId, labelId );
 
         try
         {
             if ( null != descriptor )
             {
                 // Ha! We found an index - let's use it to find matching nodes
-                IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
+                //TODO index 0 hack
+                IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.schema().getPropertyIds()[0], value );
                 PrimitiveLongResourceIterator indexResult = readOps.indexQuery( descriptor, query );
                 return map2nodes( indexResult, statement, indexResult );
             }
@@ -642,11 +643,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return getNodesByLabelAndPropertyWithoutIndex( propertyId, value, statement, labelId );
     }
 
-    private SchemaIndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
+    private IndexDescriptor findAnyIndexByLabelAndProperty( ReadOperations readOps, int propertyId, int labelId )
     {
         try
         {
-            SchemaIndexDescriptor descriptor =
+            IndexDescriptor descriptor =
                     readOps.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
 
             if ( readOps.indexGetState( descriptor ) == InternalIndexState.ONLINE )

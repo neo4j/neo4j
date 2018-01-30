@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type
-import org.neo4j.kernel.api.schema.index.{SchemaIndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
 import org.neo4j.procedure.Mode
 
@@ -92,7 +92,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds))
+        //TODO zero index hack?
+      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getEntityTokenIds.head, descriptor.schema().getPropertyIds))
       case _ => None
     }
 

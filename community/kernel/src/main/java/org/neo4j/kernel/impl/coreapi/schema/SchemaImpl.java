@@ -66,6 +66,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -110,7 +111,7 @@ public class SchemaImpl implements Schema
             {
                 return emptyList();
             }
-            Iterator<SchemaIndexDescriptor> indexes = statement.readOperations().indexesGetForLabel( labelId );
+            Iterator<IndexDescriptor> indexes = statement.readOperations().indexesGetForLabel( labelId );
             addDefinitions( definitions, statement.readOperations(), SchemaIndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
@@ -122,7 +123,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             List<IndexDefinition> definitions = new ArrayList<>();
-            Iterator<SchemaIndexDescriptor> indexes = statement.readOperations().indexesGetAll();
+            Iterator<IndexDescriptor> indexes = statement.readOperations().indexesGetAll();
             addDefinitions( definitions, statement.readOperations(), SchemaIndexDescriptor.sortByType( indexes ) );
             return definitions;
         }
@@ -211,7 +212,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             ReadOperations readOps = statement.readOperations();
-            SchemaIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            IndexDescriptor descriptor = getIndexDescriptor( readOps, index );
             InternalIndexState indexState = readOps.indexGetState( descriptor );
             switch ( indexState )
             {
@@ -239,7 +240,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             ReadOperations readOps = statement.readOperations();
-            SchemaIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            IndexDescriptor descriptor = getIndexDescriptor( readOps, index );
             PopulationProgress progress = readOps.indexGetPopulationProgress( descriptor );
             return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
         }
@@ -257,7 +258,7 @@ public class SchemaImpl implements Schema
         try ( Statement statement = statementContextSupplier.get() )
         {
             ReadOperations readOps = statement.readOperations();
-            SchemaIndexDescriptor descriptor = getIndexDescriptor( readOps, index );
+            IndexDescriptor descriptor = getIndexDescriptor( readOps, index );
             return readOps.indexGetFailure( descriptor );
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
@@ -319,7 +320,7 @@ public class SchemaImpl implements Schema
         }
     }
 
-    private static SchemaIndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
+    private static IndexDescriptor getIndexDescriptor( ReadOperations readOperations, IndexDefinition index )
             throws SchemaRuleNotFoundException
     {
         int labelId = readOperations.labelGetForName( index.getLabel().name() );

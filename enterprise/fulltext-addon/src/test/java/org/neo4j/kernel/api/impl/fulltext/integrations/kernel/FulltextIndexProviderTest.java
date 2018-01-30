@@ -22,15 +22,20 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class FulltextIndexProviderTest
@@ -45,7 +50,27 @@ public class FulltextIndexProviderTest
         IndexProvider defaultIndexProvider = db.getDependencyResolver().resolveDependency( IndexProvider.class, indexProviderSelection );
 
         IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( defaultIndexProvider, indexProviderSelection.lowerPrioritizedCandidates() );
-        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( FulltextIndexDescriptor.NO_LABEL, 1, 2, 3, 4 );
+        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( new int[0], EntityType.NODE, 2, 3, 4 );
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
+    }
+
+    @Test
+    public void createFulltextIndex() throws Exception
+    {
+        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( new int[]{7,8,9}, EntityType.NODE, 2, 3, 4 );
+        try ( Transaction transaction = db.beginTx();
+                Statement stmt =db.statement( ))
+        {
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
+            transaction.success();
+        }
+        try ( Transaction transaction = db.beginTx();
+                Statement stmt =db.statement( ))
+        {
+            IndexDescriptor descriptor = stmt.readOperations().indexGetForSchema( fulltextIndexDescriptor.schema() );
+            System.out.println( "descriptor = " + descriptor );
+            assertEquals( descriptor.schema(), fulltextIndexDescriptor.schema() );
+            transaction.success();
+        }
     }
 }

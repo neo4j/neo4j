@@ -25,7 +25,7 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.Value;
@@ -82,10 +82,10 @@ public class IndexTxStateUpdater
         }
 
         // Check all indexes of the changed label
-        Iterator<SchemaIndexDescriptor> indexes = storeReadLayer.indexesGetForLabel( labelId );
+        Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetForLabel( labelId );
         while ( indexes.hasNext() )
         {
-            SchemaIndexDescriptor index = indexes.next();
+            IndexDescriptor index = indexes.next();
             int[] indexPropertyIds = index.schema().getPropertyIds();
             if ( nodeHasIndexProperties( nodePropertyIds, indexPropertyIds ) )
             {
@@ -120,7 +120,7 @@ public class IndexTxStateUpdater
             org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx();
-        Iterator<SchemaIndexDescriptor> indexes =
+        Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
         nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
@@ -137,7 +137,7 @@ public class IndexTxStateUpdater
             org.neo4j.internal.kernel.api.PropertyCursor propertyCursor, int propertyKeyId, Value value )
     {
         assert noSchemaChangedInTx();
-        Iterator<SchemaIndexDescriptor> indexes =
+        Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
         nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
@@ -154,7 +154,7 @@ public class IndexTxStateUpdater
             Value afterValue )
     {
         assert noSchemaChangedInTx();
-        Iterator<SchemaIndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
+        Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
         nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {

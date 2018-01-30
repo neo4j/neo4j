@@ -33,6 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -135,6 +136,12 @@ class PropertyExistenceEnforcer
                     public void processSpecific( RelationTypeSchemaDescriptor schema )
                     {
                         relationships.add( schema );
+                    }
+
+                    @Override
+                    public void processSpecific( NonSchemaSchemaDescriptor nonSchemaSchemaDescriptor )
+                    {
+                        throw new IllegalStateException( "NonSchemaSchemaDescriptor cannot support constraints" );
                     }
                 } );
             }

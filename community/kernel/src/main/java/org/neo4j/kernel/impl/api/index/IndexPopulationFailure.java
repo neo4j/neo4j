@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 
 public abstract class IndexPopulationFailure
@@ -28,7 +28,7 @@ public abstract class IndexPopulationFailure
     public abstract String asString();
 
     public abstract IndexPopulationFailedKernelException asIndexPopulationFailure(
-            LabelSchemaDescriptor descriptor, String indexUserDescriptor );
+            SchemaDescriptor descriptor, String indexUserDescriptor );
 
     public static IndexPopulationFailure failure( final Throwable failure )
     {
@@ -42,7 +42,7 @@ public abstract class IndexPopulationFailure
 
             @Override
             public IndexPopulationFailedKernelException asIndexPopulationFailure(
-                    LabelSchemaDescriptor descriptor, String indexUserDescription )
+                    SchemaDescriptor descriptor, String indexUserDescription )
             {
                 return new IndexPopulationFailedKernelException( descriptor, indexUserDescription, failure );
             }
@@ -61,7 +61,7 @@ public abstract class IndexPopulationFailure
 
             @Override
             public IndexPopulationFailedKernelException asIndexPopulationFailure(
-                    LabelSchemaDescriptor descriptor, String indexUserDescription )
+                    SchemaDescriptor descriptor, String indexUserDescription )
             {
                 return new IndexPopulationFailedKernelException( descriptor, indexUserDescription, failure );
             }

@@ -70,6 +70,19 @@ class Node
             {
                 return labels;
             }
+
+            @Override
+            public boolean containsAny( int[] labelTokens )
+            {
+                for ( int labelToken : labelTokens )
+                {
+                    if ( contains( labelToken ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
         };
     }
 }

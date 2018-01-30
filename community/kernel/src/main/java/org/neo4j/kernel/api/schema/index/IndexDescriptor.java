@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
@@ -31,12 +32,19 @@ import static java.lang.String.format;
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
  */
-public class IndexDescriptor implements SchemaDescriptor.Supplier
+public abstract class IndexDescriptor implements SchemaDescriptorSupplier
 {
+    public SchemaIndexDescriptor asSchemaDescriptor()
+    {
+        //TODO cast hack
+        return this instanceof SchemaIndexDescriptor ? (SchemaIndexDescriptor) this : null;
+    }
+
     public enum Type
     {
         GENERAL,
-        UNIQUE
+        UNIQUE,
+        NON_SCHEMA
     }
 
     public enum Filter implements Predicate<IndexDescriptor>

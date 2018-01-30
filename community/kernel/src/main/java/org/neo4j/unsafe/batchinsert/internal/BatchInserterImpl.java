@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.LongFunction;
+import java.util.stream.IntStream;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -52,7 +53,8 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -80,8 +82,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
@@ -491,12 +493,12 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         final IndexRule[] rules = getIndexesNeedingPopulation();
         final List<IndexPopulatorWithSchema> populators = new ArrayList<>();
 
-        final LabelSchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
+        final SchemaDescriptor[] descriptors = new LabelSchemaDescriptor[rules.length];
 
         for ( int i = 0; i < rules.length; i++ )
         {
             IndexRule rule = rules[i];
-            SchemaIndexDescriptor index = rule.getIndexDescriptor();
+            IndexDescriptor index = rule.getIndexDescriptor();
             descriptors[i] = index.schema();
             IndexPopulator populator = schemaIndexProviders.apply( rule.getProviderDescriptor() )
                                                 .getPopulator( rule.getId(), index, new IndexSamplingConfig( config ) );
@@ -523,9 +525,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return true;
         };
 
-        List<LabelSchemaDescriptor> descriptorList = Arrays.asList( descriptors );
+        //TODO batchinserter for all label indexes? And relationships?
+        List<SchemaDescriptor> descriptorList = Arrays.asList( descriptors );
         int[] labelIds = descriptorList.stream()
-                .mapToInt( LabelSchemaDescriptor::getLabelId )
+                .flatMapToInt( schemaDescriptor -> IntStream.of(schemaDescriptor.getEntityTokenIds()) )
                 .toArray();
 
         int[] propertyKeyIds = descriptorList.stream()
@@ -1302,21 +1305,21 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements LabelSchemaSupplier
+    private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements SchemaDescriptorSupplier
     {
         private final int batchSize = 1_000;
         private final IndexPopulator populator;
-        private final SchemaIndexDescriptor index;
+        private final IndexDescriptor index;
         private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );
 
-        IndexPopulatorWithSchema( IndexPopulator populator, SchemaIndexDescriptor index )
+        IndexPopulatorWithSchema( IndexPopulator populator, IndexDescriptor index )
         {
             this.populator = populator;
             this.index = index;
         }
 
         @Override
-        public LabelSchemaDescriptor schema()
+        public SchemaDescriptor schema()
         {
             return index.schema();
         }

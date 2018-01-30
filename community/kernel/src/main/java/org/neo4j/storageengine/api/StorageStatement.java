@@ -26,6 +26,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -147,7 +148,7 @@ public interface StorageStatement extends AutoCloseable
      * @return {@link IndexReader} capable of searching entity ids given property values.
      * @throws IndexNotFoundKernelException if no such index exists.
      */
-    IndexReader getIndexReader( SchemaIndexDescriptor index ) throws IndexNotFoundKernelException;
+    IndexReader getIndexReader( IndexDescriptor index ) throws IndexNotFoundKernelException;
 
     /**
      * Returns an {@link IndexReader} for searching entity ids given property values. A new reader is allocated

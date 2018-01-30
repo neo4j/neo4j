@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -49,16 +49,16 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
 {
     private final IndexUpdateMode indexUpdateMode;
     private final IndexMap indexMap;
-    private final Map<LabelSchemaDescriptor, IndexUpdater> updaterMap;
+    private final Map<SchemaDescriptor,IndexUpdater> updaterMap;
 
     IndexUpdaterMap( IndexMap indexMap, IndexUpdateMode indexUpdateMode )
     {
         this.indexUpdateMode = indexUpdateMode;
         this.indexMap = indexMap;
-        this.updaterMap = new HashMap<>();
+        this.updaterMap = new HashMap<SchemaDescriptor,IndexUpdater>();
     }
 
-    IndexUpdater getUpdater( LabelSchemaDescriptor descriptor )
+    IndexUpdater getUpdater( SchemaDescriptor descriptor )
     {
         IndexUpdater updater = updaterMap.get( descriptor );
         if ( null == updater )
@@ -76,9 +76,9 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     @Override
     public void close() throws UnderlyingStorageException
     {
-        Set<Pair<IndexDescriptor, UnderlyingStorageException>> exceptions = null;
+        Set<Pair<IndexDescriptor,UnderlyingStorageException>> exceptions = null;
 
-        for ( Map.Entry<LabelSchemaDescriptor, IndexUpdater> updaterEntry : updaterMap.entrySet() )
+        for ( Map.Entry<SchemaDescriptor,IndexUpdater> updaterEntry : updaterMap.entrySet() )
         {
             IndexUpdater updater = updaterEntry.getValue();
             try
@@ -124,7 +124,7 @@ class IndexUpdaterMap implements AutoCloseable, Iterable<IndexUpdater>
     {
         return new PrefetchingIterator<IndexUpdater>()
         {
-            Iterator<LabelSchemaDescriptor> descriptors = indexMap.descriptors();
+            Iterator<SchemaDescriptor> descriptors = indexMap.descriptors();
             @Override
             protected IndexUpdater fetchNextOrNull()
             {

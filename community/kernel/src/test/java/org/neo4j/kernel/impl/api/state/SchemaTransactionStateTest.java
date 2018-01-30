@@ -34,6 +34,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -63,14 +64,14 @@ public class SchemaTransactionStateTest
         return txContext.indexCreate( state, SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
     }
 
-    private static SchemaIndexDescriptor indexGetForLabelAndPropertyKey(
+    private static IndexDescriptor indexGetForLabelAndPropertyKey(
             StateHandlingStatementOperations txContext, KernelStatement state, int labelId, int propertyKey )
     {
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKey );
         return txContext.indexGetForSchema( state, schemaDescriptor );
     }
 
-    private static SchemaIndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId,
+    private static IndexDescriptor indexGetForLabelAndPropertyKey( StoreReadLayer store, int labelId,
             int propertyKey )
     {
         return store.indexGetForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyKey ) );
@@ -151,8 +152,8 @@ public class SchemaTransactionStateTest
         indexCreate( txContext, state, labelId1, key1 );
 
         // WHEN
-        SchemaIndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
-        Iterator<SchemaIndexDescriptor> labelRules = txContext.indexesGetForLabel( state, labelId1 );
+        IndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
+        Iterator<IndexDescriptor> labelRules = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
         SchemaIndexDescriptor expectedRule = SchemaIndexDescriptorFactory.forLabel( labelId1, key1 );
@@ -174,7 +175,7 @@ public class SchemaTransactionStateTest
         indexCreate( txContext, state, labelId1, key2 );
 
         // WHEN
-        SchemaIndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key2 );
+        IndexDescriptor index = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key2 );
 
         // THEN
         assertEquals( SchemaIndexDescriptorFactory.forLabel( labelId1, key2 ), index );
@@ -194,8 +195,8 @@ public class SchemaTransactionStateTest
         indexCreate( txContext, state, labelId1, key2 );
 
         // WHEN
-        SchemaIndexDescriptor lookupRule1 = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
-        SchemaIndexDescriptor lookupRule2 = indexGetForLabelAndPropertyKey( txContext, state, labelId2, key2 );
+        IndexDescriptor lookupRule1 = indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 );
+        IndexDescriptor lookupRule2 = indexGetForLabelAndPropertyKey( txContext, state, labelId2, key2 );
 
         // THEN
         assertEquals( existingIndex1, lookupRule1 );
@@ -207,14 +208,14 @@ public class SchemaTransactionStateTest
     {
         // GIVEN
         // -- a rule that exists in the store
-        SchemaIndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId1, key1 );
+        IndexDescriptor index = SchemaIndexDescriptorFactory.forLabel( labelId1, key1 );
         when( store.indexesGetForLabel( labelId1 ) ).thenReturn( option( index ).iterator() );
         // -- that same rule dropped in the transaction
         txContext.indexDrop( state, index );
 
         // WHEN
         assertNull( indexGetForLabelAndPropertyKey( txContext, state, labelId1, key1 ) );
-        Iterator<SchemaIndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
+        Iterator<IndexDescriptor> rulesByLabel = txContext.indexesGetForLabel( state, labelId1 );
 
         // THEN
         assertEquals( emptySet(), asSet( rulesByLabel ) );

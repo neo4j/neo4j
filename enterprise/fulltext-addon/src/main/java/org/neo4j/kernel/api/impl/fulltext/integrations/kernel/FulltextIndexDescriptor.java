@@ -19,20 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.storageengine.api.EntityType;
 
 public class FulltextIndexDescriptor extends IndexDescriptor
 {
-    public static final int NO_LABEL = -1;
-
-    FulltextIndexDescriptor( SchemaDescriptor schema, Type type )
+    public FulltextIndexDescriptor( int[] entityTokens, EntityType entityType, int... propertyIds )
     {
-        super( schema, type );
-    }
-
-    public FulltextIndexDescriptor( int label, int... propertyIds )
-    {
-        super( null, null );
+        super( SchemaDescriptorFactory.nonSchema(entityTokens, entityType, propertyIds), Type.NON_SCHEMA );
     }
 }

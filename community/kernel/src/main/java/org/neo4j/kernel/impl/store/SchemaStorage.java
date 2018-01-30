@@ -48,7 +48,7 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     /**
-     * Find the IndexRule that matches the given SchemaIndexDescriptor.
+     * Find the IndexRule that matches the given SIndexDescriptor.
      *
      * @return  the matching IndexRule, or null if no matching IndexRule was found
      * @throws  IllegalStateException if more than one matching rule.

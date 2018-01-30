@@ -50,7 +50,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -72,6 +71,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -462,7 +462,7 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public PrimitiveLongResourceIterator indexQuery( SchemaIndexDescriptor index, IndexQuery... predicates )
+        public PrimitiveLongResourceIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
                 throws IndexNotFoundKernelException, IndexNotApplicableKernelException
         {
             return readOperations.indexQuery( index, predicates );
@@ -648,56 +648,56 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor ) throws SchemaRuleNotFoundException
+        public IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor ) throws SchemaRuleNotFoundException
         {
             return readOperations.indexGetForSchema( descriptor );
         }
 
         @Override
-        public Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId )
+        public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
         {
             return readOperations.indexesGetForLabel( labelId );
         }
 
         @Override
-        public Iterator<SchemaIndexDescriptor> indexesGetAll()
+        public Iterator<IndexDescriptor> indexesGetAll()
         {
             return readOperations.indexesGetAll();
         }
 
         @Override
-        public InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetState( descriptor );
         }
 
         @Override
-        public IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetProviderDescriptor( descriptor );
         }
 
         @Override
-        public PopulationProgress indexGetPopulationProgress( SchemaIndexDescriptor descriptor )
+        public PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor )
                 throws IndexNotFoundKernelException
         {
             return readOperations.indexGetPopulationProgress( descriptor );
         }
 
         @Override
-        public long indexSize( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexSize( descriptor );
         }
 
         @Override
-        public double indexUniqueValuesSelectivity( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexUniqueValuesSelectivity( descriptor );
         }
 
         @Override
-        public String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetFailure( descriptor );
         }

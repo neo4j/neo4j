@@ -62,12 +62,13 @@ public class SchemaIndexDescriptor extends IndexDescriptor implements LabelSchem
      * @param indexes Indexes to sort
      * @return sorted indexes
      */
-    public static Iterator<SchemaIndexDescriptor> sortByType( Iterator<SchemaIndexDescriptor> indexes )
+    public static Iterator<SchemaIndexDescriptor> sortByType( Iterator<? extends IndexDescriptor> indexes )
     {
-        List<SchemaIndexDescriptor> materialized = Iterators.asList( indexes );
-        return Iterators.concat(
+        //TODO ugly casting
+        List<? extends IndexDescriptor> materialized = Iterators.asList( indexes );
+        return Iterators.map( indexDescriptor -> (SchemaIndexDescriptor) indexDescriptor, Iterators.concat(
                 Iterators.filter( GENERAL, materialized.iterator() ),
-                Iterators.filter( UNIQUE, materialized.iterator() ) );
+                Iterators.filter( UNIQUE, materialized.iterator() ) ));
 
     }
 }

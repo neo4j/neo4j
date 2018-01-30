@@ -49,7 +49,7 @@ public class IndexPopulationFailedKernelExceptionTest
 
         // Then
         assertThat(index.getUserMessage( lookup ), equalTo(
-                "Failed to populate index for INDEX [labelId: 0, properties [42, 43, 44]]"));
+                "Failed to populate index for INDEX [labelId: [0], properties [42, 43, 44]]"));
     }
 
     @Test
@@ -69,6 +69,6 @@ public class IndexPopulationFailedKernelExceptionTest
 
         // Then
         assertThat(index.getUserMessage( lookup ), equalTo(
-                "Failed to populate index for INDEX [labelId: 0, properties [42, 43, 44]], due to an act of pure evil occurred"));
+                "Failed to populate index for INDEX [labelId: [0], properties [42, 43, 44]], due to an act of pure evil occurred"));
     }
 }

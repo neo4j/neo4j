@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.logging.LogProvider;
 
@@ -58,7 +57,7 @@ class IndexProxyCreator
     }
 
     IndexProxy createPopulatingIndexProxy( final long ruleId,
-            final SchemaIndexDescriptor descriptor,
+            final IndexDescriptor descriptor,
             final IndexProvider.Descriptor providerDescriptor,
             final boolean flipToTentative,
             final IndexingService.Monitor monitor,
@@ -105,7 +104,7 @@ class IndexProxyCreator
         return new ContractCheckingIndexProxy( flipper, false );
     }
 
-    IndexProxy createRecoveringIndexProxy( SchemaIndexDescriptor descriptor,
+    IndexProxy createRecoveringIndexProxy( IndexDescriptor descriptor,
             IndexProvider.Descriptor providerDescriptor )
     {
         IndexMeta indexMeta = indexMetaFromProvider( providerDescriptor, descriptor );
@@ -114,7 +113,7 @@ class IndexProxyCreator
     }
 
     IndexProxy createOnlineIndexProxy( long ruleId,
-            SchemaIndexDescriptor descriptor,
+            IndexDescriptor descriptor,
             IndexProvider.Descriptor providerDescriptor )
     {
         // TODO Hook in version verification/migration calls to the IndexProvider here
@@ -138,7 +137,7 @@ class IndexProxyCreator
     }
 
     IndexProxy createFailedIndexProxy( long ruleId,
-            SchemaIndexDescriptor descriptor,
+            IndexDescriptor descriptor,
             IndexProvider.Descriptor providerDescriptor,
             IndexPopulationFailure populationFailure )
     {
@@ -179,9 +178,9 @@ class IndexProxyCreator
         return indexProvider.getOnlineAccessor( ruleId, descriptor, samplingConfig );
     }
 
-    private IndexMeta indexMetaFromProvider( IndexProvider.Descriptor providerDescriptor, SchemaIndexDescriptor schemaIndexDescriptor )
+    private IndexMeta indexMetaFromProvider( IndexProvider.Descriptor providerDescriptor, IndexDescriptor indexDescriptor )
     {
-        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( schemaIndexDescriptor );
-        return new IndexMeta( schemaIndexDescriptor, providerDescriptor, indexCapability );
+        IndexCapability indexCapability = providerMap.apply( providerDescriptor ).getCapability( indexDescriptor );
+        return new IndexMeta( indexDescriptor, providerDescriptor, indexCapability );
     }
 }

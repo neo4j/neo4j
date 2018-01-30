@@ -96,7 +96,7 @@ public class ConstraintIndexCreator
             DropIndexFailureException, UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
-        SchemaIndexDescriptor index;
+        IndexDescriptor index;
         try
         {
             index = getOrCreateUniquenessConstraintIndex( state, schemaOps, descriptor );
@@ -190,8 +190,9 @@ public class ConstraintIndexCreator
 
     /**
      * You MUST hold a schema write lock before you call this method.
+     * @param descriptor
      */
-    public void dropUniquenessConstraintIndex( SchemaIndexDescriptor descriptor )
+    public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
         try ( KernelTransaction transaction =
@@ -225,10 +226,10 @@ public class ConstraintIndexCreator
         }
     }
 
-    public SchemaIndexDescriptor getOrCreateUniquenessConstraintIndex( KernelStatement state,
+    public IndexDescriptor getOrCreateUniquenessConstraintIndex( KernelStatement state,
             SchemaReadOperations schemaOps, LabelSchemaDescriptor schema ) throws SchemaKernelException
     {
-        SchemaIndexDescriptor descriptor = schemaOps.indexGetForSchema( state, schema );
+        IndexDescriptor descriptor = schemaOps.indexGetForSchema( state, schema );
         if ( descriptor != null )
         {
             if ( descriptor.type() == Type.UNIQUE )

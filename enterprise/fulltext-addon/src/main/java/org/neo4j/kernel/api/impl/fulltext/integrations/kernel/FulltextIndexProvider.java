@@ -43,7 +43,7 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     @Override
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        throw new IllegalStateException( "Not implemented" );
+        return new FulltextIndexPopulator(indexId, descriptor, samplingConfig);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     @Override
     public IndexCapability getCapability( FulltextIndexDescriptor indexDescriptor )
     {
-        throw new IllegalStateException( "Not implemented" );
+        return IndexCapability.NO_CAPABILITY;
     }
 
     @Override

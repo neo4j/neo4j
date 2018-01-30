@@ -251,7 +251,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
-        SchemaIndexDescriptor result = statement.readOperations().indexGetForSchema( descriptor );
+        //TODO ugly cast
+        SchemaIndexDescriptor result = (SchemaIndexDescriptor) statement.readOperations().indexGetForSchema( descriptor );
         commit();
         return result;
     }

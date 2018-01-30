@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -127,7 +127,7 @@ public interface ReadOperations
      * @return ids of the matching nodes
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException if no such index is found.
      */
-    PrimitiveLongResourceIterator indexQuery( SchemaIndexDescriptor index, IndexQuery... predicates )
+    PrimitiveLongResourceIterator indexQuery( IndexDescriptor index, IndexQuery... predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
 
     /**
@@ -226,33 +226,39 @@ public interface ReadOperations
     //== SCHEMA OPERATIONS ======================
     //===========================================
 
-    /** Returns the index rule for the given LabelSchemaDescriptor. */
-    SchemaIndexDescriptor indexGetForSchema( LabelSchemaDescriptor descriptor )
+    /** Returns the index rule for the given LabelSchemaDescriptor.
+     * @param descriptor*/
+    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
             throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
-    Iterator<SchemaIndexDescriptor> indexesGetForLabel( int labelId );
+    Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
     /** Returns all indexes. */
-    Iterator<SchemaIndexDescriptor> indexesGetAll();
+    Iterator<IndexDescriptor> indexesGetAll();
 
     /** Retrieve the state of an index. */
-    InternalIndexState indexGetState( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve provider descriptor for an index. */
-    IndexProvider.Descriptor indexGetProviderDescriptor( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve provider descriptor for an index.
+     * @param descriptor*/
+    IndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Retrieve the population progress of an index. */
-    PopulationProgress indexGetPopulationProgress( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Retrieve the population progress of an index.
+     * @param descriptor*/
+    PopulationProgress indexGetPopulationProgress( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Get the index size. */
-    long indexSize( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Get the index size.
+     * @param descriptor*/
+    long indexSize( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive). */
-    double indexUniqueValuesSelectivity( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Calculate the index unique values percentage (range: {@code 0.0} exclusive to {@code 1.0} inclusive).
+     * @param descriptor*/
+    double indexUniqueValuesSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    /** Returns the failure description of a failed index. */
-    String indexGetFailure( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    /** Returns the failure description of a failed index.
+     * @param descriptor*/
+    String indexGetFailure( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     /**
      * Get all constraints applicable to label and propertyKey.

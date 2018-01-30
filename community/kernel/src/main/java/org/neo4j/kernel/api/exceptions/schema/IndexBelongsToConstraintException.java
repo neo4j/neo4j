@@ -20,17 +20,17 @@
 package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.lang.String.format;
 
 public class IndexBelongsToConstraintException extends SchemaKernelException
 {
-    private final LabelSchemaDescriptor descriptor;
+    private final SchemaDescriptor descriptor;
     private static final String message = "Index belongs to constraint: %s";
 
-    public IndexBelongsToConstraintException( LabelSchemaDescriptor descriptor )
+    public IndexBelongsToConstraintException( SchemaDescriptor descriptor )
     {
         super( Status.Schema.ForbiddenOnConstraintIndex, format( "Index belongs to constraint: %s", descriptor ) );
         this.descriptor = descriptor;

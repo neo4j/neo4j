@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.nio.ByteBuffer;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.NonSchemaSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
 
@@ -52,6 +54,7 @@ public class SchemaRuleSerialization
     // Index type
     private static final byte GENERAL_INDEX = 31;
     private static final byte UNIQUE_INDEX = 32;
+    private static final byte NON_SCHEMA_INDEX = 33;
 
     // Constraint type
     private static final byte EXISTS_CONSTRAINT = 61;
@@ -97,46 +100,36 @@ public class SchemaRuleSerialization
             throw new MalformedSchemaRuleException( format( "Got unknown schema rule type '%d'.", schemaRuleType ) );
         }
     }
-
-    /**
-     * Serialize the provided IndexRule onto the target buffer
-     * @param indexRule the IndexRule to serialize
-     * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
-     */
-    public static byte[] serialize( IndexRule indexRule )
+    private static SchemaComputer<Integer> schemaSizeComputer = new SchemaComputer<Integer>()
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexRule ) );
-        target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
-        target.put( INDEX_RULE );
-
-        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
-        UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
-        UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
-
-        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
-        switch ( indexDescriptor.type() )
+        @Override
+        public Integer computeSpecific( LabelSchemaDescriptor schema )
         {
-        case GENERAL:
-            target.put( GENERAL_INDEX );
-            break;
-
-        case UNIQUE:
-            target.put( UNIQUE_INDEX );
-
-            // The owning constraint can be null. See IndexRule.getOwningConstraint()
-            Long owningConstraint = indexRule.getOwningConstraint();
-            target.putLong( owningConstraint == null ? NO_OWNING_CONSTRAINT_YET : owningConstraint );
-            break;
-
-        default:
-            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    indexDescriptor.type() ) );
+            return     1 // schema descriptor type
+                     + 4 // label id
+                     + 2 // property id count
+                     + 4 * schema.getPropertyIds().length; // the actual property ids
         }
 
-        indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( indexRule.getName(), target );
-        return target.array();
-    }
+        @Override
+        public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
+        {
+            return    1 // schema descriptor type
+                    + 4 // rel type id
+                    + 2 // property id count
+                    + 4 * schema.getPropertyIds().length; // the actual property ids
+        }
+
+        @Override
+        public Integer computeSpecific( NonSchemaSchemaDescriptor schema )
+        {
+            return 1 // schema descriptor type
+                    + 2 // entity token count
+                    + 4 * schema.getEntityTokenIds().length // the actual property ids
+                    + 2 // property id count
+                    + 4 * schema.getPropertyIds().length; // the actual property ids
+        }
+    };
 
     /**
      * Serialize the provided ConstraintRule onto the target buffer
@@ -354,6 +347,52 @@ public class SchemaRuleSerialization
 
     // WRITE
 
+    /**
+     * Serialize the provided IndexRule onto the target buffer
+     * @param indexRule the IndexRule to serialize
+     * @throws IllegalStateException if the IndexRule is of type unique, but the owning constrain has not been set
+     */
+    public static byte[] serialize( IndexRule indexRule )
+    {
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( indexRule ) );
+        target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
+        target.put( INDEX_RULE );
+
+        IndexProvider.Descriptor providerDescriptor = indexRule.getProviderDescriptor();
+        UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
+        UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
+
+        IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+        switch ( indexDescriptor.type() )
+        {
+        case GENERAL:
+            target.put( GENERAL_INDEX );
+            break;
+
+        case UNIQUE:
+            target.put( UNIQUE_INDEX );
+
+            // The owning constraint can be null. See IndexRule.getOwningConstraint()
+            Long owningConstraint = indexRule.getOwningConstraint();
+            target.putLong( owningConstraint == null ? NO_OWNING_CONSTRAINT_YET : owningConstraint );
+            break;
+
+        case NON_SCHEMA:
+            target.put( NON_SCHEMA_INDEX );
+            break;
+
+        default:
+            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
+                    indexDescriptor.type() ) );
+        }
+
+        indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        UTF8.putEncodedStringInto( indexRule.getName(), target );
+        return target.array();
+    }
+
+    // LENGTH OF
+
     private static class SchemaDescriptorSerializer implements SchemaProcessor
     {
         private final ByteBuffer target;
@@ -384,6 +423,33 @@ public class SchemaRuleSerialization
             target.putInt( schema.getRelTypeId() );
 
             int[] propertyIds = schema.getPropertyIds();
+            target.putShort( (short) propertyIds.length );
+            for ( int propertyId : propertyIds )
+            {
+                target.putInt( propertyId );
+            }
+        }
+
+        @Override
+        public void processSpecific( NonSchemaSchemaDescriptor schema )
+        {
+            if ( schema.entityType() == EntityType.NODE )
+            {
+                target.put( SIMPLE_LABEL );
+            }
+            else
+            {
+                target.put( SIMPLE_REL_TYPE );
+            }
+
+            int[] entityTokenIds = schema.getEntityTokenIds();
+            target.putShort( (short) entityTokenIds.length );
+            for ( int entityTokenId : entityTokenIds )
+            {
+                target.putInt( entityTokenId );
+            }
+
+            int[] propertyIds = schema.getPropertyIds();
             target.putShort( (short)propertyIds.length );
             for ( int propertyId : propertyIds )
             {
@@ -391,27 +457,4 @@ public class SchemaRuleSerialization
             }
         }
     }
-
-    // LENGTH OF
-
-    private static SchemaComputer<Integer> schemaSizeComputer = new SchemaComputer<Integer>()
-    {
-        @Override
-        public Integer computeSpecific( LabelSchemaDescriptor schema )
-        {
-            return     1 // schema descriptor type
-                     + 4 // label id
-                     + 2 // property id count
-                     + 4 * schema.getPropertyIds().length; // the actual property ids
-        }
-
-        @Override
-        public Integer computeSpecific( RelationTypeSchemaDescriptor schema )
-        {
-            return    1 // schema descriptor type
-                    + 4 // rel type id
-                    + 2 // property id count
-                    + 4 * schema.getPropertyIds().length; // the actual property ids
-        }
-    };
 }

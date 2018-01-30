@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,8 +36,8 @@ import java.util.stream.IntStream;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -252,7 +253,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public MultipleIndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
-        Map<LabelSchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
+        Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> updaters = new HashMap<>();
         forEachPopulation( population ->
         {
             IndexUpdater updater = population.populator.newPopulatingUpdater( accessor );
@@ -319,7 +320,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] labelIds()
     {
-        return populations.stream().mapToInt( population -> population.schema().getLabelId() ).toArray();
+        return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
 
     public void cancel()
@@ -397,12 +398,12 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public static class MultipleIndexUpdater implements IndexUpdater
     {
-        private final Map<LabelSchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
+        private final Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters;
         private final MultipleIndexPopulator multipleIndexPopulator;
         private final Log log;
 
         MultipleIndexUpdater( MultipleIndexPopulator multipleIndexPopulator,
-                Map<LabelSchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider )
+                Map<SchemaDescriptor,Pair<IndexPopulation,IndexUpdater>> populationsWithUpdaters, LogProvider logProvider )
         {
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
@@ -459,7 +460,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    public class IndexPopulation implements LabelSchemaSupplier
+    public class IndexPopulation implements SchemaDescriptorSupplier
     {
         public final IndexPopulator populator;
         final FlippableIndexProxy flipper;
@@ -520,7 +521,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
 
         @Override
-        public LabelSchemaDescriptor schema()
+        public SchemaDescriptor schema()
         {
             return indexMeta.indexDescriptor().schema();
         }

@@ -141,7 +141,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     {
         if ( !failures.isEmpty() )
         {
-            LabelSchemaDescriptor descriptor = getDescriptor().schema();
+            LabelSchemaDescriptor descriptor = (LabelSchemaDescriptor) getDescriptor().schema();
             throw new UniquePropertyValueValidationException(
                     ConstraintDescriptorFactory.uniqueForLabel( descriptor.getLabelId(), descriptor.getPropertyId() ),
                     ConstraintValidationException.Phase.VERIFICATION,

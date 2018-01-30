@@ -28,7 +28,7 @@ public class SchemaDescriptorPredicates
     {
     }
 
-    public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasLabel( int labelId )
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasLabel( int labelId )
     {
         return supplier ->
         {
@@ -37,7 +37,7 @@ public class SchemaDescriptorPredicates
         };
     }
 
-    public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasRelType( int relTypeId )
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasRelType( int relTypeId )
     {
         return supplier ->
         {
@@ -46,24 +46,24 @@ public class SchemaDescriptorPredicates
         };
     }
 
-    public static <T extends SchemaDescriptor.Supplier> Predicate<T> hasProperty( int propertyId )
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasProperty( int propertyId )
     {
         return supplier -> hasProperty( supplier, propertyId );
     }
 
-    public static boolean hasLabel( SchemaDescriptor.Supplier supplier, int labelId )
+    public static boolean hasLabel( SchemaDescriptorSupplier supplier, int labelId )
     {
         Optional<Integer> labelOpt = supplier.schema().computeWith( getLabel );
         return labelOpt.isPresent() && labelOpt.get() == labelId;
     }
 
-    public static boolean hasRelType( SchemaDescriptor.Supplier supplier, int relTypeId )
+    public static boolean hasRelType( SchemaDescriptorSupplier supplier, int relTypeId )
     {
         Optional<Integer> relTypeOpt = supplier.schema().computeWith( getRelType );
         return relTypeOpt.isPresent() && relTypeOpt.get() == relTypeId;
     }
 
-    public static boolean hasProperty( SchemaDescriptor.Supplier supplier, int propertyId )
+    public static boolean hasProperty( SchemaDescriptorSupplier supplier, int propertyId )
     {
         int[] schemaProperties = supplier.schema().getPropertyIds();
         for ( int schemaProp : schemaProperties )
@@ -89,6 +89,14 @@ public class SchemaDescriptorPredicates
         {
             return Optional.empty();
         }
+
+        @Override
+        public Optional<Integer> computeSpecific( NonSchemaSchemaDescriptor schema )
+        {
+            //TODO not implemented
+            throw new UnsupportedOperationException( "Not implemented" );
+//            return Optional.empty();
+        }
     };
 
     private static SchemaComputer<Optional<Integer>> getRelType = new SchemaComputer<Optional<Integer>>()
@@ -103,6 +111,14 @@ public class SchemaDescriptorPredicates
         public Optional<Integer> computeSpecific( RelationTypeSchemaDescriptor schema )
         {
             return Optional.of( schema.getRelTypeId() );
+        }
+
+        @Override
+        public Optional<Integer> computeSpecific( NonSchemaSchemaDescriptor schema )
+        {
+            //TODO not implemented
+            throw new UnsupportedOperationException( "Not implemented" );
+//            return Optional.empty();
         }
     };
 }

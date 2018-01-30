@@ -24,16 +24,15 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 public interface IndexReaderFactory
 {
-    IndexReader newReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
-    IndexReader newUnCachedReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
 
     void close();
 
@@ -48,7 +47,7 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             if ( indexReaders == null )
             {
@@ -65,7 +64,7 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newUnCachedReader( SchemaIndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
             return index.newReader();

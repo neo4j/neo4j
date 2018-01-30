@@ -59,10 +59,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -567,7 +567,7 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor();
+            SchemaIndexDescriptor descriptor = indexRule.getIndexDescriptor().asSchemaDescriptor();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
                             indexRule.getId(), descriptor, samplingConfig );

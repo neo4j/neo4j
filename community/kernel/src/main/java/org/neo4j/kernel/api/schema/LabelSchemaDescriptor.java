@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.schema.SchemaComputer;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
@@ -77,9 +78,21 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     }
 
     @Override
+    public EntityType entityType()
+    {
+        return EntityType.NODE;
+    }
+
+    @Override
     public int[] getPropertyIds()
     {
         return propertyIds;
+    }
+
+    @Override
+    public int[] getEntityTokenIds()
+    {
+        return new int[]{getLabelId()};
     }
 
     @Override

@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 
 public interface SchemaWriteOperations
@@ -44,8 +45,9 @@ public interface SchemaWriteOperations
     SchemaIndexDescriptor indexCreate( LabelSchemaDescriptor schemaDescriptor )
             throws AlreadyIndexedException, AlreadyConstrainedException, RepeatedPropertyInCompositeSchemaException;
 
-    /** Drops a {@link SchemaIndexDescriptor} from the database */
-    void indexDrop( SchemaIndexDescriptor descriptor ) throws DropIndexFailureException;
+    /** Drops a {@link SchemaIndexDescriptor} from the database
+     * @param descriptor*/
+    void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
     NodeKeyConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
@@ -65,4 +67,6 @@ public interface SchemaWriteOperations
             RepeatedPropertyInCompositeSchemaException;
 
     void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException;
+
+    void nonSchemaIndexCreate( IndexDescriptor fulltextIndexDescriptor );
 }

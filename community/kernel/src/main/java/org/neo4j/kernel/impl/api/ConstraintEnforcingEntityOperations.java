@@ -61,6 +61,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
@@ -358,7 +359,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveLongResourceIterator indexQuery( KernelStatement statement, SchemaIndexDescriptor index,
+    public PrimitiveLongResourceIterator indexQuery( KernelStatement statement, IndexDescriptor index,
             IndexQuery[] predicates )
             throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
@@ -563,7 +564,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public void indexDrop( KernelStatement state, SchemaIndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
     {
         schemaWriteOperations.indexDrop( state, descriptor );
     }
@@ -627,6 +628,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             throws DropConstraintFailureException
     {
         schemaWriteOperations.constraintDrop( state, constraint );
+    }
+
+    @Override
+    public void fulltextIndexCreate( KernelStatement statement, IndexDescriptor fulltextIndexDescriptor )
+    {
+        schemaWriteOperations.fulltextIndexCreate( statement, fulltextIndexDescriptor );
     }
 
     @Override
