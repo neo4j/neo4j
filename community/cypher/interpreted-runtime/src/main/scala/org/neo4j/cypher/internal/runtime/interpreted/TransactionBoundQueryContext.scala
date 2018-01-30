@@ -1049,22 +1049,23 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   class RelationShipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
-    private var _next = -2L
-    private var typeId: Int = -1
-    private var source: Long = -1L
-    private var target: Long = -1L
+    import RelationShipCursorIterator.{NOT_INITIALIZED, NO_ID}
+
+    private var _next = NOT_INITIALIZED
+    private var typeId: Int = NO_ID
+    private var source: Long = NO_ID
+    private var target: Long = NO_ID
 
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
       visitor.visit(relationshipId, typeId, source, target)
-      //TODO what does this even mean?
       true
     }
 
     private def fetchNext(): Long = if (selectionCursor.next()) selectionCursor.relationshipReference() else -1L
 
     override def hasNext: Boolean = {
-      if (_next == -2L) {
+      if (_next == NOT_INITIALIZED) {
         _next = fetchNext()
       }
 
@@ -1093,6 +1094,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
       current
     }
+  }
+
+  object RelationShipCursorIterator {
+    private val NOT_INITIALIZED = -2L
+    private val NO_ID = -1
   }
 
   abstract class PrimitiveCursorIterator extends PrimitiveLongResourceIterator {
