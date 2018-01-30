@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import org.neo4j.cypher.internal.util.v3_4.{CypherException, TaskCloser}
 import org.neo4j.values.AnyValue
 
-import scala.collection.immutable
-
-trait ResultIterator extends Iterator[immutable.Map[String, AnyValue]] {
+trait ResultIterator extends Iterator[collection.Map[String, AnyValue]] {
   def toEager: EagerResultIterator
   def wasMaterialized: Boolean
   def close()
@@ -64,11 +62,11 @@ class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
     }
   }
 
-  override def next(): Map[String, AnyValue] = failIfThrows {
+  override def next(): collection.Map[String, AnyValue] = failIfThrows {
     if (closer.isClosed) Iterator.empty.next()
 
     val value = inner.next()
-    value.toMap
+    value
   }
 
   override def close() {
