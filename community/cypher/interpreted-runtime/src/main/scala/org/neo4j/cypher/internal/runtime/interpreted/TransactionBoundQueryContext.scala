@@ -243,7 +243,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val read = reads()
     read.singleNode(node, nodeCursor)
     if (!nodeCursor.next()) RelationshipIterator.EMPTY
-    else new RelationShipCursorIterator(selectRelationshipsPrimitive(nodeCursor, dir, types))
+    else new RelationshipCursorIterator(selectRelationshipsPrimitive(nodeCursor, dir, types))
   }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
@@ -1048,8 +1048,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  class RelationShipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
-    import RelationShipCursorIterator.{NOT_INITIALIZED, NO_ID}
+  class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
+    import RelationshipCursorIterator.{NOT_INITIALIZED, NO_ID}
 
     private var _next = NOT_INITIALIZED
     private var typeId: Int = NO_ID
@@ -1096,7 +1096,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  object RelationShipCursorIterator {
+  object RelationshipCursorIterator {
     private val NOT_INITIALIZED = -2L
     private val NO_ID = -1
   }
