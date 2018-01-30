@@ -44,7 +44,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class RaftMessageProcessingMetricIT
 {
-        private static final int TIMEOUT = 15;
+    private static final int TIMEOUT = 15;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
