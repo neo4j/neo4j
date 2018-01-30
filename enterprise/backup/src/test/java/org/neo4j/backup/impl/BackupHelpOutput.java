@@ -21,12 +21,13 @@ package org.neo4j.backup.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BackupHelpOutput
 {
-    public static final String BACKUP_OUTPUT = backupOutput();
+    public static final List<String> BACKUP_OUTPUT_LINES = backupOutput();
 
-    private static String backupOutput()
+    private static List<String> backupOutput()
     {
         List<String> lines = new ArrayList<>();
 
@@ -45,7 +46,7 @@ public class BackupHelpOutput
         lines.add( "    NEO4J_CONF    Path to directory which contains neo4j.conf." );
         lines.add( "    NEO4J_DEBUG   Set to anything to enable debug output." );
         lines.add( "    NEO4J_HOME    Neo4j home directory." );
-        lines.add( "    HEAP_SIZE     Set size of JVM heap during command execution." );
+        lines.add( "    HEAP_SIZE     Set JVM maximum heap size during command execution." );
         lines.add( "                  Takes a number and a unit, for example 512m." );
         lines.add( "" );
         lines.add( "Perform an online backup from a running Neo4j enterprise server. Neo4j's backup" );
@@ -93,7 +94,8 @@ public class BackupHelpOutput
         lines.add( "                                           *very* expensive in time and memory." );
         lines.add( "                                           [default:false]" );
         String platformNewLine = System.lineSeparator();
-        return String.join( platformNewLine, lines );
+        lines = lines.stream().map( line -> line += platformNewLine ).collect( Collectors.toList() );
+        return lines;
     }
 }
 

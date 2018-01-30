@@ -58,7 +58,10 @@ public class BackupUsageTest
         assertThat( output, containsString( reason ) );
 
         // and
-        assertThat( output, containsString( BackupHelpOutput.BACKUP_OUTPUT ) );
+        for ( String line : BackupHelpOutput.BACKUP_OUTPUT_LINES )
+        {
+            assertThat( output, containsString( line ) );
+        }
     }
 
     @Test
@@ -72,7 +75,10 @@ public class BackupUsageTest
         assertThat( output, containsString( reason ) );
 
         // and
-        assertThat( output, containsString( BackupHelpOutput.BACKUP_OUTPUT ) );
+        for ( String line : BackupHelpOutput.BACKUP_OUTPUT_LINES )
+        {
+            assertThat( "Failed for line: " + line, output, containsString( line ) );
+        }
     }
 
     @Test
@@ -85,7 +91,6 @@ public class BackupUsageTest
         // then
         String reason = String.format( "command failed: Directory '%s' does not exist.\n", backupDirectoryResolved );
         assertThat( output, containsString( reason ) );
-        assertThat( output, not( containsString( BackupHelpOutput.BACKUP_OUTPUT ) ) );
     }
 
     private String runBackup( String... args ) throws UnsupportedEncodingException
@@ -97,7 +102,7 @@ public class BackupUsageTest
     {
         ParameterisedOutsideWorld outsideWorld = // ParameterisedOutsideWorld used for suppressing #close() doing System.exit()
                 new ParameterisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );
-        AdminTool subject = new AdminTool( commandLocator, cmd -> new ArrayList<>(  ), outsideWorld, debug );
+        AdminTool subject = new AdminTool( commandLocator, cmd -> new ArrayList<>(), outsideWorld, debug );
         Path homeDir = HERE;
         Path configDir = HERE;
         List<String> params = new ArrayList();
@@ -105,6 +110,7 @@ public class BackupUsageTest
         params.addAll( Arrays.asList( args ) );
         String[] argArray = params.toArray( new String[params.size()] );
         subject.execute( homeDir, configDir, argArray );
-        return suppressOutput.getErrorVoice().toString() + suppressOutput.getOutputVoice().toString();
+
+        return suppressOutput.getErrorVoice().toString() + System.lineSeparator() + suppressOutput.getOutputVoice().toString();
     }
 }
