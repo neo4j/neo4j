@@ -27,7 +27,7 @@ import static java.lang.String.format;
 
 public abstract class NodeValue extends VirtualNodeValue
 {
-    private final long id;
+    protected final long id;
 
     protected NodeValue( long id )
     {

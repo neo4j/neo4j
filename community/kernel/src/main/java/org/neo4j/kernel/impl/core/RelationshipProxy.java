@@ -38,40 +38,46 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
+import org.neo4j.values.virtual.VirtualNodeValue;
 
 import static java.lang.String.format;
 
-public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
+public class RelationshipProxy extends RelationshipValue implements Relationship, RelationshipVisitor<RuntimeException>
 {
     private final EmbeddedProxySPI actions;
-    private long id = AbstractBaseRecord.NO_ID;
     private long startNode = AbstractBaseRecord.NO_ID;
     private long endNode = AbstractBaseRecord.NO_ID;
     private int type;
 
     public RelationshipProxy( EmbeddedProxySPI spi, long id, long startNode, int type, long endNode )
     {
+        super( id );
         this.actions = spi;
         visit( id, type, startNode, endNode );
     }
 
     public RelationshipProxy( EmbeddedProxySPI spi, long id )
     {
+        super( id );
         this.actions = spi;
-        this.id = id;
     }
 
     @Override
@@ -171,15 +177,13 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public Node getStartNode()
     {
-        assertInUnterminatedTransaction();
-        return actions.newNodeProxy( sourceId() );
+       return startNode();
     }
 
     @Override
     public Node getEndNode()
     {
-        assertInUnterminatedTransaction();
-        return actions.newNodeProxy( targetId() );
+       return endNode();
     }
 
     @Override
@@ -458,13 +462,20 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     @Override
     public boolean equals( Object o )
     {
-        return o instanceof Relationship && this.getId() == ((Relationship) o).getId();
+        if ( o instanceof Relationship )
+        {
+            return this.getId() == ((Relationship) o).getId();
+        }
+        else
+        {
+            return super.equals( o );
+        }
     }
 
     @Override
     public int hashCode()
     {
-        return (int) ((getId() >>> 32) ^ getId());
+       return super.computeHash();
     }
 
     @Override
@@ -484,6 +495,47 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         }
         relType = "RELTYPE(" + type + ")";
         return format( "(?)-[%s,%d]->(?)", relType, getId() );
+    }
+
+    //This is part of RelationshipValue API
+
+    @Override
+    public NodeProxy startNode()
+    {
+        assertInUnterminatedTransaction();
+        return actions.newNodeProxy( sourceId() );
+    }
+
+    @Override
+    public NodeProxy endNode()
+    {
+        assertInUnterminatedTransaction();
+        return actions.newNodeProxy( targetId() );
+    }
+
+    @Override
+    public TextValue type()
+    {
+        return Values.stringValue( getType().name() );
+    }
+
+    @Override
+    public MapValue properties()
+    {
+        return ValueUtils.asMapValue( getAllProperties() );
+    }
+
+    @Override
+    public long otherNodeId( long node )
+    {
+        return getOtherNodeId( node );
+    }
+
+    @Override
+    public NodeValue otherNode( VirtualNodeValue node )
+    {
+        assertInUnterminatedTransaction();
+        return actions.newNodeProxy( getOtherNodeId( node.id() ) );
     }
 
     private void assertInUnterminatedTransaction()

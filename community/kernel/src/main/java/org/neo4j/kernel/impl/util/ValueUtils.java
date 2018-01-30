@@ -42,11 +42,11 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
@@ -326,11 +326,25 @@ public final class ValueUtils
 
     public static NodeValue fromNodeProxy( Node node )
     {
-        return new NodeProxyWrappingNodeValue( node );
+        if ( node instanceof NodeValue )
+        {
+            return (NodeValue) node;
+        }
+        else
+        {
+            return new CoreNodeWrappingNodeValue( node );
+        }
     }
 
     public static RelationshipValue fromRelationshipProxy( Relationship relationship )
     {
-        return new RelationshipProxyWrappingValue( relationship );
+        if ( relationship instanceof RelationshipValue )
+        {
+            return (RelationshipValue) relationship;
+        }
+        else
+        {
+            return new CoreRelationshipWrappingValue( relationship );
+        }
     }
 }

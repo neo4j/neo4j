@@ -25,13 +25,17 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class RelationshipProxyWrappingValue extends RelationshipValue
+/**
+ * This RelationshipValue wraps a Core API Relationship and delegates method calls to the
+ * Relationship instance.
+ */
+public class CoreRelationshipWrappingValue extends RelationshipValue
 {
     private final Relationship relationship;
     private volatile TextValue type;
@@ -39,7 +43,7 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     private volatile NodeValue startNode;
     private volatile NodeValue endNode;
 
-    RelationshipProxyWrappingValue( Relationship relationship )
+    CoreRelationshipWrappingValue( Relationship relationship )
     {
         super( relationship.getId() );
         this.relationship = relationship;
@@ -111,9 +115,9 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
     @Override
     public NodeValue otherNode( VirtualNodeValue node )
     {
-        if ( node instanceof NodeProxyWrappingNodeValue )
+        if ( node instanceof CoreNodeWrappingNodeValue )
         {
-            Node proxy = ((NodeProxyWrappingNodeValue) node).nodeProxy();
+            Node proxy = ((CoreNodeWrappingNodeValue) node).nodeProxy();
             return ValueUtils.fromNodeProxy( relationship.getOtherNode( proxy ) );
         }
         else
