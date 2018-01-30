@@ -48,7 +48,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -139,13 +138,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   private def relCursor(relVar: String) = s"${relVar}Iter"
 
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
-    val extractor = relExtractor(relVar)
-    generator.expression(
-      pop(
-        invoke(generator.load(iterVar), relationshipVisit,
-               invoke(generator.load(iterVar), fetchNextRelationship),
-               generator.load(extractor))))
-    generator.assign(typeRef[Long], relVar, invoke(generator.load(extractor), getRelationship))
+    generator.assign(typeRef[Long], relVar, invoke(generator.load(relCursor(relVar)),
+                                                   method[RelationshipSelectionCursor, Long]("relationshipReference")))
   }
 
   override def allNodesScan(iterVar: String) = {
@@ -518,26 +512,26 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        toNode: String, toNodeType: CodeGenType) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
-      body.assign(local, invoke(Methods.allConnectingRelationships,
-                                readOperations, forceLong(fromNode, fromNodeType), dir(direction),
-                               forceLong(toNode, toNodeType)))
-    }{ fail =>
-      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
-    }
+    generator.assign(typeRef[RelationshipSelectionCursor], iterVar, invoke(Methods.allConnectingRelationships,
+                                                                           readOperations, dataRead, cursors, nodeCursor,
+                                                                           forceLong(fromNode, fromNodeType),
+                                                                           dir(direction),  forceLong(toNode, toNodeType)))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
+
                                        typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
-    val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
-      body.assign(local, invoke(Methods.connectingRelationships, readOperations, forceLong(fromNode, fromNodeType), dir(direction),
-                                forceLong(toNode, toNodeType),
-                                newArray(typeRef[Int], typeVars.map(body.load): _*)))
-    }{ fail =>
-      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
-    }
+      generator.assign(typeRef[RelationshipSelectionCursor], iterVar, invoke(Methods.connectingRelationships,
+                                                                             readOperations, dataRead, cursors, nodeCursor,
+                                                                             forceLong(fromNode, fromNodeType),
+                                                                             dir(direction),  forceLong(toNode, toNodeType),
+                                                                             newArray(typeRef[Int], typeVars.map(generator.load): _*)))
+    _finalizers.append((_: Boolean) => (block) =>
+      block.expression(
+        invoke(block.load(iterVar), method[RelationshipSelectionCursor, Unit]("close"))))
   }
 
   override def loadVariable(varName: String) = generator.load(varName)

@@ -48,5 +48,5 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
     generator.nextRelationship(iterVar, dir, relVar.name)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextRelationship(iterVar)
+  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceRelationshipSelectionCursor(iterVar)
 }

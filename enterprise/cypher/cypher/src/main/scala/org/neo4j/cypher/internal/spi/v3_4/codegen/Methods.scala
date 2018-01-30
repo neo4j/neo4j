@@ -32,7 +32,8 @@ import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
-import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexQuery, NodeCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -61,8 +62,23 @@ object Methods {
   val typeOf = method[RelationshipDataExtractor, Int]("type")
   val nodeGetRelationshipsWithDirection = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
   val nodeGetRelationshipsWithDirectionAndTypes = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
-  val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Direction], typeRef[Long])
-  val connectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Direction], typeRef[Long], typeRef[Array[Int]])
+  val allConnectingRelationships = method[CompiledExpandUtils, RelationshipSelectionCursor]("connectingRelationships",
+                                                                                            typeRef[ReadOperations],
+                                                                                            typeRef[Read],
+                                                                                            typeRef[CursorFactory],
+                                                                                            typeRef[NodeCursor],
+                                                                                            typeRef[Long],
+                                                                                            typeRef[Direction],
+                                                                                            typeRef[Long])
+  val connectingRelationships = method[CompiledExpandUtils, RelationshipSelectionCursor]("connectingRelationships",
+                                                                                  typeRef[ReadOperations],
+                                                                                  typeRef[Read],
+                                                                                  typeRef[CursorFactory],
+                                                                                  typeRef[NodeCursor],
+                                                                                  typeRef[Long],
+                                                                                  typeRef[Direction],
+                                                                                  typeRef[Long],
+                                                                                  typeRef[Array[Int]])
   val mathAdd = method[CompiledMathHelper, Object]("add", typeRef[Object], typeRef[Object])
   val mathSub = method[CompiledMathHelper, Object]("subtract", typeRef[Object], typeRef[Object])
   val mathMul = method[CompiledMathHelper, Object]("multiply", typeRef[Object], typeRef[Object])
