@@ -23,6 +23,10 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,6 +35,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -43,12 +48,16 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
@@ -57,14 +66,27 @@ import static org.neo4j.test.rule.PageCacheRule.config;
  * On failure this test will fail saying that the format version needs update and also update the zipped
  * store with the new version.
  */
+@RunWith( Parameterized.class )
 public class FormatCompatibilityTest
 {
     private static final String STORE = "store";
     private static final String TREE_CLASS_NAME = GBPTree.class.getSimpleName();
-
     private static final int KEY_COUNT = 10_000;
+    private static final String CURRENT_FIXED_SIZE_FORMAT_ZIP = "current-format.zip";
+    private static final String CURRENT_DYNAMIC_SIZE_FORMAT_ZIP = "current-dynamic-format.zip";
 
-    private static final String CURRENT_FORMAT_ZIP = "current-format.zip";
+    @Parameters
+    public static List<Object[]> data()
+    {
+        return asList(
+                new Object[] {longLayout().withFixedSize( true ).build(), CURRENT_FIXED_SIZE_FORMAT_ZIP},
+                new Object[] {longLayout().withFixedSize( false ).build(), CURRENT_DYNAMIC_SIZE_FORMAT_ZIP} );
+    }
+
+    @Parameter
+    public SimpleLongLayout layout;
+    @Parameter( 1 )
+    public String zipName;
 
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
@@ -88,14 +110,13 @@ public class FormatCompatibilityTest
             createAndZipTree( storeFile );
             tellDeveloperToCommitThisFormatVersion();
         }
-        assertTrue( CURRENT_FORMAT_ZIP + " seems to be missing from resources directory",
-                fsRule.get().fileExists( storeFile ) );
+        assertTrue( zipName + " seems to be missing from resources directory", fsRule.get().fileExists( storeFile ) );
 
         // WHEN reading from the tree
         // THEN everything should work, otherwise there has likely been a format change
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTreeBuilder<>( pageCache, storeFile, new SimpleLongLayout() ).build() )
+                new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             try
             {
@@ -135,13 +156,12 @@ public class FormatCompatibilityTest
 
     private void tellDeveloperToCommitThisFormatVersion()
     {
-        fail( format( "This is merely a notification to developer. Format has changed, %s.FORMAT_VERSION has also " +
+        fail( format( "This is merely a notification to developer. Format has changed and its version has also " +
                 "been properly incremented. A tree with this new format has been generated and should be committed. " +
                 "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
-                TREE_CLASS_NAME,
-                directory.file( CURRENT_FORMAT_ZIP ),
+                directory.file( zipName ),
                 "<index-module>" + pathify( ".src.test.resources." ) +
-                pathify( getClass().getPackage().getName() + "." ) + CURRENT_FORMAT_ZIP ) );
+                pathify( getClass().getPackage().getName() + "." ) + zipName ) );
     }
 
     private static String pathify( String name )
@@ -151,7 +171,7 @@ public class FormatCompatibilityTest
 
     private void unzipTo( File storeFile ) throws IOException
     {
-        URL resource = getClass().getResource( CURRENT_FORMAT_ZIP );
+        URL resource = getClass().getResource( zipName );
         if ( resource == null )
         {
             throw new FileNotFoundException();
@@ -171,7 +191,7 @@ public class FormatCompatibilityTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( GBPTree<MutableLong,MutableLong> tree =
-                new GBPTreeBuilder<>( pageCache, storeFile, new SimpleLongLayout() ).build() )
+                new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
         {
             MutableLong insertKey = new MutableLong();
             MutableLong insertValue = new MutableLong();
@@ -200,7 +220,7 @@ public class FormatCompatibilityTest
 
     private File zip( File toZip ) throws IOException
     {
-        File targetFile = directory.file( CURRENT_FORMAT_ZIP );
+        File targetFile = directory.file( zipName );
         try ( ZipOutputStream out = new ZipOutputStream( new FileOutputStream( targetFile ) ) )
         {
             ZipEntry entry = new ZipEntry( toZip.getName() );

@@ -52,7 +52,7 @@ public class FreeListIdProviderTest
     private static final long GENERATION_FOUR = GENERATION_THREE + 1;
     private static final long BASE_ID = 5;
 
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+    private PageAwareByteArrayCursor cursor;
     private final PagedFile pagedFile = mock( PagedFile.class );
     private final FreelistPageMonitor monitor = new FreelistPageMonitor();
     private final FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, PAGE_SIZE, BASE_ID, monitor );
@@ -63,6 +63,7 @@ public class FreeListIdProviderTest
     @Before
     public void setUpPagedFile() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
         when( pagedFile.io( anyLong(), anyInt() ) ).thenAnswer(
                 invocation -> cursor.duplicate( invocation.getArgument( 0 ) ) );
         freelist.initialize( BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0 );

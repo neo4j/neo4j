@@ -36,7 +36,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -124,19 +123,6 @@ import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor
  */
 public class GBPTree<KEY,VALUE> implements Closeable
 {
-    /**
-     * Version of the format that makes up the tree. This includes:
-     * <ul>
-     * <li>{@link TreeNode} format, header, keys, children, values</li>
-     * <li>{@link GenerationSafePointer} and {@link GenerationSafePointerPair}</li>
-     * <li>{@link IdSpace} i.e. which pages are fixed</li>
-     * <li>{@link TreeState} and {@link TreeStatePair}</li>
-     * </ul>
-     * If any of the above changes the on-page format then this version should be bumped, so that opening
-     * an index on wrong format version fails and user will need to rebuild.
-     */
-    static final int FORMAT_VERSION = 2;
-
     /**
      * For monitoring {@link GBPTree}.
      */
@@ -424,11 +410,22 @@ public class GBPTree<KEY,VALUE> implements Closeable
         boolean success = false;
         try
         {
-            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
+            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize );
             this.pageSize = pagedFile.pageSize();
             closed = false;
-            this.bTreeNode = layout.fixedSize() ? new TreeNodeFixedSize<>( pageSize, layout )
-                                                : new TreeNodeDynamicSize<>( pageSize, layout );
+            TreeNodeSelector.Factory format;
+            if ( created )
+            {
+                format = TreeNodeSelector.selectByLayout( layout );
+                writeMeta( layout, format, pagedFile );
+            }
+            else
+            {
+                Meta meta = readMeta( layout, pagedFile );
+                meta.verify( layout );
+                format = TreeNodeSelector.selectByFormat( meta.getFormatIdentifier(), meta.getFormatVersion() );
+            }
+            this.bTreeNode = format.create( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
@@ -468,9 +465,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void initializeAfterCreation( Layout<KEY,VALUE> layout, Consumer<PageCursor> headerWriter ) throws IOException
     {
-        // Initialize meta
-        writeMeta( layout, pagedFile );
-
         // Initialize state
         try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
@@ -496,11 +490,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     private PagedFile openOrCreate( PageCache pageCache, File indexFile,
-            int pageSizeForCreation, Layout<KEY,VALUE> layout ) throws IOException
+            int pageSizeForCreation ) throws IOException
     {
         try
         {
-            return openExistingIndexFile( pageCache, indexFile, layout );
+            return openExistingIndexFile( pageCache, indexFile );
         }
         catch ( NoSuchFileException e )
         {
@@ -508,8 +502,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static <KEY, VALUE> PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout )
-            throws IOException
+    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile ) throws IOException
     {
         PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
         // This index already exists, verify meta data aligns with expectations
@@ -517,8 +510,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
         boolean success = false;
         try
         {
-            int pageSize = readMeta( layout, pagedFile );
-            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, pageSize );
+            // We're only interested in the page size really, so don't involve layout at this point
+            Meta meta = readMeta( null, pagedFile );
+            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize() );
             success = true;
             return pagedFile;
         }
@@ -588,8 +582,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public static void readHeader( PageCache pageCache, File indexFile, Layout<?,?> layout, Header.Reader headerReader ) throws IOException
     {
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, layout ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile ) )
         {
+            readMeta( layout, pagedFile ).verify( layout );
             Pair<TreeState,TreeState> states = loadStatePages( pagedFile );
             TreeState state = TreeStatePair.selectNewestValidState( states );
             try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
@@ -731,66 +726,21 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return metaCursor;
     }
 
-    private static <KEY,VALUE> int readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
+    private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
             throws IOException
     {
-        // Read meta
-        int formatVersion;
-        int pageSize;
-        long layoutIdentifier;
-        int majorVersion;
-        int minorVersion;
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            do
-            {
-                formatVersion = metaCursor.getInt();
-                pageSize = metaCursor.getInt();
-                layoutIdentifier = metaCursor.getLong();
-                majorVersion = metaCursor.getInt();
-                minorVersion = metaCursor.getInt();
-                layout.readMetaData( metaCursor );
-            }
-            while ( metaCursor.shouldRetry() );
-            checkOutOfBounds( metaCursor );
-            metaCursor.checkAndClearCursorException();
+            return Meta.read( metaCursor, layout );
         }
-        catch ( CursorException e )
-        {
-            throw new MetadataMismatchException( e,
-                    "Tried to open, but caught an error while reading meta data. " +
-                    "File is expected to be corrupt, try to rebuild." );
-        }
-
-        if ( formatVersion != FORMAT_VERSION )
-        {
-            throw new MetadataMismatchException(
-                    "Tried to open with a different format version than " +
-                    "what it was created with. Created with %d, opened with %d",
-                    formatVersion, FORMAT_VERSION );
-        }
-        if ( !layout.compatibleWith( layoutIdentifier, majorVersion, minorVersion ) )
-        {
-            throw new MetadataMismatchException(
-                    "Tried to open using layout not compatible with " +
-                    "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. " +
-                    "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
-                    layoutIdentifier, majorVersion, minorVersion, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
-        }
-        return pageSize;
     }
 
-    private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    private void writeMeta( Layout<KEY,VALUE> layout, TreeNodeSelector.Factory format, PagedFile pagedFile ) throws IOException
     {
+        Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            metaCursor.putInt( FORMAT_VERSION );
-            metaCursor.putInt( pageSize );
-            metaCursor.putLong( layout.identifier() );
-            metaCursor.putInt( layout.majorVersion() );
-            metaCursor.putInt( layout.minorVersion() );
-            layout.writeMetaData( metaCursor );
-            checkOutOfBounds( metaCursor );
+            meta.write( metaCursor, layout );
         }
     }
 
@@ -800,7 +750,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // This index was created with another page size, re-open with that actual page size
         if ( pageSize != pageCache.pageSize() )
         {
-            if ( pageSize > pageCache.pageSize() )
+            if ( pageSize > pageCache.pageSize() || pageSize < 0 )
             {
                 throw new MetadataMismatchException(
                         "Tried to create tree with page size %d, but page cache used to open it this time " +

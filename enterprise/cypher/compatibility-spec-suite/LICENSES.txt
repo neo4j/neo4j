@@ -273,6 +273,9 @@ BSD License
   ASM Util
   JLine
   Scala Compiler
+  scala-parser-combinators
+  scala-xml
+  Scalap
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

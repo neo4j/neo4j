@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -110,9 +111,25 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     @Override
     public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, predicates );
-        return nodeValueIterator;
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
+
+        initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
+        if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
+        {
+            return PrimitiveLongResourceCollections.emptyIterator();
+        }
+
+        try
+        {
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
+            openSeekers.add( seeker );
+            return new NumberHitIterator<>( seeker, openSeekers );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
@@ -136,7 +153,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
 
     private void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
     {
-        if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
+        if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
         {
             client.initialize( descriptor, IndexProgressor.EMPTY, query );
             return;
@@ -152,6 +169,11 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    private boolean isBackwardsSeek( KEY treeKeyFrom, KEY treeKeyTo )
+    {
+        return layout.compare( treeKeyFrom, treeKeyTo ) > 0;
     }
 
     private void ensureOpenSeekersClosed()

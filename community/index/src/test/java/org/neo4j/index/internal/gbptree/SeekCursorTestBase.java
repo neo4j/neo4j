@@ -73,9 +73,9 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private InternalTreeLogic<KEY,VALUE> treeLogic;
     private StructurePropagation<KEY> structurePropagation;
 
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final PageAwareByteArrayCursor utilCursor = cursor.duplicate();
-    private final SimpleIdProvider id = new SimpleIdProvider( cursor::duplicate );
+    private PageAwareByteArrayCursor cursor;
+    private PageAwareByteArrayCursor utilCursor;
+    private SimpleIdProvider id;
 
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;
@@ -86,6 +86,10 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     @Before
     public void setUp() throws IOException
     {
+        cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
+        utilCursor = cursor.duplicate();
+        id = new SimpleIdProvider( cursor::duplicate );
+
         layout = getLayout();
         node = getTreeNode( PAGE_SIZE, layout );
         treeLogic = new InternalTreeLogic<>( id, node, layout );

@@ -80,6 +80,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -90,7 +91,7 @@ public class GBPTreeTest
 {
     private static final int DEFAULT_PAGE_SIZE = 256;
 
-    private static final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
+    private static final Layout<MutableLong,MutableLong> layout = longLayout().build();
 
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
@@ -143,7 +144,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout( 0, "Something else" );
+        SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -166,14 +167,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout()
-        {
-            @Override
-            public long identifier()
-            {
-                return 123456;
-            }
-        };
+        SimpleLongLayout otherLayout = longLayout().withIdentifier( 123456 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -193,14 +187,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout()
-        {
-            @Override
-            public int majorVersion()
-            {
-                return super.majorVersion() + 1;
-            }
-        };
+        SimpleLongLayout otherLayout = longLayout().withMajorVersion( 123 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -220,14 +207,7 @@ public class GBPTreeTest
         }
 
         // WHEN
-        SimpleLongLayout otherLayout = new SimpleLongLayout()
-        {
-            @Override
-            public int minorVersion()
-            {
-                return super.minorVersion() + 1;
-            }
-        };
+        SimpleLongLayout otherLayout = longLayout().withMinorVersion( 123 ).build();
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
             fail( "Should not load" );
@@ -363,7 +343,7 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldFailWhenTryingToOpenWithDifferentFormatVersion() throws Exception
+    public void shouldFailWhenTryingToOpenWithDifferentFormatIdentifier() throws Exception
     {
         // GIVEN
         int pageSize = DEFAULT_PAGE_SIZE;
@@ -372,12 +352,11 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
         {   // Open/close is enough
         }
-        setFormatVersion( pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
 
         try
         {
             // WHEN
-            builder.build();
+            builder.with( longLayout().withFixedSize( false ).build() ).build();
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
@@ -1803,16 +1782,6 @@ public class GBPTreeTest
         public int count()
         {
             return count;
-        }
-    }
-
-    private void setFormatVersion( PageCache pageCache, int pageSize, int formatVersion ) throws IOException
-    {
-        try ( PagedFile pagedFile = pageCache.map( indexFile, pageSize );
-              PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PF_SHARED_WRITE_LOCK ) )
-        {
-            assertTrue( cursor.next() );
-            cursor.putInt( formatVersion );
         }
     }
 

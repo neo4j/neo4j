@@ -57,9 +57,6 @@ BSD License
   ANTLR 4 Runtime
   ParaNamer Core
   Scala Compiler
-  scala-parser-combinators
-  scala-xml
-  Scalap
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

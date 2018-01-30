@@ -21,11 +21,13 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
+import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
+
 public class GBPTreeReadWriteFixedSizeTest extends GBPTreeReadWriteTestBase<MutableLong,MutableLong>
 {
     @Override
     TestLayout<MutableLong,MutableLong> getLayout()
     {
-        return new SimpleLongLayout();
+        return longLayout().build();
     }
 }

@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
+import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -374,6 +375,12 @@ public class ConstraintIndexCreatorTest
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public Modes modes()
+        {
+            return null;
+        }
+
         private class StubKernelTransaction implements KernelTransaction
         {
             private long timeout;
@@ -401,6 +408,18 @@ public class ConstraintIndexCreatorTest
             public Read dataRead()
             {
                 throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public Read stableDataRead()
+            {
+                return null;
+            }
+
+            @Override
+            public void markAsStable()
+            {
+
             }
 
             @Override

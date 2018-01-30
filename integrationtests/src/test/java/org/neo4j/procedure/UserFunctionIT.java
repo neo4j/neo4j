@@ -814,95 +814,98 @@ public class UserFunctionIT
         String expected = String.format(
                 "+------------------------------------------------------------------------------------------------" +
                 "-------------------------------------------------------------------------------------------------" +
-                "---------------------------------------------+%n" +
+                "------------------------------------------------+%n" +
                 "| name                                                | signature                             " +
                 "                                                                                              " +
-                "                         | description             |%n" +
+                "                         | description                |%n" +
                 "+------------------------------------------------------------------------------------------------" +
                 "-------------------------------------------------------------------------------------------------" +
-                "---------------------------------------------+%n" +
+                "------------------------------------------------+%n" +
                 "| \"org.neo4j.procedure.avgDoubleList\"                 | \"org.neo4j.procedure.avgDoubleList" +
                 "(someValue :: LIST? OF FLOAT?) :: (FLOAT?)\"                                                  " +
-                "                              | \"\"                      |%n" +
+                "                              | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.avgNumberList\"                 | \"org.neo4j.procedure.avgNumberList" +
                 "(someValue :: LIST? OF NUMBER?) :: (FLOAT?)\"                                                 " +
-                "                              | \"\"                      |%n" +
+                "                              | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.defaultValues\"                 | \"org.neo4j.procedure.defaultValues" +
                 "(string = a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = " +
-                "true :: BOOLEAN?) :: (STRING?)\" | \"\"                      |%n" +
+                "true :: BOOLEAN?) :: (STRING?)\" | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.delegatingFunction\"            | \"org.neo4j.procedure" +
                 ".delegatingFunction(someValue :: INTEGER?) :: (INTEGER?)\"                                    " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.genericArguments\"              | \"org.neo4j.procedure" +
                 ".genericArguments(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF " +
-                "INTEGER?) :: (INTEGER?)\"                     | \"\"                      |%n" +
+                "INTEGER?) :: (INTEGER?)\"                     | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.indexOutOfBounds\"              | \"org.neo4j.procedure" +
                 ".indexOutOfBounds() :: (INTEGER?)\"                                                           " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.integrationTestMe\"             | \"org.neo4j.procedure" +
                 ".integrationTestMe() :: (INTEGER?)\"                                                          " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.listCoolPeopleInDatabase\"      | \"org.neo4j.procedure" +
                 ".listCoolPeopleInDatabase() :: (LIST? OF ANY?)\"                                              " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.logAround\"                     | \"org.neo4j.procedure.logAround() ::" +
                 " (INTEGER?)\"                                                                                 " +
-                "                             | \"\"                      |%n" +
+                "                             | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.mapArgument\"                   | \"org.neo4j.procedure.mapArgument" +
                 "(map :: MAP?) :: (INTEGER?)\"                                                                 " +
-                "                                | \"\"                      |%n" +
+                "                                | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.node\"                          | \"org.neo4j.procedure.node(id :: " +
                 "INTEGER?) :: (NODE?)\"                                                                        " +
-                "                                | \"\"                      |%n" +
+                "                                | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.nodeListArgument\"              | \"org.neo4j.procedure" +
                 ".nodeListArgument(nodes :: LIST? OF NODE?) :: (INTEGER?)\"                                    " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.nodePaths\"                     | \"org.neo4j.procedure.nodePaths" +
                 "(someValue :: NODE?) :: (PATH?)\"                                                             " +
-                "                                  | \"\"                      |%n" +
+                "                                  | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.nodeWithDescription\"           | \"org.neo4j.procedure" +
                 ".nodeWithDescription(someValue :: NODE?) :: (NODE?)\"                                         " +
-                "                                            | \"This is a description\" |%n" +
+                "                                            | \"This is a description\"    |%n" +
                 "| \"org.neo4j.procedure.readOnlyCallingWriteFunction\"  | \"org.neo4j.procedure" +
                 ".readOnlyCallingWriteFunction() :: (NODE?)\"                                                  " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.readOnlyCallingWriteProcedure\" | \"org.neo4j.procedure" +
                 ".readOnlyCallingWriteProcedure() :: (INTEGER?)\"                                              " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.readOnlyTryingToWrite\"         | \"org.neo4j.procedure" +
                 ".readOnlyTryingToWrite() :: (NODE?)\"                                                         " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.readOnlyTryingToWriteSchema\"   | \"org.neo4j.procedure" +
                 ".readOnlyTryingToWriteSchema() :: (STRING?)\"                                                 " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.recursiveSum\"                  | \"org.neo4j.procedure.recursiveSum" +
                 "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                               | \"\"                      |%n" +
+                "                               | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.shutdown\"                      | \"org.neo4j.procedure.shutdown() :: " +
                 "(STRING?)\"                                                                                   " +
-                "                             | \"\"                      |%n" +
+                "                             | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.simpleArgument\"                | \"org.neo4j.procedure.simpleArgument" +
                 "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                             | \"\"                      |%n" +
+                "                             | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.squareDouble\"                  | \"org.neo4j.procedure.squareDouble" +
                 "(someValue :: FLOAT?) :: (FLOAT?)\"                                                           " +
-                "                               | \"\"                      |%n" +
+                "                               | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.squareLong\"                    | \"org.neo4j.procedure.squareLong" +
                 "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                                 | \"\"                      |%n" +
+                "                                 | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.throwsExceptionInStream\"       | \"org.neo4j.procedure" +
                 ".throwsExceptionInStream() :: (INTEGER?)\"                                                    " +
-                "                                            | \"\"                      |%n" +
+                "                                            | \"\"                         |%n" +
                 "| \"org.neo4j.procedure.unsupportedFunction\"           | \"org.neo4j.procedure." +
                 "unsupportedFunction() :: (STRING?)\"                                                          " +
-                "                                           | \"\"                      |%n" +
+                "                                           | \"\"                         |%n" +
+                "| \"randomUUID\"                                        | \"randomUUID() :: (STRING?)\"     " +
+                "                                                                                          " +
+                "                                   | \"Generates a random UUID.\" |%n" +
                 "| \"this.is.test.only.sum\"                             | \"this.is.test.only.sum(numbers :: " +
                 "LIST? OF NUMBER?) :: (NUMBER?)\"                                                              " +
-                "                              | \"\"                      |%n" +
+                "                              | \"\"                         |%n" +
                 "+-----------------------------------------------------------------------------------------------" +
                 "----------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------+%n" +
-                "26 rows%n");
+                "----------------------------------------------------------------+%n" +
+                "27 rows%n");
 
         assertThat( res.resultAsString(), equalTo(expected) );
     }

@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -104,7 +105,13 @@ public class TreeStatePairTest
     @Parameterized.Parameter( 3 )
     public Selected expectedOldest;
 
-    private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( 256 );
+    private PageAwareByteArrayCursor cursor;
+
+    @Before
+    public void setUp()
+    {
+        cursor = new PageAwareByteArrayCursor( 256 );
+    }
 
     @Test
     public void shouldCorrectSelectNewestAndOldestState() throws Exception

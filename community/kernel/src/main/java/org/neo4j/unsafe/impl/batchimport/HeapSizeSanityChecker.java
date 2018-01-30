@@ -21,12 +21,12 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.function.LongSupplier;
 
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 
-import static org.neo4j.kernel.impl.util.OsBeanUtil.VALUE_UNAVAILABLE;
+import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.estimatedCacheSize;
 import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.optimalMinimalHeapSize;
 

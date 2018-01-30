@@ -84,12 +84,12 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String nativeFailure = null;
         try
         {
-            nativeFailure = nativeProvider.getPopulationFailure( indexId );
+            nativeFailure = nativeProvider.getPopulationFailure( indexId, descriptor );
         }
         catch ( IllegalStateException e )
         {   // Just catch
@@ -97,7 +97,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         String luceneFailure = null;
         try
         {
-            luceneFailure = luceneProvider.getPopulationFailure( indexId );
+            luceneFailure = luceneProvider.getPopulationFailure( indexId, descriptor );
         }
         catch ( IllegalStateException e )
         {   // Just catch

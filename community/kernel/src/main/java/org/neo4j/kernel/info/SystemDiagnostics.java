@@ -46,7 +46,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.impl.util.OsBeanUtil;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.logging.Logger;
 
 import static java.net.NetworkInterface.getNetworkInterfaces;

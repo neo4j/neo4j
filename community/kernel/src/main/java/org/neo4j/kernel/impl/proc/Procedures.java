@@ -162,6 +162,18 @@ public class Procedures extends LifecycleAdapter
      * Register a new function defined with annotations on a java class.
      * @param func the function class
      */
+    public void registerBuiltInFunctions( Class<?> func ) throws KernelException
+    {
+        for ( CallableUserFunction function : compiler.withoutNamingRestrictions().compileFunction( func ) )
+        {
+            register( function, false );
+        }
+    }
+
+    /**
+     * Register a new function defined with annotations on a java class.
+     * @param func the function class
+     */
     public void registerFunction( Class<?> func ) throws KernelException
     {
         registerFunction( func, false );

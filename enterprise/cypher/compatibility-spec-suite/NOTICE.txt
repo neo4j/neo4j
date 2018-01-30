@@ -51,6 +51,9 @@ BSD License
   ASM Util
   JLine
   Scala Compiler
+  scala-parser-combinators
+  scala-xml
+  Scalap
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

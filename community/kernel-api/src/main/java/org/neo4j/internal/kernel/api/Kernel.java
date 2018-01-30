@@ -29,4 +29,6 @@ public interface Kernel
     CursorFactory cursors();
 
     Session beginSession( SecurityContext securityContext );
+
+    Modes modes();
 }
