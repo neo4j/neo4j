@@ -24,43 +24,42 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 
-import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.values.ValueMapper;
 
-public abstract class NumberArray extends ArrayValue
+public class LocalDateTimeArray extends TemporalArray<LocalDateTime, LocalDateTimeValue>
 {
-    abstract int compareTo( IntegralArray other );
+    final LocalDateTime[] value;
 
-    abstract int compareTo( FloatingPointArray other );
-
-    @Override
-    public boolean equals( boolean[] x )
+    LocalDateTimeArray( LocalDateTime[] value )
     {
-        return false;
+        assert value != null;
+        this.value = value;
     }
 
     @Override
-    public boolean equals( char[] x )
+    protected LocalDateTime[] value()
     {
-        return false;
+        return value;
     }
 
     @Override
-    public boolean equals( String[] x )
+    public <T> T map( ValueMapper<T> mapper )
     {
-        return false;
+        return mapper.mapLocalDateTimeArray( this );
     }
 
     @Override
-    public boolean equals( Geometry[] x )
+    public boolean equals( Value other )
     {
-        return false;
+        return other.equals( value );
     }
 
     @Override
-    public boolean equals( ZonedDateTime[] x )
+    public boolean equals( LocalDateTime[] x )
     {
-        return false;
+        return Arrays.equals( value, x);
     }
 
     @Override
@@ -76,7 +75,7 @@ public abstract class NumberArray extends ArrayValue
     }
 
     @Override
-    public boolean equals( LocalDateTime[] x )
+    public boolean equals( ZonedDateTime[] x )
     {
         return false;
     }
@@ -94,8 +93,14 @@ public abstract class NumberArray extends ArrayValue
     }
 
     @Override
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
+    {
+        writeTo( writer, ValueWriter.ArrayType.LOCAL_DATE_TIME ,value );
+    }
+
+    @Override
     public ValueGroup valueGroup()
     {
-        return ValueGroup.NUMBER_ARRAY;
+        return ValueGroup.LOCAL_DATE_TIME_ARRAY;
     }
 }

@@ -23,6 +23,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -52,6 +57,22 @@ public class ValueComparisonTest
             new PointValue[] { pointValue( WGS84, -1.0, -1.0 ) },
             new PointValue[] { pointValue( WGS84, -1.0, -1.0 ), pointValue( WGS84, -1.0, -1.0 ) },
             new PointValue[] { pointValue( WGS84, -1.0, -1.0 ), pointValue( Cartesian, 1.0, 2.0 ) },
+            new ZonedDateTime[] { datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00").asObjectCopy(), datetime(1991, 2, 2, 1, 30, 0, 0, "+00:00").asObjectCopy() },
+            new ZonedDateTime[] { datetime(2018, 2, 2, 0, 0, 0, 0, "+00:00").asObjectCopy(), datetime(1992, 2, 2, 1, 30, 0, 0, "+00:00").asObjectCopy() },
+            new ZonedDateTime[] { datetime(2019, 2, 2, 0, 0, 0, 0, "+00:00").asObjectCopy(), datetime(1991, 2, 2, 1, 30, 0, 0, "+00:00").asObjectCopy() },
+            new LocalDateTime[] {},
+            new LocalDateTime[] { localDateTime(2019, 2, 2, 0, 0, 0, 0).asObjectCopy(), localDateTime(1991, 2, 2, 1, 30, 0, 0).asObjectCopy() },
+            new LocalDate[]{ date( 2018, 2, 1 ).asObjectCopy() },
+            new LocalDate[]{ date( 2018, 2, 1 ).asObjectCopy(), date( 2019, 2, 1 ).asObjectCopy() },
+            new OffsetTime[]{ time(0, 0, 0, 1, "+00:00").asObjectCopy() },
+            new OffsetTime[]{ time(0, 0, 1, 0, "+00:00").asObjectCopy() },
+            new OffsetTime[]{ time(0, 0, 1, 0, "+00:00").asObjectCopy(), time(0, 0, 1, 0, "+00:00").asObjectCopy() },
+            new LocalTime[]{ localTime(0, 0, 0, 1).asObjectCopy() },
+            new LocalTime[]{ localTime(0, 0, 1, 0).asObjectCopy() },
+            new LocalTime[]{ localTime(0, 0, 1, 0).asObjectCopy(), localTime(0, 0, 1, 0).asObjectCopy() },
+            new DurationValue[] { duration(0, 0, 0, 0) },
+            new DurationValue[] { duration(0, 0, 0, 1) },
+            new DurationValue[] { duration(0, 0, 0, 1), duration(0, 0, 1, 0) },
             new String[]{},
             new String[]{"a"},
             new String[]{"a", "aa"},

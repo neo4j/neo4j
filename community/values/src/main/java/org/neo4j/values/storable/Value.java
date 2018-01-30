@@ -19,6 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -65,6 +71,18 @@ public abstract class Value extends AnyValue
     public abstract boolean equals( String[] x );
 
     public abstract boolean equals( Geometry[] x );
+
+    public abstract boolean equals( ZonedDateTime[] x );
+
+    public abstract boolean equals( LocalDate[] x );
+
+    public abstract boolean equals( DurationValue[] x );
+
+    public abstract boolean equals( LocalDateTime[] x );
+
+    public abstract boolean equals( LocalTime[] x );
+
+    public abstract boolean equals( OffsetTime[] x );
 
     @Override
     public Boolean ternaryEquals( AnyValue other )

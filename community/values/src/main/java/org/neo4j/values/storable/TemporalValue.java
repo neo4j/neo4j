@@ -45,7 +45,7 @@ import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
 
 public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<T,V>>
-        extends ScalarValue implements Temporal
+        extends ScalarValue implements Temporal, Comparable<V>
 {
     TemporalValue()
     {

@@ -19,6 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+
 import org.neo4j.graphdb.spatial.Geometry;
 
 /**
@@ -82,6 +88,42 @@ abstract class ScalarValue extends Value
 
     @Override
     public boolean equals( Geometry[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( ZonedDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( LocalDate[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( DurationValue[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( LocalDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( LocalTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( OffsetTime[] x )
     {
         return false;
     }

@@ -24,43 +24,42 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 
-import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.values.ValueMapper;
 
-public abstract class NumberArray extends ArrayValue
+public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
 {
-    abstract int compareTo( IntegralArray other );
+    final OffsetTime[] value;
 
-    abstract int compareTo( FloatingPointArray other );
-
-    @Override
-    public boolean equals( boolean[] x )
+    TimeArray( OffsetTime[] value )
     {
-        return false;
+        assert value != null;
+        this.value = value;
     }
 
     @Override
-    public boolean equals( char[] x )
+    protected OffsetTime[] value()
     {
-        return false;
+        return value;
     }
 
     @Override
-    public boolean equals( String[] x )
+    public <T> T map( ValueMapper<T> mapper )
     {
-        return false;
+        return mapper.mapTimeArray( this );
     }
 
     @Override
-    public boolean equals( Geometry[] x )
+    public boolean equals( Value other )
     {
-        return false;
+        return other.equals( value );
     }
 
     @Override
-    public boolean equals( ZonedDateTime[] x )
+    public boolean equals( OffsetTime[] x )
     {
-        return false;
+        return Arrays.equals( value, x);
     }
 
     @Override
@@ -71,6 +70,12 @@ public abstract class NumberArray extends ArrayValue
 
     @Override
     public boolean equals( DurationValue[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( ZonedDateTime[] x )
     {
         return false;
     }
@@ -88,14 +93,14 @@ public abstract class NumberArray extends ArrayValue
     }
 
     @Override
-    public boolean equals( OffsetTime[] x )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        return false;
+        writeTo( writer, ValueWriter.ArrayType.ZONED_TIME ,value );
     }
 
     @Override
     public ValueGroup valueGroup()
     {
-        return ValueGroup.NUMBER_ARRAY;
+        return ValueGroup.ZONED_TIME_ARRAY;
     }
 }

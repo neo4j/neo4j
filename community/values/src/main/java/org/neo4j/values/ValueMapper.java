@@ -37,10 +37,13 @@ import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.CharArray;
 import org.neo4j.values.storable.CharValue;
+import org.neo4j.values.storable.DateArray;
+import org.neo4j.values.storable.DateTimeArray;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleArray;
 import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.DurationArray;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatArray;
 import org.neo4j.values.storable.FloatValue;
@@ -50,7 +53,9 @@ import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.IntValue;
 import org.neo4j.values.storable.IntegralArray;
 import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.LocalDateTimeArray;
 import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeArray;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.LongValue;
@@ -64,6 +69,7 @@ import org.neo4j.values.storable.StringArray;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeArray;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
@@ -224,6 +230,36 @@ public interface ValueMapper<Base>
     Base mapPoint( PointValue value );
 
     default Base mapPointArray( PointArray value )
+    {
+        return mapSequence( value );
+    }
+
+    default Base mapDateTimeArray( DateTimeArray value )
+    {
+        return mapSequence( value );
+    }
+
+    default Base mapLocalDateTimeArray( LocalDateTimeArray value )
+    {
+        return mapSequence( value );
+    }
+
+    default Base mapLocalTimeArray( LocalTimeArray value )
+    {
+        return mapSequence( value );
+    }
+
+    default Base mapTimeArray( TimeArray value )
+    {
+        return mapSequence( value );
+    }
+
+    default Base mapDateArray( DateArray value )
+    {
+        return mapSequence( value );
+    }
+
+    default Base mapDurationArray( DurationArray value )
     {
         return mapSequence( value );
     }

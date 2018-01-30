@@ -19,19 +19,16 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
+import java.util.Arrays;
 
 import org.neo4j.graphdb.spatial.Geometry;
 
-public abstract class NumberArray extends ArrayValue
-{
-    abstract int compareTo( IntegralArray other );
+import static java.lang.String.format;
 
-    abstract int compareTo( FloatingPointArray other );
+public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends ArrayValue
+{
+    protected abstract T[] value();
 
     @Override
     public boolean equals( boolean[] x )
@@ -52,50 +49,99 @@ public abstract class NumberArray extends ArrayValue
     }
 
     @Override
-    public boolean equals( Geometry[] x )
+    public boolean equals( byte[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( ZonedDateTime[] x )
+    public boolean equals( short[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( LocalDate[] x )
+    public boolean equals( int[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( DurationValue[] x )
+    public boolean equals( long[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( LocalDateTime[] x )
+    public boolean equals( float[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( LocalTime[] x )
+    public boolean equals( double[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( OffsetTime[] x )
+    public NumberType numberType()
     {
-        return false;
+        return NumberType.NO_NUMBER;
+    }
+
+    public final int compareTo( NonPrimitiveArray<T> other )
+    {
+        int i = 0;
+        int x = 0;
+        int length = Math.min( this.length(), other.length() );
+
+        while ( x == 0 && i < length )
+        {
+            x = this.value()[i].compareTo( other.value()[i] );
+            i++;
+        }
+        if ( x == 0 )
+        {
+            x = this.length() - other.length();
+        }
+        return x;
     }
 
     @Override
-    public ValueGroup valueGroup()
+    public final int computeHash()
     {
-        return ValueGroup.NUMBER_ARRAY;
+        return Arrays.hashCode( value() );
+    }
+
+    @Override
+    public final int length()
+    {
+        return value().length;
+    }
+
+    @Override
+    public final T[] asObjectCopy()
+    {
+        return value().clone();
+    }
+
+    @Override
+    @Deprecated
+    public final T[] asObject()
+    {
+        return value();
+    }
+
+    @Override
+    public final String prettyPrint()
+    {
+        return Arrays.toString( value() );
+    }
+
+    @Override
+    public final String toString()
+    {
+        return getClass().getSimpleName() + Arrays.toString( value());
     }
 }

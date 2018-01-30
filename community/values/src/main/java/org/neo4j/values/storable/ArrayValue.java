@@ -66,6 +66,21 @@ public abstract class ArrayValue extends Value implements SequenceValue
     }
 
     @Override
+    public final boolean eq( Object other )
+    {
+        if ( other == null )
+        {
+            return false;
+        }
+
+        if ( other instanceof SequenceValue )
+        {
+            return this.equals( (SequenceValue) other );
+        }
+        return other instanceof Value && equals( (Value) other );
+    }
+
+    @Override
     public boolean equals( boolean x )
     {
         return false;

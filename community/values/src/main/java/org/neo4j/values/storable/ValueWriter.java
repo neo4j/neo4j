@@ -41,7 +41,13 @@ public interface ValueWriter<E extends Exception>
         BOOLEAN,
         STRING,
         CHAR,
-        POINT
+        POINT,
+        ZONED_DATE_TIME,
+        LOCAL_DATE_TIME,
+        DATE,
+        ZONED_TIME,
+        LOCAL_TIME,
+        DURATION
     }
 
     void writeNull() throws E;

@@ -22,31 +22,36 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-public abstract class ByteArray extends IntegralArray
+public class ByteArray extends IntegralArray
 {
-    abstract byte[] value();
+    final byte[] value;
+
+    ByteArray( byte[] value )
+    {
+        assert value != null;
+        this.value = value;
+    }
 
     @Override
     public int length()
     {
-        return value().length;
+        return value.length;
     }
 
     @Override
     public long longValue( int index )
     {
-        return value()[index];
+        return value[index];
     }
 
     @Override
     public int computeHash()
     {
-        return NumberValues.hash( value() );
+        return NumberValues.hash( value );
     }
 
     @Override
@@ -58,111 +63,79 @@ public abstract class ByteArray extends IntegralArray
     @Override
     public boolean equals( Value other )
     {
-        return other.equals( value() );
+        return other.equals( value );
     }
 
     @Override
     public boolean equals( byte[] x )
     {
-        return Arrays.equals( value(), x );
+        return Arrays.equals( value, x );
     }
 
     @Override
     public boolean equals( short[] x )
     {
-        return PrimitiveArrayValues.equals( value(), x );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     public boolean equals( int[] x )
     {
-        return PrimitiveArrayValues.equals( value(), x );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     public boolean equals( long[] x )
     {
-        return PrimitiveArrayValues.equals( value(), x );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     public boolean equals( float[] x )
     {
-        return PrimitiveArrayValues.equals( value(), x );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     public boolean equals( double[] x )
     {
-        return PrimitiveArrayValues.equals( value(), x );
-    }
-
-    @Override
-    public final boolean eq( Object other )
-    {
-        if ( other == null )
-        {
-            return false;
-        }
-
-        if ( other instanceof SequenceValue )
-        {
-            return this.equals( (SequenceValue) other );
-        }
-        return other instanceof Value && equals( (Value) other );
+        return PrimitiveArrayValues.equals( value, x );
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        writer.writeByteArray( value() );
+        writer.writeByteArray( value );
     }
 
     @Override
     public byte[] asObjectCopy()
     {
-        return value().clone();
+        return value.clone();
     }
 
     @Override
     @Deprecated
     public byte[] asObject()
     {
-        return value();
+        return value;
     }
 
     @Override
     public String prettyPrint()
     {
-        return Arrays.toString( value() );
+        return Arrays.toString( value );
     }
 
     @Override
     public AnyValue value( int offset )
     {
-        return Values.byteValue( value()[offset] );
+        return Values.byteValue( value[offset] );
     }
 
-    static final class Direct extends ByteArray
+    @Override
+    public String toString()
     {
-        final byte[] value;
-
-        Direct( byte[] value )
-        {
-            assert value != null;
-            this.value = value;
-        }
-
-        @Override
-        byte[] value()
-        {
-            return value;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "ByteArray%s", Arrays.toString( value ) );
-        }
+        return format( "ByteArray%s", Arrays.toString( value ) );
     }
 }

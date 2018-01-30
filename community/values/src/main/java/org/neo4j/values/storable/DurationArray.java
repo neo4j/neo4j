@@ -30,37 +30,70 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-public class PointArray extends NonPrimitiveArray<PointValue>
-{
-    final PointValue[] value;
+import static java.lang.String.format;
 
-    PointArray( PointValue[] value )
+public class DurationArray extends NonPrimitiveArray<DurationValue>
+{
+    final DurationValue[] value;
+
+    DurationArray( DurationValue[] value )
     {
         assert value != null;
         this.value = value;
     }
 
     @Override
-    protected PointValue[] value()
+    protected DurationValue[] value()
     {
         return value;
     }
 
-    public PointValue pointValue( int offset )
-    {
-        return value()[offset];
-    }
-
     @Override
-    public boolean equals( Geometry[] x )
+    public <T> T map( ValueMapper<T> mapper )
     {
-        return Arrays.equals( value(), x );
+        return mapper.mapDurationArray( this );
     }
 
     @Override
     public boolean equals( Value other )
     {
-        return other instanceof PointArray && Arrays.equals( this.value(), ((PointArray) other).value() );
+        return other.equals( value );
+    }
+
+    @Override
+    public boolean equals( DurationValue[] x )
+    {
+        return Arrays.equals( value, x);
+    }
+
+    @Override
+    public boolean equals( LocalDate[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( ZonedDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( LocalDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( LocalTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( OffsetTime[] x )
+    {
+        return false;
     }
 
     @Override
@@ -118,45 +151,9 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     }
 
     @Override
-    public boolean equals( ZonedDateTime[] x )
+    public boolean equals( Geometry[] x )
     {
         return false;
-    }
-
-    @Override
-    public boolean equals( LocalDate[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( DurationValue[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( LocalDateTime[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( LocalTime[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( OffsetTime[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.GEOMETRY_ARRAY;
     }
 
     @Override
@@ -166,20 +163,25 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     }
 
     @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapPointArray( this );
-    }
-
-    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        PrimitiveArrayWriting.writeTo( writer, value() );
+        writer.beginArray( value.length, ValueWriter.ArrayType.DURATION );
+        for ( DurationValue x : value )
+        {
+            x.writeTo( writer );
+        }
+        writer.endArray();
     }
 
     @Override
     public AnyValue value( int offset )
     {
-        return Values.point( value[offset] );
+        return Values.durationValue( value[offset] );
+    }
+
+    @Override
+    public ValueGroup valueGroup()
+    {
+        return ValueGroup.DURATION_ARRAY;
     }
 }
