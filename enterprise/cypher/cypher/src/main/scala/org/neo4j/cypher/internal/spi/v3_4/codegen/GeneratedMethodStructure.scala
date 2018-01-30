@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
-import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -121,9 +120,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def nodeFromNodeLabelIndexCursor(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Long]("nodeReference")))
 
-  override def createRelExtractor(relVar: String) =
-    generator.assign(typeRef[RelationshipDataExtractor], relExtractor(relVar), newRelationshipDataExtractor)
-
   override def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection,
                                        fromNodeVar: String,
                                        relVar: String) = {
@@ -184,8 +180,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def advanceRelationshipSelectionCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[RelationshipSelectionCursor, Boolean]("next"))
 
-  override def hasNextRelationship(iterVar: String) =
-    invoke(generator.load(iterVar), hasMoreRelationship)
 
   override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) =
     using(generator.whileLoop(test)) { body =>
@@ -1368,7 +1362,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relType(relVar: String, typeVar: String) = {
     val variable = locals(typeVar)
-    val typeOfRel = invoke(generator.load(relExtractor(relVar)), typeOf)
+    val typeOfRel = invoke(generator.load(relCursor(relVar)),  method[RelationshipSelectionCursor, Int]("type"))
     handleKernelExceptions(generator, fields, _finalizers) { inner =>
       val res = invoke(readOperations, relationshipTypeGetName, typeOfRel)
       inner.assign(variable, res)

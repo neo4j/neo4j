@@ -38,9 +38,9 @@ import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
 /**
@@ -52,7 +52,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
 
   val modes = Seq(SourceCode.SOURCECODE, ByteCode.BYTECODE)
   val ops = Seq(
-        Operation("create rel extractor", _.createRelExtractor("foo")),
         Operation("nullable object", m => {
           m.declareAndInitialize("foo", CodeGenType.Any)
           m.generator.assign(typeRef[Object], "bar",
@@ -159,8 +158,9 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.nodeGetPropertyById("rel", CodeGenType.primitiveNode, 13, "propVar")
         }),
         Operation("rel type", m => {
-          m.createRelExtractor("bar")
           m.declareAndInitialize("foo", CypherCodeGenType(symbols.CTString, ReferenceType))
+          m.declareAndInitialize("node", CodeGenType.primitiveNode)
+          m.nodeGetRelationshipsWithDirection("barIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
           m.relType("bar", "foo")
         }),
         Operation("all relationships for node and types", (m) => {
@@ -170,42 +170,44 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
           m.nodeGetRelationshipsWithDirectionAndTypes("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING, Seq("a", "b"))
         }),
         Operation("next relationship", (m) => {
-          m.createRelExtractor("r")
           m.declareAndInitialize("node", CodeGenType.primitiveNode)
-          m.nodeGetRelationshipsWithDirection("foo", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
-          m.nextRelationshipAndNode("nextNode", "foo", SemanticDirection.OUTGOING, "node", "r")
+          m.nodeGetRelationshipsWithDirection("fooIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
+          m.nextRelationshipAndNode("nextNode", "fooIter", SemanticDirection.OUTGOING, "node", "foo")
         }),
     Operation("expand into", (m) => {
       m.declareAndInitialize("from", CodeGenType.primitiveNode)
       m.declareAndInitialize("to", CodeGenType.primitiveNode)
-      val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
-      Templates.handleKernelExceptions(m.generator, m.fields, m.finalizers) { body =>
-        body.assign(local, Expression.invoke(Methods.allConnectingRelationships,
-                                             Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
+      val local = m.generator.declare(typeRef[RelationshipSelectionCursor], "iter")
+      m.generator.assign(local, Expression.invoke(Methods.allConnectingRelationships,
+                                             Expression.get(m.generator.self(), m.fields.ro),
+                                             Expression.get(m.generator.self(), m.fields.dataRead),
+                                             Expression.get(m.generator.self(), m.fields.cursors),
+                                             Expression.get(m.generator.self(), m.fields.nodeCursor),
+                                             m.generator.load("from"),
                                              Templates.outgoing,
-                                             body.load("to")))
-      }
+                                             m.generator.load("to")))
     }),
     Operation("expand into with types", (m) => {
       m.declareAndInitialize("from", CodeGenType.primitiveNode)
       m.declareAndInitialize("to", CodeGenType.primitiveNode)
-      val local = m.generator.declare(typeRef[RelationshipIterator], "iter")
-      Templates.handleKernelExceptions(m.generator, m.fields, m.finalizers) { body =>
-        body.assign(local, Expression.invoke(Methods.connectingRelationships,
-                                             Expression.get(m.generator.self(), m.fields.ro), body.load("from"),
-                                             Templates.outgoing,
-                                             body.load("to"),
+      val local = m.generator.declare(typeRef[RelationshipSelectionCursor], "iter")
+      m.generator.assign(local, Expression.invoke(Methods.connectingRelationships,
+                                                  Expression.get(m.generator.self(), m.fields.ro),
+                                                  Expression.get(m.generator.self(), m.fields.dataRead),
+                                                  Expression.get(m.generator.self(), m.fields.cursors),
+                                                  Expression.get(m.generator.self(), m.fields.nodeCursor),
+                                                  m.generator.load("from"),
+                                                  Templates.outgoing,
+                                                  m.generator.load("to"),
                                              Expression.newArray(typeRef[Int], Expression.constant(1))))
-      }
     }),
     Operation("expand from all node", (m) => {
-      m.createRelExtractor("r")
       m.allNodesScan("nodeIter")
       m.whileLoop(m.advanceNodeCursor("nodeIter")) { b1 =>
         b1.nodeFromNodeCursor("node", "nodeIter")
         b1.nodeGetRelationshipsWithDirection("relIter", "node", CodeGenType.primitiveInt, SemanticDirection.OUTGOING)
-        b1.whileLoop(b1.hasNextRelationship("relIter")) { b2 =>
-          b2.nextRelationshipAndNode("nextNode", "relIter", SemanticDirection.OUTGOING, "node", "r")
+        b1.whileLoop(b1.advanceRelationshipSelectionCursor("relIter")) { b2 =>
+          b2.nextRelationshipAndNode("nextNode", "relIter", SemanticDirection.OUTGOING, "node", "rel")
         }
       }
     }),

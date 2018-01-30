@@ -28,7 +28,6 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
   extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.createRelExtractor(relVar.name)
     types.foreach {
       case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }
