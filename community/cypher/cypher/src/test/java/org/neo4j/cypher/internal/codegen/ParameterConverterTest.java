@@ -22,6 +22,11 @@ package org.neo4j.cypher.internal.codegen;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +39,13 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongArray;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.ListValue;
@@ -196,6 +207,96 @@ public class ParameterConverterTest
         assertThat( point.getCoordinate().getCoordinate().get( 0 ), equalTo( 1.0 ) );
         assertThat( point.getCoordinate().getCoordinate().get( 1 ), equalTo( 2.0 ) );
         assertThat( point.getCRS().getCode(), equalTo( 4326 ) );
+    }
+
+    @Test
+    public void shouldHandleDateTime()
+    {
+        // Given
+        DateTimeValue dvalue = DateTimeValue.datetime( 1, 2, 3, 4, 5, 6, 7, "+00:00" );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( ZonedDateTime.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleLocalDateTime()
+    {
+        // Given
+        LocalDateTimeValue dvalue = LocalDateTimeValue.localDateTime( 1, 2, 3, 4, 5, 6, 7 );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( LocalDateTime.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleDate()
+    {
+        // Given
+        DateValue dvalue = DateValue.date( 1, 2, 3 );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( LocalDate.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleTime()
+    {
+        // Given
+        TimeValue dvalue = TimeValue.time( 1, 2, 3, 4, "+00:00" );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( OffsetTime.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleLocalTime()
+    {
+        // Given
+        LocalTimeValue dvalue = LocalTimeValue.localTime( 1, 2, 3, 4 );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( LocalTime.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleDurations()
+    {
+        // Given
+        DurationValue dvalue = DurationValue.duration( 1, 2, 3, 4 );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( DurationValue.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
     }
 
     @Test

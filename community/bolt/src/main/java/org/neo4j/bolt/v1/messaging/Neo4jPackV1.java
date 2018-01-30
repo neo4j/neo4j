@@ -296,43 +296,57 @@ public class Neo4jPackV1 implements Neo4jPack
         @Override
         public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "Duration is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
         public void writeDate( long epochDay ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "Date is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
         public void writeLocalTime( long nanoOfDay ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "LocalTime is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
         public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "Time is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
         public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "LocalDateTime is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "DateTime is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            error = new Error( Status.Request.Invalid,
+                    "DateTime is not yet supported as a return type in Bolt" );
+            packNull();
         }
 
         @Override
