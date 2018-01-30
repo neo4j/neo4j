@@ -192,10 +192,20 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
 
     private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
     private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
+    // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
+    private static final Comparator<DurationValue> COMPARATOR = Comparator.comparingLong(DurationValue::averageLengthInSeconds)
+            // nanos are guaranteed to be smaller than NANOS_PER_SECOND
+            .thenComparingLong( (d) -> d.nanos )
+            // At this point, the durations have the same length and we compare by the individual fields.
+            .thenComparingLong( (d) -> d.months )
+            .thenComparingLong( (d) -> d.days )
+            .thenComparingLong( (d) -> d.seconds );
+
     static final int NANOS_PER_SECOND = 1_000_000_000;
     static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
     /** 30.4375 days = 30 days, 10 hours, 30 minutes */
     private static final double AVERAGE_DAYS_PER_MONTH = 365.25 / 12;
+    static final long AVG_SECONDS_PER_MONTH = 2_629_800;
     private final long months;
     private final long days;
     private final long seconds;
@@ -229,37 +239,13 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
 
     public int compareTo( DurationValue other )
     {
-        return Comparator.comparingLong(DurationValue::averageLengthInNanos)
-                .thenComparingLong( DurationValue::getMonths )
-                .thenComparingLong( DurationValue::getDays )
-                .thenComparingLong( DurationValue::getSeconds )
-                .thenComparingInt( DurationValue::getNanos ).compare( this, other );
+        return COMPARATOR.compare( this, other );
     }
 
-    private long averageLengthInNanos()
+    private long averageLengthInSeconds()
     {
-        return this.nanos + this.seconds * NANOS_PER_SECOND + this.days * NANOS_PER_SECOND * SECONDS_PER_DAY +
-                this.months * NANOS_PER_SECOND * (long) (SECONDS_PER_DAY * AVERAGE_DAYS_PER_MONTH);
-    }
-
-    public long getMonths()
-    {
-        return months;
-    }
-
-    public long getDays()
-    {
-        return days;
-    }
-
-    public long getSeconds()
-    {
-        return seconds;
-    }
-
-    public int getNanos()
-    {
-        return nanos;
+        return this.seconds + this.days * SECONDS_PER_DAY +
+                this.months * AVG_SECONDS_PER_MONTH;
     }
 
     long nanosOfDay()

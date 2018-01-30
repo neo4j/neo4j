@@ -107,6 +107,9 @@ public class ValueComparisonTest
             duration(0, 1, 60 * 60 * 24, 0),
             duration(0, 2, 0, 0),
             duration(0, 1, 60 * 60 * 24, 1),
+            duration(0, 10, 60 * 60 * 24, 2_000_000_500),
+            duration(0, 11, 2, 500), // Same duration as above, but higher days value
+            duration(0, 10, 60 * 60 * 24, 2_000_000_501),
             duration(0, 30, 0, 0),
             duration(1, 0, 0, 0),
             duration(0, 31, 0, 0),
