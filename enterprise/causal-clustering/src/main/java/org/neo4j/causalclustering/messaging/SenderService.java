@@ -31,11 +31,9 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.Future;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -48,18 +46,16 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     private final ChannelInitializer<SocketChannel> channelInitializer;
     private final ReadWriteLock serviceLock = new ReentrantReadWriteLock();
     private final Log log;
-    private final Monitors monitors;
 
     private JobScheduler.JobHandle jobHandle;
     private boolean senderServiceRunning;
     private Bootstrap bootstrap;
     private NioEventLoopGroup eventLoopGroup;
 
-    public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider, Monitors monitors )
+    public SenderService( ChannelInitializer<SocketChannel> channelInitializer, LogProvider logProvider )
     {
         this.channelInitializer = channelInitializer;
         this.log = logProvider.getLog( getClass() );
-        this.monitors = monitors;
         this.nonBlockingChannels = new NonBlockingChannels();
     }
 
@@ -90,7 +86,6 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
     private NonBlockingChannel channel( AdvertisedSocketAddress to )
     {
-        MessageQueueMonitor monitor = monitors.newMonitor( MessageQueueMonitor.class, NonBlockingChannel.class );
         NonBlockingChannel nonBlockingChannel = nonBlockingChannels.get( to );
 
         if ( nonBlockingChannel == null )
@@ -110,7 +105,6 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             }
         }
 
-        monitor.register( to );
         return nonBlockingChannel;
     }
 

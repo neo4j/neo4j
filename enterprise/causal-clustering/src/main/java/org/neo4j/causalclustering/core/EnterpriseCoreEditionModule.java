@@ -209,7 +209,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         final SenderService raftSender = new SenderService(
                 new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, clusterSslPolicy ),
-                logProvider, platformModule.monitors );
+                logProvider );
         life.add( raftSender );
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
