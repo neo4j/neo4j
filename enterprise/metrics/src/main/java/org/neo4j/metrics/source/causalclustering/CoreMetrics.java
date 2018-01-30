@@ -83,7 +83,7 @@ public class CoreMetrics extends LifecycleAdapter
     private final TxRetryMetric txRetryMetric = new TxRetryMetric();
     private final MessageQueueMonitorMetric messageQueueMetric = new MessageQueueMonitorMetric();
     private final InFlightCacheMetric inFlightCacheMetric = new InFlightCacheMetric();
-    private final RaftMessageProcessingMetric raftMessageProcessingMetric = new RaftMessageProcessingMetric();
+    private final RaftMessageProcessingMetric raftMessageProcessingMetric = RaftMessageProcessingMetric.create();
 
     public CoreMetrics( Monitors monitors, MetricRegistry registry, Supplier<CoreMetaData> coreMetaData )
     {

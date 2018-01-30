@@ -19,6 +19,7 @@
  */
 package org.neo4j.metrics.source.causalclustering;
 
+import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Timer;
 
 import java.time.Duration;
@@ -26,6 +27,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessageProcessingMonitor;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -33,15 +35,26 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 public class RaftMessageProcessingMetric implements RaftMessageProcessingMonitor
 {
     private final AtomicLong delay = new AtomicLong( 0 );
-    private Timer timer = new Timer();
-    private Map<RaftMessages.Type,Timer> typeTimers = new EnumMap<>( RaftMessages.Type.class );
+    private final Timer timer;
+    private final Map<RaftMessages.Type,Timer> typeTimers = new EnumMap<>( RaftMessages.Type.class );
 
-    public RaftMessageProcessingMetric()
+    public static RaftMessageProcessingMetric create()
+    {
+        return new RaftMessageProcessingMetric( Timer::new );
+    }
+
+    public static RaftMessageProcessingMetric createUsing( Supplier<Reservoir> reservoir )
+    {
+        return new RaftMessageProcessingMetric( () -> new Timer( reservoir.get() ) );
+    }
+
+    private RaftMessageProcessingMetric( Supplier<Timer> timerFactory )
     {
         for ( RaftMessages.Type type : RaftMessages.Type.values() )
         {
-            typeTimers.put( type, new Timer() );
+            typeTimers.put( type, timerFactory.get() );
         }
+        this.timer = timerFactory.get();
     }
 
     public long delay()
