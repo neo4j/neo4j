@@ -39,36 +39,36 @@ import org.neo4j.values.storable.ValueGroup;
 /**
  * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
  */
-public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberSchemaKey,NativeSchemaValue>
+public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringSchemaKey,NativeSchemaValue>
 {
-    public static final String KEY = "native";
-    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
-    static final IndexCapability CAPABILITY = new NativeIndexCapability();
+    public static final String KEY = "string";
+    public static final Descriptor STRING_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    static final IndexCapability CAPABILITY = new StringIndexCapability();
 
-    public NumberSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+    public StringSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly )
     {
-        super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        super( STRING_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override
-    protected NumberLayoutUnique layoutUnique()
+    protected StringLayoutUnique layoutUnique()
     {
-        return new NumberLayoutUnique();
+        return new StringLayoutUnique();
     }
 
     @Override
-    protected NumberLayoutNonUnique layoutNonUnique()
+    protected StringLayoutNonUnique layoutNonUnique()
     {
-        return new NumberLayoutNonUnique();
+        return new StringLayoutNonUnique();
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor,
+    protected IndexAccessor newIndexAccessor( File storeFile, Layout<StringSchemaKey,NativeSchemaValue> layout, IndexDescriptor descriptor,
             long indexId, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NumberSchemaIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+        return new StringSchemaIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 indexId, samplingConfig );
     }
 
@@ -78,7 +78,7 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
         return CAPABILITY;
     }
 
-    private static class NativeIndexCapability implements IndexCapability
+    private static class StringIndexCapability implements IndexCapability
     {
         private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
         private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];
@@ -114,7 +114,7 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
 
         private boolean support( ValueGroup[] valueGroups )
         {
-            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.NUMBER;
+            return valueGroups.length == 1 && valueGroups[0] == ValueGroup.TEXT;
         }
     }
 }

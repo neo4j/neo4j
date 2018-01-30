@@ -192,7 +192,6 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldHandleRandomUpdates() throws Exception
     {

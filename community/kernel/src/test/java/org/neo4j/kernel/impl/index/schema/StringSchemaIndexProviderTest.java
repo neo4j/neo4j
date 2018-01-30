@@ -28,25 +28,25 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider.Monitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class NumberSchemaIndexProviderTest extends NativeSchemaIndexProviderTest
+public class StringSchemaIndexProviderTest extends NativeSchemaIndexProviderTest
 {
     @Override
     SchemaIndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
             Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
-        return new NumberSchemaIndexProvider( pageCache, fs, dir, monitor, collector, false );
+        return new StringSchemaIndexProvider( pageCache, fs, dir, monitor, collector, false );
     }
 
     @Override
     SchemaIndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
             Monitor monitor, RecoveryCleanupWorkCollector collector )
     {
-        return new NumberSchemaIndexProvider( pageCache, fs, dir, monitor, collector, true );
+        return new StringSchemaIndexProvider( pageCache, fs, dir, monitor, collector, true );
     }
 
     @Override
     protected Value someValue()
     {
-        return Values.intValue( 1 );
+        return Values.stringValue( "abc" );
     }
 }
