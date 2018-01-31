@@ -57,9 +57,9 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsPropertyReads( String name )
+    public boolean allowsPropertyReads( int propertyKey )
     {
-        return wrapping.allowsPropertyReads( name );
+        return wrapping.allowsPropertyReads( propertyKey );
     }
 
     @Override

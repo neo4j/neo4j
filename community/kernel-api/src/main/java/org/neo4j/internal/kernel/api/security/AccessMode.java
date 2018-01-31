@@ -103,7 +103,7 @@ public interface AccessMode
         }
 
         @Override
-        public boolean allowsPropertyReads( String name )
+        public boolean allowsPropertyReads( int propertyKey )
         {
             return property;
         }
@@ -126,7 +126,7 @@ public interface AccessMode
     boolean allowsTokenCreates();
     boolean allowsSchemaWrites();
 
-    boolean allowsPropertyReads( String name );
+    boolean allowsPropertyReads( int propertyKey );
 
     /**
      * Determines whether this mode allows execution of a procedure with the parameter string array in its

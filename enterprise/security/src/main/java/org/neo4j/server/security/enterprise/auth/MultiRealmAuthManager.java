@@ -40,14 +40,17 @@ import org.apache.shiro.util.Initializable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -305,16 +308,29 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         return infoList;
     }
 
-    Function<String,Boolean> getPropertyPermissions( Set<String> roles )
+    Function<Integer,Boolean> getPropertyPermissions( Set<String> roles, Token token )
     {
         if ( propertyAuthorization )
         {
-            Set<String> blackListed = new HashSet<>();
+            PrimitiveIntSet blackListed = Primitive.intSet();
             for ( String role : roles )
             {
                 if ( roleToPropertyBlacklist.containsKey( role ) )
                 {
-                    blackListed.addAll( roleToPropertyBlacklist.get( role ) );
+                    assert roleToPropertyBlacklist.get( role ) != null : "Blacklist has to contain properties";
+                    for ( String propName : roleToPropertyBlacklist.get( role ) )
+                    {
+
+                        try
+                        {
+                            blackListed.add( token.propertyKeyGetOrCreateForName( propName ) );
+                        }
+                        catch ( IllegalTokenNameException e )
+                        {
+                            // This can't happen since propName has already been checked to be valid
+                            securityLog.error( "Error in setting up property permissions, '" + propName + "' is not a valid property name." );
+                        }
+                    }
                 }
             }
             return property -> !blackListed.contains( property );

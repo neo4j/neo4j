@@ -76,7 +76,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
                 queryForRoleNames(),
-                queryForPropertyPermissions()
+                queryForPropertyPermissions( token )
             );
     }
 
@@ -106,9 +106,9 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 .collect( Collectors.toSet() );
     }
 
-    private Function<String,Boolean> queryForPropertyPermissions()
+    private Function<Integer,Boolean> queryForPropertyPermissions( Token token )
     {
-        return authManager.getPropertyPermissions(roles());
+        return authManager.getPropertyPermissions( roles(), token );
     }
 
     private static class StandardAccessMode implements AccessMode
@@ -119,10 +119,10 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         private final boolean allowsTokenCreates;
         private final boolean passwordChangeRequired;
         private final Set<String> roles;
-        private final Function<String,Boolean> propertyPermissions;
+        private final Function<Integer,Boolean> propertyPermissions;
 
         StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsTokenCreates, boolean allowsSchemaWrites,
-                boolean passwordChangeRequired, Set<String> roles, Function<String,Boolean> propertyPermissions )
+                boolean passwordChangeRequired, Set<String> roles, Function<Integer,Boolean> propertyPermissions )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
@@ -158,9 +158,9 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         }
 
         @Override
-        public boolean allowsPropertyReads( String name )
+        public boolean allowsPropertyReads( int propertyKey )
         {
-            return propertyPermissions.apply( name );
+            return propertyPermissions.apply( propertyKey );
         }
 
         @Override
