@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.internal.kernel.api.{CursorFactory, Read, Write}
+import org.neo4j.internal.kernel.api.{CursorFactory, Read, TokenRead, Write}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -56,6 +56,8 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   override def cursors: CursorFactory = tc.kernelTransaction.cursors()
 
   override def dataRead: Read = tc.kernelTransaction().dataRead()
+
+  override def tokenRead: TokenRead = tc.kernelTransaction().tokenRead()
 
   override def dataWrite: Write = tc.kernelTransaction().dataWrite()
 

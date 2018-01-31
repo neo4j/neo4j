@@ -157,16 +157,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
     generator.assign(typeRef[Int], labelIdVar,
-                     invoke(readOperations, labelGetForName, constant(labelName)))
+                     invoke(tokenRead, labelGetForName, constant(labelName)))
 
   override def lookupLabelIdE(labelName: String): Expression =
-    invoke(readOperations, labelGetForName, constant(labelName))
+    invoke(tokenRead, labelGetForName, constant(labelName))
 
   override def lookupRelationshipTypeId(typeIdVar: String, typeName: String) =
-    generator.assign(typeRef[Int], typeIdVar, invoke(readOperations, relationshipTypeGetForName, constant(typeName)))
+    generator.assign(typeRef[Int], typeIdVar, invoke(tokenRead, relationshipTypeGetForName, constant(typeName)))
 
   override def lookupRelationshipTypeIdE(typeName: String) =
-    invoke(readOperations, relationshipTypeGetForName, constant(typeName))
+    invoke(tokenRead, relationshipTypeGetForName, constant(typeName))
 
   override def hasNextNode(iterVar: String) =
     invoke(generator.load(iterVar), hasNextLong)
@@ -550,6 +550,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def dataRead: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
+
+  private def tokenRead: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[TokenRead], "getOrLoadTokenRead"))
 
   private def cursors: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[CursorFactory], "getOrLoadCursors"))
@@ -1364,7 +1367,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relCursor(relVar)),  method[RelationshipSelectionCursor, Int]("type"))
     handleKernelExceptions(generator, fields, _finalizers) { inner =>
-      val res = invoke(readOperations, relationshipTypeGetName, typeOfRel)
+      val res = invoke(tokenRead, relationshipTypeGetName, typeOfRel)
       inner.assign(variable, res)
       generator.load(variable.name())
     }
@@ -1469,7 +1472,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def lookupPropertyKey(propName: String, propIdVar: String) =
-    generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
+    generator.assign(typeRef[Int], propIdVar, invoke(tokenRead, propertyKeyGetForName, constant(propName)))
 
   override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
     val getIndexDescriptor = method[IndexDescriptorFactory, IndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])

@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.util.v3_4.{TaskCloser, symbols}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
-import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.virtual.MapValue
@@ -180,6 +180,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     clazz.generate(Templates.constructor(clazz.handle()))
     Templates.getOrLoadReadOperations(clazz, fields)
     Templates.getOrLoadDataRead(clazz, fields)
+    Templates.getOrLoadTokenRead(clazz, fields)
     Templates.getOrLoadCursors(clazz, fields)
     Templates.nodeCursor(clazz, fields)
     Templates.propertyCursor(clazz, fields)
@@ -214,7 +215,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       cursors = clazz.field(typeRef[CursorFactory], "cursors"),
       nodeCursor = clazz.field(typeRef[NodeCursor], "nodeCursor"),
       propertyCursor = clazz.field(typeRef[PropertyCursor], "propertyCursor"),
-      dataRead =  clazz.field(typeRef[Read], "dataRead"))
+      dataRead =  clazz.field(typeRef[Read], "dataRead"),
+      tokenRead =  clazz.field(typeRef[TokenRead], "tokenRead")
+      )
   }
 
   def method[O <: AnyRef, R](name: String, params: TypeReference*)

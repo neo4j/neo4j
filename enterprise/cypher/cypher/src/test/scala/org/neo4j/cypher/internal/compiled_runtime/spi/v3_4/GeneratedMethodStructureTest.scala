@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, Read}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 
@@ -244,7 +245,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         cursors = body.field(typeRef[CursorFactory], "cursors"),
         nodeCursor = body.field(typeRef[NodeCursor], "nodeCursor"),
         propertyCursor = body.field(typeRef[PropertyCursor], "propertyCursor"),
-        dataRead = body.field(typeRef[Read], "dataRead")
+        dataRead = body.field(typeRef[Read], "dataRead"),
+        tokenRead = body.field(typeRef[TokenRead], "tokenRead")
       )
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))
@@ -254,6 +256,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       Templates.getOrLoadDataRead(body, fields)
       Templates.getOrLoadReadOperations(body, fields)
       Templates.getOrLoadCursors(body, fields)
+      Templates.getOrLoadTokenRead(body, fields)
       Templates.nodeCursor(body, fields)
       Templates.propertyCursor(body, fields)
       body.handle()

@@ -231,6 +231,7 @@ object Templates {
       generate.returns(cursors)
     }
   }
+
   def getOrLoadDataRead(clazz: ClassGenerator, fields: Fields) = {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[Read], "getOrLoadDataRead")
     using(clazz.generate(methodBuilder)) { generate =>
@@ -243,6 +244,21 @@ object Templates {
                   Expression.invoke(Expression.invoke(queryContext, transactionalContext), dataRead))
       }
       generate.returns(dataRead)
+    }
+  }
+
+  def getOrLoadTokenRead(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[TokenRead], "getOrLoadTokenRead")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val tokenRead = Expression.get(generate.self(), fields.tokenRead)
+      using(generate.ifStatement(Expression.isNull(tokenRead))) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val tokenRead: MethodReference = method[QueryTransactionalContext, TokenRead]("tokenRead")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.tokenRead,
+                  Expression.invoke(Expression.invoke(queryContext, transactionalContext), tokenRead))
+      }
+      generate.returns(tokenRead)
     }
   }
 

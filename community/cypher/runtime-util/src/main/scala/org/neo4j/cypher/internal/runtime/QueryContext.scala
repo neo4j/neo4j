@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescri
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexReference, Read, Write}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue}
 
 import scala.collection.Iterator
 
@@ -243,6 +243,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def cursors : CursorFactory
 
   def dataRead: Read
+
+  def tokenRead: TokenRead
 
   def dataWrite: Write
 

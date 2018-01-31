@@ -107,7 +107,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def reads() = transactionalContext.dataRead
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
-  private lazy val nodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 

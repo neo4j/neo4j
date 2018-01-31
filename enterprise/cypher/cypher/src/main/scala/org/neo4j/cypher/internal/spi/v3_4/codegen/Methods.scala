@@ -33,7 +33,7 @@ import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{CursorFactory, IndexQuery, NodeCursor, Read}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -90,8 +90,8 @@ object Methods {
   val mapContains = method[util.Map[String, Object], Boolean]("containsKey", typeRef[Object])
   val setContains = method[util.Set[Object], Boolean]("contains", typeRef[Object])
   val setAdd = method[util.Set[Object], Boolean]("add", typeRef[Object])
-  val labelGetForName = method[ReadOperations, Int]("labelGetForName", typeRef[String])
-  val propertyKeyGetForName = method[ReadOperations, Int]("propertyKeyGetForName", typeRef[String])
+  val labelGetForName = method[TokenRead, Int]("nodeLabel", typeRef[String])
+  val propertyKeyGetForName = method[TokenRead, Int]("propertyKey", typeRef[String])
   val coerceToPredicate = method[CompiledConversionUtils, Boolean]("coerceToPredicate", typeRef[Object])
   val toCollection = method[CompiledConversionUtils, java.util.Collection[Object]]("toCollection", typeRef[Object])
   val ternaryEquals = method[CompiledConversionUtils, java.lang.Boolean]("equals", typeRef[Object], typeRef[Object])
@@ -99,11 +99,9 @@ object Methods {
   val or = method[CompiledConversionUtils, java.lang.Boolean]("or", typeRef[Object], typeRef[Object])
   val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
   val loadParameter = method[CompiledConversionUtils, Object]("loadParameter", typeRef[AnyValue], typeRef[EmbeddedProxySPI])
-  val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
-  val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
+  val relationshipTypeGetForName = method[TokenRead, Int]("relationshipType", typeRef[String])
+  val relationshipTypeGetName = method[TokenRead, String]("relationshipTypeName", typeRef[Int])
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
-  val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
-  val nodeGetProperty = method[ReadOperations, Value]("nodeGetProperty", typeRef[Long], typeRef[Int])
   val indexQuery = method[ReadOperations, PrimitiveLongResourceIterator]("indexQuery", typeRef[IndexDescriptor], typeRef[Array[IndexQuery]])
   val indexQueryExact = method[IndexQuery, IndexQuery.ExactPredicate]("exact", typeRef[Int], typeRef[Object])
   val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Array[IndexQuery.ExactPredicate]])
