@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.impl.proc.Neo4jValue
+import org.neo4j.kernel.impl.proc.DefaultParameterValue
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
@@ -175,7 +175,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
   }
 
-  private def asCypherValue(neo4jValue: Neo4jValue) = CypherValue(neo4jValue.value,
+  private def asCypherValue(neo4jValue: DefaultParameterValue) = CypherValue(neo4jValue.value,
                                                                   asCypherType(neo4jValue.neo4jType()))
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {
@@ -185,6 +185,12 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     case Neo4jTypes.NTNumber => CTNumber
     case Neo4jTypes.NTBoolean => CTBoolean
     case l: Neo4jTypes.ListType => CTList(asCypherType(l.innerType()))
+    case Neo4jTypes.NTDateTime => CTDateTime
+    case Neo4jTypes.NTLocalDateTime => CTLocalDateTime
+    case Neo4jTypes.NTDate => CTDate
+    case Neo4jTypes.NTTime => CTTime
+    case Neo4jTypes.NTLocalTime => CTLocalTime
+    case Neo4jTypes.NTDuration => CTDuration
     case Neo4jTypes.NTPoint => CTPoint
     case Neo4jTypes.NTNode => CTNode
     case Neo4jTypes.NTRelationship => CTRelationship

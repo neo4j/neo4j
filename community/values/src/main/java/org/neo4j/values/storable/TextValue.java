@@ -19,6 +19,10 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.ListValue;
 
 import static org.neo4j.values.storable.Values.stringArray;
@@ -94,4 +98,12 @@ public abstract class TextValue extends ScalarValue
     {
         return NumberType.NO_NUMBER;
     }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapText( this );
+    }
+
+    abstract Matcher matcher( Pattern pattern );
 }

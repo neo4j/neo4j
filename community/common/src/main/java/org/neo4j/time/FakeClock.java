@@ -50,7 +50,7 @@ public class FakeClock extends SystemNanoClock
     @Override
     public Clock withZone( ZoneId zone )
     {
-        throw new UnsupportedOperationException();
+        return new WithZone( zone );
     }
 
     @Override
@@ -75,5 +75,39 @@ public class FakeClock extends SystemNanoClock
     {
         nanoTime += unit.toNanos( delta );
         return this;
+    }
+
+    private class WithZone extends Clock
+    {
+        private final ZoneId zone;
+
+        WithZone( ZoneId zone )
+        {
+            this.zone = zone;
+        }
+
+        @Override
+        public ZoneId getZone()
+        {
+            return zone;
+        }
+
+        @Override
+        public Clock withZone( ZoneId zone )
+        {
+            return new WithZone( zone );
+        }
+
+        @Override
+        public long millis()
+        {
+            return FakeClock.this.millis();
+        }
+
+        @Override
+        public Instant instant()
+        {
+            return FakeClock.this.instant();
+        }
     }
 }

@@ -22,15 +22,16 @@ package org.neo4j.internal.cypher.acceptance
 import java.util
 
 import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.kernel.impl.util.ValueUtils
 
 class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("should return correctly typed map result (even if converting to and from scala representation internally)") {
-    val value = new util.HashMap[String, Any]()
+    val value = new util.HashMap [String, Any]()
     value.put("name", "Cypher")
     value.put("level", 9001)
 
-    registerUserFunction(value)
+    registerUserFunction(ValueUtils.of(value))
 
     // Using graph execute to get a Java value
     graph.execute("RETURN my.first.value()").stream().toArray.toList should equal(List(
@@ -43,7 +44,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add("Norris")
     value.add("Strange")
 
-    registerUserFunction(value)
+    registerUserFunction(ValueUtils.of(value))
 
     // Using graph execute to get a Java value
     graph.execute("RETURN my.first.value() AS out").stream().toArray.toList should equal(List(
@@ -57,7 +58,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add("Strange")
     val stream = value.stream()
 
-    registerUserFunction(stream)
+    registerUserFunction(ValueUtils.of(value))
 
     // Using graph execute to get a Java value
     graph.execute("RETURN my.first.value() AS out").stream().toArray.toList should equal(List(
@@ -70,7 +71,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add("Norris")
     value.add("Strange")
 
-    registerUserFunction(value)
+    registerUserFunction(ValueUtils.of(value))
 
     // Using graph execute to get a Java value
     val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
@@ -85,7 +86,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add("Norris")
     value.add(inner)
 
-    registerUserFunction(value)
+    registerUserFunction(ValueUtils.of(value))
 
     // Using graph execute to get a Java value
     val returned = graph.execute("RETURN my.first.value() AS out").next().get("out")
@@ -99,7 +100,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     value.add(1)
     value.add(3)
 
-    registerUserFunction(value, Neo4jTypes.NTList(Neo4jTypes.NTInteger))
+    registerUserFunction(ValueUtils.of(value), Neo4jTypes.NTList(Neo4jTypes.NTInteger))
 
     // Using graph execute to get a Java value
     val returned = graph.execute("WITH my.first.value() AS list RETURN list[0] + list[1] AS out")

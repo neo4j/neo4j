@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
@@ -46,6 +47,12 @@ public abstract class ShortArray extends IntegralArray
     public int computeHash()
     {
         return NumberValues.hash( value() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapShortArray( this );
     }
 
     @Override
@@ -112,14 +119,14 @@ public abstract class ShortArray extends IntegralArray
     }
 
     @Override
-    public Object asObjectCopy()
+    public short[] asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asObject()
+    public short[] asObject()
     {
         return value();
     }

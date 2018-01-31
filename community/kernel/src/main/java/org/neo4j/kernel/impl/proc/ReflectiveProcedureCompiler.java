@@ -61,6 +61,8 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
@@ -325,7 +327,7 @@ class ReflectiveProcedureCompiler
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
-        TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
+        TypeMappers.TypeChecker typeChecker = typeMappers.checkerFor( returnType );
         MethodHandle procedureMethod = lookup.unreflect( method );
         Optional<String> description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
@@ -343,17 +345,17 @@ class ReflectiveProcedureCompiler
             {
                 description = describeAndLogLoadFailure( procName );
                 UserFunctionSignature signature =
-                        new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
+                        new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
                                 config.rolesFor( procName.toString() ), description );
                 return new FailedLoadFunction( signature );
             }
         }
 
         UserFunctionSignature signature =
-                new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
+                new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
-        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
+        return new ReflectiveUserFunction( signature, constructor, procedureMethod, typeChecker, typeMappers, setters );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -428,7 +430,7 @@ class ReflectiveProcedureCompiler
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( update );
         Class<?> returnType = result.getReturnType();
-        TypeMappers.NeoValueConverter valueConverter = typeMappers.converterFor( returnType );
+        TypeMappers.TypeChecker valueConverter = typeMappers.checkerFor( returnType );
         MethodHandle creator = lookup.unreflect( method );
         MethodHandle updateMethod = lookup.unreflect( update );
         MethodHandle resultMethod = lookup.unreflect( result );
@@ -552,9 +554,11 @@ class ReflectiveProcedureCompiler
     {
 
         final List<FieldInjections.FieldSetter> fieldSetters;
+        private final ValueMapper<Object> mapper;
 
-        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
+        ReflectiveBase( ValueMapper<Object> mapper, List<FieldInjections.FieldSetter> fieldSetters )
         {
+            this.mapper = mapper;
             this.fieldSetters = fieldSetters;
         }
 
@@ -573,6 +577,17 @@ class ReflectiveProcedureCompiler
             System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
             return args;
         }
+
+        protected Object[] args( int numberOfDeclaredArguments, Object cls, AnyValue[] input )
+        {
+            Object[] args = new Object[numberOfDeclaredArguments + 1];
+            args[0] = cls;
+            for ( int i = 0; i < input.length; i++ )
+            {
+                args[i + 1] = input[i].map( mapper );
+            }
+            return args;
+        }
     }
 
     private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
@@ -586,7 +601,7 @@ class ReflectiveProcedureCompiler
                 MethodHandle procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( null, fieldSetters );
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.signature = signature;
@@ -709,21 +724,20 @@ class ReflectiveProcedureCompiler
 
     private static class ReflectiveUserFunction extends ReflectiveBase implements CallableUserFunction
     {
-
-        private final TypeMappers.NeoValueConverter valueConverter;
+        private final TypeMappers.TypeChecker typeChecker;
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final MethodHandle udfMethod;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
-                MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                MethodHandle procedureMethod, TypeMappers.TypeChecker typeChecker,
+                ValueMapper<Object> mapper, List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( mapper, fieldSetters );
             this.constructor = constructor;
             this.udfMethod = procedureMethod;
             this.signature = signature;
-            this.valueConverter = outputMapper;
+            this.typeChecker = typeChecker;
         }
 
         @Override
@@ -733,7 +747,7 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public Object apply( Context ctx, Object[] input ) throws ProcedureException
+        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to
@@ -758,7 +772,7 @@ class ReflectiveProcedureCompiler
 
                 Object rs = udfMethod.invokeWithArguments( args );
 
-                return valueConverter.toNeoValue( rs );
+                return typeChecker.toValue( rs );
             }
             catch ( Throwable throwable )
             {
@@ -780,7 +794,7 @@ class ReflectiveProcedureCompiler
             CallableUserAggregationFunction
     {
 
-        private final TypeMappers.NeoValueConverter valueConverter;
+        private final TypeMappers.TypeChecker typeChecker;
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final MethodHandle creator;
@@ -789,16 +803,16 @@ class ReflectiveProcedureCompiler
 
         ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle creator, MethodHandle updateMethod, MethodHandle resultMethod,
-                TypeMappers.NeoValueConverter outputMapper,
+                TypeMappers.TypeChecker typeChecker,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( fieldSetters );
+            super( null, fieldSetters );
             this.constructor = constructor;
             this.creator = creator;
             this.updateMethod = updateMethod;
             this.resultMethod = resultMethod;
             this.signature = signature;
-            this.valueConverter = outputMapper;
+            this.typeChecker = typeChecker;
         }
 
         @Override
@@ -862,7 +876,7 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            return valueConverter.toNeoValue( resultMethod.invoke(aggregator) );
+                            return typeChecker.typeCheck( resultMethod.invoke(aggregator) );
                         }
                         catch ( Throwable throwable )
                         {

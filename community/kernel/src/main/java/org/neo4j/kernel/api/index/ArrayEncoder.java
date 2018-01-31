@@ -151,6 +151,48 @@ public final class ArrayEncoder
         }
 
         @Override
+        public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDate( long epochDay ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
+        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+        {
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+
+        @Override
         public void beginArray( int size, ArrayType arrayType )
         {
             if ( size > 0 )

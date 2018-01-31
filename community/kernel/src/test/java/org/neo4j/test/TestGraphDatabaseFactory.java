@@ -50,6 +50,7 @@ import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.time.SystemNanoClock;
 
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -163,6 +164,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     public TestGraphDatabaseFactory setInternalLogProvider( LogProvider logProvider )
     {
         getCurrentState().setInternalLogProvider( logProvider );
+        return this;
+    }
+
+    public TestGraphDatabaseFactory setClock( SystemNanoClock clock )
+    {
+        getCurrentState().setClock( clock );
         return this;
     }
 
@@ -316,6 +323,13 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                     internalLogProvider = NullLogProvider.getInstance();
                 }
                 return new SimpleLogService( userLogProvider, internalLogProvider );
+            }
+
+            @Override
+            protected SystemNanoClock createClock()
+            {
+                SystemNanoClock clock = state.clock();
+                return clock != null ? clock : super.createClock();
             }
         }
 

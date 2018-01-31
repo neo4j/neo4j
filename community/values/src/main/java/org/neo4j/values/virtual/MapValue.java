@@ -27,6 +27,7 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Values;
 
@@ -72,8 +73,13 @@ public final class MapValue extends VirtualValue
 
     public ListValue keys()
     {
-        String[] strings = map.keySet().toArray( new String[map.size()] );
+        String[] strings = keySet().toArray( new String[map.size()] );
         return VirtualValues.fromArray( Values.stringArray( strings ) );
+    }
+
+    public Set<String> keySet()
+    {
+        return map.keySet();
     }
 
     @Override
@@ -94,7 +100,7 @@ public final class MapValue extends VirtualValue
         int compare = Integer.compare( size(), otherMap.size() );
         if ( compare == 0 )
         {
-            String[] thisKeys = map.keySet().toArray( new String[size] );
+            String[] thisKeys = keySet().toArray( new String[size] );
             Arrays.sort( thisKeys, String::compareTo );
             String[] thatKeys = otherMap.keySet().toArray( new String[size] );
             Arrays.sort( thatKeys, String::compareTo );
@@ -137,7 +143,7 @@ public final class MapValue extends VirtualValue
         {
             return false;
         }
-        String[] thisKeys = map.keySet().toArray( new String[size] );
+        String[] thisKeys = keySet().toArray( new String[size] );
         Arrays.sort( thisKeys, String::compareTo );
         String[] thatKeys = otherMap.keySet().toArray( new String[size] );
         Arrays.sort( thatKeys, String::compareTo );
@@ -164,6 +170,12 @@ public final class MapValue extends VirtualValue
             }
         }
         return equalityResult;
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapMap( this );
     }
 
     public void foreach( BiConsumer<String,AnyValue> f )

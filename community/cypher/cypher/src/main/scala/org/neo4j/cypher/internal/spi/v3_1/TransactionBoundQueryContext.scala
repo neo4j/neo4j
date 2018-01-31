@@ -56,6 +56,8 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
 import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.locking.ResourceTypes
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 import scala.collection.Iterator
@@ -593,7 +595,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
-  type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
+  type KernelFunctionCall = (KernelQualifiedName, Array[AnyValue]) => AnyValue
 
   private def shouldElevate(allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
@@ -646,17 +648,18 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     val call: KernelFunctionCall =
       if (shouldElevate(allowed))
-        txContext.statement.procedureCallOperations.functionCallOverride(_, _)
+        (name, args) => txContext.statement.procedureCallOperations.functionCallOverride(name, args)
       else
-        txContext.statement.procedureCallOperations.functionCall(_, _)
+        (name, args) => txContext.statement.procedureCallOperations.functionCall(name, args)
     callFunction(name, args, call)
   }
 
   private def callFunction(name: QualifiedName, args: Seq[Any],
                            call: KernelFunctionCall) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    call(kn, toArray)
+    val argArray = args.map(ValueUtils.of).toArray
+    val result = call(kn, argArray)
+    result.map(txContext.statement.procedureCallOperations.valueMapper)
   }
 
   override def isGraphKernelResultValue(v: Any): Boolean = v.isInstanceOf[PropertyContainer] || v.isInstanceOf[Path]

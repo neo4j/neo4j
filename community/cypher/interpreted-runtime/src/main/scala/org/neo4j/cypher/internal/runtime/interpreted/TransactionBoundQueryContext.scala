@@ -25,7 +25,7 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.{PrimitiveLongIterator, PrimitiveLongResourceIterator}
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.javacompat.{GraphDatabaseCypherService, ValueToObjectSerializer}
+import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.CypherOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
@@ -59,10 +59,10 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.kernel.impl.util.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
-import org.neo4j.values.AnyValue
+import org.neo4j.kernel.impl.util.{DefaultValueMapper, NodeProxyWrappingNodeValue, RelationshipProxyWrappingValue}
+import org.neo4j.values.{AnyValue, ValueMapper}
 import org.neo4j.values.storable.{TextValue, Value, Values}
-import org.neo4j.values.virtual.{RelationshipValue, ListValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipValue, VirtualValues}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -77,6 +77,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
   override lazy val entityAccessor: EmbeddedProxySPI =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[EmbeddedProxySPI])
+  private lazy val valueMapper: ValueMapper[java.lang.Object] = new DefaultValueMapper(entityAccessor)
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
@@ -429,13 +430,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     value match {
       case node: NodeProxyWrappingNodeValue => node.nodeProxy
       case edge: RelationshipProxyWrappingValue => edge.relationshipProxy
-      case _ =>
-
-        val converter = new ValueToObjectSerializer(entityAccessor)
-        //TODO this is not very nice, but I need a transaction here and this is what
-        // I ended up with.
-        withAnyOpenQueryContext(_ => value.writeTo(converter))
-        converter.value()
+      case _ => withAnyOpenQueryContext(_=>value.map(valueMapper))
     }
   }
 
@@ -845,7 +840,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
-  type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
+  type KernelFunctionCall = (KernelQualifiedName, Array[AnyValue]) => AnyValue
   type KernelAggregationFunctionCall = (KernelQualifiedName) => Aggregator
 
   private def shouldElevate(allowed: Array[String]): Boolean = {
@@ -898,7 +893,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
+  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) = {
     val call: KernelFunctionCall =
       if (shouldElevate(allowed))
         transactionalContext.statement.procedureCallOperations.functionCallOverride(_, _)
@@ -916,11 +911,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callAggregationFunction(name, call)
   }
 
-  private def callFunction(name: QualifiedName, args: Seq[Any],
+  private def callFunction(name: QualifiedName, args: Seq[AnyValue],
                            call: KernelFunctionCall) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
-    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    call(kn, toArray)
+    call(kn, args.toArray)
   }
 
   private def callAggregationFunction(name: QualifiedName,

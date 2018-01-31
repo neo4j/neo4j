@@ -165,6 +165,80 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
+    public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
+    {
+        append( "{duration: {months: " );
+        append( Long.toString( months ) );
+        append( ", days: " );
+        append( Long.toString( days ) );
+        append( ", seconds: " );
+        append( Long.toString( seconds ) );
+        append( ", nanos: " );
+        append( Long.toString( nanos ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeDate( long epochDay ) throws RuntimeException
+    {
+        append( "{date: {epochDay: " );
+        append( Long.toString( epochDay ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    {
+        append( "{localTime: {nanosOfDay: " );
+        append( Long.toString( nanoOfDay ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    {
+        append( "{time: {nanosOfDay: " );
+        append( Long.toString( nanosOfDayUTC ) );
+        append( ", offsetSeconds: " );
+        append( Long.toString( offsetSeconds ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    {
+        append( "{localDateTime: {epochDay: " );
+        append( Long.toString( epochSecond ) );
+        append( ", nanosOfDay: " );
+        append( Long.toString( nano ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    {
+        append( "{datetime: {epochDay: " );
+        append( Long.toString( epochSecondUTC ) );
+        append( ", nanosOfDay: " );
+        append( Long.toString( nano ) );
+        append( ", offsetSeconds: " );
+        append( Long.toString( offsetSeconds ) );
+        append( "}}" );
+    }
+
+    @Override
+    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+    {
+        append( "{datetime: {epochDay: " );
+        append( Long.toString( epochSecondUTC ) );
+        append( ", nanosOfDay: " );
+        append( Long.toString( nano ) );
+        append( ", timezone: \"" );
+        append( zoneId );
+        append( "\"}}" );
+    }
+
+    @Override
     public void writeNull()
     {
         append( "<null>" );

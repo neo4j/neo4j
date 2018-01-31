@@ -36,7 +36,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
 import org.neo4j.internal.cypher.acceptance.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -53,9 +53,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     Map(GraphDatabaseSettings.cypher_hints_error -> "true")
   }
 
-  override protected def createGraphDatabase(config: collection.Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
+  override protected def createDatabaseFactory(): TestGraphDatabaseFactory = new TestEnterpriseGraphDatabaseFactory()
 
   /**
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.

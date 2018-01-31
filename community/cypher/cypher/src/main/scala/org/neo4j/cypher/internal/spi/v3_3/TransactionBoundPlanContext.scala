@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.impl.proc.Neo4jValue
+import org.neo4j.kernel.impl.proc.DefaultParameterValue
 import org.neo4j.procedure.Mode
 
 import scala.collection.JavaConverters._
@@ -172,7 +172,7 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
       "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
   }
 
-  private def asCypherValue(neo4jValue: Neo4jValue) = CypherValue(neo4jValue.value,
+  private def asCypherValue(neo4jValue: DefaultParameterValue) = CypherValue(neo4jValue.value,
     asCypherType(neo4jValue.neo4jType()))
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {
@@ -189,6 +189,12 @@ class TransactionBoundPlanContext(readOperationsSupplier: () => ReadOperations, 
     case Neo4jTypes.NTGeometry => symbols.CTGeometry
     case Neo4jTypes.NTMap => symbols.CTMap
     case Neo4jTypes.NTAny => symbols.CTAny
+    case Neo4jTypes.NTDateTime => symbols.CTAny
+    case Neo4jTypes.NTLocalDateTime => symbols.CTAny
+    case Neo4jTypes.NTDate => symbols.CTAny
+    case Neo4jTypes.NTTime => symbols.CTAny
+    case Neo4jTypes.NTLocalTime => symbols.CTAny
+    case Neo4jTypes.NTDuration => symbols.CTAny
   }
 
   override def notificationLogger(): InternalNotificationLogger = logger

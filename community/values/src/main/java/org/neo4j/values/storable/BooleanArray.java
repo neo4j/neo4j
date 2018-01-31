@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
@@ -115,20 +116,26 @@ public abstract class BooleanArray extends ArrayValue
     }
 
     @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapBooleanArray( this );
+    }
+
+    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         PrimitiveArrayWriting.writeTo( writer, value() );
     }
 
     @Override
-    public Object asObjectCopy()
+    public boolean[] asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asObject()
+    public boolean[] asObject()
     {
         return value();
     }

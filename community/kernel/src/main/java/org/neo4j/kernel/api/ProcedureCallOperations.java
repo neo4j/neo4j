@@ -24,6 +24,8 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 /**
  * Specifies procedure call operations for the three types of procedure calls that can be made.
@@ -99,7 +101,7 @@ public interface ProcedureCallOperations
      * @param arguments the function arguments.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    Object functionCall( QualifiedName name, Object[] arguments ) throws ProcedureException;
+    AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException;
 
     /** Invoke a read-only function by name, and set the transaction's access mode to
      * {@link AccessMode.Static#READ READ} for the duration of the function execution.
@@ -107,7 +109,7 @@ public interface ProcedureCallOperations
      * @param arguments the function arguments.
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
-    Object functionCallOverride( QualifiedName name, Object[] arguments ) throws ProcedureException;
+    AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException;
 
     /**
      * Create a read-only aggregation function by name
@@ -123,4 +125,10 @@ public interface ProcedureCallOperations
      * @throws ProcedureException if there was an exception thrown during function execution.
      */
     CallableUserAggregationFunction.Aggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException;
+
+    /**
+     * Retrieve a value mapper for mapping values to regular Java objects.
+     * @return a value mapper that maps to Java objects.
+     */
+    ValueMapper<Object> valueMapper();
 }

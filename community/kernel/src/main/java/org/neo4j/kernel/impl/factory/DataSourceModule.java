@@ -52,6 +52,9 @@ import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -62,7 +65,7 @@ import org.neo4j.kernel.impl.proc.ProcedureGDSFactory;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
-import org.neo4j.kernel.impl.proc.TypeMappers.SimpleConverter;
+import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
@@ -241,19 +244,20 @@ public class DataSourceModule
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logging.getInternalLog( Procedures.class );
+        EmbeddedProxySPI proxySPI = platform.dependencies.resolveDependency( EmbeddedProxySPI.class );
 
-        Procedures procedures = new Procedures(
+        Procedures procedures = new Procedures( proxySPI,
                 new SpecialBuiltInProcedures( Version.getNeo4jVersion(),
                         platform.databaseInfo.edition.toString() ),
                 pluginDir, internalLog, new ProcedureConfig( platform.config ) );
         platform.life.add( procedures );
         platform.dependencies.satisfyDependency( procedures );
 
-        procedures.registerType( Node.class, new SimpleConverter( NTNode, Node.class ) );
-        procedures.registerType( Relationship.class, new SimpleConverter( NTRelationship, Relationship.class ) );
-        procedures.registerType( Path.class, new SimpleConverter( NTPath, Path.class ) );
-        procedures.registerType( Geometry.class, new SimpleConverter( NTGeometry, Geometry.class ) );
-        procedures.registerType( Point.class, new SimpleConverter( NTPoint, Point.class ) );
+        procedures.registerType( Node.class, NTNode );
+        procedures.registerType( Relationship.class, NTRelationship );
+        procedures.registerType( Path.class, NTPath );
+        procedures.registerType( Geometry.class, NTGeometry );
+        procedures.registerType( Point.class, NTPoint );
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );

@@ -26,7 +26,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
 import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
-import static org.neo4j.kernel.impl.proc.Neo4jValue.ntString;
+import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntString;
 
 public class FieldSignatureTest
 {

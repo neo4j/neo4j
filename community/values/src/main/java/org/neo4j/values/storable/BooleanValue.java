@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.ValueMapper;
+
 import static java.lang.String.format;
 
 /**
@@ -36,6 +38,12 @@ public abstract class BooleanValue extends ScalarValue
     public boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapBoolean( this );
     }
 
     public ValueGroup valueGroup()

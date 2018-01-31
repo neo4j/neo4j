@@ -23,6 +23,7 @@ package org.neo4j.values.virtual;
 import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
 public abstract class VirtualRelationshipValue extends VirtualValue
@@ -45,6 +46,12 @@ public abstract class VirtualRelationshipValue extends VirtualValue
     public int computeHash()
     {
         return Long.hashCode( id() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapRelationship( this );
     }
 
     @Override

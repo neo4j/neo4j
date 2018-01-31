@@ -45,6 +45,8 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
@@ -253,7 +255,7 @@ public class ProcedureJarLoaderTest
                 functionSignature( "org", "neo4j", "kernel", "impl", "proc", "unsafeFullAccessFunction" )
                         .out( NTInteger ).build() ) );
 
-        assertThat( functions.get( 0 ).apply( new BasicContext(), new Object[0] ), equalTo( 7331L ) );
+        assertThat( functions.get( 0 ).apply( new BasicContext(), new AnyValue[0] ), equalTo( Values.of( 7331L ) ) );
     }
 
     public URL createJarFor( Class<?> ... targets ) throws IOException

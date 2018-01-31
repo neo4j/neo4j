@@ -875,6 +875,12 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
+    public int getRelationshipTypeIdByName( String typeName )
+    {
+        return relationshipTypeTokenHolder.getIdByName( typeName );
+    }
+
+    @Override
     public GraphPropertiesProxy newGraphPropertiesProxy()
     {
         return new GraphPropertiesProxy( this );

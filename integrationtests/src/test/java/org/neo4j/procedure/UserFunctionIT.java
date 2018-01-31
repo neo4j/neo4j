@@ -40,6 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.ws.rs.HEAD;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -65,6 +66,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.shell.kernel.apps.cypher.Cypher;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
@@ -812,100 +814,271 @@ public class UserFunctionIT
         Result res = db.execute( "CALL dbms.functions()" );
 
         String expected = String.format(
-                "+------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------" +
-                "------------------------------------------------+%n" +
-                "| name                                                | signature                             " +
-                "                                                                                              " +
-                "                         | description                |%n" +
-                "+------------------------------------------------------------------------------------------------" +
-                "-------------------------------------------------------------------------------------------------" +
-                "------------------------------------------------+%n" +
+                "+-------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------------------------------------------" +
+                "----------------------------------+%n" +
+                "| name                                                | signature                                 " +
+                "                                                                                                  " +
+                "                 | description                                                                    " +
+                "                                  |%n" +
+                "+-------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------------------------------------------" +
+                "----------------------------------+%n" +
+                "| \"date\"                                              | \"date(input = null :: ANY?) :: " +
+                "(DATE?)\"                                                                                 " +
+                "                                     | \"Create a Date instant.\"                         " +
+                "                                                                |%n" +
+                "| \"date.realtime\"                                     | \"date.realtime(timezone = null " +
+                ":: STRING?) :: (DATE?)\"                                                                  " +
+                "                                     | \"Get the current Date instant using the realtime " +
+                "clock.\"                                                         |%n" +
+                "| \"date.statement\"                                    | \"date.statement(timezone = null" +
+                " :: STRING?) :: (DATE?)\"                                                                 " +
+                "                                     | \"Get the current Date instant using the statement " +
+                "clock.\"                                                        |%n" +
+                "| \"date.transaction\"                                  | \"date.transaction(timezone = " +
+                "null :: STRING?) :: (DATE?)\"                                                             " +
+                "                                       | \"Get the current Date instant using the " +
+                "transaction clock.\"                                                      |%n" +
+                "| \"date.truncate\"                                     | \"date.truncate(unit :: STRING?," +
+                " input :: ANY?, fields = null :: MAP?) :: (DATE?)\"                                       " +
+                "                                     | \"Truncate the input temporal value to a Date " +
+                "instant using the specified unit.\"                                  |%n" +
+                "| \"datetime\"                                          | \"datetime(input = null :: ANY?) :: " +
+                "(DATETIME?)\"                                                                                     " +
+                "                         | \"Create a DateTime instant.\"                                         " +
+                "                                            |%n" +
+                "| \"datetime.realtime\"                                 | \"datetime.realtime(timezone = null :: " +
+                "STRING?) :: (DATETIME?)\"                                                                         " +
+                "                      | \"Get the current DateTime instant using the realtime clock.\"            " +
+                "                                         |%n" +
+                "| \"datetime.statement\"                                | \"datetime.statement(timezone = null :: " +
+                "STRING?) :: (DATETIME?)\"                                                                         " +
+                "                     | \"Get the current DateTime instant using the statement clock.\"            " +
+                "                                        |%n" +
+                "| \"datetime.transaction\"                              | \"datetime.transaction(timezone = null " +
+                ":: STRING?) :: (DATETIME?)\"                                                                      " +
+                "                      | \"Get the current DateTime instant using the transaction clock.\"         " +
+                "                                         |%n" +
+                "| \"datetime.truncate\"                                 | \"datetime.truncate(unit :: STRING?, " +
+                "input :: ANY?, fields = null :: MAP?) :: (DATETIME?)\"                                            " +
+                "                        | \"Truncate the input temporal value to a DateTime instant using the " +
+                "specified unit.\"                              |%n" +
+                "| \"duration\"                                          | \"duration(input :: ANY?) :: (DURATION?)" +
+                "\"                                                                                                " +
+                "                     | \"Construct a Duration value.\"                                            " +
+                "                                        |%n" +
+                "| \"duration.between\"                                  | \"duration.between(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                      | \"Compute the duration between the 'form' instant (inclusive) and the 'to'" +
+                " instant (exclusive) in logical units.\" |%n" +
+                "| \"duration.days\"                                     | \"duration.days(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                         | \"Compute the duration between the 'form' instant (inclusive) and the " +
+                "'to' instant (exclusive) in days.\"          |%n" +
+                "| \"duration.hours\"                                    | \"duration.hours(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                        | \"Compute the duration between the 'form' instant (inclusive) and the " +
+                "'to' instant (exclusive) in hours.\"         |%n" +
+                "| \"duration.minutes\"                                  | \"duration.minutes(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                      | \"Compute the duration between the 'form' instant (inclusive) and the 'to'" +
+                " instant (exclusive) in minutes.\"       |%n" +
+                "| \"duration.months\"                                   | \"duration.months(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                       | \"Compute the duration between the 'form' instant (inclusive) and the " +
+                "'to' instant (exclusive) in months.\"        |%n" +
+                "| \"duration.quarters\"                                 | \"duration.quarters(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                     | \"Compute the duration between the 'form' instant (inclusive) and the 'to' " +
+                "instant (exclusive) in quarters.\"      |%n" +
+                "| \"duration.seconds\"                                  | \"duration.seconds(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                      | \"Compute the duration between the 'form' instant (inclusive) and the 'to'" +
+                " instant (exclusive) in seconds.\"       |%n" +
+                "| \"duration.weeks\"                                    | \"duration.weeks(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                        | \"Compute the duration between the 'form' instant (inclusive) and the " +
+                "'to' instant (exclusive) in weeks.\"         |%n" +
+                "| \"duration.years\"                                    | \"duration.years(from :: ANY?, to :: " +
+                "ANY?) :: (DURATION?)\"                                                                            " +
+                "                        | \"Compute the duration between the 'form' instant (inclusive) and the " +
+                "'to' instant (exclusive) in years.\"         |%n" +
+                "| \"localdatetime\"                                     | \"localdatetime(input = null :: " +
+                "ANY?) :: (LOCALDATETIME?)\"                                                               " +
+                "                                     | \"Create a LocalDateTime instant.\"                " +
+                "                                                                |%n" +
+                "| \"localdatetime.realtime\"                            | \"localdatetime.realtime" +
+                "(timezone = null :: STRING?) :: (LOCALDATETIME?)\"                                        " +
+                "                                             | \"Get the current LocalDateTime instant " +
+                "using the realtime clock.\"                                                |%n" +
+                "| \"localdatetime.statement\"                           | \"localdatetime.statement" +
+                "(timezone = null :: STRING?) :: (LOCALDATETIME?)\"                                        " +
+                "                                            | \"Get the current LocalDateTime instant " +
+                "using the statement clock.\"                                               |%n" +
+                "| \"localdatetime.transaction\"                         | \"localdatetime.transaction" +
+                "(timezone = null :: STRING?) :: (LOCALDATETIME?)\"                                        " +
+                "                                          | \"Get the current LocalDateTime instant using " +
+                "the transaction clock.\"                                             |%n" +
+                "| \"localdatetime.truncate\"                            | \"localdatetime.truncate(unit ::" +
+                " STRING?, input :: ANY?, fields = null :: MAP?) :: (LOCALDATETIME?)\"                     " +
+                "                                     | \"Truncate the input temporal value to a " +
+                "LocalDateTime instant using the specified unit.\"                         |%n" +
+                "| \"localtime\"                                         | \"localtime(input = null :: " +
+                "ANY?) :: (LOCALTIME?)\"                                                                   " +
+                "                                         | \"Create a LocalTime instant.\"                " +
+                "                                                                    |%n" +
+                "| \"localtime.realtime\"                                | \"localtime.realtime(timezone = " +
+                "null :: STRING?) :: (LOCALTIME?)\"                                                        " +
+                "                                     | \"Get the current LocalTime instant using the " +
+                "realtime clock.\"                                                    |%n" +
+                "| \"localtime.statement\"                               | \"localtime.statement(timezone =" +
+                " null :: STRING?) :: (LOCALTIME?)\"                                                       " +
+                "                                     | \"Get the current LocalTime instant using the " +
+                "statement clock.\"                                                   |%n" +
+                "| \"localtime.transaction\"                             | \"localtime.transaction(timezone" +
+                " = null :: STRING?) :: (LOCALTIME?)\"                                                     " +
+                "                                     | \"Get the current LocalTime instant using the " +
+                "transaction clock.\"                                                 |%n" +
+                "| \"localtime.truncate\"                                | \"localtime.truncate(unit :: " +
+                "STRING?, input :: ANY?, fields = null :: MAP?) :: (LOCALTIME?)\"                          " +
+                "                                        | \"Truncate the input temporal value to a " +
+                "LocalTime instant using the specified unit.\"                             |%n" +
                 "| \"org.neo4j.procedure.avgDoubleList\"                 | \"org.neo4j.procedure.avgDoubleList" +
-                "(someValue :: LIST? OF FLOAT?) :: (FLOAT?)\"                                                  " +
-                "                              | \"\"                         |%n" +
+                "(someValue :: LIST? OF FLOAT?) :: (FLOAT?)\"                                                      " +
+                "                          | \"\"                                                                  " +
+                "                                             |%n" +
                 "| \"org.neo4j.procedure.avgNumberList\"                 | \"org.neo4j.procedure.avgNumberList" +
-                "(someValue :: LIST? OF NUMBER?) :: (FLOAT?)\"                                                 " +
-                "                              | \"\"                         |%n" +
+                "(someValue :: LIST? OF NUMBER?) :: (FLOAT?)\"                                                     " +
+                "                          | \"\"                                                                  " +
+                "                                             |%n" +
                 "| \"org.neo4j.procedure.defaultValues\"                 | \"org.neo4j.procedure.defaultValues" +
-                "(string = a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = " +
-                "true :: BOOLEAN?) :: (STRING?)\" | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.delegatingFunction\"            | \"org.neo4j.procedure" +
-                ".delegatingFunction(someValue :: INTEGER?) :: (INTEGER?)\"                                    " +
-                "                                            | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.genericArguments\"              | \"org.neo4j.procedure" +
-                ".genericArguments(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF " +
-                "INTEGER?) :: (INTEGER?)\"                     | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.indexOutOfBounds\"              | \"org.neo4j.procedure" +
-                ".indexOutOfBounds() :: (INTEGER?)\"                                                           " +
-                "                                            | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.integrationTestMe\"             | \"org.neo4j.procedure" +
-                ".integrationTestMe() :: (INTEGER?)\"                                                          " +
-                "                                            | \"\"                         |%n" +
+                "(string = a string :: STRING?, integer = 42 :: INTEGER?, float = 3.14 :: FLOAT?, boolean = true ::" +
+                " BOOLEAN?) :: (STRING?)\" | \"\"                                                                  " +
+                "                                             |%n" +
+                "| \"org.neo4j.procedure.delegatingFunction\"            | \"org.neo4j.procedure.delegatingFunction" +
+                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                           " +
+                "                     | \"\"                                                                       " +
+                "                                        |%n" +
+                "| \"org.neo4j.procedure.genericArguments\"              | \"org.neo4j.procedure.genericArguments" +
+                "(strings :: LIST? OF LIST? OF STRING?, longs :: LIST? OF LIST? OF LIST? OF INTEGER?) :: (INTEGER?)" +
+                "\"                     | \"\"                                                                     " +
+                "                                          |%n" +
+                "| \"org.neo4j.procedure.indexOutOfBounds\"              | \"org.neo4j.procedure.indexOutOfBounds()" +
+                " :: (INTEGER?)\"                                                                                  " +
+                "                     | \"\"                                                                       " +
+                "                                        |%n" +
+                "| \"org.neo4j.procedure.integrationTestMe\"             | \"org.neo4j.procedure.integrationTestMe" +
+                "() :: (INTEGER?)\"                                                                                " +
+                "                      | \"\"                                                                      " +
+                "                                         |%n" +
                 "| \"org.neo4j.procedure.listCoolPeopleInDatabase\"      | \"org.neo4j.procedure" +
-                ".listCoolPeopleInDatabase() :: (LIST? OF ANY?)\"                                              " +
-                "                                            | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.logAround\"                     | \"org.neo4j.procedure.logAround() ::" +
-                " (INTEGER?)\"                                                                                 " +
-                "                             | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.mapArgument\"                   | \"org.neo4j.procedure.mapArgument" +
-                "(map :: MAP?) :: (INTEGER?)\"                                                                 " +
-                "                                | \"\"                         |%n" +
+                ".listCoolPeopleInDatabase() :: (LIST? OF ANY?)\"                                                  " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
+                "| \"org.neo4j.procedure.logAround\"                     | \"org.neo4j.procedure.logAround() :: " +
+                "(INTEGER?)\"                                                                                      " +
+                "                        | \"\"                                                                    " +
+                "                                           |%n" +
+                "| \"org.neo4j.procedure.mapArgument\"                   | \"org.neo4j.procedure.mapArgument(map ::" +
+                " MAP?) :: (INTEGER?)\"                                                                            " +
+                "                     | \"\"                                                                       " +
+                "                                        |%n" +
                 "| \"org.neo4j.procedure.node\"                          | \"org.neo4j.procedure.node(id :: " +
-                "INTEGER?) :: (NODE?)\"                                                                        " +
-                "                                | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.nodeListArgument\"              | \"org.neo4j.procedure" +
-                ".nodeListArgument(nodes :: LIST? OF NODE?) :: (INTEGER?)\"                                    " +
-                "                                            | \"\"                         |%n" +
+                "INTEGER?) :: (NODE?)\"                                                                            " +
+                "                            | \"\"                                                                " +
+                "                                               |%n" +
+                "| \"org.neo4j.procedure.nodeListArgument\"              | \"org.neo4j.procedure.nodeListArgument" +
+                "(nodes :: LIST? OF NODE?) :: (INTEGER?)\"                                                         " +
+                "                       | \"\"                                                                     " +
+                "                                          |%n" +
                 "| \"org.neo4j.procedure.nodePaths\"                     | \"org.neo4j.procedure.nodePaths" +
-                "(someValue :: NODE?) :: (PATH?)\"                                                             " +
-                "                                  | \"\"                         |%n" +
+                "(someValue :: NODE?) :: (PATH?)\"                                                                 " +
+                "                              | \"\"                                                              " +
+                "                                                 |%n" +
                 "| \"org.neo4j.procedure.nodeWithDescription\"           | \"org.neo4j.procedure" +
-                ".nodeWithDescription(someValue :: NODE?) :: (NODE?)\"                                         " +
-                "                                            | \"This is a description\"    |%n" +
+                ".nodeWithDescription(someValue :: NODE?) :: (NODE?)\"                                             " +
+                "                                        | \"This is a description\"                               " +
+                "                                                           |%n" +
                 "| \"org.neo4j.procedure.readOnlyCallingWriteFunction\"  | \"org.neo4j.procedure" +
-                ".readOnlyCallingWriteFunction() :: (NODE?)\"                                                  " +
-                "                                            | \"\"                         |%n" +
+                ".readOnlyCallingWriteFunction() :: (NODE?)\"                                                      " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
                 "| \"org.neo4j.procedure.readOnlyCallingWriteProcedure\" | \"org.neo4j.procedure" +
-                ".readOnlyCallingWriteProcedure() :: (INTEGER?)\"                                              " +
-                "                                            | \"\"                         |%n" +
+                ".readOnlyCallingWriteProcedure() :: (INTEGER?)\"                                                  " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
                 "| \"org.neo4j.procedure.readOnlyTryingToWrite\"         | \"org.neo4j.procedure" +
-                ".readOnlyTryingToWrite() :: (NODE?)\"                                                         " +
-                "                                            | \"\"                         |%n" +
+                ".readOnlyTryingToWrite() :: (NODE?)\"                                                             " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
                 "| \"org.neo4j.procedure.readOnlyTryingToWriteSchema\"   | \"org.neo4j.procedure" +
-                ".readOnlyTryingToWriteSchema() :: (STRING?)\"                                                 " +
-                "                                            | \"\"                         |%n" +
+                ".readOnlyTryingToWriteSchema() :: (STRING?)\"                                                     " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
                 "| \"org.neo4j.procedure.recursiveSum\"                  | \"org.neo4j.procedure.recursiveSum" +
-                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                               | \"\"                         |%n" +
+                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                           " +
+                "                           | \"\"                                                                 " +
+                "                                              |%n" +
                 "| \"org.neo4j.procedure.shutdown\"                      | \"org.neo4j.procedure.shutdown() :: " +
-                "(STRING?)\"                                                                                   " +
-                "                             | \"\"                         |%n" +
+                "(STRING?)\"                                                                                       " +
+                "                         | \"\"                                                                   " +
+                "                                            |%n" +
                 "| \"org.neo4j.procedure.simpleArgument\"                | \"org.neo4j.procedure.simpleArgument" +
-                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                             | \"\"                         |%n" +
+                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                           " +
+                "                         | \"\"                                                                   " +
+                "                                            |%n" +
                 "| \"org.neo4j.procedure.squareDouble\"                  | \"org.neo4j.procedure.squareDouble" +
-                "(someValue :: FLOAT?) :: (FLOAT?)\"                                                           " +
-                "                               | \"\"                         |%n" +
+                "(someValue :: FLOAT?) :: (FLOAT?)\"                                                               " +
+                "                           | \"\"                                                                 " +
+                "                                              |%n" +
                 "| \"org.neo4j.procedure.squareLong\"                    | \"org.neo4j.procedure.squareLong" +
-                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                       " +
-                "                                 | \"\"                         |%n" +
+                "(someValue :: INTEGER?) :: (INTEGER?)\"                                                           " +
+                "                             | \"\"                                                               " +
+                "                                                |%n" +
                 "| \"org.neo4j.procedure.throwsExceptionInStream\"       | \"org.neo4j.procedure" +
-                ".throwsExceptionInStream() :: (INTEGER?)\"                                                    " +
-                "                                            | \"\"                         |%n" +
-                "| \"org.neo4j.procedure.unsupportedFunction\"           | \"org.neo4j.procedure." +
-                "unsupportedFunction() :: (STRING?)\"                                                          " +
-                "                                           | \"\"                         |%n" +
-                "| \"randomUUID\"                                        | \"randomUUID() :: (STRING?)\"     " +
-                "                                                                                          " +
-                "                                   | \"Generates a random UUID.\" |%n" +
-                "| \"this.is.test.only.sum\"                             | \"this.is.test.only.sum(numbers :: " +
-                "LIST? OF NUMBER?) :: (NUMBER?)\"                                                              " +
-                "                              | \"\"                         |%n" +
-                "+-----------------------------------------------------------------------------------------------" +
-                "----------------------------------------------------------------------------------" +
-                "----------------------------------------------------------------+%n" +
-                "27 rows%n");
+                ".throwsExceptionInStream() :: (INTEGER?)\"                                                        " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
+                "| \"org.neo4j.procedure.unsupportedFunction\"           | \"org.neo4j.procedure" +
+                ".unsupportedFunction() :: (STRING?)\"                                                             " +
+                "                                        | \"\"                                                    " +
+                "                                                           |%n" +
+                "| \"randomUUID\"                                        | \"randomUUID() :: (STRING?)\"           " +
+                "                                                                                                  " +
+                "                     | \"Generates a random UUID.\"                                               " +
+                "                                        |%n" +
+                "| \"this.is.test.only.sum\"                             | \"this.is.test.only.sum(numbers :: LIST?" +
+                " OF NUMBER?) :: (NUMBER?)\"                                                                       " +
+                "                     | \"\"                                                                       " +
+                "                                        |%n" +
+                "| \"time\"                                              | \"time(input = null :: ANY?) :: " +
+                "(TIME?)\"                                                                                 " +
+                "                                     | \"Create a Time instant.\"                         " +
+                "                                                                |%n" +
+                "| \"time.realtime\"                                     | \"time.realtime(timezone = null " +
+                ":: STRING?) :: (TIME?)\"                                                                  " +
+                "                                     | \"Get the current Time instant using the realtime " +
+                "clock.\"                                                         |%n" +
+                "| \"time.statement\"                                    | \"time.statement(timezone = null" +
+                " :: STRING?) :: (TIME?)\"                                                                 " +
+                "                                     | \"Get the current Time instant using the statement " +
+                "clock.\"                                                        |%n" +
+                "| \"time.transaction\"                                  | \"time.transaction(timezone = " +
+                "null :: STRING?) :: (TIME?)\"                                                             " +
+                "                                       | \"Get the current Time instant using the " +
+                "transaction clock.\"                                                      |%n" +
+                "| \"time.truncate\"                                     | \"time.truncate(unit :: STRING?," +
+                " input :: ANY?, fields = null :: MAP?) :: (TIME?)\"                                       " +
+                "                                     | \"Truncate the input temporal value to a Time " +
+                "instant using the specified unit.\"                                  |%n" +
+                "+-------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------------------------------------------" +
+                "--------------------------------------------------------------------------------------------------" +
+                "----------------------------------+%n" +
+                "62 rows%n" );
 
         assertThat( res.resultAsString(), equalTo(expected) );
     }

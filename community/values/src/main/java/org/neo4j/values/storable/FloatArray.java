@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
@@ -46,6 +47,12 @@ public abstract class FloatArray extends FloatingPointArray
     public int computeHash()
     {
         return NumberValues.hash( value() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapFloatArray( this );
     }
 
     @Override
@@ -112,14 +119,14 @@ public abstract class FloatArray extends FloatingPointArray
     }
 
     @Override
-    public Object asObjectCopy()
+    public float[] asObjectCopy()
     {
         return value().clone();
     }
 
     @Override
     @Deprecated
-    public Object asObject()
+    public float[] asObject()
     {
         return value();
     }

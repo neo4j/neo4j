@@ -29,6 +29,12 @@ package object symbols {
   val CTNode: NodeType = NodeType.instance
   val CTRelationship: RelationshipType = RelationshipType.instance
   val CTPoint: PointType = PointType.instance
+  val CTDateTime: DateTimeType = TemporalTypes.datetime
+  val CTLocalDateTime: LocalDateTimeType = TemporalTypes.localdatetime
+  val CTDate: DateType = TemporalTypes.date
+  val CTTime: TimeType = TemporalTypes.time
+  val CTLocalTime: LocalTimeType = TemporalTypes.localtime
+  val CTDuration: DurationType = TemporalTypes.duration
   val CTGeometry: GeometryType = GeometryType.instance
   val CTPath: PathType = PathType.instance
   val CTGraphRef: GraphRefType = GraphRefType.instance

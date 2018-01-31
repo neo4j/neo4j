@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.{InwardKernel, Statement}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -47,7 +47,17 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
+    val factory = createDatabaseFactory()
+    this match {
+      case custom: FakeClock =>
+        factory.setClock(custom.clock)
+      case _ =>
+    }
+    new GraphDatabaseCypherService(factory.newImpermanentDatabase(config.asJava))
+  }
+
+  protected def createDatabaseFactory(): TestGraphDatabaseFactory = {
+    new TestGraphDatabaseFactory()
   }
 
   override protected def stopTest() {

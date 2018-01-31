@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
@@ -139,6 +140,12 @@ public abstract class PointArray extends ArrayValue
     public int computeHash()
     {
         return Arrays.hashCode( value() );
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapPointArray( this );
     }
 
     @Override

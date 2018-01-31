@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.PrettyPrinter;
 
 import static java.lang.String.format;
@@ -168,9 +169,9 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
     }
 
     @Override
-    public Object asObjectCopy()
+    public Point asObjectCopy()
     {
-        return new PointValue( this.crs, this.coordinate );
+        return this;
     }
 
     public CoordinateReferenceSystem getCoordinateReferenceSystem()
@@ -193,6 +194,12 @@ public class PointValue extends ScalarValue implements Comparable<PointValue>, P
         result = 31 * result + NumberValues.hash( crs.getCode() );
         result = 31 * result + NumberValues.hash( coordinate );
         return result;
+    }
+
+    @Override
+    public <T> T map( ValueMapper<T> mapper )
+    {
+        return mapper.mapPoint( this );
     }
 
     @Override
