@@ -467,7 +467,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       new ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDurationLimit = Long.MaxValue), // table limited
       new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500), // time limited
       AdaptiveChainPatternConfig(10), // default
-      new AdaptiveChainPatternConfig(5) { // make sure it works on comprehsions for very long patterns
+      new AdaptiveChainPatternConfig(5) { // make sure it works on comprehensions for very long patterns
         override def iterationDurationLimit: Long = 20
       }
     )
@@ -491,7 +491,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         try {
           val plan = queryGraphSolver.plan(cfg.qg, ctx, solveds, cardinalities)
           // We disallow joins in a couple of configurations
-          val joinsPossible: Boolean= solverConfig match {
+          val joinsPossible: Boolean = solverConfig match {
             case ExpandOnlyIDPSolverConfig => false
             case _ => true
           }
