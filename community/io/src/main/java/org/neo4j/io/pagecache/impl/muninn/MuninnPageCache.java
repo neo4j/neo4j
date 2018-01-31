@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -391,6 +392,25 @@ public class MuninnPageCache implements PageCache
         }
     }
 
+    @Override
+    public synchronized List<PagedFile> listExistingMappings() throws IOException
+    {
+        assertHealthy();
+        ensureThreadsInitialised();
+
+        List<PagedFile> list = new ArrayList<>();
+        FileMapping current = mappedFiles;
+
+        while ( current != null )
+        {
+            MuninnPagedFile pagedFile = current.pagedFile;
+            pagedFile.incrementRefCount();
+            list.add( pagedFile );
+            current = current.next;
+        }
+        return list;
+    }
+
     /**
      * Note: Must be called while synchronizing on the MuninnPageCache instance.
      */
@@ -498,7 +518,7 @@ public class MuninnPageCache implements PageCache
     {
         if ( limiter == null )
         {
-            throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
+            throw new IllegalArgumentException( "IOLimiter cannot be null" );
         }
         assertNotClosed();
         flushAllPages( limiter );

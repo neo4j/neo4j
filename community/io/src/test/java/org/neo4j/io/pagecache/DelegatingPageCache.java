@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -48,6 +49,13 @@ public class DelegatingPageCache implements PageCache
         return delegate.getExistingMapping( file );
     }
 
+    @Override
+    public List<PagedFile> listExistingMappings() throws IOException
+    {
+        return delegate.listExistingMappings();
+    }
+
+    @Override
     public int pageSize()
     {
         return delegate.pageSize();
