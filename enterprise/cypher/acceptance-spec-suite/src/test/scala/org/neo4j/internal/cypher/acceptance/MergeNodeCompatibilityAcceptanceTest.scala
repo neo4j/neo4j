@@ -20,22 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
-
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
 
   val expectedSucceed: TestConfiguration = Configs.Interpreted - Configs.Cost2_3
 

@@ -21,23 +21,15 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.ConstraintViolationException
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Planners._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes._
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions._
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with QueryStatisticsTestSupport {
-
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
 
   test("Node key constraint creation should be reported") {
     // When

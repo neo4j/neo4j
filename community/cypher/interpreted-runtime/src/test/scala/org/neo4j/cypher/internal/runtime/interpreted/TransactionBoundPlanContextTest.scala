@@ -77,8 +77,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
     val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
     for ( i <- 0 until 100 ) {
-      val n1 = graph.createNode(Label.label("L1"))
-      val n2 = graph.createNode()
+      val n1 = database.createNode(Label.label("L1"))
+      val n2 = database.createNode()
       n1.createRelationshipTo(n2, RelationshipType.withName("T"))
     }
     tx.success()

@@ -20,20 +20,10 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{Default, V3_3, V3_4}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-
-import scala.collection.JavaConverters._
-import scala.collection.Map
 
 class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
 
   test("should be able to create and remove single property uniqueness constraint") {
 

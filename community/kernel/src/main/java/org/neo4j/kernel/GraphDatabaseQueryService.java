@@ -23,13 +23,10 @@ import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 /*
@@ -39,16 +36,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 public interface GraphDatabaseQueryService
 {
     DependencyResolver getDependencyResolver();
-
-    Node createNode();
-
-    Long createNodeId();
-
-    Node createNode( Label... labels );
-
-    Node getNodeById( long id );
-
-    Relationship getRelationshipById( long id );
 
     /**
      * Begin new internal transaction with with default timeout.

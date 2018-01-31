@@ -94,14 +94,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def createNode(): Node =
-    txContext.graph.createNode()
+    entityAccessor.newNodeProxy(txContext.statement.dataWriteOperations().nodeCreate())
 
   override def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
 
-  override def createRelationship(start: Long, end: Long, relType: Int) = {
+  override def createRelationship(start: Long, end: Long, relType: Int): Relationship = {
     val relId = txContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
-    relationshipOps.getById(relId)
+    entityAccessor.newRelationshipProxy(relId)
   }
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
@@ -339,11 +339,11 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       }
     }
 
-    override def getById(id: Long) = try {
-      txContext.graph.getNodeById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-    }
+    override def getById(id: Long): Node =
+      if (txContext.statement.readOperations().nodeExists(id))
+        entityAccessor.newNodeProxy(id)
+      else
+        throw new EntityNotFoundException(s"Node with id $id")
 
     override def all: Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().nodesGetAll())(getById)
@@ -414,11 +414,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       }
     }
 
-    override def getById(id: Long) = try {
-      txContext.graph.getRelationshipById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
-    }
+    override def getById(id: Long): Relationship =
+      try {
+        txContext.statement.readOperations().relationshipCursorById(id)
+        entityAccessor.newRelationshipProxy(id)
+      } catch {
+        case e: exceptions.EntityNotFoundException =>
+          throw new EntityNotFoundException(s"Relationship with id $id", e)
+      }
 
     override def all: Iterator[Relationship] = {
       JavaConversionSupport.mapToScalaENFXSafe(txContext.statement.readOperations().relationshipsGetAll())(getById)
