@@ -19,16 +19,30 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import org.neo4j.internal.kernel.api.Token;
+
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 
-/** Controls the capabilities of a KernelTransaction. */
-public interface SecurityContext
+/**
+ * Controls the capabilities of a KernelTransaction, including the authenticated user and authorization data.
+ *
+ * Must extend LoginContext to handle procedures creating internal transactions, periodic commit and the parallel cypher prototype.
+ */
+public interface SecurityContext extends LoginContext
 {
+    /**
+     * Get the authorization data of the user. This is immutable.
+     */
     AccessMode mode();
-    AuthSubject subject();
+
+    /**
+     * Check whether the user is an admin.
+     */
     boolean isAdmin();
 
-    SecurityContext freeze();
+    /**
+     * Create a copy of this SecurityContext with the provided mode.
+     */
     SecurityContext withMode( AccessMode mode );
 
     default void assertCredentialsNotExpired()
@@ -92,7 +106,7 @@ public interface SecurityContext
         }
 
         @Override
-        public SecurityContext freeze()
+        public SecurityContext freeze( Token token )
         {
             return this;
         }
@@ -134,7 +148,7 @@ public interface SecurityContext
         }
 
         @Override
-        public SecurityContext freeze()
+        public SecurityContext freeze( Token token )
         {
             return this;
         }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
 /**
  * The Kernel.
@@ -28,7 +28,7 @@ public interface Kernel
 {
     CursorFactory cursors();
 
-    Session beginSession( SecurityContext securityContext );
+    Session beginSession( LoginContext loginContext );
 
     Modes modes();
 }

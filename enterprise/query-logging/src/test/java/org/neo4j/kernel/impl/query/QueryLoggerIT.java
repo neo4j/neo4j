@@ -53,7 +53,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -128,14 +128,14 @@ public class QueryLoggerIT
         db.getLocalUserManager().addRoleToUser( "architect", "mats" );
         db.getLocalUserManager().addRoleToUser( "reader", "andres" );
 
-        EnterpriseSecurityContext mats = db.login( "mats", "neo4j" );
+        EnterpriseLoginContext mats = db.login( "mats", "neo4j" );
 
         // run query
         db.executeQuery( mats, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(), ResourceIterator::close );
         db.executeQuery( mats, "CREATE (:Label)", Collections.emptyMap(), ResourceIterator::close );
 
         // switch user, run query
-        EnterpriseSecurityContext andres = db.login( "andres", "neo4j" );
+        EnterpriseLoginContext andres = db.login( "andres", "neo4j" );
         db.executeQuery( andres, "MATCH (n:Label) RETURN n", Collections.emptyMap(), ResourceIterator::close );
 
         db.tearDown();
@@ -160,7 +160,7 @@ public class QueryLoggerIT
 
         db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
 
-        EnterpriseSecurityContext subject = db.login( "neo4j", "123" );
+        EnterpriseLoginContext subject = db.login( "neo4j", "123" );
         db.executeQuery( subject, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(),
                 ResourceIterator::close );
 
@@ -386,7 +386,7 @@ public class QueryLoggerIT
                 .newGraphDatabase();
 
         EnterpriseAuthManager authManager = database.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
-        EnterpriseSecurityContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
+        EnterpriseLoginContext neo = authManager.login( AuthToken.newBasicAuthToken( "neo4j", "neo4j" ) );
 
         String query = "CALL dbms.security.changePassword('abc123')";
         try ( InternalTransaction tx = database

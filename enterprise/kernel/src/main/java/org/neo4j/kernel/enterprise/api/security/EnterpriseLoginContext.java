@@ -17,31 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.security.enterprise.auth;
+package org.neo4j.kernel.enterprise.api.security;
 
-import java.util.Map;
+import java.util.Collections;
+import java.util.Set;
 
-import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 
-public class EmbeddedConfiguredProceduresIT extends ConfiguredProceduresTestBase<EnterpriseLoginContext>
+public interface EnterpriseLoginContext extends LoginContext
 {
+    Set<String> roles();
 
-    @Override
-    protected NeoInteractionLevel<EnterpriseLoginContext> setUpNeoServer( Map<String, String> config ) throws Throwable
-    {
-        return new EmbeddedInteraction( config );
-    }
+    EnterpriseSecurityContext freeze( Token token );
 
-    @Override
-    protected Object valueOf( Object obj )
+    EnterpriseLoginContext AUTH_DISABLED = new EnterpriseLoginContext()
     {
-        if ( obj instanceof Integer )
+        @Override
+        public AuthSubject subject()
         {
-            return ((Integer) obj).longValue();
+            return AuthSubject.AUTH_DISABLED;
         }
-        else
+
+        @Override
+        public Set<String> roles()
         {
-            return obj;
+            return Collections.emptySet();
         }
-    }
+
+        @Override
+        public EnterpriseSecurityContext freeze( Token token )
+        {
+            return EnterpriseSecurityContext.AUTH_DISABLED;
+        }
+    };
 }

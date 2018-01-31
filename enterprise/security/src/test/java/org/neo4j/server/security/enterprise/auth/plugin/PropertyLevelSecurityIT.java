@@ -32,9 +32,8 @@ import java.util.function.Consumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -58,9 +57,9 @@ public class PropertyLevelSecurityIT
 
     private GraphDatabaseFacade db;
     private EnterpriseAuthAndUserManager authManager;
-    private EnterpriseSecurityContext neo;
-    private EnterpriseSecurityContext smith;
-    private EnterpriseSecurityContext morpheus;
+    private LoginContext neo;
+    private LoginContext smith;
+    private LoginContext morpheus;
 
     @Before
     public void setUp() throws Throwable
@@ -489,7 +488,7 @@ public class PropertyLevelSecurityIT
         } );
     }
 
-    private void execute( SecurityContext subject, String query, Map<String,Object> params, Consumer<ResourceIterator<Map<String,Object>>> consumer )
+    private void execute( LoginContext subject, String query, Map<String,Object> params, Consumer<ResourceIterator<Map<String,Object>>> consumer )
     {
         Result result;
         try ( InternalTransaction tx = db.beginTransaction( explicit, subject ) )
@@ -501,7 +500,7 @@ public class PropertyLevelSecurityIT
         }
     }
 
-    private Result execute( SecurityContext subject, String query, Map<String,Object> params )
+    private Result execute( LoginContext subject, String query, Map<String,Object> params )
     {
         Result result;
         try ( InternalTransaction tx = db.beginTransaction( explicit, subject ) )

@@ -36,18 +36,16 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -61,6 +59,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -147,7 +146,7 @@ public class IndexIT extends KernelIntegrationTest
         commit();
 
         // WHEN
-        Statement statement = statementInNewTransaction( AnonymousContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( AUTH_DISABLED );
         IndexDescriptor addedRule = statement.schemaWriteOperations()
                                             .indexCreate( SchemaDescriptorFactory.forLabel( labelId, 10 ) );
         Set<IndexDescriptor> indexRulesInTx = asSet( statement.readOperations().indexesGetForLabel( labelId ) );
@@ -262,7 +261,7 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldListConstraintIndexesInTheBeansAPI() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( AUTH_DISABLED );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate(
                 SchemaDescriptorFactory.forLabel(
                         statement.tokenWriteOperations().labelGetOrCreateForName( "Label1" ),

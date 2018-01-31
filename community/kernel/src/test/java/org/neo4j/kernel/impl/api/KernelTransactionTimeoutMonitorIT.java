@@ -35,8 +35,8 @@ import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -144,8 +144,8 @@ public class KernelTransactionTimeoutMonitorIT
     {
         return () ->
         {
-            try ( InternalTransaction transaction = database
-                    .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED, 1,
+            try ( InternalTransaction ignored = database
+                    .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED, 1,
                             TimeUnit.SECONDS ) )
             {
                 Node node = database.getNodeById( NODE_ID );

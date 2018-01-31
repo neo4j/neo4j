@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -188,7 +188,7 @@ public class UniquenessConstraintCreationIT
     public void shouldDropCreatedConstraintIndexWhenRollingBackConstraintCreation() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
         statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
         assertEquals( asSet( uniqueIndex ), asSet( statement.readOperations().indexesGetAll() ) );
 
@@ -265,7 +265,7 @@ public class UniquenessConstraintCreationIT
     public void shouldDropConstraintIndexWhenDroppingConstraint() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( LoginContext.AUTH_DISABLED );
         UniquenessConstraintDescriptor constraint =
                 statement.schemaWriteOperations().uniquePropertyConstraintCreate( descriptor );
         assertEquals( asSet( uniqueIndex ), asSet( statement.readOperations().indexesGetAll() ) );

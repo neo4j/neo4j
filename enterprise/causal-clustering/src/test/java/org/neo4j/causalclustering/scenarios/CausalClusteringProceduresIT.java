@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext.AUTH_DISABLED;
 
 public class CausalClusteringProceduresIT
 {

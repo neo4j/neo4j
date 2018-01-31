@@ -22,6 +22,7 @@ package org.neo4j.kernel.enterprise.api.security;
 import java.util.Collections;
 import java.util.Set;
 
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -31,8 +32,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
  */
 public interface EnterpriseSecurityContext extends SecurityContext
 {
-    @Override
-    EnterpriseSecurityContext freeze();
 
     @Override
     EnterpriseSecurityContext withMode( AccessMode mode );
@@ -52,7 +51,7 @@ public interface EnterpriseSecurityContext extends SecurityContext
         }
 
         @Override
-        public EnterpriseSecurityContext freeze()
+        public EnterpriseSecurityContext freeze( Token token )
         {
             return this;
         }
@@ -134,7 +133,7 @@ public interface EnterpriseSecurityContext extends SecurityContext
         }
 
         @Override
-        public EnterpriseSecurityContext freeze()
+        public EnterpriseSecurityContext freeze( Token token )
         {
             return this;
         }

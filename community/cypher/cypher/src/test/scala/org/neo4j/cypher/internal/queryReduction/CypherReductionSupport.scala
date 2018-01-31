@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp.{IDPQueryGraphSolver, IDPQueryGraphSolverMonitor, SingleComponentPlanner, cartesianProductsOrValueJoins}
@@ -37,16 +36,17 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext, PlannerNameFor}
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper, ValueConversion}
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
 import org.neo4j.internal.kernel.api.Transaction
-import org.neo4j.internal.kernel.api.security.SecurityContext
+import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContextFactory}
@@ -148,8 +148,8 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
                             statement: Statement,
                             parsingBaseState: BaseState,
                             executeBefore: Option[String]): InternalExecutionResult = {
-    val explicitTx = graph.beginTransaction(Transaction.Type.explicit, SecurityContext.AUTH_DISABLED)
-    val implicitTx = graph.beginTransaction(Transaction.Type.`implicit`, SecurityContext.AUTH_DISABLED)
+    val explicitTx = graph.beginTransaction(Transaction.Type.explicit, LoginContext.AUTH_DISABLED)
+    val implicitTx = graph.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     try {
       executeBefore match {
         case None =>

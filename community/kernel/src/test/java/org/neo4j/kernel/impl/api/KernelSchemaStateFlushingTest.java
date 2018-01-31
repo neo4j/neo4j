@@ -41,7 +41,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class KernelSchemaStateFlushingTest
 {

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.kernel.api.Transaction.Type
-import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
+import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 trait QueryStateTestSupport {
