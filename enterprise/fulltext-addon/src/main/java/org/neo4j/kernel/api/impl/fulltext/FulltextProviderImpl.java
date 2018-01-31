@@ -35,7 +35,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Resource;
@@ -45,7 +44,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing.MultiResource;
@@ -332,9 +330,9 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void registerFileListing( Supplier<NeoStoreFileListing> fileListing )
+    public void registerFileListing( NeoStoreFileListing fileListing )
     {
-        fileListing.get().registerStoreFileProvider( this::snapshotStoreFiles );
+        fileListing.registerStoreFileProvider( this::snapshotStoreFiles );
     }
 
     private Resource snapshotStoreFiles( Collection<StoreFileMetadata> files ) throws IOException

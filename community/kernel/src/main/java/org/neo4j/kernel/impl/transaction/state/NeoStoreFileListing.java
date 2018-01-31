@@ -29,7 +29,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -57,7 +56,7 @@ public class NeoStoreFileListing
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
     private static final Function<File, StoreFileMetadata> logFileMapper =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE, true );
-    private final Collection<ThrowingFunction<Collection<StoreFileMetadata>,Resource,IOException>> additionalProviders;
+    private final Collection<StoreFileProvider> additionalProviders;
 
     public NeoStoreFileListing( File storeDir, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
@@ -69,7 +68,7 @@ public class NeoStoreFileListing
         this.indexingService = indexingService;
         this.explicitIndexProviders = explicitIndexProviders;
         this.storageEngine = storageEngine;
-        this.additionalProviders = new CopyOnWriteArrayList<ThrowingFunction<Collection<StoreFileMetadata>,Resource,IOException>>();
+        this.additionalProviders = new CopyOnWriteArrayList<>();
     }
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
@@ -81,9 +80,9 @@ public class NeoStoreFileListing
         additionalResources.add( gatherLabelScanStoreFiles( files ) );
         additionalResources.add( gatherSchemaIndexFiles( files ) );
         additionalResources.add( gatherExplicitIndexFiles( files ) );
-        for ( ThrowingFunction<Collection<StoreFileMetadata>,Resource,IOException> additionalProvider : additionalProviders )
+        for ( StoreFileProvider additionalProvider : additionalProviders )
         {
-            additionalResources.add( additionalProvider.apply( files ) );
+            additionalResources.add( additionalProvider.addFilesTo( files ) );
         }
 
         placeMetaDataStoreLast( files );
@@ -91,9 +90,19 @@ public class NeoStoreFileListing
         return resourceIterator( files.iterator(), new MultiResource( additionalResources ) );
     }
 
-    public void registerStoreFileProvider( ThrowingFunction<Collection<StoreFileMetadata>,Resource, IOException> provider )
+    public void registerStoreFileProvider( StoreFileProvider provider )
     {
         additionalProviders.add( provider );
+    }
+
+    public interface StoreFileProvider
+    {
+        /**
+         * @param fileMetadataCollection the collection to add the files to
+         * @return A {@link Resource} that should be closed when we are done working with the files added to the collection
+         * @throws IOException if the provider is unable to prepare the file listing
+         */
+        Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
     }
 
     private void placeMetaDataStoreLast( List<StoreFileMetadata> files )

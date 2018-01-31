@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,11 +34,9 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,22 +47,27 @@ import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.NODE
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.RELS;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.SET_NODE_KEYS;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomIT.SET_REL_KEYS;
+import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_enabled;
+import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 import static org.neo4j.ports.allocation.PortAuthority.allocatePort;
 
 public class BloomBackupIT
 {
-    private static int backupPort;
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    private GraphDatabaseAPI db;
+    private int backupPort;
 
-    @BeforeClass
-    public static void portSetup()
+    @Before
+    public void portSetup()
     {
         backupPort = allocatePort();
+        db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+                .setConfig( online_backup_enabled,"true" )
+                .setConfig( online_backup_server, "127.0.0.1:" + backupPort )
+                .setConfig( bloom_enabled, "true" )
+                .newGraphDatabase();
     }
-
-    @Rule
-    public DatabaseRule db =
-            new EmbeddedDatabaseRule().withSetting( OnlineBackupSettings.online_backup_enabled, "true" ).withSetting( OnlineBackupSettings.online_backup_server,
-                    "127.0.0.1:" + backupPort ).withSetting( bloom_enabled, "true" );
 
     @Test
     public void shouldContainIndexAfterBackupAndRestore() throws Exception
@@ -72,11 +75,11 @@ public class BloomBackupIT
         registerProcedures( db );
         setupIndicesAndInitialData();
 
-        File backupDir = new File( db.getStoreDirFile().getParentFile(), "backup" );
+        File backupDir = new File( db.getStoreDir().getParentFile(), "backup" );
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );
         db.shutdown();
 
-        GraphDatabaseService backedUpDb = getBackupDb( backupDir );
+        GraphDatabaseAPI backedUpDb = getBackupDb( backupDir );
         registerProcedures( backedUpDb );
         verifyStandardData( backedUpDb );
         backedUpDb.shutdown();
@@ -89,7 +92,7 @@ public class BloomBackupIT
         setupIndicesAndInitialData();
 
         // Full backup
-        File backupDir = new File( db.getStoreDirFile().getParentFile(), "backup" );
+        File backupDir = new File( db.getStoreDir().getParentFile(), "backup" );
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );
 
         // Add some more data
@@ -114,7 +117,7 @@ public class BloomBackupIT
         OnlineBackup.from( "127.0.0.1", backupPort ).backup( backupDir );
         db.shutdown();
 
-        GraphDatabaseService backedUpDb = getBackupDb( backupDir );
+        GraphDatabaseAPI backedUpDb = getBackupDb( backupDir );
         registerProcedures( backedUpDb );
         verifyStandardData( backedUpDb );
 
@@ -131,9 +134,9 @@ public class BloomBackupIT
         backedUpDb.shutdown();
     }
 
-    private GraphDatabaseService getBackupDb( File backupDir )
+    private GraphDatabaseAPI getBackupDb( File dir )
     {
-        return new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( backupDir ).setConfig( bloom_enabled, "true" ).newGraphDatabase();
+        return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir ).setConfig( bloom_enabled, "true" ).newGraphDatabase();
     }
 
     private void setupIndicesAndInitialData()
@@ -166,8 +169,9 @@ public class BloomBackupIT
         assertFalse( result.hasNext() );
     }
 
-    private void registerProcedures( GraphDatabaseService db ) throws KernelException
+    private void registerProcedures( GraphDatabaseAPI db ) throws KernelException
     {
-        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Procedures.class ).registerProcedure( BloomProcedures.class );
+        db.beginTx().close();
+        db.getDependencyResolver().resolveDependency( Procedures.class ).registerProcedure( BloomProcedures.class );
     }
 }

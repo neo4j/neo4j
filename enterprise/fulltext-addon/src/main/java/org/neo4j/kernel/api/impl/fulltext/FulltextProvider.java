@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -82,7 +81,7 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
-        public void registerFileListing( Supplier<NeoStoreFileListing> fileListing )
+        public void registerFileListing( NeoStoreFileListing fileListing )
         {
             throw noProvider();
         }
@@ -134,5 +133,5 @@ public interface FulltextProvider extends AutoCloseable
 
     void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys ) throws IOException, InvalidArgumentsException;
 
-    void registerFileListing( Supplier<NeoStoreFileListing> fileListing );
+    void registerFileListing( NeoStoreFileListing fileListing );
 }
