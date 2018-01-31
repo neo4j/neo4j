@@ -316,21 +316,37 @@ public class AllStoreHolder extends Read
     @Override
     void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
+        // When scanning, we inspect RelationshipRecord.inUse(), so using RecordLoad.CHECK is fine
         relationships.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+    }
+
+    @Override
+    void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor )
+    {
+        // We need to load forcefully for relationship chain traversal since otherwise we cannot
+        // traverse over relationship records which have been concurrently deleted
+        // (flagged as inUse = false).
+        // see
+        //      org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
+        //      org.neo4j.kernel.impl.locking.RelationshipCreateDeleteIT
+        relationships.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
     void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
-        //We need to load forcefully here since otherwise we can have inconsistent reads
-        //for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
+        // We need to load forcefully here since otherwise we can have inconsistent reads
+        // for properties across blocks, see org.neo4j.graphdb.ConsistentPropertyReadsIT
         properties.getRecordByCursor( reference, record, RecordLoad.FORCE, pageCursor );
     }
 
     @Override
     void group( RelationshipGroupRecord record, long reference, PageCursor page )
     {
-        groups.getRecordByCursor( reference, record, RecordLoad.NORMAL, page );
+        // We need to load forcefully here since otherwise we cannot traverse over groups
+        // records which have been concurrently deleted (flagged as inUse = false).
+        // @see #org.neo4j.kernel.impl.store.RelationshipChainPointerChasingTest
+        groups.getRecordByCursor( reference, record, RecordLoad.FORCE, page );
     }
 
     @Override

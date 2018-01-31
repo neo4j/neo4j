@@ -490,6 +490,8 @@ abstract class Read implements TxStateHolder,
 
     abstract void relationship( RelationshipRecord record, long reference, PageCursor pageCursor );
 
+    abstract void relationshipFull( RelationshipRecord record, long reference, PageCursor pageCursor );
+
     abstract void property( PropertyRecord record, long reference, PageCursor pageCursor );
 
     abstract void group( RelationshipGroupRecord record, long reference, PageCursor page );

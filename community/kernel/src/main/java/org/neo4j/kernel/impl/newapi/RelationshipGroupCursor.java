@@ -57,7 +57,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
             BufferedGroup current = null;
             while ( relationshipReference != NO_ID )
             {
-                read.relationship( edge, relationshipReference, edgePage );
+                read.relationshipFull( edge, relationshipReference, edgePage );
                 // find the group
                 BufferedGroup group = buffer.get( edge.getType() );
                 if ( group == null )
@@ -133,11 +133,16 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
             setFirstLoop( bufferedGroup.loops() );
             return true;
         }
-        if ( getNext() == NO_ID )
+
+        do
         {
-            return false;
-        }
-        read.group( this, getNext(), page );
+            if ( getNext() == NO_ID )
+            {
+                return false;
+            }
+            read.group( this, getNext(), page );
+        } while ( !inUse() );
+
         return true;
     }
 
