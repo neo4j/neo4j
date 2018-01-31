@@ -22,8 +22,10 @@ package org.neo4j.kernel.api.impl.index.storage.paged;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.WeakIdentityMap;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
@@ -57,18 +59,18 @@ public interface InputResources
         private final PagedFile pagedFile;
         private final CloneInputResources cloneResources = new CloneInputResources( this );
 
-        /** Linked list of clones */
-        private PagedIndexInput cloneListHead;
+        private final WeakIdentityMap<PagedIndexInput,Boolean> clones;
 
         private volatile boolean closed;
 
         RootInputResources( PagedFile pagedFile )
         {
             this.pagedFile = pagedFile;
+            this.clones = WeakIdentityMap.newConcurrentHashMap();
         }
 
         @Override
-        public synchronized PageCursor openCursor( long pageId, PagedIndexInput owner ) throws IOException
+        public PageCursor openCursor( long pageId, PagedIndexInput owner ) throws IOException
         {
             // Called concurrently with #close(..)
             assert owner.cursor == null : String.format( "Multiple cursors opened for the same input: %s", owner );
@@ -79,13 +81,7 @@ public interface InputResources
             }
 
             PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK );
-
-            // If this is a clone, track it
-            if ( owner.resources != this )
-            {
-                owner.next = cloneListHead;
-                cloneListHead = owner;
-            }
+            clones.put( owner, true );
             return cursor;
         }
 
@@ -107,9 +103,11 @@ public interface InputResources
 
             try
             {
-                for ( PagedIndexInput clone = cloneListHead; clone != null; clone = clone.next )
+                for ( Iterator<PagedIndexInput> it = clones.keyIterator(); it.hasNext(); )
                 {
-                    error = IOUtils.chainedClose( error, clone );
+                    PagedIndexInput clone = it.next();
+                    error = IOUtils.chainedClose( error, clone.cursor );
+                    clone.cursor = null;
                 }
                 error = IOUtils.chainedClose( error, input.cursor );
                 error = IOUtils.chainedClose( error, pagedFile );
@@ -156,6 +154,9 @@ public interface InputResources
                 // Already closed
                 return;
             }
+
+            // Remove us from the tracked set of clones
+            root.clones.remove( input );
 
             // Close the cursor
             try

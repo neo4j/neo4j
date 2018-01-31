@@ -39,9 +39,6 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     /** Star of the show */
     PageCursor cursor;
 
-    /** Clones make up a linked list via this field, to allow cleaning them back up when done. */
-    PagedIndexInput next;
-
     /**
      * The logical size of this input. Same as file size if this is a root
      * input, but can be anything <= file size if this is a clone
@@ -325,8 +322,9 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
         if ( isEOF( newPageId, newOffset ) )
         {
-            throw newEOFException( String.format( "seek EOF check failed for { pageId: %d, offsetInPage: %d }",
-                    newPageId, newOffset ) );
+            throw newEOFException(
+                    String.format( "seek EOF check failed for { pageId: %d, offsetInPage: %d }", newPageId,
+                            newOffset ) );
         }
 
         currentPageId = newPageId;
@@ -342,8 +340,9 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
         if ( isEOF( newPageId, newOffset ) )
         {
-            throw newEOFException( String.format( "skipBytes EOF check failed for { pageId: %d, offsetInPage: %d }",
-                    newPageId, newOffset ) );
+            throw newEOFException(
+                    String.format( "skipBytes EOF check failed for { pageId: %d, offsetInPage: %d }", newPageId,
+                            newOffset ) );
         }
 
         currentPageId = newPageId;
@@ -383,8 +382,9 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     {
         // Implementation notes:
         // This is used for both slice() and clone()
-        // Lucene does not close these child inputs; it only closes the
-        // root one. See PagedIndexInputCloningTest for details.
+        // - Lucene does not always close these child inputs
+        // - Lucene may create infinitely many of these, dumping them to be GCd as it goes
+        // - Lucene will access the clones concurrently with each other and their root
         if ( offset < 0 || length < 0 || offset + length > this.length )
         {
             throw new IllegalArgumentException(
@@ -407,6 +407,13 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     public void close() throws IOException
     {
         resources.close( this );
+    }
+
+    @Override
+    protected void finalize() throws Throwable
+    {
+        close();
+        super.finalize();
     }
 
     private void boundsCheck() throws EOFException
@@ -454,10 +461,10 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
     private EOFException newEOFException( String message )
     {
-        return new EOFException( String.format("Input [%s] read past EOF. Please ensure you are using the latest " +
-                "version of Neo4j and if you are, file a bug report including this message. Details: %s " +
-                "{ startPosition: %d, currentPageId: %d,  currentPageOffset: %d, endPageId: %d, endPageOffset: %d, " +
-                "length: %d, pageSize: %d }", this, message, startPosition, currentPageId, currentPageOffset, endPageId,
+        return new EOFException( String.format( "Input [%s] read past EOF. Please ensure you are using the latest " +
+                        "version of Neo4j and if you are, file a bug report including this message. Details: %s " +
+                        "{ startPosition: %d, currentPageId: %d,  currentPageOffset: %d, endPageId: %d, endPageOffset: %d, " +
+                        "length: %d, pageSize: %d }", this, message, startPosition, currentPageId, currentPageOffset, endPageId,
                 endPageOffset, length, pageSize ) );
     }
 }
