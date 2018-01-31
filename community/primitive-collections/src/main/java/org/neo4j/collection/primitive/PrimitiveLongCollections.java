@@ -506,9 +506,9 @@ public class PrimitiveLongCollections
 
     public static boolean contains( long[] values, long candidate )
     {
-        for ( int i = 0; i < values.length; i++ )
+        for ( long value : values )
         {
-            if ( values[i] == candidate )
+            if ( value == candidate )
             {
                 return true;
             }

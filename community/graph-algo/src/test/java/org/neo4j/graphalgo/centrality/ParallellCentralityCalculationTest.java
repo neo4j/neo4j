@@ -19,10 +19,9 @@
  */
 package org.neo4j.graphalgo.centrality;
 
-import static org.junit.Assert.assertTrue;
-
+import common.Neo4jAlgoTestCase;
 import org.junit.Test;
-import org.neo4j.graphalgo.CostEvaluator;
+
 import org.neo4j.graphalgo.impl.centrality.BetweennessCentrality;
 import org.neo4j.graphalgo.impl.centrality.ClosenessCentrality;
 import org.neo4j.graphalgo.impl.centrality.CostDivider;
@@ -33,9 +32,8 @@ import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphalgo.impl.util.DoubleAdder;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertTrue;
 
 public class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
 {

@@ -35,9 +35,9 @@ import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
@@ -277,7 +277,7 @@ public class EnterpriseSecurityModule extends SecurityModule
 
         for ( String pluginRealmName : securityConfig.pluginAuthProviders )
         {
-            if ( !availablePluginRealms.stream().anyMatch( r -> r.getName().equals( pluginRealmName ) ) )
+            if ( availablePluginRealms.stream().noneMatch( r -> r.getName().equals( pluginRealmName ) ) )
             {
                 throw illegalConfiguration( format( "Failed to load auth plugin '%s'.", pluginRealmName ) );
             }
@@ -289,9 +289,9 @@ public class EnterpriseSecurityModule extends SecurityModule
                         .collect( Collectors.toList() );
 
         boolean missingAuthenticatingRealm =
-                securityConfig.onlyPluginAuthentication() && !realms.stream().anyMatch( PluginRealm::canAuthenticate );
+                securityConfig.onlyPluginAuthentication() && realms.stream().noneMatch( PluginRealm::canAuthenticate );
         boolean missingAuthorizingRealm =
-                securityConfig.onlyPluginAuthorization() && !realms.stream().anyMatch( PluginRealm::canAuthorize );
+                securityConfig.onlyPluginAuthorization() && realms.stream().noneMatch( PluginRealm::canAuthorize );
 
         if ( missingAuthenticatingRealm || missingAuthorizingRealm )
         {

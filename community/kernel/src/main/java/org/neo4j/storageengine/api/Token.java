@@ -49,11 +49,7 @@ public class Token
     @Override
     public boolean equals( Object obj )
     {
-        if ( !(obj instanceof Token) )
-        {
-            return false;
-        }
-        return id == ((Token) obj).id;
+        return obj instanceof Token && id == ((Token) obj).id;
     }
 
     @Override

@@ -29,7 +29,6 @@ import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.kernel.impl.logging.NullLogService;
 
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;

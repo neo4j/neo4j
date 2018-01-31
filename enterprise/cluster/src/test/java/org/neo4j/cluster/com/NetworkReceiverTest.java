@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

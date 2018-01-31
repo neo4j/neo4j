@@ -77,7 +77,7 @@ public class IndexDefineCommand extends Command
         PrimitiveIntObjectMap<String> result = Primitive.intObjectMap( map.size() );
         for ( Map.Entry<String,Integer> entry : map.entrySet() )
         {
-            result.put( entry.getValue().intValue(), entry.getKey() );
+            result.put( entry.getValue(), entry.getKey() );
         }
         return result;
     }

@@ -81,11 +81,7 @@ class AtomicBroadcastContextImpl
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
-        {
-            return true;
-        }
-        return !(o == null || getClass() != o.getClass());
+        return this == o || !(o == null || getClass() != o.getClass());
     }
 
     @Override

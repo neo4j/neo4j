@@ -76,7 +76,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -411,7 +410,7 @@ public class ImportTool
         Config dbConfig;
         OutputStream badOutput = null;
         IdType idType;
-        org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
+        org.neo4j.unsafe.impl.batchimport.Configuration configuration;
         File logsDir;
         File badFile = null;
         Long maxMemory;
@@ -944,7 +943,7 @@ public class ImportTool
             public char delimiter()
             {
                 return specificDelimiter != null
-                        ? specificDelimiter.charValue()
+                        ? specificDelimiter
                         : defaultConfiguration.delimiter();
             }
 
@@ -952,7 +951,7 @@ public class ImportTool
             public char arrayDelimiter()
             {
                 return specificArrayDelimiter != null
-                        ? specificArrayDelimiter.charValue()
+                        ? specificArrayDelimiter
                         : defaultConfiguration.arrayDelimiter();
             }
 
@@ -960,7 +959,7 @@ public class ImportTool
             public char quotationCharacter()
             {
                 return specificQuote != null
-                        ? specificQuote.charValue()
+                        ? specificQuote
                         : defaultConfiguration.quotationCharacter();
             }
 
@@ -968,7 +967,7 @@ public class ImportTool
             public boolean multilineFields()
             {
                 return multiLineFields != null
-                        ? multiLineFields.booleanValue()
+                        ? multiLineFields
                         : defaultConfiguration.multilineFields();
             }
 
@@ -976,7 +975,7 @@ public class ImportTool
             public boolean emptyQuotedStringsAsNull()
             {
                 return emptyStringsAsNull != null
-                        ? emptyStringsAsNull.booleanValue()
+                        ? emptyStringsAsNull
                         : defaultConfiguration.emptyQuotedStringsAsNull();
             }
 
@@ -992,7 +991,7 @@ public class ImportTool
             public boolean trimStrings()
             {
                 return trimStrings != null
-                       ? trimStrings.booleanValue()
+                       ? trimStrings
                        : defaultConfiguration.trimStrings();
             }
 
@@ -1000,7 +999,7 @@ public class ImportTool
             public boolean legacyStyleQuoting()
             {
                 return legacyStyleQuoting != null
-                        ? legacyStyleQuoting.booleanValue()
+                        ? legacyStyleQuoting
                         : defaultConfiguration.legacyStyleQuoting();
             }
         };

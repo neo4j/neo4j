@@ -19,14 +19,13 @@
  */
 package org.neo4j.shell.impl;
 
-import java.text.SimpleDateFormat;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import java.text.SimpleDateFormat;
+
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
-import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

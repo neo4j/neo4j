@@ -45,11 +45,8 @@ public abstract class AdminCommandSection
     @Override
     public boolean equals( Object other )
     {
-        if ( other instanceof AdminCommandSection )
-        {
-            return this.printable().equals( ((AdminCommandSection) other).printable() );
-        }
-        return false;
+        return other instanceof AdminCommandSection &&
+                this.printable().equals( ((AdminCommandSection) other).printable() );
     }
 
     public final void printAllCommandsUnderSection( Consumer<String> output, List<AdminCommand.Provider> providers )

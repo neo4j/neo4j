@@ -447,7 +447,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Boolean( propertyValue[i] ) );
+            assertEquals( array2[i], propertyValue[i] );
         }
 
         node1.removeProperty( key );

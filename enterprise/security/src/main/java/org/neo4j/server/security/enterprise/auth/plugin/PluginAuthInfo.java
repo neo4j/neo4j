@@ -26,8 +26,8 @@ import org.apache.shiro.util.ByteSource;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.server.security.enterprise.auth.SecureHasher;
@@ -55,13 +55,12 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
     private PluginAuthInfo( AuthInfo authInfo, SimpleHash hashedCredentials, String realmName )
     {
         this( authInfo.principal(), hashedCredentials.getBytes(), hashedCredentials.getSalt(), realmName,
-                authInfo.roles().stream().collect( Collectors.toSet() ) );
+                new HashSet<>( authInfo.roles() ) );
     }
 
     public static PluginAuthInfo create( AuthInfo authInfo, String realmName )
     {
-        return new PluginAuthInfo( authInfo.principal(), realmName,
-                authInfo.roles().stream().collect( Collectors.toSet() ) );
+        return new PluginAuthInfo( authInfo.principal(), realmName, new HashSet<>( authInfo.roles() ) );
     }
 
     public static PluginAuthInfo createCacheable( AuthInfo authInfo, String realmName, SecureHasher secureHasher )
@@ -74,8 +73,7 @@ public class PluginAuthInfo extends ShiroAuthenticationInfo implements Authoriza
         }
         else
         {
-            return new PluginAuthInfo( authInfo.principal(), realmName,
-                    authInfo.roles().stream().collect( Collectors.toSet() ) );
+            return new PluginAuthInfo( authInfo.principal(), realmName, new HashSet<>( authInfo.roles() ) );
         }
     }
 

@@ -91,11 +91,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !other.isSequenceValue() )
-        {
-            return false;
-        }
-        return equals( (SequenceValue) other );
+        return other != null && other.isSequenceValue() && equals( (SequenceValue) other );
     }
 
     public AnyValue head()

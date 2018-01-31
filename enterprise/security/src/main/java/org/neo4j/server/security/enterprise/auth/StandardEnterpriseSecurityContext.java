@@ -168,9 +168,9 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         @Override
         public boolean allowsProcedureWith( String[] roleNames )
         {
-            for ( int i = 0; i < roleNames.length; i++ )
+            for ( String roleName : roleNames )
             {
-                if ( roles.contains( roleNames[i] ) )
+                if ( roles.contains( roleName ) )
                 {
                     return true;
                 }

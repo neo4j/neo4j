@@ -232,15 +232,14 @@ public class DiagnosticsReportCommand implements AdminCommand
     private void registerJMXSources( DiagnosticsReporter reporter )
     {
         Optional<JmxDump> jmxDump = jmxDumper.getJMXDump();
-        if ( jmxDump.isPresent() )
+        jmxDump.ifPresent( jmx ->
         {
-            JmxDump jmx = jmxDump.get();
             reporter.registerSource( "threads", jmx.threadDump() );
             reporter.registerSource( "heap", jmx.heapDump() );
             reporter.registerSource( "sysprop", jmx.systemProperties() );
             reporter.registerSource( "env", jmx.environmentVariables() );
             reporter.registerSource( "activetxs", jmx.listTransactions() );
-        }
+        } );
     }
 
     private Config getConfig( File configFile ) throws CommandFailed

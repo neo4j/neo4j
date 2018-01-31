@@ -24,13 +24,11 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.centrality.StressCentrality;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPathDijkstra;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 
 import static org.junit.Assert.assertTrue;
 

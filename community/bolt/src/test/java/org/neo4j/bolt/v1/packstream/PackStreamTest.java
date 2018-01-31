@@ -311,10 +311,8 @@ public class PackStreamTest
         Machine machine = new Machine();
         char[] chars = {'ø', 'å', '´', '†', 'œ', '≈'};
 
-        for ( int i = 0; i < chars.length; i++ )
+        for ( char c : chars )
         {
-            char c = chars[i];
-
             // When
             machine.reset();
             machine.packer().pack( c );

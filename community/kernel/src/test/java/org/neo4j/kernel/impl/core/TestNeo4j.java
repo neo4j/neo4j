@@ -120,9 +120,9 @@ public class TestNeo4j extends AbstractNeo4jTestCase
 
     private boolean objectExistsInArray( Object obj, Object[] objArray )
     {
-        for ( int i = 0; i < objArray.length; i++ )
+        for ( Object o : objArray )
         {
-            if ( objArray[i].equals( obj ) )
+            if ( o.equals( obj ) )
             {
                 return true;
             }

@@ -51,9 +51,9 @@ public class LabelIdArray
     static long[] filter( long[] ids, long excludeId )
     {
         boolean found = false;
-        for ( int i = 0; i < ids.length; i++ )
+        for ( long id : ids )
         {
-            if ( ids[i] == excludeId )
+            if ( id == excludeId )
             {
                 found = true;
                 break;
@@ -66,11 +66,11 @@ public class LabelIdArray
 
         long[] result = new long[ids.length - 1];
         int writerIndex = 0;
-        for ( int i = 0; i < ids.length; i++ )
+        for ( long id : ids )
         {
-            if ( ids[i] != excludeId )
+            if ( id != excludeId )
             {
-                result[writerIndex++] = ids[i];
+                result[writerIndex++] = id;
             }
         }
         return result;

@@ -33,7 +33,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 
@@ -48,7 +47,7 @@ public class BadCollectorTest
         // given
         int tolerance = 5;
 
-        try ( BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL ); )
+        try ( BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL ) )
         {
             // when
             badCollector.collectBadRelationship( "1", "a", "T", "2", "b", "1" );

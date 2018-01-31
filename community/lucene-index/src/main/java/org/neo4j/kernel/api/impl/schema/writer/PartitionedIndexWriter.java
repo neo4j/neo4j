@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
-import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
 
 /**
  * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions

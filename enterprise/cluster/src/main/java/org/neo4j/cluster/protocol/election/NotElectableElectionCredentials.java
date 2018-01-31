@@ -42,11 +42,7 @@ public final class NotElectableElectionCredentials implements ElectionCredential
     @Override
     public boolean equals( Object obj )
     {
-        if ( obj == null )
-        {
-            return false;
-        }
-        return obj instanceof NotElectableElectionCredentials;
+        return obj != null && obj instanceof NotElectableElectionCredentials;
     }
 
     @Override

@@ -111,9 +111,9 @@ public class DepthPitfallGraphTest extends TraversalTestBase
                 {
                     assertNotNull( position.lastRelationship() );
                 }
-                assertNotNull( position.length() );
             }
             assertFalse( "empty traversal", count == 0 );
+            transaction.success();
         }
     }
 

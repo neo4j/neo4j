@@ -174,10 +174,7 @@ public class LuceneExplicitIndexUpgrader
     {
         try ( Stream<Path> pathStream = Files.list( path ) )
         {
-            return  pathStream
-                    .filter( child -> child.getFileName().toString().startsWith( SEGMENTS_FILE_NAME_PREFIX ) )
-                    .findAny()
-                    .isPresent();
+            return pathStream.anyMatch( child -> child.getFileName().toString().startsWith( SEGMENTS_FILE_NAME_PREFIX ) );
         }
     }
 

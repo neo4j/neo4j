@@ -94,7 +94,7 @@ public class TestDatasourceCommitOrderDataVisibility
         {
             try ( Transaction ignored = graphDatabaseService.beginTx();
                   IndexHits<Node> indexHits = graphDatabaseService.index()
-                          .forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ); )
+                          .forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ) )
             {
                 assertThat( indexHits.size(), is( 0 ) );
             }

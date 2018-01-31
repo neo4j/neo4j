@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernel
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.values.storable.Value;
 
 public interface DataWriteOperations extends ExplicitIndexWrite

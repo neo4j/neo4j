@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;

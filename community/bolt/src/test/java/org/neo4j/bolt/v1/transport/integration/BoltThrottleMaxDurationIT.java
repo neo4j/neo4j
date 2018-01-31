@@ -39,17 +39,14 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 

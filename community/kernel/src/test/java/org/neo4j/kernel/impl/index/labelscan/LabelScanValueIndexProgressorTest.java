@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.IndexProgressor;

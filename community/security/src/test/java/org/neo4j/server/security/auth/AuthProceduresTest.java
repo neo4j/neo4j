@@ -28,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
-import org.neo4j.test.TestGraphDatabaseBuilder;
 
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 

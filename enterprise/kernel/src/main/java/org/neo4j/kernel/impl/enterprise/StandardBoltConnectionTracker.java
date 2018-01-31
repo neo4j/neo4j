@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +48,7 @@ public class StandardBoltConnectionTracker implements BoltConnectionTracker
     @Override
     public Set<ManagedBoltStateMachine> getActiveConnections()
     {
-        return sessions.keySet().stream().collect( toSet() );
+        return new HashSet<>( sessions.keySet() );
     }
 
     @Override

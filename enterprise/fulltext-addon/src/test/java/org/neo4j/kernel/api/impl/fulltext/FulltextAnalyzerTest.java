@@ -68,7 +68,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         analyzer = SWEDISH;
-        try ( FulltextProvider provider = createProvider(); )
+        try ( FulltextProvider provider = createProvider() )
         {
             provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.registerTransactionEventHandler();

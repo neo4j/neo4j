@@ -34,13 +34,13 @@ public class TextUtil
     }
 
     public static String templateString( String templateString,
-            Map<String, ? extends Object> data )
+            Map<String, ?> data )
     {
         return templateString( templateString, "\\$", data );
     }
 
     public static String templateString( String templateString,
-            String variablePrefix, Map<String, ? extends Object> data )
+            String variablePrefix, Map<String, ?> data )
     {
         // Sort data strings on length.
         Map<Integer, List<String>> lengthMap =
@@ -54,8 +54,8 @@ public class TextUtil
                 longest = length;
             }
 
-            List<String> innerList = null;
-            Integer innerKey = Integer.valueOf( length );
+            List<String> innerList;
+            Integer innerKey = length;
             if ( lengthMap.containsKey( innerKey ) )
             {
                 innerList = lengthMap.get( innerKey );
@@ -72,7 +72,7 @@ public class TextUtil
         String result = templateString;
         for ( int i = longest; i >= 0; i-- )
         {
-            Integer lengthKey = Integer.valueOf( i );
+            Integer lengthKey = i;
             if ( !lengthMap.containsKey( lengthKey ) )
             {
                 continue;
@@ -99,7 +99,7 @@ public class TextUtil
         String[] quoteParts = text.split( "\"" );
         String lastPart = quoteParts[quoteParts.length - 1];
         boolean isWithinQuotes = quoteParts.length % 2 == 0;
-        String lastWord = null;
+        String lastWord;
         if ( isWithinQuotes )
         {
             lastWord = lastPart;

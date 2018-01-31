@@ -142,9 +142,9 @@ public class JSONObject
     public JSONObject( JSONObject jo, String[] names ) throws JSONException
     {
         this();
-        for ( int i = 0; i < names.length; i += 1 )
+        for ( String name : names )
         {
-            putOnce( names[i], jo.opt( names[i] ) );
+            putOnce( name, jo.opt( name ) );
         }
     }
 
@@ -322,9 +322,8 @@ public class JSONObject
     {
         this();
         Class c = object.getClass();
-        for ( int i = 0; i < names.length; i += 1 )
+        for ( String name : names )
         {
-            String name = names[i];
             try
             {
                 putOpt( name, c.getField( name ).get( object ) );
@@ -492,7 +491,7 @@ public class JSONObject
         char c = 0;
         int i;
         int len = string.length();
-        StringBuffer sb = new StringBuffer( len + 4 );
+        StringBuilder sb = new StringBuilder( len + 4 );
         String t;
 
         sb.append( '"' );
@@ -813,11 +812,10 @@ public class JSONObject
         }
 
         Method[] methods = includeSuperClass ? klass.getMethods() : klass.getDeclaredMethods();
-        for ( int i = 0; i < methods.length; i += 1 )
+        for ( Method method : methods )
         {
             try
             {
-                Method method = methods[i];
                 if ( Modifier.isPublic( method.getModifiers() ) )
                 {
                     String name = method.getName();
@@ -1579,7 +1577,7 @@ public class JSONObject
         try
         {
             Iterator keys = keys();
-            StringBuffer sb = new StringBuffer( "{" );
+            StringBuilder sb = new StringBuilder( "{" );
 
             while ( keys.hasNext() )
             {
@@ -1642,7 +1640,7 @@ public class JSONObject
             return "{}";
         }
         Iterator keys = sortedKeys();
-        StringBuffer sb = new StringBuffer( "{" );
+        StringBuilder sb = new StringBuilder( "{" );
         int newindent = indent + indentFactor;
         Object o;
         if ( n == 1 )

@@ -150,13 +150,9 @@ public class AccessStatistics
             }
         }
 
-        private boolean closeBy( long id1, long id2 )
+        private boolean notCloseBy( long id1, long id2 )
         {
-            if ( id1 < 0 || id2 < 0 )
-            {
-                return true;
-            }
-            return Math.abs( id2 - id1 ) < this.proximityValue;
+            return id1 >= 0 && id2 >= 0 && Math.abs( id2 - id1 ) >= this.proximityValue;
         }
 
         public void upWrite( long id )
@@ -164,7 +160,7 @@ public class AccessStatistics
             if ( prevWriteId != id )
             {
                 writes++;
-                if ( id > 0 && !closeBy( id, prevWriteId ) )
+                if ( id > 0 && notCloseBy( id, prevWriteId ) )
                 {
                     randomWrites++;
                 }
@@ -174,7 +170,7 @@ public class AccessStatistics
 
         public synchronized void incrementRandomReads( long id1, long id2 )
         {
-            if ( !closeBy( id1, id2 ) )
+            if ( notCloseBy( id1, id2 ) )
             {
                 randomReads++;
             }

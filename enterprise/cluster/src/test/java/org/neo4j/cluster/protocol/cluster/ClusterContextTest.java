@@ -22,7 +22,6 @@ package org.neo4j.cluster.protocol.cluster;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;

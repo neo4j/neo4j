@@ -19,20 +19,18 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import common.Neo4jAlgoTestCase;
+import org.junit.Test;
 
 import java.util.List;
 
-import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
-import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.impl.shortestpath.FloydWarshall;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 
-import common.Neo4jAlgoTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class FloydWarshallTest extends Neo4jAlgoTestCase
 {

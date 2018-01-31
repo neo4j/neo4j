@@ -45,9 +45,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
- * Rule for opening a {@link NeoStores}, either via {@link #open(String...)}, which just uses an in-memory
- * file system, or via {@link #open(FileSystemAbstraction, PageCache, RecordFormats, Function, String...)}
- * which is suitable in an environment where you already have an fs and page cache available.
+ * Rule for opening a {@link NeoStores}.
  */
 public class NeoStoresRule extends ExternalResource
 {

@@ -35,11 +35,10 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.concurrent.Futures;
 import org.neo4j.causalclustering.discovery.IpFamily;
+import org.neo4j.concurrent.Futures;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.PageCacheRule;

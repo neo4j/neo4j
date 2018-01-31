@@ -51,14 +51,7 @@ public abstract class PointArray extends ArrayValue
     @Override
     public boolean equals( Value other )
     {
-        if ( other instanceof PointArray )
-        {
-            return Arrays.equals( this.value(), ((PointArray) other).value() );
-        }
-        else
-        {
-            return false;
-        }
+        return other instanceof PointArray && Arrays.equals( this.value(), ((PointArray) other).value() );
     }
 
     @Override

@@ -44,9 +44,6 @@ import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
-import static org.neo4j.kernel.impl.newapi.RelationshipDirection.INCOMING;
-import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
-import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -467,9 +464,8 @@ public class RelationshipChangesForNode
             Map<Integer,Set<Long>>... maps )
     {
         Collection<Set<Long>> result = new ArrayList<>();
-        for ( int i = 0; i < maps.length; i++ )
+        for ( Map<Integer,Set<Long>> map : maps )
         {
-            Map<Integer,Set<Long>> map = maps[i];
             if ( map != null )
             {
                 Iterator<Set<Long>> diffSet = filter.apply( map );

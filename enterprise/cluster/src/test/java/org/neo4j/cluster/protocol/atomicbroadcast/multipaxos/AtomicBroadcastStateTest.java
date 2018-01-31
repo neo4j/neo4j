@@ -19,22 +19,20 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.cluster.com.message.Message.to;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage.failed;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastState.broadcasting;

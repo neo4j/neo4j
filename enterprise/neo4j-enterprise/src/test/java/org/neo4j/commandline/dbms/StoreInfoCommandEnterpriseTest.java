@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.highlimit.v300.HighLimitV3_0_0;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;

@@ -138,8 +138,7 @@ public class TransportWriteThrottle implements TransportThrottle
     private static boolean isDurationAlreadyExceeded( Channel channel )
     {
         Boolean marker = channel.attr( MAX_DURATION_EXCEEDED_KEY ).get();
-
-        return marker != null && marker.booleanValue();
+        return marker != null && marker;
     }
 
     private static void setDurationExceeded( Channel channel )

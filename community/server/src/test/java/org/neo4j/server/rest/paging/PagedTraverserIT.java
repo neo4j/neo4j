@@ -54,6 +54,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -119,7 +120,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
 
         Map<String, Object> jsonMap = JsonHelper.jsonToMap( response.getEntity() );
 
-        assertNotNull( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ) );
+        assertThat( jsonMap.containsKey( PAGED_TRAVERSE_LINK_REL ), is( true ) );
         assertThat( String.valueOf( jsonMap.get( PAGED_TRAVERSE_LINK_REL ) ),
                 containsString( "/db/data/node/" + String.valueOf( theStartNode.getId() )
                         + "/paged/traverse/{returnType}{?pageSize,leaseTime}" ) );

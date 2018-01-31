@@ -42,10 +42,7 @@ public class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.
     public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
     {
         Optional<CountsAccessor.Updater> result = countsTracker.apply( transaction.transactionId() );
-        if ( result.isPresent() )
-        {
-            this.countsUpdater = result.get();
-        }
+        result.ifPresent( updater -> this.countsUpdater = updater );
         assert this.countsUpdater != null || mode == TransactionApplicationMode.RECOVERY;
 
         return new CountsStoreTransactionApplier( mode, countsUpdater );

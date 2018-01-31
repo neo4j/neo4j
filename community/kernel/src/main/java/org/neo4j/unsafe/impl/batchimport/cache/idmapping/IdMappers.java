@@ -65,7 +65,7 @@ public class IdMappers
         @Override
         public long get( Object inputId, Group group )
         {
-            return ((Long)inputId).longValue();
+            return (Long) inputId;
         }
 
         @Override

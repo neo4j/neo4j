@@ -66,11 +66,7 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
     public boolean next()
     {
         long[] nodes = lookup.get( label );
-        if ( nodes == null )
-        {
-            return false;
-        }
-        return ++offset < nodes.length;
+        return nodes != null && ++offset < nodes.length;
     }
 
     @Override

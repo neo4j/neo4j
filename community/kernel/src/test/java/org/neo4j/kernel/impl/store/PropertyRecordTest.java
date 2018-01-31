@@ -79,10 +79,10 @@ public class PropertyRecordTest
         Iterator<PropertyBlock> iterator = record.iterator();
 
         // THEN
-        for ( int i = 0; i < blocks.length; i++ )
+        for ( PropertyBlock block : blocks )
         {
             assertTrue( iterator.hasNext() );
-            assertEquals( blocks[i], iterator.next() );
+            assertEquals( block, iterator.next() );
         }
         assertFalse( iterator.hasNext() );
     }

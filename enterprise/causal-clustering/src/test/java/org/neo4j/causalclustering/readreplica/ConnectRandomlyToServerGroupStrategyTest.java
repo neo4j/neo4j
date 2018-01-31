@@ -34,7 +34,6 @@ import static co.unruly.matchers.OptionalMatchers.contains;
 import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConnectRandomlyToServerGroupStrategyTest
 {

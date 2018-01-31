@@ -167,7 +167,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         /**
          * Begin a new kernel transaction with specified timeout in milliseconds.
-         * If a transaction is already associated to the current context, this should fail.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
          * @see SPI#beginTransaction(KernelTransaction.Type, SecurityContext)
