@@ -19,16 +19,25 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.paged;
 
+import org.apache.lucene.store.IndexInput;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.util.Arrays;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class InputResourcesTest
 {
@@ -37,15 +46,16 @@ public class InputResourcesTest
     {
         // Given
         PagedFile file = mock( PagedFile.class );
+        PageCursor firstCursor = mock( PageCursor.class );
+        FailsToClosePageCursor secondCursor = new FailsToClosePageCursor();
+        FailsToClosePageCursor thirdCursor = new FailsToClosePageCursor();
+        when( file.io( anyLong(), anyInt() ) ).thenReturn( firstCursor, secondCursor, thirdCursor );
 
         InputResources.RootInputResources resources = new InputResources.RootInputResources( file );
 
         PagedIndexInput rootInput = new PagedIndexInput( resources, "RootInput", 0, 14, 1337 );
-        new PagedIndexInput( resources.cloneResources(), "CloneInput", 0, 14, 1337 );
-        FailingInput firstFailingClone =
-                new FailingInput( resources.cloneResources(), "FirstFailingClone", 0, 14, 1337 );
-        FailingInput secondFailingClone =
-                new FailingInput( resources.cloneResources(), "SecondFailingClone", 0, 14, 1337 );
+        IndexInput firstFailingClone = rootInput.clone();
+        IndexInput secondFailingClone = rootInput.clone();
 
         // When
         try
@@ -59,26 +69,71 @@ public class InputResourcesTest
         }
 
         // Then
-        assertEquals( firstFailingClone.closeCalls, 1 );
-        assertEquals( secondFailingClone.closeCalls, 1 );
+        assertEquals( secondCursor.closeCalls, 1 );
+        assertEquals( thirdCursor.closeCalls, 1 );
+        verify( firstCursor ).close();
         verify( file ).close();
     }
 
-    static class FailingInput extends PagedIndexInput
+    @Test
+    public void shouldHandleIndefiniteClonesCreatedAndTrashed() throws Exception
     {
-        public int closeCalls;
+        // Given
+        int cursorBulkSize = 1024 * 1024;
+        PagedFile file = mock( PagedFile.class );
+        when( file.pageSize() ).thenReturn( 4096 );
+        when( file.io( anyLong(), anyInt() ) ).then( call -> new BigBulkyPageCursor( cursorBulkSize ) );
 
-        FailingInput( InputResources resources, String resourceDescription, long startPosition, int pageSize,
-                long size ) throws IOException
+        PagedIndexInput rootInput = new PagedIndexInput( "RootInput", file, 0, 1337 );
+
+        // When we access more inputs than there is space on the heap, but don't retain references to them
+        int blackHole = 0;
+        for ( int i = 0; i < Runtime.getRuntime().maxMemory() / cursorBulkSize * 2; i++ )
         {
-            super( resources, resourceDescription, startPosition, pageSize, size );
+            blackHole *= rootInput.clone().hashCode();
+        }
+
+        // Then the test should pass without OOM
+        System.out.println( blackHole );
+    }
+
+    static class BigBulkyPageCursor extends DelegatingPageCursor
+    {
+        private final byte[] bulk;
+
+        BigBulkyPageCursor( int size )
+        {
+            super( mock( PageCursor.class ) );
+            this.bulk = new byte[size];
         }
 
         @Override
-        public void close() throws IOException
+        public int hashCode()
+        {
+            return super.hashCode() * System.identityHashCode( bulk );
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            return obj == this;
+        }
+    }
+
+    static class FailsToClosePageCursor extends DelegatingPageCursor
+    {
+        int closeCalls;
+
+        FailsToClosePageCursor()
+        {
+            super( mock( PageCursor.class ) );
+        }
+
+        @Override
+        public void close()
         {
             closeCalls++;
-            throw new IOException( "Emulated error to close.." );
+            throw new RuntimeException( "Emulated error to close.." );
         }
     }
 }
