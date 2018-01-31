@@ -121,13 +121,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     KEY keyAt( PageCursor cursor, KEY into, int pos, Type type )
     {
         placeCursorAtActualKey( cursor, pos, type );
+        int offset = cursor.getOffset();
 
         // Read key
         int keySize = readKeySize( cursor );
         if ( keySize > keyValueSizeCap || keySize < 0 )
         {
-            cursor.setCursorException( format( "Read unreliable key, keySize=%d, keyValueSizeCap=%d, keyHasTombstone=%b",
-                    keySize, keyValueSizeCap, hasTombstone( keySize ) ) );
+            cursor.setCursorException( format( "Read unreliable key, keySize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, offset=%d, pos=%d",
+                    keySize, keyValueSizeCap, hasTombstone( keySize ), offset, pos ) );
             return into;
         }
         if ( type == LEAF )
@@ -142,13 +143,14 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     void keyValueAt( PageCursor cursor, KEY intoKey, VALUE intoValue, int pos )
     {
         placeCursorAtActualKey( cursor, pos, LEAF );
+        int offset = cursor.getOffset();
 
         int keySize = readKeySize( cursor );
         int valueSize = readValueSize( cursor );
         if ( keySize + valueSize > keyValueSizeCap || keySize < 0 || valueSize < 0 )
         {
-            cursor.setCursorException( format( "Read unreliable key, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b",
-                    keySize, valueSize, keyValueSizeCap, hasTombstone( keySize ) ) );
+            cursor.setCursorException( format( "Read unreliable key, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, offset=%d, pos=%d",
+                    keySize, valueSize, keyValueSizeCap, hasTombstone( keySize ), offset, pos ) );
             return;
         }
         layout.readKey( cursor, intoKey, keySize );
@@ -1087,9 +1089,11 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int keyOffset = readKeyOffset( cursor );
 
         // Verify offset is reasonable
-        if ( keyOffset > pageSize || keyOffset < 0 )
+        if ( keyOffset >= pageSize || keyOffset < HEADER_LENGTH_DYNAMIC )
         {
-            cursor.setCursorException( "Tried to read key on offset " + keyOffset + ". Page size is " + pageSize );
+            cursor.setCursorException( format( "Tried to read key on offset=%d, headerLength=%d, pageSize=%d, pos=%d",
+                    keyOffset, HEADER_LENGTH_DYNAMIC, pageSize, pos ) );
+            return;
         }
 
         // Set cursor to actual offset
