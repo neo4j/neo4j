@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
@@ -52,13 +51,9 @@ public class RecoveryRequiredChecker
 
     public boolean isRecoveryRequiredAt( File dataDir ) throws IOException
     {
-        File neoStore = new File( dataDir, MetaDataStore.DEFAULT_NAME );
         boolean noStoreFound = !NeoStores.isStorePresent( pageCache, dataDir );
-
-        // We need config to determine where the logical log files are
         if ( noStoreFound )
         {
-            // No database in the specified directory.
             return false;
         }
 

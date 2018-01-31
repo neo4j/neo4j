@@ -37,7 +37,6 @@ import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -244,7 +243,7 @@ public class ConsistencyCheckService
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,
-                            RecoveryCleanupWorkCollector.IMMEDIATE );
+                            RECOVERY_PREVENTING_COLLECTOR );
             life.add( labelScanStore );
 
             int numberOfThreads = defaultConsistencyCheckThreadsNumber();

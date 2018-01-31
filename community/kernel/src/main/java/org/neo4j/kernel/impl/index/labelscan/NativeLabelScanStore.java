@@ -467,7 +467,10 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void shutdown() throws IOException
     {
-        index.close();
+        if ( index != null )
+        {
+            index.close();
+        }
     }
 
     @Override
