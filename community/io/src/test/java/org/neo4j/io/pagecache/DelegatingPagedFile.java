@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -60,6 +61,12 @@ public class DelegatingPagedFile implements PagedFile
     public long fileSize() throws IOException
     {
         return delegate.fileSize();
+    }
+
+    @Override
+    public File file()
+    {
+        return delegate.file();
     }
 
     @Override
