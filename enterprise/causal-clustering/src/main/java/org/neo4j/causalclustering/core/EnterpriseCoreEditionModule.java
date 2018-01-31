@@ -229,7 +229,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 new ProtocolInstallerRepository<>( singletonList( new RaftProtocolClientInstaller( logProvider, clientPipelineBuilderFactory ) ) );
         HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( logProvider, protocolRepository, Protocol.Identifier.RAFT,
                 protocolInstallerRepository, config, clientPipelineBuilderFactory );
-        final SenderService raftSender = new SenderService( channelInitializer, logProvider, platformModule.monitors );
+        final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
