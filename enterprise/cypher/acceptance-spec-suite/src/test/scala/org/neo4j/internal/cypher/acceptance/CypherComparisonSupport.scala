@@ -111,7 +111,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
         // It was not expected to fail with the specified error message, do nothing
         case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
-            if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
+            if (e.getMessage == null || !message.exists(s => e.getMessage.replaceAll("\\r", "").contains(s.replaceAll("\\r", "")))) {
               fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'")
             }
           } else {
