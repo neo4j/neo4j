@@ -129,10 +129,17 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
     engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
 
-    // then
     logProvider.assertAtLeastOnce(
-      AssertableLogProvider.inLog(classOf[ExecutionEngine]).info(Matchers.containsString("Discarded stale query from the query cache"))
-    )
+
+      AssertableLogProvider
+        .inLog(classOf[ExecutionEngine])
+        .info(
+          Matchers.allOf[String](
+            Matchers.containsString("Discarded stale query from the query cache"),
+            Matchers.containsString(query)
+          )
+        )
+      )
   }
 }
 
