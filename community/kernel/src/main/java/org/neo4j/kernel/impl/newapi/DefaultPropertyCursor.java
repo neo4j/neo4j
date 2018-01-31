@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
+import org.neo4j.kernel.impl.store.TemporalType;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.util.Bits;
@@ -330,6 +331,8 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
             return readLongArray();
         case GEOMETRY:
             return geometryValue();
+        case TEMPORAL:
+            return temporalValue();
         default:
             throw new IllegalStateException( "Unsupported PropertyType: " + type.name() );
         }
@@ -338,6 +341,11 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     Value geometryValue()
     {
         return GeometryType.decode( getBlocks(), block );
+    }
+
+    Value temporalValue()
+    {
+        return TemporalType.decode( getBlocks(), block );
     }
 
     private ArrayValue readLongArray()

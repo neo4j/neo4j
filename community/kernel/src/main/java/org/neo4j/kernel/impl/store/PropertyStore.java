@@ -124,6 +124,22 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  *            [    ,    ] [xxxx,xxxx] [xxxx,xxxx] [    ,    ] [    ,type][K][K][K] CRS code
  *            [    ,   x] [    ,    ] [    ,    ] [    ,    ] [    ,type][K][K][K] Precision flag: 0=double, 1=float
  *            values in next dimension long blocks
+ * DATE:      [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxx1] [ 01 ,type][K][K][K] epochDay
+ * DATE:      [    ,    ] [    ,    ] [    ,    ] [    ,   0] [ 01 ,type][K][K][K] epochDay in next long block
+ * LOCALTIME: [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxx1] [ 02 ,type][K][K][K] nanoOfDay
+ * LOCALTIME: [    ,    ] [    ,    ] [    ,    ] [    ,   0] [ 02 ,type][K][K][K] nanoOfDay in next long block
+ * LOCALDTIME:[xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [ 03 ,type][K][K][K] nanoOfSecond
+ *            epochSecond in next long block
+ * TIME:      [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [ 04 ,type][K][K][K] secondOffset (=ZoneOffset)
+ *            nanoOfDay in next long block
+ * DATETIME:  [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxx1] [ 05 ,type][K][K][K] nanoOfSecond
+ *            epochSecond in next long block
+ *            secondOffset in next long block
+ * TODO alternative DateTime format
+ * DURATION:  [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [ 06 ,type][K][K][K] nanoOfSecond
+ *            months in next long block
+ *            days in next long block
+ *            seconds in next long block
  * </pre>
  */
 public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHeader> implements StorageStatement.Properties
@@ -525,43 +541,50 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         @Override
         public void writeDuration( long months, long days, long seconds, int nanos ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeDuration( keyId, months, days, seconds, nanos) );
         }
 
         @Override
         public void writeDate( long epochDay ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeDate( keyId, epochDay ) );
         }
 
         @Override
         public void writeLocalTime( long nanoOfDay ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeLocalTime( keyId, nanoOfDay ) );
         }
 
         @Override
         public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayUTC, offsetSeconds ) );
         }
 
         @Override
         public void writeLocalDateTime( long epochSecond, int nano ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeLocalDateTime( keyId, epochSecond, nano ) );
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, offsetSeconds ) );
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IllegalArgumentException
         {
-            throw new UnsupportedOperationException( "not implemented" );
+            // TODO check capabilities
+            block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, zoneId ) );
         }
     }
 
