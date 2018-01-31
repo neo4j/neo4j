@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 
 public final class DateValue extends TemporalValue<LocalDate,DateValue>
