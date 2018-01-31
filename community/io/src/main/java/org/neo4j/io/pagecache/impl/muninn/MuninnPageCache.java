@@ -690,6 +690,12 @@ public class MuninnPageCache implements PageCache
         return swapperFactory.getFileSystemAbstraction();
     }
 
+    @Override
+    public void reportEvents()
+    {
+        pageCursorTracerSupplier.get().reportEvents();
+    }
+
     int getPageCacheId()
     {
         return pageCacheId;
