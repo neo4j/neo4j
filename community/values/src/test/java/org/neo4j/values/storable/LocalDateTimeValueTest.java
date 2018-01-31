@@ -30,6 +30,8 @@ import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalDateTimeValue.parse;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 public class LocalDateTimeValueTest
 {
@@ -70,5 +72,17 @@ public class LocalDateTimeValueTest
             // then
             assertEquals( singletonList( value ), values );
         }
+    }
+
+    @Test
+    public void shouldEqualItself()
+    {
+        assertEqual( localDateTime( 2018, 1, 31, 10, 52, 5, 6 ), localDateTime( 2018, 1, 31, 10, 52, 5, 6 ) );
+    }
+
+    @Test
+    public void shouldNotEqualOther()
+    {
+        assertNotEqual( localDateTime( 2018, 1, 31, 10, 52, 5, 6 ), localDateTime( 2018, 1, 31, 10, 52, 5, 7 ) );
     }
 }

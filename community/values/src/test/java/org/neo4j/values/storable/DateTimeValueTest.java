@@ -51,6 +51,8 @@ import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.TimeValueTest.inUTC;
 import static org.neo4j.values.storable.TimeValueTest.orFail;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 
 public class DateTimeValueTest
@@ -452,5 +454,23 @@ public class DateTimeValueTest
                 datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ).sub( DurationValue.duration( 1, 0, 0, 0 ) ) );
         assertEquals( datetime( date( 2018, 2, 28 ), time( 0, 0, 0, 0, UTC ) ),
                 datetime( date( 2018, 1, 31 ), time( 0, 0, 0, 0, UTC ) ).sub( DurationValue.duration( -1, 0, 0, 0 ) ) );
+    }
+
+    @Test
+    public void shouldEqualItself()
+    {
+        assertEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ) );
+    }
+
+    @Test
+    public void shouldNotEqualSameTimeButDifferentTimezone()
+    {
+        assertNotEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 10, 52, 5, 6, "+01:00" ) );
+    }
+
+    @Test
+    public void shouldEqualSamePointInTimeInDifferentTimezone()
+    {
+        assertEqual( datetime( 2018, 1, 31, 10, 52, 5, 6, UTC ), datetime( 2018, 1, 31, 11, 52, 5, 6, "+01:00" ) );
     }
 }

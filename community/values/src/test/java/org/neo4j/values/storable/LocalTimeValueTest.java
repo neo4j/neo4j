@@ -19,16 +19,18 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Test;
+
 import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.LocalTimeValue.parse;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 public class LocalTimeValueTest
 {
@@ -107,6 +109,18 @@ public class LocalTimeValueTest
             // then
             assertEquals( singletonList( value ), values );
         }
+    }
+
+    @Test
+    public void shouldEqualItself()
+    {
+        assertEqual( localTime( 10, 52, 5, 6 ), localTime( 10, 52, 5, 6 ) );
+    }
+
+    @Test
+    public void shouldNotEqualSameTimeButDifferentTimezone()
+    {
+        assertNotEqual( localTime( 10, 52, 5, 6 ), localTime( 10, 52, 5, 7 ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )

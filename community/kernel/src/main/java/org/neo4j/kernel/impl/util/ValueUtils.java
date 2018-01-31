@@ -135,14 +135,7 @@ public final class ValueUtils
             }
             else if ( object instanceof Geometry )
             {
-                if ( object instanceof Point )
-                {
-                    return asPointValue( (Point) object );
-                }
-                else
-                {
-                    return asGeometryValue( (Geometry) object );
-                }
+                return asGeometryValue( (Geometry) object );
             }
             else
             {

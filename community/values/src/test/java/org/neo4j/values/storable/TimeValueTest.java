@@ -19,14 +19,14 @@
  */
 package org.neo4j.values.storable;
 
+import org.junit.Test;
+
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-
-import org.junit.Test;
 
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
@@ -37,6 +37,8 @@ import static org.neo4j.values.storable.LocalTimeValue.inUTC;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.parse;
 import static org.neo4j.values.storable.TimeValue.time;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 
 public class TimeValueTest
 {
@@ -159,6 +161,24 @@ public class TimeValueTest
                 time(12, 0, 2, 0, UTC).sub( DurationValue.duration( 0, 0, 1, 1_000_000_000 ) ) );
         assertEquals( time(12, 0, 0, 0, UTC),
                 time(12, 0, 0, 0, UTC).sub( DurationValue.duration( 0, 0, 1, -1_000_000_000 ) ) );
+    }
+
+    @Test
+    public void shouldEqualItself()
+    {
+        assertEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, UTC ) );
+    }
+
+    @Test
+    public void shouldNotEqualSameTimeButDifferentTimezone()
+    {
+        assertNotEqual( time( 10, 52, 5, 6, UTC ), time( 10, 52, 5, 6, "+01:00" ) );
+    }
+
+    @Test
+    public void shouldEqualSamePointInTimeInDifferentTimezone()
+    {
+        assertEqual( time( 10, 52, 5, 6, UTC ), time( 11, 52, 5, 6, "+01:00" ) );
     }
 
     @SuppressWarnings( "UnusedReturnValue" )
