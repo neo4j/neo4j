@@ -20,8 +20,8 @@
 package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.time.Clock;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -49,7 +49,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFactory
 {
     private final BoltFactory connector;
-    private final JobScheduler scheduler;
     private final LogService logging;
     private final Clock clock;
     private final ExecutorService threadPool;
@@ -57,11 +56,10 @@ public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFac
     public ThreadedWorkerFactory( BoltFactory connector, JobScheduler scheduler, LogService logging, Clock clock )
     {
         this.connector = connector;
-        this.scheduler = scheduler;
         this.logging = logging;
         this.clock = clock;
-        this.threadPool = new ThreadPoolExecutor( 200, 1000, 5, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>( 300 ), new NamedThreadFactory( "neo4j.Session" ) );
+        this.threadPool = new ThreadPoolExecutor( 200, 1000, 20, TimeUnit.MINUTES,
+                new SynchronousQueue<>(), new BoltNamedThreadFactory( "neo4j.Session" ) );
     }
 
     @Override
@@ -70,7 +68,6 @@ public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFac
         BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, clock );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
 
-//        scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );
         threadPool.execute( worker );
 
         return worker;
@@ -80,5 +77,26 @@ public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFac
     public void shutdown()
     {
         threadPool.shutdownNow();
+    }
+
+    private static final class BoltNamedThreadFactory extends NamedThreadFactory
+    {
+        BoltNamedThreadFactory( String threadNamePrefix )
+        {
+            super( threadNamePrefix );
+        }
+
+        @Override
+        public Thread newThread( Runnable runnable )
+        {
+            Thread superThread = super.newThread( runnable );
+            if ( runnable instanceof RunnableBoltWorker )
+            {
+                String oldName = superThread.getName();
+                RunnableBoltWorker worker = (RunnableBoltWorker) runnable;
+                superThread.setName( String.format( "%s - %s", oldName, worker.getConnectionDescriptor().toString() ) );
+            }
+            return superThread;
+        }
     }
 }

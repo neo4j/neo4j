@@ -206,7 +206,7 @@ public class ChunkedOutput implements PackOutput, BoltResponseMessageBoundaryHoo
         long duration = System.currentTimeMillis() - start;
         if ( duration > 10 )
         {
-            log.info( "Took " + duration + " to get a buffer from the pool" );
+            log.info( "Took " + duration + "ms to get a buffer from the pool" );
         }
         chunkOpen = false;
     }

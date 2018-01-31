@@ -31,4 +31,10 @@ public class BoltConnectionDescriptor
         this.clientAddress = clientAddress;
         this.serverAddress = serverAddress;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("Server: %s - Client: %s", serverAddress, clientAddress );
+    }
 }

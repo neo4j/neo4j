@@ -26,6 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
+import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -54,6 +55,11 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         this.machine = machine;
         this.log = logging.getInternalLog( getClass() );
         this.userLog = logging.getUserLog( getClass() );
+    }
+
+    public BoltConnectionDescriptor getConnectionDescriptor()
+    {
+        return machine.getConnectionDescriptor();
     }
 
     /**

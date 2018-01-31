@@ -71,6 +71,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         this.clock = clock;
     }
 
+    public BoltConnectionDescriptor getConnectionDescriptor()
+    {
+        return spi.connectionDescriptor();
+    }
+
     public State state()
     {
         return state;
