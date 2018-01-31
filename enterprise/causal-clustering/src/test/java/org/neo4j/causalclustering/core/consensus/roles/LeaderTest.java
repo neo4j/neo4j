@@ -787,36 +787,6 @@ public class LeaderTest
         // Not checking success or failure of append
     }
 
-    @Test
-    public void shouldRespondNegativelyIfLeaderAndRequestNotFromGreaterTerm() throws Exception
-    {
-        // given
-        RaftState raftState = preElectionActive();
-
-        // when
-        Outcome outcome = new Leader().handle( new RaftMessages.PreVote.Request( member1, Long.MIN_VALUE, member1, 0, 0 ), raftState, log() );
-
-        // then
-        RaftMessages.RaftMessage raftMessage = messageFor( outcome, member1 );
-        assertThat( raftMessage.type(), equalTo( RaftMessages.Type.PRE_VOTE_RESPONSE ) );
-        assertThat( ( (RaftMessages.PreVote.Response)raftMessage ).voteGranted() , equalTo( false )  );
-    }
-
-    @Test
-    public void shouldRespondPositivelyIfLeaderAndRequestFromGreaterTerm() throws Exception
-    {
-        // given
-        RaftState raftState = preElectionActive();
-
-        // when
-        Outcome outcome = new Leader().handle( new RaftMessages.PreVote.Request( member1, Long.MAX_VALUE, member1, 0, 0 ), raftState, log() );
-
-        // then
-        RaftMessages.RaftMessage raftMessage = messageFor( outcome, member1 );
-        assertThat( raftMessage.type(), equalTo( RaftMessages.Type.PRE_VOTE_RESPONSE ) );
-        assertThat( ( (RaftMessages.PreVote.Response)raftMessage ).voteGranted() , equalTo( true )  );
-    }
-
     private RaftState preElectionActive() throws IOException
     {
         return raftState()

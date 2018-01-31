@@ -21,6 +21,8 @@ package org.neo4j.causalclustering.core.consensus;
 
 import org.neo4j.causalclustering.core.consensus.roles.AppendEntriesRequestBuilder;
 import org.neo4j.causalclustering.core.consensus.roles.AppendEntriesResponseBuilder;
+import org.neo4j.causalclustering.core.consensus.vote.PreVoteRequestBuilder;
+import org.neo4j.causalclustering.core.consensus.vote.PreVoteResponseBuilder;
 import org.neo4j.causalclustering.core.consensus.vote.VoteRequestBuilder;
 import org.neo4j.causalclustering.core.consensus.vote.VoteResponseBuilder;
 
@@ -46,8 +48,18 @@ public class TestMessageBuilders
         return new VoteRequestBuilder();
     }
 
+    public static PreVoteRequestBuilder preVoteRequest()
+    {
+        return new PreVoteRequestBuilder();
+    }
+
     public static VoteResponseBuilder voteResponse()
     {
         return new VoteResponseBuilder();
+    }
+
+    public static PreVoteResponseBuilder preVoteResponse()
+    {
+        return new PreVoteResponseBuilder();
     }
 }

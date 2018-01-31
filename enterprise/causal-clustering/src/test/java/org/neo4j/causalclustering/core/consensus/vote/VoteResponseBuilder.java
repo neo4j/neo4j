@@ -19,41 +19,12 @@
  */
 package org.neo4j.causalclustering.core.consensus.vote;
 
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 
-public class VoteResponseBuilder
+public class VoteResponseBuilder extends AnyVoteResponseBuilder<RaftMessages.Vote.Response>
 {
-    boolean voteGranted = false;
-    private long term = -1;
-    private MemberId from = null;
-
-    public RaftMessages.Vote.Response build()
+    public VoteResponseBuilder()
     {
-        return new RaftMessages.Vote.Response( from, term, voteGranted );
-    }
-
-    public VoteResponseBuilder from( MemberId from )
-    {
-        this.from = from;
-        return this;
-    }
-
-    public VoteResponseBuilder term( long term )
-    {
-        this.term = term;
-        return this;
-    }
-
-    public VoteResponseBuilder grant()
-    {
-        this.voteGranted = true;
-        return this;
-    }
-
-    public VoteResponseBuilder deny()
-    {
-        this.voteGranted = false;
-        return this;
+        super( RaftMessages.Vote.Response::new );
     }
 }

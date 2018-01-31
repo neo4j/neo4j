@@ -285,9 +285,7 @@ class Follower implements RaftMessageHandler
         @Override
         public Outcome handle( RaftMessages.PreVote.Request request, Outcome outcome, ReadableRaftState ctx, Log log ) throws IOException
         {
-            // TODO should we look out for later terms?
-            outcome.addOutgoingMessage(
-                    new RaftMessages.Directed( request.from(), new RaftMessages.PreVote.Response( ctx.myself(), outcome.getTerm(), false ) ) );
+            Voting.declinePreVoteRequest( ctx, outcome, request );
             return outcome;
         }
 
