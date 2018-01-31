@@ -34,7 +34,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.async.AsyncLogEvent;
 import org.neo4j.logging.async.AsyncLogProvider;
 
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.flag;
 
 public class AsyncLogging extends LifecycleAdapter implements Consumer<AsyncLogEvent>, AsyncEvents.Monitor
 {

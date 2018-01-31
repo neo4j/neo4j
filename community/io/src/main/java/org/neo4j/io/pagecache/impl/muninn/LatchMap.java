@@ -20,8 +20,8 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.concurrent.BinaryLatch;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * The LatchMap is used by the {@link MuninnPagedFile} to coordinate concurrent page faults, and ensure that no two

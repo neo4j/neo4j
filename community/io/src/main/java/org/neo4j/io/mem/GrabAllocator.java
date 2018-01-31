@@ -22,7 +22,7 @@ package org.neo4j.io.mem;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.getInteger;
+import static org.neo4j.util.FeatureToggles.getInteger;
 
 /**
  * This memory allocator is allocating memory in large segments, called "grabs", and the memory returned by the memory

@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.logging.Log;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.Objects.requireNonNull;
 

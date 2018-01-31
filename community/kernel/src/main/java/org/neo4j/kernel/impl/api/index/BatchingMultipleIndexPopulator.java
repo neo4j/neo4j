@@ -36,7 +36,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
+import org.neo4j.util.FeatureToggles;
 
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
