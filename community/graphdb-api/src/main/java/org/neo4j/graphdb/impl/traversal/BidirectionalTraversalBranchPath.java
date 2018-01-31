@@ -159,7 +159,7 @@ class BidirectionalTraversalBranchPath implements Path
                 nodes.add( branch.endNode() );
             }
         }
-        if ( cachedStartNode == null && then == start && branch.length() >= 0 )
+        if ( cachedStartNode == null && then == start && branch != null && branch.length() >= 0 )
         {
             cachedStartNode = branch.endNode();
         }

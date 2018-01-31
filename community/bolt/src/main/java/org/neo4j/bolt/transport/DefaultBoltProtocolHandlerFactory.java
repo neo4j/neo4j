@@ -44,7 +44,7 @@ public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFac
     @Override
     public BoltMessagingProtocolHandler create( long protocolVersion, BoltChannel channel )
     {
-        if ( protocolVersion == BoltMessagingProtocolV1Handler.VERSION )
+        if ( protocolVersion == BoltMessagingProtocolV1Handler.VERSION_NUMBER )
         {
             BoltChannelAutoReadLimiter limiter =
                     new BoltChannelAutoReadLimiter( channel.rawChannel(), logService.getInternalLog( BoltChannelAutoReadLimiter.class ) );

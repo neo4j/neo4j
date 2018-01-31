@@ -92,7 +92,7 @@ public class MeasureDoNothing extends Thread
     }
 
     @Override
-    public synchronized void run()
+    public void run()
     {
         monitor.started();
         while ( measure )
@@ -100,7 +100,7 @@ public class MeasureDoNothing extends Thread
             long start = System.nanoTime();
             try
             {
-                this.wait( TIME_TO_WAIT );
+                Thread.sleep( TIME_TO_WAIT );
             }
             catch ( InterruptedException e )
             {
@@ -116,7 +116,7 @@ public class MeasureDoNothing extends Thread
         monitor.stopped();
     }
 
-    public synchronized void stopMeasuring()
+    public void stopMeasuring()
     {
         measure = false;
         this.interrupt();

@@ -43,7 +43,7 @@ import org.neo4j.logging.Log;
  */
 public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHandler
 {
-    public static final int VERSION = 1;
+    public static final int VERSION_NUMBER = 1;
 
     private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 8192;
 
@@ -98,7 +98,7 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
     @Override
     public int version()
     {
-        return VERSION;
+        return VERSION_NUMBER;
     }
 
     @Override

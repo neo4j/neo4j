@@ -55,6 +55,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -533,7 +534,7 @@ public class FileUtils
                 System.gc();
             }
         }
-        throw storedIoe;
+        throw Objects.requireNonNull( storedIoe );
     }
 
     public interface LineListener

@@ -430,14 +430,12 @@ public abstract class AbstractNeoServer implements NeoServer
     @Override
     public PluginManager getExtensionManager()
     {
-        if ( hasModule( RESTApiModule.class ) )
+        RESTApiModule module = getModule( RESTApiModule.class );
+        if ( module != null )
         {
-            return getModule( RESTApiModule.class ).getPlugins();
+            return module.getPlugins();
         }
-        else
-        {
-            return null;
-        }
+        return null;
     }
 
     protected Collection<InjectableProvider<?>> createDefaultInjectables()
@@ -473,18 +471,6 @@ public abstract class AbstractNeoServer implements NeoServer
         singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
 
         return singletons;
-    }
-
-    private boolean hasModule( Class<? extends ServerModule> clazz )
-    {
-        for ( ServerModule sm : serverModules )
-        {
-            if ( sm.getClass() == clazz )
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     @SuppressWarnings( "unchecked" )

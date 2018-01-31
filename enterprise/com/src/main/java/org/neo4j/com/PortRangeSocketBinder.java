@@ -24,6 +24,7 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelException;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 import org.neo4j.helpers.HostnamePort;
 
@@ -73,6 +74,6 @@ public class PortRangeSocketBinder
             }
         }
 
-        throw lastException;
+        throw Objects.requireNonNull( lastException );
     }
 }
