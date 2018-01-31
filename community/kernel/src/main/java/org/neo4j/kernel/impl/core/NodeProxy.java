@@ -42,10 +42,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.helpers.RelationshipDenseSelectionIterator;
-import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
-import org.neo4j.internal.kernel.api.helpers.RelationshipSparseSelectionIterator;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -71,6 +67,7 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.selectionIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
@@ -762,77 +759,7 @@ public class NodeProxy implements Node
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
 
-        if ( node.isDense() )
-        {
-            RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
-            RelationshipGroupCursor relationshipGroup = transaction.cursors().allocateRelationshipGroupCursor();
-            try
-            {
-                node.relationships( relationshipGroup );
-                RelationshipDenseSelectionIterator<Relationship> denseCursor =
-                        new RelationshipDenseSelectionIterator<>( spi::newRelationshipProxy );
-
-                switch ( direction )
-                {
-                case OUTGOING:
-                    denseCursor.outgoing( relationshipGroup, relationship, typeIds );
-                    break;
-
-                case INCOMING:
-                    denseCursor.incoming( relationshipGroup, relationship, typeIds );
-                    break;
-
-                case BOTH:
-                    denseCursor.all( relationshipGroup, relationship, typeIds );
-                    break;
-
-                default:
-                    throw new IllegalStateException( "Unsupported direction: " + direction );
-                }
-
-                return denseCursor;
-            }
-            catch ( Throwable e )
-            {
-                relationshipGroup.close();
-                throw e;
-            }
-        }
-        else
-        {
-            RelationshipTraversalCursor relationship = transaction.cursors().allocateRelationshipTraversalCursor();
-            try
-            {
-                node.allRelationships( relationship );
-                RelationshipSparseSelectionIterator<Relationship> sparseCursor =
-                        new RelationshipSparseSelectionIterator<>( spi::newRelationshipProxy );
-
-                switch ( direction )
-                {
-                case OUTGOING:
-                    sparseCursor.outgoing( relationship, typeIds );
-                    break;
-
-                case INCOMING:
-                    sparseCursor.incoming( relationship, typeIds );
-                    break;
-
-                case BOTH:
-                    sparseCursor.all( relationship, typeIds );
-                    break;
-
-                default:
-                    throw new IllegalStateException( "Unsupported direction: " + direction );
-                }
-
-                return sparseCursor;
-            }
-            catch ( Throwable e )
-            {
-                relationship.close();
-                throw e;
-            }
-        }
+        return selectionIterator( transaction.cursors(), node, direction, typeIds, spi::newRelationshipProxy );
     }
 
     private int[] relTypeIds( RelationshipType[] types, Statement statement )
