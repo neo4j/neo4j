@@ -276,7 +276,6 @@ public class CypherIT extends AbstractRestFunctionalTestBase
         data.get();
         String script = "MATCH (n) WHERE n.name in ['I', 'you'] RETURN collect(n.name)";
         String response = cypherRestCall( script, Status.OK );
-        System.out.println();
 
         Map<String,Object> resultMap = jsonToMap( response );
         assertEquals( 2, resultMap.size() );
