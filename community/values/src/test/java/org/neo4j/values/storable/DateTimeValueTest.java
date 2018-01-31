@@ -196,7 +196,7 @@ public class DateTimeValueTest
         assertEqualTemporal(
                 datetime( ZonedDateTime.now( clock ) ),
                 builder( clock ).add( "datetime", datetime( ZonedDateTime.now( clock ) ) ).build() );
-        assertEqualTemporal( // TODO: change some stuff here...
+        assertEqualTemporal(
                 datetime( ZonedDateTime.now( clock ) ),
                 builder( clock )
                         .add( "datetime", localDateTime( LocalDateTime.now( clock ) ) )
@@ -222,6 +222,89 @@ public class DateTimeValueTest
                         .add( "hour", 10 )
                         .add( "minute", 35 )
                         .add( "second", 57 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.999999999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "nanosecond", 999999999 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.999999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "microsecond", 999999 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "millisecond", 999 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.001999999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "millisecond", 1 )
+                        .add( "microsecond", 999 )
+                        .add( "nanosecond", 999 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.000001999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "microsecond", 1 )
+                        .add( "nanosecond", 999 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.001999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "millisecond", 1 )
+                        .add( "microsecond", 999 )
+                        .build() );
+        assertEqualTemporal(
+                parse( "2018-01-10T10:35:57.001999999", clock::getZone ),
+                fromValues( builder( clock ) )
+                        .add( "year", 2018 )
+                        .add( "month", 1 )
+                        .add( "day", 10 )
+                        .add( "hour", 10 )
+                        .add( "minute", 35 )
+                        .add( "second", 57 )
+                        .add( "millisecond", 1 )
+                        .add( "microsecond", 999 )
+                        .add( "nanosecond", 999 )
                         .build() );
     }
 
@@ -253,12 +336,81 @@ public class DateTimeValueTest
                 .assertThrows( IllegalArgumentException.class, "Cannot assign dayOfWeek to ordinal date." );
         asserting( fromValues( builder( clock ) ) )
                 .add( "year", 2018 )
-                .add( "month", 12 )
-                .add( "day", 5 )
-                .add( "hour", 5 )
-                .add( "minute", 5 )
-                .add( "second", 5 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "nanosecond", 1000000000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000000000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "microsecond", 1000000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid microsecond: 1000000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "millisecond", 1000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid millisecond: 1000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
                 .add( "millisecond", 1 )
+                .add( "nanosecond", 1000000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "microsecond", 1 )
+                .add( "nanosecond", 1000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "millisecond", 1 )
+                .add( "microsecond", 1000 )
+                .assertThrows( IllegalArgumentException.class, "Invalid microsecond: 1000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "millisecond", 1 )
+                .add( "microsecond", 1000 )
+                .add( "nanosecond", 999 )
+                .assertThrows( IllegalArgumentException.class, "Invalid microsecond: 1000" );
+        asserting( fromValues( builder( clock ) ))
+                .add( "year", 2018 )
+                .add( "month", 1 )
+                .add( "day", 10 )
+                .add( "hour", 10 )
+                .add( "minute", 35 )
+                .add( "second", 57 )
+                .add( "millisecond", 1 )
+                .add( "microsecond", 999 )
                 .add( "nanosecond", 1000 )
                 .assertThrows( IllegalArgumentException.class, "Invalid nanosecond: 1000" );
     }
