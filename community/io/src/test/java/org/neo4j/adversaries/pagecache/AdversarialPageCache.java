@@ -122,4 +122,10 @@ public class AdversarialPageCache implements PageCache
         adversary.injectFailure( NoSuchFileException.class, IOException.class );
         return delegate.streamFilesRecursive( directory );
     }
+
+    @Override
+    public void reportEvents()
+    {
+        delegate.reportEvents();
+    }
 }

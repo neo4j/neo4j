@@ -692,6 +692,12 @@ public class MuninnPageCache implements PageCache
         return pages.length;
     }
 
+    @Override
+    public void reportEvents()
+    {
+        pageCursorTracerSupplier.get().reportEvents();
+    }
+
     int getPageCacheId()
     {
         return pageCacheId;

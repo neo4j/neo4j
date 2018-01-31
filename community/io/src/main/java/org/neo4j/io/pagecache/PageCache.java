@@ -130,4 +130,10 @@ public interface PageCache extends AutoCloseable
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
     Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException;
+
+    /**
+     * Report any thread-local events to the global page cache tracer, as if acquiring a thread-specific page cursor
+     * tracer, and reporting the events collected within it.
+     */
+    void reportEvents();
 }

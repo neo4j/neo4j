@@ -2181,7 +2181,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         }
 
-        cursorTracerSupplier.get().reportEvents();
+        pageCache.reportEvents();
 
         assertThat( "wrong count of pins", tracer.pins(), is( countedPages ) );
         assertThat( "wrong count of unpins", tracer.unpins(), is( countedPages ) );
@@ -2230,7 +2230,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( cursor.next( 0 ) );
             assertTrue( cursor.next( 0 ) );
         }
-        tracerSupplier.get().reportEvents();
+        pageCache.reportEvents();
 
         assertThat( "wrong count of pins", tracer.pins(), is( pagesToGenerate + 1 ) );
         assertThat( "wrong count of unpins", tracer.unpins(), is( pagesToGenerate + 1 ) );
@@ -2302,6 +2302,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             dirtyManyPages( pagedFile, pinsForWrite );
         }
 
+        pageCache.reportEvents(); // Reset thread-local event counters.
         assertThat( "wrong read pin count", readCount.get(), is( pinsForRead ) );
         assertThat( "wrong write pin count", writeCount.get(), is( pinsForWrite ) );
     }
