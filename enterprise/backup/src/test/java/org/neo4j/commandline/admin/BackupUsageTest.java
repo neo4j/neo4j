@@ -89,7 +89,7 @@ public class BackupUsageTest
         String output = runBackup( "--backup-dir=non_existing_dir", "--name=mybackup" );
 
         // then
-        String reason = String.format( "command failed: Directory '%s' does not exist.\n", backupDirectoryResolved );
+        String reason = String.format( "command failed: Directory '%s' does not exist.", backupDirectoryResolved );
         assertThat( output, containsString( reason ) );
     }
 
