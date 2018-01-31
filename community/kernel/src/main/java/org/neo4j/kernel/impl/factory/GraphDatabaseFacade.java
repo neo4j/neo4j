@@ -321,18 +321,17 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             throw new NotFoundException( format( "Relationship %d not found", id ),
                     new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
-        try ( Statement statement = statementContext.get() )
+
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        assertTransactionOpen( ktx );
+        try ( Statement ignore = statementContext.get() )
         {
-            try
+            if ( !ktx.dataRead().relationshipExists( id ) )
             {
-                RelationshipProxy relationship = newRelationshipProxy( id );
-                statement.readOperations().relationshipVisit( id, relationship );
-                return relationship;
+                throw new NotFoundException( format( "Relationship %d not found", id ),
+                        new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
             }
-            catch ( EntityNotFoundException e )
-            {
-                throw new NotFoundException( format( "Relationship %d not found", id ), e );
-            }
+            return newRelationshipProxy( id );
         }
     }
 
