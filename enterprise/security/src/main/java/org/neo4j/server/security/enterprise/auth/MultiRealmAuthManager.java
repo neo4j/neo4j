@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -308,7 +309,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         return infoList;
     }
 
-    Function<Integer,Boolean> getPropertyPermissions( Set<String> roles, Token token )
+    IntPredicate getPropertyPermissions( Set<String> roles, Token token )
     {
         if ( propertyAuthorization )
         {
