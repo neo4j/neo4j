@@ -64,6 +64,7 @@ import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -463,31 +464,34 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public ResourceIterable<Relationship> getAllRelationships()
     {
-        assertTransactionOpen();
+        KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
+        assertTransactionOpen( ktx );
         return () ->
         {
-            final Statement statement = statementContext.get();
-            final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
+            Statement statement = ktx.acquireStatement();
+            RelationshipScanCursor cursor = ktx.cursors().allocateRelationshipScanCursor();
+            ktx.dataRead().allRelationshipsScan( cursor );
             return new PrefetchingResourceIterator<Relationship>()
             {
                 @Override
-                public void close()
-                {
-                    statement.close();
-                }
-
-                @Override
                 protected Relationship fetchNextOrNull()
                 {
-                    if ( ids.hasNext() )
+                    if ( cursor.next() )
                     {
-                        return newRelationshipProxy( ids.next() );
+                        return newRelationshipProxy( cursor.relationshipReference() );
                     }
                     else
                     {
                         close();
                         return null;
                     }
+                }
+
+                @Override
+                public void close()
+                {
+                    cursor.close();
+                    statement.close();
                 }
             };
         };
