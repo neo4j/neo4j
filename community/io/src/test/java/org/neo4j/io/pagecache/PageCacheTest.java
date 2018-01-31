@@ -87,6 +87,7 @@ import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -147,6 +148,17 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void mustAcceptTwoPagesAsMinimumConfiguration() throws Exception
     {
         getPageCache( fs, 2, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+    }
+
+    @Test
+    public void gettingNameFromMappedFileMustMatchMappedFileName() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            assertThat( pf.file(), equalTo( file ) );
+        }
     }
 
     @Test

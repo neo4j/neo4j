@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -65,7 +66,13 @@ public class StubPagedFile implements PagedFile
     }
 
     @Override
-    public void flushAndForce() throws IOException
+    public File file()
+    {
+        return new File( "stub" );
+    }
+
+    @Override
+    public void flushAndForce()
     {
     }
 
