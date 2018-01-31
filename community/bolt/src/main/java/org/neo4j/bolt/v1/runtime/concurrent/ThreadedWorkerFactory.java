@@ -25,6 +25,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
@@ -63,7 +64,7 @@ public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFac
     }
 
     @Override
-    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( BoltChannel connectionDescriptor, Runnable onClose )
     {
         BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, clock );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );

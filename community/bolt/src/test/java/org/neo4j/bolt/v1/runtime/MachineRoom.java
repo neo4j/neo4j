@@ -21,13 +21,15 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.util.Map;
+import java.util.Collections;
 
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.kernel.api.security.AuthToken;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -55,7 +57,16 @@ public class MachineRoom
         return machine;
     }
 
-    public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
+    public static BoltStateMachine newMachineWithOwner( BoltStateMachine.State state, String owner ) throws AuthenticationException, BoltConnectionFatality
+    {
+        BoltStateMachine machine = newMachine();
+        init( machine, owner );
+        machine.state = state;
+        return machine;
+    }
+
+    public static BoltStateMachine newMachineWithTransaction( BoltStateMachine.State state )
+            throws AuthenticationException, BoltConnectionFatality
     {
         BoltStateMachine machine = newMachine();
         init( machine );
@@ -77,8 +88,13 @@ public class MachineRoom
 
     private static void init( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
     {
-        when( machine.spi.authenticate( anyObject() ) ).thenReturn( mock( AuthenticationResult.class ) );
-        machine.init( USER_AGENT, emptyMap(), nullResponseHandler() );
+        init( machine, null );
+    }
+
+    private static void init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
+    {
+        when( machine.spi.authenticate( any() ) ).thenReturn( mock( AuthenticationResult.class ) );
+        machine.init( USER_AGENT, owner == null ? emptyMap() : Collections.singletonMap( AuthToken.PRINCIPAL, owner ), nullResponseHandler() );
     }
 
     private static void runBegin( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality

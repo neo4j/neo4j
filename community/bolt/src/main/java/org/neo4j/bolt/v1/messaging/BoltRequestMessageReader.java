@@ -28,13 +28,13 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
+ * Reader for Bolt request messages made available via a {@link Neo4jPackV1.Unpacker}.
  */
 public class BoltRequestMessageReader
 {
-    private final Neo4jPack.Unpacker unpacker;
+    private final Neo4jPackV1.Unpacker unpacker;
 
-    public BoltRequestMessageReader( Neo4jPack.Unpacker unpacker )
+    public BoltRequestMessageReader( Neo4jPackV1.Unpacker unpacker )
     {
         this.unpacker = unpacker;
     }

@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -71,7 +72,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         this.clock = clock;
     }
 
-    public BoltConnectionDescriptor getConnectionDescriptor()
+    public BoltChannel getConnectionDescriptor()
     {
         return spi.connectionDescriptor();
     }
@@ -328,7 +329,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
          * This is a side-channel call and we should not close anything directly.
          * Just mark the transaction and set isTerminated to true and then the session
          * thread will close down the connection eventually.
-         */
+            */
         ctx.isTerminated.set( true );
         ctx.statementProcessor.markCurrentTransactionForTermination();
         spi.onTerminate( this );
@@ -731,7 +732,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         private void setQuerySourceFromClientNameAndPrincipal( String clientName, String principal,
-                                                               BoltConnectionDescriptor connectionDescriptor )
+                                                               BoltChannel connectionDescriptor )
         {
             String principalName = principal == null ? "null" : principal;
             statementProcessor.setQuerySource( new BoltQuerySource( principalName, clientName, connectionDescriptor ) );
@@ -792,7 +793,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     }
 
-    interface SPI
+    public interface SPI
     {
         void reportError( Neo4jError err );
 
@@ -800,7 +801,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
         void udcRegisterClient( String clientName );
 
-        BoltConnectionDescriptor connectionDescriptor();
+        BoltChannel connectionDescriptor();
 
         void register( BoltStateMachine machine, String owner );
 

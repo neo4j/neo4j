@@ -30,9 +30,9 @@ import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 
 public class BoltResponseMessageReader
 {
-    private final Neo4jPack.Unpacker unpacker;
+    private final Neo4jPackV1.Unpacker unpacker;
 
-    public BoltResponseMessageReader( Neo4jPack.Unpacker unpacker )
+    public BoltResponseMessageReader( Neo4jPackV1.Unpacker unpacker )
     {
         this.unpacker = unpacker;
     }

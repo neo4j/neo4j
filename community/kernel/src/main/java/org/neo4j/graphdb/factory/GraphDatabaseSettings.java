@@ -44,6 +44,7 @@ import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
+import org.neo4j.logging.LogTimeZone;
 
 import static org.neo4j.helpers.collection.Iterables.enumNames;
 import static org.neo4j.kernel.configuration.Settings.ANY;
@@ -61,6 +62,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.legacyFallback;
@@ -669,6 +671,69 @@ public class GraphDatabaseSettings implements LoadableConfig
             "specify the +advertised_address+ property for the specific connector.")
     public static final Setting<String> default_advertised_address =
             setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
+
+    @Description( "Database timezone." )
+    public static final Setting<LogTimeZone> db_timezone =
+            setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+
+    @Internal
+    public static final Setting<Boolean> bolt_logging_enabled = setting( "unsupported.dbms.logs.bolt.enabled",
+            BOOLEAN, FALSE );
+
+    @Internal
+    public static final Setting<File> bolt_log_filename = derivedSetting( "unsupported.dbms.logs.bolt.path",
+            GraphDatabaseSettings.logs_directory, logsDir -> new File( logsDir, "bolt.log" ), PATH );
+
+    @Description( "The number of threads that will be created upon initialisation to handle standard bolt requests." )
+    @Internal
+    public static final Setting<Integer> bolt_thread_pool_std_core_size =
+            buildSetting( "unsupported.dbms.bolt.thread_pool.std.core_size", INTEGER, "10" ).build();
+
+    @Description( "The maximum number of threads that can serve standard bolt requests. When this limit is reached, upcoming requests will be rejected." )
+    @Internal
+    public static final Setting<Integer> bolt_thread_pool_std_max_size =
+            buildSetting( "unsupported.dbms.bolt.thread_pool.std.max_size", INTEGER, "100" ).build();
+
+    @Description( "The number of threads that will be created upon initialisation to handle out-of-band bolt requests." )
+    @Internal
+    public static final Setting<Integer> bolt_thread_pool_oob_core_size =
+            buildSetting( "unsupported.dbms.bolt.thread_pool.oob.core_size", INTEGER, "1" ).build();
+
+    @Description( "The maximum number of threads that can serve out-of-band bolt requests. When this limit is reached, upcoming requests will be rejected." )
+    @Internal
+    public static final Setting<Integer> bolt_thread_pool_oob_max_size =
+            buildSetting( "unsupported.dbms.bolt.thread_pool.oob.max_size", INTEGER, "10" ).build();
+
+    @Description( "The duration after which an idle thread will be destroyed from the thread pools." )
+    @Internal
+    public static final Setting<Duration> bolt_thread_pool_keep_live =
+            buildSetting( "unsupported.dbms.bolt.thread_pool.keep_live", DURATION, "1m" ).build();
+
+    @Description( "Whether to apply network level write throttling" )
+    @Internal
+    public static final Setting<Boolean> bolt_write_throttle = setting( "unsupported.dbms.bolt.write_throttle", BOOLEAN, TRUE );
+
+    @Description( "When the size (in bytes) of write buffers, used by bolt's network layer, " +
+            "grows beyond this value bolt channel will advertise itself as unwritable and bolt worker " +
+            "threads will block until it becomes writable again." )
+    @Internal
+    public static final Setting<Integer> bolt_write_buffer_high_water_mark =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.high_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 512 ) ) ).constraint(
+                    range( (int) ByteUnit.kibiBytes( 64 ), Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the size (in bytes) of write buffers, previously advertised as unwritable, " +
+            "gets below this value bolt channel will re-advertise itself as writable and blocked bolt worker " + "threads will resume execution." )
+    @Internal
+    public static final Setting<Integer> bolt_write_buffer_low_water_mark =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.low_watermark", INTEGER, String.valueOf( ByteUnit.kibiBytes( 128 ) ) ).constraint(
+                    range( (int) ByteUnit.kibiBytes( 16 ), Integer.MAX_VALUE ) ).build();
+
+    @Description( "When the total time write throttle lock is held exceeds this value, the corresponding bolt channel will be aborted. Setting "
+            + " this to 0 will disable this behaviour." )
+    @Internal
+    public static final Setting<Duration> bolt_write_throttle_max_duration =
+            buildSetting( "unsupported.dbms.bolt.write_throttle.max_duration", DURATION, "15m" ).constraint(
+                    min( Duration.ofSeconds( 30 ) ) ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal

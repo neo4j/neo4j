@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageHandler;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 
 public class BoltV1Dechunker
 {
@@ -50,7 +50,7 @@ public class BoltV1Dechunker
         this.onMessage = messageHandler;
         this.onMessageStarted = onMessageStarted;
         this.input = new ChunkedInput();
-        this.unpacker = new BoltRequestMessageReader( new Neo4jPack.Unpacker( input ) );
+        this.unpacker = new BoltRequestMessageReader( new Neo4jPackV1.Unpacker( input ) );
     }
 
     /** Check if we are currently "in the middle of" a message, eg. we've gotten parts of it, but are waiting for more. */

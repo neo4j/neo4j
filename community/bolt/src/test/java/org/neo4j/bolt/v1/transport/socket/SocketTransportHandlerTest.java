@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.v1.transport.socket;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.BiFunction;
 
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.transport.ProtocolChooser;

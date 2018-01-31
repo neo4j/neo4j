@@ -21,6 +21,8 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 
+import org.neo4j.bolt.BoltChannel;
+
 /**
  * Factory class for Bolt runtime environments.
  */
@@ -34,5 +36,5 @@ public interface BoltFactory
      * @param clock used to keep track of execution times
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor, Runnable onClose, Clock clock );
+    BoltStateMachine newMachine( BoltChannel connectionDescriptor, Runnable onClose, Clock clock );
 }

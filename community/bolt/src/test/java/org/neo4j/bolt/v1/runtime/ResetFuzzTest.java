@@ -19,18 +19,27 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.After;
-import org.junit.Test;
-
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.Clock;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.junit.After;
+import org.junit.Test;
+
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltScheduler;
+import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
+import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
+import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
+import org.neo4j.bolt.runtime.OutOfBandStrategy;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -42,6 +51,7 @@ import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -51,6 +61,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
@@ -60,9 +71,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResetFuzzTest
 {
-    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
-            new InetSocketAddress( "<testClient>", 56789 ),
-            new InetSocketAddress( "<testServer>", 7468 ) );
+    private final BoltChannel boltChannel = mock( BoltChannel.class );
     // Because RESET has a "call ahead" mechanism where it will interrupt
     // the session before RESET arrives in order to purge any statements
     // ahead in the message queue, we use this test to convince ourselves
@@ -75,9 +84,16 @@ public class ResetFuzzTest
     private final LifeSupport life = new LifeSupport();
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
-    private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
+    private final Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
+    private final BoltScheduler boltScheduler = life.add(
+            new ExecutorBoltScheduler( Config.defaults(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ),
+                    scheduler, NullLogService.getInstance() ) );
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, clock );
+     private final BoltConnectionFactory connectionFactory =
+             new DefaultBoltConnectionFactory( ( boltChannel, Runnable, clock ) -> machine, boltScheduler, mock( OutOfBandStrategy.class ), NullLogService.getInstance(),
+                                    clock, null );
+
     private final ThreadedWorkerFactory sessions =
             new ThreadedWorkerFactory( ( enc, closer, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
 
@@ -96,9 +112,13 @@ public class ResetFuzzTest
         life.start();
         BoltWorker boltWorker = sessions.newWorker( CONNECTION_DESCRIPTOR );
         boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), nullResponseHandler() ) );
+        NullBoltMessageLogger boltLogger = NullBoltMessageLogger.getInstance();
+
+        BoltConnection boltConnection = connectionFactory.newConnection( boltChannel );
+        boltConnection.enqueue( session -> session.init( "ResetFuzzTest/0.0", Collections.emptyMap(), nullResponseHandler() ) );
 
         BoltMessageRouter router = new BoltMessageRouter(
-                NullLog.getInstance(), boltWorker, new BoltResponseMessageHandler<IOException>()
+                NullLog.getInstance(), boltLogger, boltConnection, new BoltResponseMessageHandler<IOException>()
         {
             @Override
             public void onRecord( Record item ) throws IOException
@@ -128,19 +148,19 @@ public class ResetFuzzTest
         while ( System.currentTimeMillis() < deadline )
         {
             dispatchRandomSequenceOfMessages( router );
-            assertWorkerWorks( boltWorker );
+            assertSchedulerWorks( boltConnection );
         }
     }
 
-    private void assertWorkerWorks( BoltWorker worker ) throws InterruptedException
+    private void assertSchedulerWorks( BoltConnection connection ) throws InterruptedException
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        worker.enqueue( machine -> machine.reset( recorder ) );
+        connection.enqueue( machine -> machine.reset( recorder ) );
 
         try
         {
             RecordedBoltResponse response = recorder.nextResponse();
-            assertThat( SUCCESS, equalTo( response.message() ) );
+            assertThat( response.message(), equalTo( SUCCESS ) );
             assertThat( machine.state(), equalTo( BoltStateMachine.State.READY ) );
             assertThat( liveTransactions.get(), equalTo( 0L ) );
         }
@@ -178,9 +198,9 @@ public class ResetFuzzTest
     private class FuzzStubSPI implements BoltStateMachine.SPI
     {
         @Override
-        public BoltConnectionDescriptor connectionDescriptor()
+        public BoltChannel connectionDescriptor()
         {
-            return CONNECTION_DESCRIPTOR;
+            return boltChannel;
         }
 
         @Override

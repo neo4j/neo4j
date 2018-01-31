@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.util.Map;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -32,7 +33,7 @@ import org.neo4j.udc.UsageDataKeys;
 
 class BoltStateMachineSPI implements BoltStateMachine.SPI
 {
-    private final BoltConnectionDescriptor connectionDescriptor;
+    private final BoltChannel connectionDescriptor;
     private final UsageData usageData;
     private final ErrorReporter errorReporter;
     private final BoltConnectionTracker connectionTracker;
@@ -40,7 +41,7 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     private final String version;
     private final TransactionStateMachine.SPI transactionSpi;
 
-    BoltStateMachineSPI( BoltConnectionDescriptor connectionDescriptor,
+    BoltStateMachineSPI( BoltChannel connectionDescriptor,
                          UsageData usageData,
                          LogService logging,
                          Authentication authentication,
@@ -57,7 +58,7 @@ class BoltStateMachineSPI implements BoltStateMachine.SPI
     }
 
     @Override
-    public BoltConnectionDescriptor connectionDescriptor()
+    public BoltChannel connectionDescriptor()
     {
         return connectionDescriptor;
     }

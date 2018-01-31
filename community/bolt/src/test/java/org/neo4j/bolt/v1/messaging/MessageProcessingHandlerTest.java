@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
@@ -53,16 +54,16 @@ public class MessageProcessingHandlerTest
                 .when( msgHandler )
                 .onSuccess( anyMapOf( String.class, Object.class ) );
 
-        BoltWorker worker = mock( BoltWorker.class );
+        BoltConnection connection = mock( BoltConnection.class );
         MessageProcessingHandler handler =
                 new MessageProcessingHandler( msgHandler, mock( Runnable.class ),
-                        worker, mock( Log.class ) );
+                        connection, mock( Log.class ) );
 
         // When
         handler.onFinish();
 
         // Then
-        verify( worker ).halt();
+        verify( connection ).stop();
     }
 
     @Test
@@ -98,7 +99,7 @@ public class MessageProcessingHandlerTest
         BoltResponseMessageHandler<IOException> responseHandler = newResponseHandlerMock( fatalError, outputClosed );
 
         MessageProcessingHandler handler = new MessageProcessingHandler( responseHandler, mock( Runnable.class ),
-                mock( BoltWorker.class ), log );
+                mock( BoltConnection.class ), log );
 
         RuntimeException originalError = new RuntimeException( "Hi, I'm the original error" );
         markFailed( handler, fatalError, originalError );
@@ -117,7 +118,7 @@ public class MessageProcessingHandlerTest
         BoltResponseMessageHandler<IOException> responseHandler = newResponseHandlerMock( fatalError, outputError );
 
         MessageProcessingHandler handler = new MessageProcessingHandler( responseHandler, mock( Runnable.class ),
-                mock( BoltWorker.class ), log );
+                mock( BoltConnection.class ), log );
 
         RuntimeException originalError = new RuntimeException( "Hi, I'm the original error" );
         markFailed( handler, fatalError, originalError );

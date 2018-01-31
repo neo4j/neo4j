@@ -30,10 +30,10 @@ import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.*;
 public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOException>
 {
 
-    private final Neo4jPack.Packer packer;
+    private final Neo4jPackV1.Packer packer;
     private final BoltResponseMessageBoundaryHook onMessageComplete;
 
-    public BoltRequestMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
+    public BoltRequestMessageWriter( Neo4jPackV1.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
     {
         this.packer = packer;
         this.onMessageComplete = onMessageComplete;

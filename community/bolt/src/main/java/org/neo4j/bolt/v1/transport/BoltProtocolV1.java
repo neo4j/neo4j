@@ -29,7 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.neo4j.bolt.transport.BoltProtocol;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -60,7 +60,7 @@ public class BoltProtocolV1 implements BoltProtocol
     {
         this.log = logging.getInternalLog( getClass() );
         this.chunkedOutput = new ChunkedOutput( outputChannel, DEFAULT_OUTPUT_BUFFER_SIZE, log );
-        this.packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( chunkedOutput ), chunkedOutput );
+        this.packer = new BoltResponseMessageWriter( new Neo4jPackV1.Packer( chunkedOutput ), chunkedOutput );
         this.worker = worker;
         this.dechunker = createDechunker( packer, worker, log );
     }

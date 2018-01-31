@@ -46,7 +46,7 @@ import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
  * Extended PackStream packer and unpacker classes for working
  * with Neo4j-specific data types, represented as structures.
  */
-public class Neo4jPack
+public class Neo4jPackV1
 {
     public static final List<Object> EMPTY_LIST = new ArrayList<>();
     public static final Map<String, Object> EMPTY_MAP = new HashMap<>();

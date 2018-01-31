@@ -53,7 +53,7 @@ import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class Neo4jPackTest
+public class Neo4JPackV1Test
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -61,7 +61,7 @@ public class Neo4jPackTest
     private byte[] packed( Object object ) throws IOException
     {
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.pack( object );
         return output.bytes();
     }
@@ -69,7 +69,7 @@ public class Neo4jPackTest
     private Object unpacked( byte[] bytes ) throws IOException
     {
         PackedInputArray input = new PackedInputArray( bytes );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        Neo4jPackV1.Unpacker unpacker = new Neo4jPackV1.Unpacker( input );
         return unpacker.unpack();
     }
 
@@ -79,7 +79,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.packListStreamHeader();
         List<String> expected = new ArrayList<>();
         for ( Label label : ALICE.getLabels() )
@@ -103,7 +103,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.packMapStreamHeader();
         for ( Map.Entry<String,Object> entry : ALICE.getAllProperties().entrySet() )
         {
@@ -125,7 +125,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.packMapStreamHeader();
 
         HashMap<String,Object> map = new HashMap<>();
@@ -140,7 +140,7 @@ public class Neo4jPackTest
 
         // When
         PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        Neo4jPackV1.Unpacker unpacker = new Neo4jPackV1.Unpacker( input );
         unpacker.unpack();
 
         // Then
@@ -155,7 +155,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         HashMap<String,Object> map = new HashMap<>();
         map.put(null, 42L);
         map.put("foo", 1337L);
@@ -169,7 +169,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.packRawMap( map( "unpackable", new Unpackable() ) );
         Object unpacked = unpacked( output.bytes() );
 
@@ -185,7 +185,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.packMapHeader( 2 );
         packer.pack( "key" );
         packer.pack( 1 );
@@ -194,7 +194,7 @@ public class Neo4jPackTest
 
         // When
         PackedInputArray input = new PackedInputArray( output.bytes() );
-        Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
+        Neo4jPackV1.Unpacker unpacker = new Neo4jPackV1.Unpacker( input );
         unpacker.unpack();
 
         // Then
@@ -258,7 +258,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.pack( 'C' );
         Object unpacked = unpacked( output.bytes() );
 
@@ -272,7 +272,7 @@ public class Neo4jPackTest
     {
         // Given
         PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        Neo4jPackV1.Packer packer = new Neo4jPackV1.Packer( output );
         packer.pack( new char[]{'W', 'H', 'Y'} );
         Object unpacked = unpacked( output.bytes() );
 

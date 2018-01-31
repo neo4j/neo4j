@@ -22,7 +22,8 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.runtime.BoltWorker;
+import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.Record;
@@ -40,88 +41,100 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     private final MessageProcessingHandler runHandler;
     private final MessageProcessingHandler resultHandler;
     private final MessageProcessingHandler defaultHandler;
+    private final BoltMessageLogger messageLogger;
 
-    private BoltWorker worker;
+    private BoltConnection connection;
 
-    public BoltMessageRouter( Log log, BoltWorker worker, BoltResponseMessageHandler<IOException> output,
-            Runnable onEachCompletedRequest )
+    public BoltMessageRouter( Log internalLog, BoltMessageLogger messageLogger,
+                              BoltConnection connection, BoltResponseMessageHandler<IOException> output,
+                              Runnable onEachCompletedRequest )
     {
-        this.initHandler = new InitHandler( output, onEachCompletedRequest, worker, log );
-        this.runHandler = new RunHandler( output, onEachCompletedRequest, worker, log );
-        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, worker, log );
-        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, worker, log );
+        this.messageLogger = messageLogger;
 
-        this.worker = worker;
+        this.initHandler = new InitHandler( output, onEachCompletedRequest, connection, internalLog );
+        this.runHandler = new RunHandler( output, onEachCompletedRequest, connection, internalLog );
+        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, connection, internalLog );
+        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, connection, internalLog );
+
+        this.connection = connection;
     }
 
     @Override
     public void onInit( String userAgent, Map<String,Object> authToken ) throws RuntimeException
     {
         // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
-        worker.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
+        messageLogger.logInit(userAgent );
+        connection.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
     }
 
     @Override
     public void onAckFailure() throws RuntimeException
     {
-        worker.enqueue( session -> session.ackFailure( defaultHandler ) );
+        messageLogger.logAckFailure();
+        connection.enqueue( session -> session.ackFailure( defaultHandler ) );
     }
 
     @Override
     public void onReset() throws RuntimeException
     {
-        worker.interrupt();
-        worker.enqueue( session -> session.reset( defaultHandler ) );
+        messageLogger.clientEvent("INTERRUPT");
+        messageLogger.logReset();
+        connection.interrupt();
+        connection.enqueue( session -> session.reset( defaultHandler ) );
     }
 
     @Override
     public void onRun( String statement, Map<String,Object> params )
     {
-        worker.enqueue( session -> session.run( statement, params, runHandler ) );
+        messageLogger.logRun();
+        connection.enqueue( session -> session.run( statement, params, runHandler ) );
     }
 
     @Override
     public void onExternalError( Neo4jError error)
     {
-        worker.enqueue( session -> session.externalError( error, defaultHandler ) );
+        messageLogger.clientEvent( "ERROR", error::message );
+        connection.enqueue( session -> session.externalError( error, defaultHandler ) );
     }
 
     @Override
     public void onDiscardAll()
     {
-        worker.enqueue( session -> session.discardAll( resultHandler ) );
+        messageLogger.logDiscardAll();
+        connection.enqueue( session -> session.discardAll( resultHandler ) );
     }
 
     @Override
     public void onPullAll()
     {
-        worker.enqueue( session -> session.pullAll( resultHandler ) );
+        messageLogger.logPullAll();
+        connection.enqueue( session -> session.pullAll( resultHandler ) );
     }
 
     private static class InitHandler extends MessageProcessingHandler
     {
-        InitHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker, Log log )
+        InitHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltConnection connection, Log log )
         {
-            super( handler, onCompleted, worker, log );
+            super( handler, onCompleted, connection, log );
         }
 
     }
 
     private static class RunHandler extends MessageProcessingHandler
     {
-        RunHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker, Log log )
+        RunHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltConnection connection, Log log )
         {
-            super( handler, onCompleted, worker, log );
+            super( handler, onCompleted, connection, log );
         }
 
     }
 
     private static class ResultHandler extends MessageProcessingHandler
     {
-        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltWorker worker,
+        ResultHandler( BoltResponseMessageHandler<IOException> handler, Runnable onCompleted, BoltConnection connection,
                 Log log )
         {
-            super( handler, onCompleted, worker, log );
+            super( handler, onCompleted, connection, log );
         }
 
         @Override

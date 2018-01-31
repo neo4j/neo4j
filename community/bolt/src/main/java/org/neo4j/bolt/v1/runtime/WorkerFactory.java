@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -27,7 +28,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface WorkerFactory extends Lifecycle
 {
-    default BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor )
+    default BoltWorker newWorker( BoltChannel connectionDescriptor )
     {
         return newWorker( connectionDescriptor, null );
     }
@@ -37,5 +38,5 @@ public interface WorkerFactory extends Lifecycle
      * @param onClose              callback for closing the underlying connection in case of protocol violation.
      * @return a new job queue
      */
-    BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose );
+    BoltWorker newWorker( BoltChannel connectionDescriptor, Runnable onClose );
 }

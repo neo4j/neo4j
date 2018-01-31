@@ -66,7 +66,11 @@ public class CoreMetrics extends LifecycleAdapter
     public static final String HITS = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "hits" );
     @Documented("In-flight cache misses")
     public static final String MISSES = name( CAUSAL_CLUSTERING_PREFIX, "in_flight_cache", "misses" );
+<<<<<<< HEAD
     @Documented("Delay between RAFT message receive and process")
+=======
+    @Documented( "Delay between RAFT message receive and processNextBatch" )
+>>>>>>> 27bbc21df13... Introduce BoltScheduler for simple bolt server thread management
     public static final String DELAY = name( CAUSAL_CLUSTERING_PREFIX, "message_processing_delay" );
     @Documented("Timer for RAFT message processing")
     public static final String TIMER = name( CAUSAL_CLUSTERING_PREFIX, "message_processing_timer" );

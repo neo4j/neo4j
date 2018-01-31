@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,10 +36,10 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
 {
     private static final int STRUCT_FIELD_COUNT = 5;
 
-    public static void pack( Neo4jPack.Packer packer, Relationship rel )
+    public static void pack( Neo4jPackV1.Packer packer, Relationship rel )
             throws IOException
     {
-        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.RELATIONSHIP );
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPackV1.RELATIONSHIP );
         packer.pack( rel.getId() );
         packer.pack( rel.getStartNode().getId() );
         packer.pack( rel.getEndNode().getId() );
@@ -58,12 +58,12 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
         }
     }
 
-    public static ValueRelationship unpack( Neo4jPack.Unpacker unpacker )
+    public static ValueRelationship unpack( Neo4jPackV1.Unpacker unpacker )
             throws IOException
     {
         long numFields = unpacker.unpackStructHeader();
         char signature = unpacker.unpackStructSignature();
-        if ( signature != Neo4jPack.RELATIONSHIP )
+        if ( signature != Neo4jPackV1.RELATIONSHIP )
         {
             throw new BoltIOException( Status.Request.InvalidFormat, "Expected a relationship structure, recieved 0x" + Integer.toHexString( signature ) );
         }
@@ -75,7 +75,7 @@ public class ValueRelationship extends ValuePropertyContainer implements Relatio
         return unpackFields( unpacker );
     }
 
-    public static ValueRelationship unpackFields( Neo4jPack.Unpacker unpacker )
+    public static ValueRelationship unpackFields( Neo4jPackV1.Unpacker unpacker )
             throws IOException
     {
         long relId = unpacker.unpackLong();

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,12 +26,17 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.StringUtils;
 
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
@@ -146,7 +149,35 @@ public class Settings
             defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
         }
 
-        return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConverters );
+        return new DefaultSetting( name, parser, valueLookup, defaultLookup, Arrays.asList( valueConverters ) ) ;
+    }
+
+    /**
+     * Start building a setting with default value set to {@link Settings#NO_DEFAULT}.
+     *
+     * @param name of the setting, e.g. "dbms.transaction.timeout".
+     * @param parser that will convert the string representation to the concrete type T.
+     * @param <T> the concrete type of the setting.
+     */
+    @Nonnull
+    public static <T> SettingBuilder<T> buildSetting( @Nonnull final String name, @Nonnull final Function<String, T> parser )
+    {
+        return buildSetting( name, parser, NO_DEFAULT );
+    }
+
+    /**
+     * Start building a setting with a specified default value.
+     *
+     * @param name of the setting, e.g. "dbms.transaction.timeout".
+     * @param parser that will convert the string representation to the concrete type T.
+     * @param defaultValue the string representation of the default value.
+     * @param <T> the concrete type of the setting.
+     */
+    @Nonnull
+    public static <T> SettingBuilder<T> buildSetting( @Nonnull final String name, @Nonnull final Function<String,T> parser,
+                                                      @Nullable final String defaultValue )
+    {
+        return new SettingBuilder<>( name, parser, defaultValue );
     }
 
     public static BiFunction<String, Function<String, String>, String> determineDefaultLookup( String defaultValue,
@@ -224,6 +255,79 @@ public class Settings
                 return in1.valueDescription();
             }
         };
+    }
+
+    /**
+     * Helper class to build a {@link Setting}. A setting always have a name, a parser and a default value.
+     *
+     * @param <T> The concrete type of the setting that is being build
+     */
+    public static final class SettingBuilder<T>
+    {
+        private final String name;
+        private final Function<String,T> parser;
+        private final String defaultValue;
+        private Setting<T> inheritedSetting;
+        private List<BiFunction<T, Function<String,String>,T>> valueConstraints;
+
+        private SettingBuilder( @Nonnull final String name, @Nonnull final Function<String,T> parser, @Nullable final String defaultValue )
+        {
+            this.name = name;
+            this.parser = parser;
+            this.defaultValue = defaultValue;
+        }
+
+        /**
+         * Setup a class to inherit from. Both the default value and the actual user supplied value will be inherited.
+         * Limited to one parent, but chains are allowed and works as expected by going up on level until a valid value
+         * is found.
+         *
+         * @param inheritedSetting the setting to inherit value and default value from.
+         * @throws AssertionError if more than one inheritance is provided.
+         */
+        @Nonnull
+        public SettingBuilder<T> inherits( @Nonnull final Setting<T> inheritedSetting )
+        {
+            // Make sure we only inherits from one other setting
+            if ( this.inheritedSetting != null )
+            {
+                throw new AssertionError( "Can only inherit from one setting" );
+            }
+
+            this.inheritedSetting = inheritedSetting;
+            return this;
+        }
+
+        /**
+         * Add a constraint to this setting. If an error occurs, the constraint should throw {@link IllegalArgumentException}.
+         * Constraints are allowed to modify values and they are applied in the order they are attached to the builder.
+         *
+         * @param constraint to add.
+         */
+        @Nonnull
+        public SettingBuilder<T> constraint( @Nonnull final BiFunction<T, Function<String,String>,T> constraint )
+        {
+            if ( valueConstraints == null )
+            {
+                valueConstraints = new LinkedList<>(); // Must guarantee order
+            }
+            valueConstraints.add( constraint );
+            return this;
+        }
+
+        @Nonnull
+        public Setting<T> build()
+        {
+            BiFunction<String,Function<String, String>, String> valueLookup = named();
+            BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
+            if ( inheritedSetting != null )
+            {
+                valueLookup = inheritedValue( valueLookup, inheritedSetting );
+                defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
+            }
+
+            return new DefaultSetting( name, parser, valueLookup, defaultLookup, valueConstraints );
+        }
     }
 
     public static <OUT, IN1> Setting<OUT> derivedSetting( String name,
@@ -1213,12 +1317,12 @@ public class Settings
         private final Function<String, T> parser;
         private final BiFunction<String,Function<String, String>, String> valueLookup;
         private final BiFunction<String,Function<String, String>, String> defaultLookup;
-        private final BiFunction<T, Function<String, String>, T>[] valueConverters;
+        private final List<BiFunction<T, Function<String, String>, T>> valueConverters;
 
         public DefaultSetting( String name, Function<String,T> parser,
                 BiFunction<String,Function<String,String>,String> valueLookup,
                 BiFunction<String,Function<String,String>,String> defaultLookup,
-                BiFunction<T,Function<String,String>,T>... valueConverters )
+                List<BiFunction<T,Function<String,String>,T>> valueConverters )
         {
             this.name = name;
             this.parser = parser;
@@ -1313,12 +1417,12 @@ public class Settings
             StringBuilder builder = new StringBuilder(  );
             builder.append( name() ).append( " is " ).append( parser.toString() );
 
-            if (valueConverters.length > 0)
+            if ( valueConverters.size() > 0 )
             {
                 builder.append( " which " );
-                for ( int i = 0; i < valueConverters.length; i++ )
+                for ( int i = 0; i < valueConverters.size(); i++ )
                 {
-                    BiFunction<T, Function<String, String>, T> valueConverter = valueConverters[i];
+                    BiFunction<T, Function<String, String>, T> valueConverter = valueConverters.get( i );
                     if ( i > 0 )
                     {
                         builder.append( ", and " );

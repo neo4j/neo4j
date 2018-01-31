@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,12 +44,12 @@ public class ValueNode
 {
     private static final int STRUCT_FIELD_COUNT = 3;
 
-    public static void pack( Neo4jPack.Packer packer, Node node )
+    public static void pack( Neo4jPackV1.Packer packer, Node node )
             throws IOException
     {
         //TODO: We should mark deleted nodes properly but that requires updates to protocol and
         //clients. Until that we merely don't fail and return a node with neither labels nor properties
-        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.NODE );
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPackV1.NODE );
         packer.pack( node.getId() );
         try
         {
@@ -72,12 +72,12 @@ public class ValueNode
         }
     }
 
-    public static ValueNode unpack( Neo4jPack.Unpacker unpacker )
+    public static ValueNode unpack( Neo4jPackV1.Unpacker unpacker )
             throws IOException
     {
         long numFields = unpacker.unpackStructHeader();
         char signature = unpacker.unpackStructSignature();
-        if ( signature != Neo4jPack.NODE )
+        if ( signature != Neo4jPackV1.NODE )
         {
             throw new BoltIOException( Status.Request.InvalidFormat,
                     "Expected a node structure, received 0x" + Integer.toHexString( signature ) );
@@ -91,7 +91,7 @@ public class ValueNode
         return unpackFields( unpacker );
     }
 
-    public static ValueNode unpackFields( Neo4jPack.Unpacker unpacker )
+    public static ValueNode unpackFields( Neo4jPackV1.Unpacker unpacker )
             throws IOException
     {
         long id = unpacker.unpackLong();

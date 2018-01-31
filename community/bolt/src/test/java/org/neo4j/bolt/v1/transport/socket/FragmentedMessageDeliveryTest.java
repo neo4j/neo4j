@@ -19,25 +19,28 @@
  */
 package org.neo4j.bolt.v1.transport.socket;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.Arrays;
-
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.runtime.SynchronousBoltConnection;
+import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
@@ -116,7 +119,10 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ), ch, NullLogService.getInstance() );
+        BoltMessagingProtocolHandlerImpl protocol = new BoltMessagingProtocolHandlerImpl( BoltChannel.open( ctx,
+                NullBoltMessageLogger.getInstance() ),
+                new SynchronousBoltConnection( machine ), new Neo4jPackV1(), TransportThrottleGroup.NO_THROTTLE,
+                NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )
@@ -167,7 +173,7 @@ public class FragmentedMessageDeliveryTest
             RecordingByteChannel channel = new RecordingByteChannel();
 
             BoltRequestMessageWriter writer = new BoltRequestMessageWriter(
-                    new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                    new Neo4jPackV1.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
             writer.write( msgs[i] ).flush();
             serialized[i] = channel.getBytes();
         }

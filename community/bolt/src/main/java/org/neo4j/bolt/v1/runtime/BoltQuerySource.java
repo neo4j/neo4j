@@ -19,13 +19,15 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.BoltChannel;
+
 class BoltQuerySource
 {
     final String principalName;
     final String clientName;
-    final BoltConnectionDescriptor connectionDescriptor;
+    final BoltChannel connectionDescriptor;
 
-    BoltQuerySource( String principalName, String clientName, BoltConnectionDescriptor connectionDescriptor )
+    BoltQuerySource( String principalName, String clientName, BoltChannel connectionDescriptor )
     {
         this.principalName = principalName;
         this.clientName = clientName;

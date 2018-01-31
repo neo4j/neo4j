@@ -129,8 +129,8 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
         ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,
                 querySource.clientName,
-                querySource.connectionDescriptor.clientAddress,
-                querySource.connectionDescriptor.serverAddress );
+                querySource.connectionDescriptor.clientAddress(),
+                querySource.connectionDescriptor.serverAddress() );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 

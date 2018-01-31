@@ -48,7 +48,7 @@ public class PathPack
         private final PrimitiveLongIntKeyValueArray relationships =
                 new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY );
 
-        private void packNodes( Neo4jPack.Packer packer, Path path )
+        private void packNodes( Neo4jPackV1.Packer packer, Path path )
                 throws IOException
         {
             nodes.reset( path.length() + 1 );
@@ -77,7 +77,7 @@ public class PathPack
             }
         }
 
-        private void packRelationships( Neo4jPack.Packer packer, Path path )
+        private void packRelationships( Neo4jPackV1.Packer packer, Path path )
                 throws IOException
         {
             relationships.reset( path.length() );
@@ -107,9 +107,9 @@ public class PathPack
             }
         }
 
-        public void pack( Neo4jPack.Packer packer, Path path ) throws IOException
+        public void pack( Neo4jPackV1.Packer packer, Path path ) throws IOException
         {
-            packer.packStructHeader( 3, Neo4jPack.PATH );
+            packer.packStructHeader( 3, Neo4jPackV1.PATH );
 
             packNodes( packer, path );
             packRelationships( packer, path );
@@ -150,15 +150,15 @@ public class PathPack
     public static class Unpacker
     {
 
-        public ValuePath unpack( Neo4jPack.Unpacker unpacker )
+        public ValuePath unpack( Neo4jPackV1.Unpacker unpacker )
                 throws IOException
         {
             assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-            assert unpacker.unpackStructSignature() == Neo4jPack.PATH;
+            assert unpacker.unpackStructSignature() == Neo4jPackV1.PATH;
             return unpackFields( unpacker );
         }
 
-        public ValuePath unpackFields( Neo4jPack.Unpacker unpacker ) throws IOException
+        public ValuePath unpackFields( Neo4jPackV1.Unpacker unpacker ) throws IOException
         {
             List<Node> nodes = unpackNodes( unpacker );
             List<Relationship> relationships = unpackRelationships( unpacker );
@@ -166,7 +166,7 @@ public class PathPack
             return new ValuePath( nodes, relationships, sequence );
         }
 
-        private List<Node> unpackNodes( Neo4jPack.Unpacker unpacker )
+        private List<Node> unpackNodes( Neo4jPackV1.Unpacker unpacker )
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
@@ -185,7 +185,7 @@ public class PathPack
             }
         }
 
-        private List<Relationship> unpackRelationships( Neo4jPack.Unpacker unpacker )
+        private List<Relationship> unpackRelationships( Neo4jPackV1.Unpacker unpacker )
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();
@@ -204,7 +204,7 @@ public class PathPack
             }
         }
 
-        private List<Integer> unpackSequence( Neo4jPack.Unpacker unpacker )
+        private List<Integer> unpackSequence( Neo4jPackV1.Unpacker unpacker )
                 throws IOException
         {
             int count = (int) unpacker.unpackListHeader();

@@ -218,9 +218,9 @@ public class BoltResponseMessageTest
     {
         RecordingByteChannel channel = new RecordingByteChannel();
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
-                new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
+                new Neo4jPackV1.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                new Neo4jPackV1.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
 
         msg.dispatch( writer );
         writer.flush();

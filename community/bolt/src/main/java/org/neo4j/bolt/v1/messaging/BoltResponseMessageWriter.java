@@ -31,7 +31,7 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.RECORD;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 
 /**
- * Writer for Bolt request messages to be sent to a {@link Neo4jPack.Packer}.
+ * Writer for Bolt request messages to be sent to a {@link Neo4jPackV1.Packer}.
  */
 public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOException>
 {
@@ -39,14 +39,14 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     {
     };
 
-    private final Neo4jPack.Packer packer;
+    private final Neo4jPackV1.Packer packer;
     private final BoltResponseMessageBoundaryHook onMessageComplete;
 
     /**
      * @param packer            serializer to output channel
      * @param onMessageComplete invoked for each message, after it's done writing to the output
      */
-    public BoltResponseMessageWriter( Neo4jPack.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
+    public BoltResponseMessageWriter( Neo4jPackV1.Packer packer, BoltResponseMessageBoundaryHook onMessageComplete )
     {
         this.packer = packer;
         this.onMessageComplete = onMessageComplete;

@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -36,10 +36,10 @@ public class ValueUnboundRelationship
 {
     private static final int STRUCT_FIELD_COUNT = 3;
 
-    public static void pack( Neo4jPack.Packer packer, Relationship rel )
+    public static void pack( Neo4jPackV1.Packer packer, Relationship rel )
             throws IOException
     {
-        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPack.UNBOUND_RELATIONSHIP );
+        packer.packStructHeader( STRUCT_FIELD_COUNT, Neo4jPackV1.UNBOUND_RELATIONSHIP );
         packer.pack( rel.getId() );
         packer.pack( rel.getType().name() );
         //TODO: We should mark deleted relationships properly but that requires updates
@@ -56,15 +56,15 @@ public class ValueUnboundRelationship
         }
     }
 
-    public static ValueUnboundRelationship unpack( Neo4jPack.Unpacker unpacker )
+    public static ValueUnboundRelationship unpack( Neo4jPackV1.Unpacker unpacker )
             throws IOException
     {
         assert unpacker.unpackStructHeader() == STRUCT_FIELD_COUNT;
-        assert unpacker.unpackStructSignature() == Neo4jPack.UNBOUND_RELATIONSHIP;
+        assert unpacker.unpackStructSignature() == Neo4jPackV1.UNBOUND_RELATIONSHIP;
         return unpackFields( unpacker );
     }
 
-    public static ValueUnboundRelationship unpackFields( Neo4jPack.Unpacker unpacker )
+    public static ValueUnboundRelationship unpackFields( Neo4jPackV1.Unpacker unpacker )
             throws IOException
     {
         long relId = unpacker.unpackLong();

@@ -113,6 +113,11 @@ public interface JobScheduler extends Lifecycle
         public static final Group serverTransactionTimeout = new Group( "ServerTransactionTimeout", POOLED );
 
         /**
+         * Rotates bolt message logs
+         */
+        public static final Group boltLogRotation = new Group( "BoltLogRotation", POOLED );
+
+        /**
          * Aborts idle slave lock sessions on the master.
          */
         public static final Group slaveLocksTimeout = new Group( "SlaveLocksTimeout", POOLED );
@@ -194,6 +199,17 @@ public interface JobScheduler extends Lifecycle
         public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor", POOLED );
 
         public static Group pageCacheIOHelper = new Group( "PageCacheIOHelper", POOLED );
+
+        /**
+         * Bolt scheduler standard worker
+         */
+        public static Group boltStdWorker = new Group( "BoltStdWorker", POOLED );
+
+        /**
+         * Bolt scheduler out-of-band worker
+         */
+        public static Group boltOobWorker = new Group( "BoltOobWorker", POOLED );
+
     }
 
     interface JobHandle
