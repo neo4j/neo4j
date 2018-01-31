@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{By
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v3_4.spi.CostBasedPlannerName
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode, QueryContext}
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
@@ -45,6 +44,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, Descending, _}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.{StubNodeCursor, StubNodeLabelIndexCursor, StubPropertyCursor, StubRead}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator

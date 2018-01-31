@@ -31,14 +31,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.runtime.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl, SingleChild}
 import org.neo4j.cypher.internal.runtime.{ProfileMode, QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.Transaction.Type
-import org.neo4j.internal.kernel.api.{CursorFactory, StubNodeCursor, StubRead}
+import org.neo4j.internal.kernel.api.helpers.{StubNodeCursor, StubRead}
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy}
