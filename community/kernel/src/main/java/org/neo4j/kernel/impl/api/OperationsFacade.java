@@ -34,6 +34,7 @@ import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -690,7 +691,9 @@ public class OperationsFacade
     public Iterator<Token> propertyKeyGetAllTokens()
     {
         statement.assertOpen();
-        return tokenRead().propertyKeyGetAllTokens( statement );
+        AccessMode mode = tx.securityContext().mode();
+        return Iterators.stream( tokenRead().propertyKeyGetAllTokens( statement ) ).
+                filter( propKey -> mode.allowsPropertyReads( propKey.id() ) ).iterator();
     }
 
     @Override
