@@ -400,7 +400,7 @@ public class Jetty9WebServer implements WebServer
     private void loadRequestLogging()
     {
         // This makes the request log handler decorate whatever other handlers are already set up
-        final RequestLogHandler requestLogHandler = new RequestLogHandler();
+        final RequestLogHandler requestLogHandler = new HttpChannelOptionalRequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
         requestLogHandler.setServer( jetty );
         requestLogHandler.setHandler( jetty.getHandler() );
