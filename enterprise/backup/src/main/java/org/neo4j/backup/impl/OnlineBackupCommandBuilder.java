@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.ParameterisedOutsideWorld;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
@@ -202,7 +203,7 @@ public class OnlineBackupCommandBuilder
     private OutsideWorld resolveOutsideWorld()
     {
         Optional<OutputStream> output = Optional.ofNullable( this.output );
-        return new ParametrisedOutsideWorld(
+        return new ParameterisedOutsideWorld(
                 System.console(), output.orElse( System.out ),
                 output.orElse( System.err ),
                 System.in, new DefaultFileSystemAbstraction() );
