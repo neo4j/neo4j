@@ -268,7 +268,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         {
             // When
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    AnonymousContext.none().freeze( mock( Token.class ) ) );
+                    AnonymousContext.none().authorize( mock( Token.class ) ) );
             fail( "This should never get here" );
         }
         catch ( Exception e )

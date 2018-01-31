@@ -28,24 +28,54 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
  *
  * Must extend LoginContext to handle procedures creating internal transactions, periodic commit and the parallel cypher prototype.
  */
-public interface SecurityContext extends LoginContext
+public class SecurityContext implements LoginContext
 {
+    protected final AuthSubject subject;
+    protected final AccessMode mode;
+
+    public SecurityContext( AuthSubject subject, AccessMode mode )
+    {
+        this.subject = subject;
+        this.mode = mode;
+    }
+
     /**
      * Get the authorization data of the user. This is immutable.
      */
-    AccessMode mode();
+    public AccessMode mode()
+    {
+        return mode;
+    }
 
     /**
      * Check whether the user is an admin.
      */
-    boolean isAdmin();
+    public boolean isAdmin()
+    {
+        return true;
+    }
+
+    @Override
+    public AuthSubject subject()
+    {
+        return subject;
+    }
+
+    @Override
+    public SecurityContext authorize( Token token )
+    {
+        return this;
+    }
 
     /**
      * Create a copy of this SecurityContext with the provided mode.
      */
-    SecurityContext withMode( AccessMode mode );
+    public SecurityContext withMode( AccessMode mode )
+    {
+        return new SecurityContext( subject, mode );
+    }
 
-    default void assertCredentialsNotExpired()
+    public void assertCredentialsNotExpired()
     {
         if ( subject().getAuthenticationResult().equals( AuthenticationResult.PASSWORD_CHANGE_REQUIRED ) )
         {
@@ -53,110 +83,41 @@ public interface SecurityContext extends LoginContext
         }
     }
 
-    default String description()
+    public String description()
     {
         return String.format( "user '%s' with %s", subject().username(), mode().name() );
     }
 
-    default String defaultString( String name )
+    protected String defaultString( String name )
     {
         return String.format( "%s{ username=%s, accessMode=%s }", name, subject().username(), mode() );
     }
 
     /** Allows all operations. */
-    SecurityContext AUTH_DISABLED = new AuthDisabled( AccessMode.Static.FULL );
+    public static final SecurityContext AUTH_DISABLED = authDisabled( AccessMode.Static.FULL );
 
-    final class AuthDisabled implements SecurityContext
+    private static SecurityContext authDisabled( AccessMode mode )
     {
-        private final AccessMode mode;
-
-        private AuthDisabled( AccessMode mode )
+        return new SecurityContext( AuthSubject.AUTH_DISABLED, mode )
         {
-            this.mode = mode;
-        }
 
-        @Override
-        public AccessMode mode()
-        {
-            return mode;
-        }
+            @Override
+            public SecurityContext withMode( AccessMode mode )
+            {
+                return authDisabled( mode );
+            }
 
-        @Override
-        public AuthSubject subject()
-        {
-            return AuthSubject.AUTH_DISABLED;
-        }
+            @Override
+            public String description()
+            {
+                return "AUTH_DISABLED with " + mode().name();
+            }
 
-        @Override
-        public boolean isAdmin()
-        {
-            return true;
-        }
-
-        @Override
-        public String toString()
-        {
-            return defaultString( "auth-disabled" );
-        }
-
-        @Override
-        public String description()
-        {
-            return "AUTH_DISABLED with " + mode.name();
-        }
-
-        @Override
-        public SecurityContext freeze( Token token )
-        {
-            return this;
-        }
-
-        @Override
-        public SecurityContext withMode( AccessMode mode )
-        {
-            return new AuthDisabled( mode );
-        }
-    }
-
-    final class Frozen implements SecurityContext
-    {
-        private final AuthSubject subject;
-        private final AccessMode mode;
-
-        public Frozen( AuthSubject subject, AccessMode mode )
-        {
-            this.subject = subject;
-            this.mode = mode;
-        }
-
-        @Override
-        public AccessMode mode()
-        {
-            return mode;
-        }
-
-        @Override
-        public AuthSubject subject()
-        {
-            return subject;
-        }
-
-        @Override
-        public boolean isAdmin()
-        {
-            return true;
-        }
-
-        @Override
-        public SecurityContext freeze( Token token )
-        {
-            return this;
-        }
-
-        @Override
-        public SecurityContext withMode( AccessMode mode )
-        {
-            return new Frozen( subject, mode );
-        }
+            @Override
+            public String toString()
+            {
+                return defaultString( "auth-disabled" );
+            }
+        };
     }
 }

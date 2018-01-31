@@ -562,12 +562,12 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         setMockAuthenticationStrategyResult( "neo4j", "neo4j", AuthenticationResult.SUCCESS );
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) ).freeze( token );
+        SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) ).authorize( token );
         userManager.setUserPassword( "neo4j", "1234", false );
         securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
-        securityContext = manager.login( authToken( "neo4j", "1234" ) ).freeze( token );
+        securityContext = manager.login( authToken( "neo4j", "1234" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -583,7 +583,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) ).freeze( token );
+        SecurityContext securityContext = manager.login( authToken( "morpheus", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -599,7 +599,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) ).freeze( token );
+        SecurityContext securityContext = manager.login( authToken( "trinity", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -615,7 +615,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) ).freeze( token );
+        SecurityContext securityContext = manager.login( authToken( "tank", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( "should allow reads", securityContext.mode().allowsReads() );
@@ -631,7 +631,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) ).freeze( token );
+        SecurityContext securityContext = manager.login( authToken( "neo", "abc123" ) ).authorize( token );
 
         // Then
         assertTrue( securityContext.mode().allowsReads() );
@@ -647,7 +647,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) ).freeze( token );
+        SecurityContext securityContext = manager.login( authToken( "smith", "abc123" ) ).authorize( token );
 
         // Then
         assertFalse( securityContext.mode().allowsReads() );
@@ -664,14 +664,14 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
 
         // When
         LoginContext loginContext = manager.login( authToken( "morpheus", "abc123" ) );
-        SecurityContext securityContext = loginContext.freeze( token );
+        SecurityContext securityContext = loginContext.authorize( token );
         assertTrue( securityContext.mode().allowsReads() );
         assertTrue( securityContext.mode().allowsWrites() );
         assertTrue( securityContext.mode().allowsSchemaWrites() );
 
         loginContext.subject().logout();
 
-        securityContext = loginContext.freeze( token );
+        securityContext = loginContext.authorize( token );
         // Then
         assertFalse( securityContext.mode().allowsReads() );
         assertFalse( securityContext.mode().allowsWrites() );

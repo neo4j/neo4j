@@ -107,7 +107,7 @@ public class KernelTransactionFactory
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 
-        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, loginContext.freeze( mock( Token.class ) ), 0L, 1L );
+        transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, loginContext.authorize( mock( Token.class ) ), 0L, 1L );
 
         return new Instances( transaction, storageEngine, storeReadLayer, storageStatement );
     }

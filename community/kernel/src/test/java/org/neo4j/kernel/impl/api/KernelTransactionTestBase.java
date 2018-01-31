@@ -144,7 +144,7 @@ public class KernelTransactionTestBase
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
-        SecurityContext securityContext = loginContext.freeze( mock( Token.class ) );
+        SecurityContext securityContext = loginContext.authorize( mock( Token.class ) );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
                 securityContext, transactionTimeout, 1L );
         return tx;

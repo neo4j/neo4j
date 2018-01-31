@@ -23,15 +23,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.Collections;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -68,8 +66,10 @@ public class UserManagementProceduresLoggingTest
         authProcedures.securityLog = securityLog;
 
         generalUserManager = getUserManager();
-        EnterpriseSecurityContext adminContext = new TestSecurityContext( "admin", true );
-        matsContext = new TestSecurityContext( "mats", false );
+        EnterpriseSecurityContext adminContext =
+                new EnterpriseSecurityContext( new MockAuthSubject( "admin" ), AccessMode.Static.FULL, Collections.emptySet(), true );
+        matsContext =
+                new EnterpriseSecurityContext( new MockAuthSubject( "mats" ), AccessMode.Static.NONE, Collections.emptySet(), false );
 
         setSubject( adminContext );
     }
@@ -645,81 +645,43 @@ public class UserManagementProceduresLoggingTest
         return inLog( this.getClass() ).error( message, (Object[]) arguments );
     }
 
-    private static class TestSecurityContext implements EnterpriseSecurityContext
+    private static class MockAuthSubject implements AuthSubject
     {
         private final String name;
-        private final boolean isAdmin;
 
-        TestSecurityContext( String name, boolean isAdmin )
+        private MockAuthSubject( String name )
         {
             this.name = name;
-            this.isAdmin = isAdmin;
         }
 
         @Override
-        public AccessMode mode()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public boolean isAdmin()
-        {
-            return isAdmin;
-        }
-
-        @Override
-        public EnterpriseSecurityContext withMode( AccessMode mode )
+        public void logout()
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public AuthSubject subject()
+        public AuthenticationResult getAuthenticationResult()
         {
-            return new AuthSubject()
+            return AuthenticationResult.SUCCESS;
+        }
+
+        @Override
+        public void setPasswordChangeNoLongerRequired()
+        {
+        }
+
+        @Override
+        public boolean hasUsername( String username )
+        {
+            return name.equals( username );
+        }
+
+        @Override
+        public String username()
             {
-                @Override
-                public void logout()
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public AuthenticationResult getAuthenticationResult()
-                {
-                    return AuthenticationResult.SUCCESS;
-                }
-
-                @Override
-                public void setPasswordChangeNoLongerRequired()
-                {
-                }
-
-                @Override
-                public boolean hasUsername( String username )
-                {
-                    return name.equals( username );
-                }
-
-                @Override
-                public String username()
-                {
-                    return name;
-                }
-            };
-        }
-
-        @Override
-        public SecurityContext freeze( Token token )
-        {
-            return this;
-        }
-
-        @Override
-        public Set<String> roles()
-        {
-            throw new UnsupportedOperationException();
-        }
+                return name;
+            }
     }
 
     private static class TestUserManagementProcedures extends UserManagementProcedures

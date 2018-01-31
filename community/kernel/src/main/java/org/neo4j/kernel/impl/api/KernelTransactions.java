@@ -175,7 +175,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.freeze( token );
+        SecurityContext securityContext = loginContext.authorize( token );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )

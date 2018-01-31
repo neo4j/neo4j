@@ -54,7 +54,7 @@ public class SecurityContextDescriptionTest
         manager.init();
         manager.start();
         manager.newUser( "johan", "bar", false );
-        context = manager.login( authToken( "johan", "bar" ) ).freeze( mock( Token.class ) );
+        context = manager.login( authToken( "johan", "bar" ) ).authorize( mock( Token.class ) );
     }
 
     @After

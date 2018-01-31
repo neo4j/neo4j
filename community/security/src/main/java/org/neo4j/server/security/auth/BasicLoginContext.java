@@ -107,8 +107,8 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public SecurityContext freeze( Token token )
+    public SecurityContext authorize( Token token )
     {
-        return new SecurityContext.Frozen( authSubject, accessMode );
+        return new SecurityContext( authSubject, accessMode );
     }
 }

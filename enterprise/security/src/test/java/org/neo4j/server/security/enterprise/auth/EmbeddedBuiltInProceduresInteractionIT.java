@@ -115,9 +115,9 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         return new EnterpriseLoginContext()
         {
             @Override
-            public EnterpriseSecurityContext freeze( Token token )
+            public EnterpriseSecurityContext authorize( Token token )
             {
-                return new EnterpriseSecurityContext.Frozen( subject(), inner.mode(), Collections.emptySet(), false );
+                return new EnterpriseSecurityContext( subject(), inner.mode(), Collections.emptySet(), false );
             }
 
             @Override
@@ -126,7 +126,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
                 return Collections.emptySet();
             }
 
-            SecurityContext inner = AnonymousContext.none().freeze( mock( Token.class ) );
+            SecurityContext inner = AnonymousContext.none().authorize( mock( Token.class ) );
 
             @Override
             public AuthSubject subject()

@@ -124,6 +124,6 @@ public class EnterpriseSecurityContextDescriptionTest
 
     private EnterpriseSecurityContext context() throws Exception
     {
-        return authManagerRule.getManager().login( authToken( "mats", "foo" ) ).freeze( token );
+        return authManagerRule.getManager().login( authToken( "mats", "foo" ) ).authorize( token );
     }
 }

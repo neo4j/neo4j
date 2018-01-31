@@ -409,7 +409,7 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         LoginContext loginContext = mock( LoginContext.class );
-        when( loginContext.freeze( any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
+        when( loginContext.authorize( any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
         assertException(() -> kernelTransactions.newInstance(KernelTransaction.Type.explicit, loginContext, 0L),
                 AuthorizationExpiredException.class, "Freeze failed.");

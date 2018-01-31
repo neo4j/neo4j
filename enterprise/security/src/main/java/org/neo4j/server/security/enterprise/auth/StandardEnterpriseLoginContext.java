@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext.Frozen;
 
 class StandardEnterpriseLoginContext implements EnterpriseLoginContext
 {
@@ -82,10 +81,10 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
     }
 
     @Override
-    public EnterpriseSecurityContext freeze( Token token )
+    public EnterpriseSecurityContext authorize( Token token )
     {
         StandardAccessMode mode = mode( token );
-        return new Frozen( neoShiroSubject, mode, mode.roles, isAdmin() );
+        return new EnterpriseSecurityContext( neoShiroSubject, mode, mode.roles, isAdmin() );
     }
 
     @Override

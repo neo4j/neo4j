@@ -51,7 +51,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
 
         // When
         dbmsOperations().procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray,
-                AnonymousContext.none().freeze( mock( Token.class ) ) );
+                AnonymousContext.none().authorize( mock( Token.class ) ) );
     }
 
     @Test
@@ -67,7 +67,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
 
         // When
         dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray,
-                AnonymousContext.none().freeze( mock( Token.class ) ) );
+                AnonymousContext.none().authorize( mock( Token.class ) ) );
     }
 
     @Override

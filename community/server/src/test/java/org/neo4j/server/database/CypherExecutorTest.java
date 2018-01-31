@@ -153,7 +153,7 @@ public class CypherExecutorTest
         QueryRegistryOperations registryOperations = mock( QueryRegistryOperations.class );
         when( statement.queryRegistration() ).thenReturn( registryOperations );
         when( statementBridge.get() ).thenReturn( statement );
-        when( kernelTransaction.securityContext() ).thenReturn( loginContext.freeze( mock( Token.class ) ) );
+        when( kernelTransaction.securityContext() ).thenReturn( loginContext.authorize( mock( Token.class ) ) );
         when( kernelTransaction.transactionType() ).thenReturn( type  );
         when( database.getGraph() ).thenReturn( databaseFacade );
         when( databaseFacade.getDependencyResolver() ).thenReturn( resolver );
