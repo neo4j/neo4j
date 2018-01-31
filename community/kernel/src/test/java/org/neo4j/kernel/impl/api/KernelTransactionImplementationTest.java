@@ -450,7 +450,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.close();
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
         transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
-                loginContext().freeze( mock( Token.class ) ), 0L, 1L );
+                loginContext().authorize( mock( Token.class ) ), 0L, 1L );
 
         // THEN
         assertEquals( reuseCount + 1, transaction.getReuseCount() );
@@ -671,7 +671,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().freeze( mock( Token.class ) ), 0L, 0L );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( mock( Token.class ) ), 0L, 0L );
 
         assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
 
@@ -691,7 +691,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         Locks.Client locksClient = mock( Locks.Client.class );
         SimpleStatementLocks statementLocks = new SimpleStatementLocks( locksClient );
-        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().freeze( mock( Token.class ) ), 0L, 0L );
+        tx.initialize( 42, 42, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( mock( Token.class ) ), 0L, 0L );
 
         assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
 
@@ -758,7 +758,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         for ( int i = 0; i < times; i++ )
         {
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
-            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, loginContext().freeze( mock( Token.class ) ), 0L, 0L );
+            tx.initialize( i + 10, i + 10, statementLocks, KernelTransaction.Type.implicit, loginContext().authorize( mock( Token.class ) ), 0L, 0L );
             tx.close();
         }
     }

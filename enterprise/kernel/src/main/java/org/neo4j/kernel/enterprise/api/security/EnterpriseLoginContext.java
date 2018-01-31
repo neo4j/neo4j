@@ -30,7 +30,7 @@ public interface EnterpriseLoginContext extends LoginContext
 {
     Set<String> roles();
 
-    EnterpriseSecurityContext freeze( Token token );
+    EnterpriseSecurityContext authorize( Token token );
 
     EnterpriseLoginContext AUTH_DISABLED = new EnterpriseLoginContext()
     {
@@ -47,7 +47,7 @@ public interface EnterpriseLoginContext extends LoginContext
         }
 
         @Override
-        public EnterpriseSecurityContext freeze( Token token )
+        public EnterpriseSecurityContext authorize( Token token )
         {
             return EnterpriseSecurityContext.AUTH_DISABLED;
         }

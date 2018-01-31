@@ -67,8 +67,8 @@ public class AnonymousContext implements LoginContext
     }
 
     @Override
-    public SecurityContext freeze( Token token )
+    public SecurityContext authorize( Token token )
     {
-        return new SecurityContext.Frozen( subject(), accessMode );
+        return new SecurityContext( subject(), accessMode );
     }
 }

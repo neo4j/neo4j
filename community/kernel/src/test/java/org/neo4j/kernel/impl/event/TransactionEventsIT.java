@@ -197,9 +197,9 @@ public class TransactionEventsIT
             }
 
             @Override
-            public SecurityContext freeze( Token token )
+            public SecurityContext authorize( Token token )
             {
-                return new SecurityContext.Frozen( subject, AccessMode.Static.WRITE );
+                return new SecurityContext( subject, AccessMode.Static.WRITE );
             }
         };
         Map<String,Object> metadata = genericMap( "username", "joe" );

@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.scheduler.JobScheduler;
@@ -128,11 +127,11 @@ public class InternalFlatFileRealmTest
         EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
         assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
-        mike.freeze( token ).mode().allowsReads();
+        mike.authorize( token ).mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.freeze( token ).mode().allowsWrites();
+        mike.authorize( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );

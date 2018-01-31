@@ -346,7 +346,7 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().freeze( mock( Token.class ) ) );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( mock( Token.class ) ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );
@@ -358,7 +358,7 @@ public class TxStateTransactionDataViewTest
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
         when( transaction.securityContext() )
-                .thenReturn( new SecurityContext.Frozen( authSubject, AccessMode.Static.FULL ) );
+                .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "Christof", transactionDataSnapshot.username() );
