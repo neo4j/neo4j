@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.ExplicitIndexHits;
@@ -90,6 +91,11 @@ abstract class Read implements TxStateHolder,
             IndexQuery... query ) throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
+        if ( hasForbiddenProperties( index ) )
+        {
+            cursor.close();
+            return;
+        }
 
         ((DefaultNodeValueIndexCursor) cursor).setRead( this );
         IndexProgressor.NodeValueClient target = (DefaultNodeValueIndexCursor) cursor;
@@ -139,11 +145,29 @@ abstract class Read implements TxStateHolder,
             IndexOrder indexOrder ) throws KernelException
     {
         ktx.assertOpen();
+        if ( hasForbiddenProperties( index ) )
+        {
+            cursor.close();
+            return;
+        }
 
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
         int firstProperty = index.properties()[0];
         ((DefaultNodeValueIndexCursor) cursor).setRead( this );
         indexReader( index ).query( (DefaultNodeValueIndexCursor) cursor, indexOrder, IndexQuery.exists( firstProperty ) );
+    }
+
+    private boolean hasForbiddenProperties( IndexReference index )
+    {
+        AccessMode mode = ktx.securityContext().mode();
+        for ( int prop : index.properties() )
+        {
+            if ( !mode.allowsPropertyReads( prop ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

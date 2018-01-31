@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -106,7 +107,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 .collect( Collectors.toSet() );
     }
 
-    private Function<Integer,Boolean> queryForPropertyPermissions( Token token )
+    private IntPredicate queryForPropertyPermissions( Token token )
     {
         return authManager.getPropertyPermissions( roles(), token );
     }
@@ -119,10 +120,10 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         private final boolean allowsTokenCreates;
         private final boolean passwordChangeRequired;
         private final Set<String> roles;
-        private final Function<Integer,Boolean> propertyPermissions;
+        private final IntPredicate propertyPermissions;
 
         StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsTokenCreates, boolean allowsSchemaWrites,
-                boolean passwordChangeRequired, Set<String> roles, Function<Integer,Boolean> propertyPermissions )
+                boolean passwordChangeRequired, Set<String> roles, IntPredicate propertyPermissions )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
@@ -160,7 +161,7 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         @Override
         public boolean allowsPropertyReads( int propertyKey )
         {
-            return propertyPermissions.apply( propertyKey );
+            return propertyPermissions.test( propertyKey );
         }
 
         @Override
