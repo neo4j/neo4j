@@ -95,7 +95,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def createRelationship(start: Long, end: Long, relType: Int): Relationship = {
     val relId = tc.statement.dataWriteOperations().relationshipCreate(relType, start, end)
-    proxySpi.newRelationshipProxy(relId)
+    proxySpi.newRelationshipProxy(relId, start, relType, end)
   }
 
   def getOrCreateRelTypeId(relTypeName: String): Int =

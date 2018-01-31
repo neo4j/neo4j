@@ -101,7 +101,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def createRelationship(start: Long, end: Long, relType: Int): Relationship = {
     val relId = txContext.statement.dataWriteOperations().relationshipCreate(relType, start, end)
-    entityAccessor.newRelationshipProxy(relId)
+    entityAccessor.newRelationshipProxy(relId, start, relType, end)
   }
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =
