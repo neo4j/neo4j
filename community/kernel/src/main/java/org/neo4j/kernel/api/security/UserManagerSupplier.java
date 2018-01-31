@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface UserManagerSupplier extends Lifecycle
 {
-    UserManager getUserManager( SecurityContext securityContext );
+    UserManager getUserManager( AuthSubject authSubject, boolean isUserManager );
 
     UserManager getUserManager();
 
@@ -51,7 +51,7 @@ public interface UserManagerSupplier extends Lifecycle
         }
 
         @Override
-        public UserManager getUserManager( SecurityContext securityContext )
+        public UserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
         {
             return UserManager.NO_AUTH;
         }

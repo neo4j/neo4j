@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -34,14 +34,16 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 class PersonalUserManager implements EnterpriseUserManager
 {
     private final EnterpriseUserManager userManager;
-    private final SecurityContext securityContext;
     private final SecurityLog securityLog;
+    private final AuthSubject subject;
+    private final boolean isUserManager;
 
-    PersonalUserManager( EnterpriseUserManager userManager, SecurityContext securityContext, SecurityLog securityLog )
+    PersonalUserManager( EnterpriseUserManager userManager, AuthSubject subject, SecurityLog securityLog, boolean isUserManager )
     {
         this.userManager = userManager;
-        this.securityContext = securityContext;
         this.securityLog = securityLog;
+        this.subject = subject;
+        this.isUserManager = isUserManager;
     }
 
     @Override
@@ -50,15 +52,15 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             User user = userManager.newUser( username, initialPassword, requirePasswordChange );
-            securityLog.info( securityContext, "created user `%s`%s", username,
+            securityLog.info( subject, "created user `%s`%s", username,
                     requirePasswordChange ? ", with password change required" : "" );
             return user;
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to create user `%s`: %s", username, e.getMessage() );
+            securityLog.error( subject, "tried to create user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -69,18 +71,18 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
-            if ( securityContext.subject().hasUsername( username ) )
+            assertUserManager();
+            if ( subject.hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Suspending yourself (user '" + username +
                         "') is not allowed." );
             }
             userManager.suspendUser( username );
-            securityLog.info( securityContext, "suspended user `%s`", username );
+            securityLog.info( subject, "suspended user `%s`", username );
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to suspend user `%s`: %s", username, e.getMessage() );
+            securityLog.error( subject, "tried to suspend user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -91,18 +93,18 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
-            if ( securityContext.subject().hasUsername( username ) )
+            assertUserManager();
+            if ( subject.hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Deleting yourself (user '" + username + "') is not allowed." );
             }
             boolean wasDeleted = userManager.deleteUser( username );
-            securityLog.info( securityContext, "deleted user `%s`", username );
+            securityLog.info( subject, "deleted user `%s`", username );
             return wasDeleted;
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to delete user `%s`: %s", username, e.getMessage() );
+            securityLog.error( subject, "tried to delete user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -113,17 +115,17 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
-            if ( securityContext.subject().hasUsername( username ) )
+            assertUserManager();
+            if ( subject.hasUsername( username ) )
             {
                 throw new InvalidArgumentsException( "Activating yourself (user '" + username + "') is not allowed." );
             }
             userManager.activateUser( username, requirePasswordChange );
-            securityLog.info( securityContext, "activated user `%s`", username );
+            securityLog.info( subject, "activated user `%s`", username );
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to activate user `%s`: %s", username, e.getMessage() );
+            securityLog.error( subject, "tried to activate user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -146,14 +148,14 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             RoleRecord newRole = userManager.newRole( roleName, usernames );
-            securityLog.info( securityContext, "created role `%s`", roleName );
+            securityLog.info( subject, "created role `%s`", roleName );
             return newRole;
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to create role `%s`: %s", roleName, e.getMessage() );
+            securityLog.error( subject, "tried to create role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -164,14 +166,14 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             boolean wasDeleted = userManager.deleteRole( roleName );
-            securityLog.info( securityContext, "deleted role `%s`", roleName );
+            securityLog.info( subject, "deleted role `%s`", roleName );
             return wasDeleted;
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to delete role `%s`: %s", roleName, e.getMessage() );
+            securityLog.error( subject, "tried to delete role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -180,17 +182,17 @@ class PersonalUserManager implements EnterpriseUserManager
     public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException, AuthorizationViolationException
     {
-        if ( securityContext.subject().hasUsername( username ) )
+        if ( subject.hasUsername( username ) )
         {
             try
             {
                 userManager.setUserPassword( username, password, requirePasswordChange );
-                securityLog.info( securityContext, "changed password%s",
+                securityLog.info( subject, "changed password%s",
                         requirePasswordChange ? ", with password change required" : "" );
             }
             catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
             {
-                securityLog.error( securityContext, "tried to change password: %s", e.getMessage() );
+                securityLog.error( subject, "tried to change password: %s", e.getMessage() );
                 throw e;
             }
         }
@@ -198,14 +200,14 @@ class PersonalUserManager implements EnterpriseUserManager
         {
             try
             {
-                assertAdmin();
+                assertUserManager();
                 userManager.setUserPassword( username, password, requirePasswordChange );
-                securityLog.info( securityContext, "changed password for user `%s`%s", username,
+                securityLog.info( subject, "changed password for user `%s`%s", username,
                         requirePasswordChange ? ", with password change required" : "" );
             }
             catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
             {
-                securityLog.error( securityContext, "tried to change password for user `%s`: %s", username,
+                securityLog.error( subject, "tried to change password for user `%s`: %s", username,
                         e.getMessage() );
                 throw e;
             }
@@ -217,12 +219,12 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             return userManager.getAllUsernames();
         }
         catch ( AuthorizationViolationException e )
         {
-            securityLog.error( securityContext, "tried to list users: %s", e.getMessage() );
+            securityLog.error( subject, "tried to list users: %s", e.getMessage() );
             throw e;
         }
     }
@@ -245,13 +247,13 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             userManager.addRoleToUser( roleName, username );
-            securityLog.info( securityContext, "added role `%s` to user `%s`", roleName, username );
+            securityLog.info( subject, "added role `%s` to user `%s`", roleName, username );
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to add role `%s` to user `%s`: %s", roleName, username,
+            securityLog.error( subject, "tried to add role `%s` to user `%s`: %s", roleName, username,
                     e.getMessage() );
             throw e;
         }
@@ -263,18 +265,18 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
-            if ( securityContext.subject().hasUsername( username ) && roleName.equals( PredefinedRoles.ADMIN ) )
+            assertUserManager();
+            if ( subject.hasUsername( username ) && roleName.equals( PredefinedRoles.ADMIN ) )
             {
                 throw new InvalidArgumentsException(
                         "Removing yourself (user '" + username + "') from the admin role is not allowed." );
             }
             userManager.removeRoleFromUser( roleName, username );
-            securityLog.info( securityContext, "removed role `%s` from user `%s`", roleName, username );
+            securityLog.info( subject, "removed role `%s` from user `%s`", roleName, username );
         }
         catch ( AuthorizationViolationException | IOException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to remove role `%s` from user `%s`: %s", roleName, username, e
+            securityLog.error( subject, "tried to remove role `%s` from user `%s`: %s", roleName, username, e
                     .getMessage() );
             throw e;
         }
@@ -285,12 +287,12 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             return userManager.getAllRoleNames();
         }
         catch ( AuthorizationViolationException e )
         {
-            securityLog.error( securityContext, "tried to list roles: %s", e.getMessage() );
+            securityLog.error( subject, "tried to list roles: %s", e.getMessage() );
             throw e;
         }
     }
@@ -301,12 +303,12 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertSelfOrAdmin( username );
+            assertSelfOrUserManager( username );
             return userManager.getRoleNamesForUser( username );
         }
         catch ( AuthorizationViolationException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to list roles for user `%s`: %s", username, e.getMessage() );
+            securityLog.error( subject, "tried to list roles for user `%s`: %s", username, e.getMessage() );
             throw e;
         }
     }
@@ -323,12 +325,12 @@ class PersonalUserManager implements EnterpriseUserManager
     {
         try
         {
-            assertAdmin();
+            assertUserManager();
             return userManager.getUsernamesForRole( roleName );
         }
         catch ( AuthorizationViolationException | InvalidArgumentsException e )
         {
-            securityLog.error( securityContext, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
+            securityLog.error( subject, "tried to list users for role `%s`: %s", roleName, e.getMessage() );
             throw e;
         }
     }
@@ -339,17 +341,17 @@ class PersonalUserManager implements EnterpriseUserManager
         return userManager.silentlyGetUsernamesForRole( roleName );
     }
 
-    private void assertSelfOrAdmin( String username )
+    private void assertSelfOrUserManager( String username )
     {
-        if ( !securityContext.subject().hasUsername( username ) )
+        if ( !subject.hasUsername( username ) )
         {
-            assertAdmin();
+            assertUserManager();
         }
     }
 
-    private void assertAdmin() throws AuthorizationViolationException
+    private void assertUserManager() throws AuthorizationViolationException
     {
-        if ( !securityContext.isAdmin() )
+        if ( !isUserManager )
         {
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }

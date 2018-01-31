@@ -67,7 +67,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -113,7 +113,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
@@ -165,10 +165,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
          * Begin a new kernel transaction with specified timeout in milliseconds.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
-         * @see SPI#beginTransaction(KernelTransaction.Type, SecurityContext)
+         * @see GraphDatabaseAPI#beginTransaction(KernelTransaction.Type, LoginContext)
          */
-        KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
-                long timeout );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout );
 
         /** Execute a cypher statement */
         Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context );
@@ -369,16 +368,16 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
     {
-        return beginTransactionInternal( type, securityContext, config.get( transaction_timeout ).toMillis() );
+        return beginTransactionInternal( type, loginContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext,
             long timeout, TimeUnit unit )
     {
-        return beginTransactionInternal( type, securityContext, unit.toMillis( timeout ) );
+        return beginTransactionInternal( type, loginContext, unit.toMillis( timeout ) );
     }
 
     @Override
@@ -602,7 +601,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return allNodesWithLabel( myLabel );
     }
 
-    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, SecurityContext securityContext,
+    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, LoginContext loginContext,
             long timeoutMillis )
     {
         if ( statementContext.hasTransaction() )
@@ -610,7 +609,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ), statementContext );
         }
-        return new TopLevelTransaction( spi.beginTransaction( type, securityContext, timeoutMillis ), statementContext );
+        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, timeoutMillis ), statementContext );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( Label myLabel, String key, Value value )

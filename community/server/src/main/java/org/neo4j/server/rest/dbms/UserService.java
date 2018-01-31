@@ -30,9 +30,9 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.impl.security.User;
@@ -44,7 +44,7 @@ import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getSecurityContextFromUserPrincipal;
+import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromUserPrincipal;
 import static org.neo4j.server.rest.web.CustomStatusType.UNPROCESSABLE;
 
 @Path( "/user" )
@@ -74,8 +74,8 @@ public class UserService
             return output.notFound();
         }
 
-        SecurityContext securityContext = getSecurityContextFromUserPrincipal( principal );
-        UserManager userManager = userManagerSupplier.getUserManager( securityContext );
+        LoginContext loginContext = getLoginContextFromUserPrincipal( principal );
+        UserManager userManager = userManagerSupplier.getUserManager( loginContext.subject(), false );
 
         try
         {
@@ -125,14 +125,14 @@ public class UserService
 
         try
         {
-            SecurityContext securityContext = getSecurityContextFromUserPrincipal( principal );
-            if ( securityContext == null )
+            LoginContext loginContext = getLoginContextFromUserPrincipal( principal );
+            if ( loginContext == null )
             {
                 return output.notFound();
             }
             else
             {
-                UserManager userManager = userManagerSupplier.getUserManager( securityContext );
+                UserManager userManager = userManagerSupplier.getUserManager( loginContext.subject(), false );
                 userManager.setUserPassword( username, newPassword, false );
             }
         }

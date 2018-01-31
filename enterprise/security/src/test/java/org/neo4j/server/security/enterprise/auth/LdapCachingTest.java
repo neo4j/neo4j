@@ -38,15 +38,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
-import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.server.security.enterprise.log.SecurityLog;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
 import org.neo4j.server.security.auth.RateLimitedAuthenticationStrategy;
+import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -61,9 +62,12 @@ public class LdapCachingTest
     private TestRealm testRealm;
     private FakeTicker fakeTicker;
 
+    private Token token;
+
     @Before
     public void setup() throws Throwable
     {
+        token = mock( Token.class );
         SecurityLog securityLog = mock( SecurityLog.class );
         InternalFlatFileRealm internalFlatFileRealm =
             new InternalFlatFileRealm(
@@ -120,12 +124,12 @@ public class LdapCachingTest
     public void shouldCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
-        mike.mode().allowsReads();
+        EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
+        mike.freeze( token ).mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.mode().allowsWrites();
+        mike.freeze( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
@@ -135,20 +139,20 @@ public class LdapCachingTest
     public void shouldInvalidateAuthorizationCacheAfterTTL() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
-        mike.mode().allowsReads();
+        EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
+        mike.freeze( token ).mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
         fakeTicker.advance( 99, TimeUnit.MILLISECONDS );
-        mike.mode().allowsWrites();
+        mike.freeze( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm received a call", testRealm.takeAuthorizationFlag(), is( false ) );
 
         // When
         fakeTicker.advance( 2, TimeUnit.MILLISECONDS );
-        mike.mode().allowsWrites();
+        mike.freeze( token ).mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not received a call", testRealm.takeAuthorizationFlag(), is( true ) );

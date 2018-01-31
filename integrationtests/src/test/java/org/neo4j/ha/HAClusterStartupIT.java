@@ -38,7 +38,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
@@ -106,7 +106,7 @@ public class HAClusterStartupIT
                     // (2) BuiltInProcedures from enterprise
                     try ( InternalTransaction tx = gdb.beginTransaction(
                         KernelTransaction.Type.explicit,
-                        EnterpriseSecurityContext.AUTH_DISABLED
+                        EnterpriseLoginContext.AUTH_DISABLED
                     ) )
                     {
                         Result result = gdb.execute( tx, "CALL dbms.listQueries()", EMPTY_MAP );

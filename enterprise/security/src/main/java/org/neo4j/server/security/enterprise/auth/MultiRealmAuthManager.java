@@ -48,10 +48,10 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.helpers.Strings.escape;
@@ -97,37 +97,37 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     }
 
     @Override
-    public EnterpriseSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public EnterpriseLoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        EnterpriseSecurityContext securityContext;
+        EnterpriseLoginContext securityContext;
 
         ShiroAuthToken token = new ShiroAuthToken( authToken );
         assertValidScheme( token );
 
         try
         {
-            securityContext = new StandardEnterpriseSecurityContext(
+            securityContext = new StandardEnterpriseLoginContext(
                     this, (ShiroSubject) securityManager.login( null, token ) );
             AuthenticationResult authenticationResult = securityContext.subject().getAuthenticationResult();
             if ( authenticationResult == AuthenticationResult.SUCCESS )
             {
                 if ( logSuccessfulLogin )
                 {
-                    securityLog.info( securityContext, "logged in" );
+                    securityLog.info( securityContext.subject(), "logged in" );
                 }
             }
             else if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
             {
-                securityLog.info( securityContext, "logged in (password change required)" );
+                securityLog.info( securityContext.subject(), "logged in (password change required)" );
             }
             else
             {
-                String errorMessage = ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject())
+                String errorMessage = ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject())
                         .getAuthenticationFailureMessage();
                 securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
             }
             // No need to keep full Shiro authentication info around on the subject
-            ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
+            ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
         }
         catch ( UnsupportedTokenException e )
         {
@@ -142,7 +142,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         catch ( ExcessiveAttemptsException e )
         {
             // NOTE: We only get this with single (internal) realm authentication
-            securityContext = new StandardEnterpriseSecurityContext( this,
+            securityContext = new StandardEnterpriseLoginContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
             securityLog.error( "[%s]: failed to log in: too many failed attempts",
                     escape( token.getPrincipal().toString() ) );
@@ -165,7 +165,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
                         cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
                 throw new AuthProviderFailedException( e.getCause().getMessage(), e.getCause() );
             }
-            securityContext = new StandardEnterpriseSecurityContext( this,
+            securityContext = new StandardEnterpriseLoginContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
             Throwable cause = e.getCause();
             Throwable causeCause = e.getCause() != null ? e.getCause().getCause() : null;
@@ -252,9 +252,9 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     }
 
     @Override
-    public EnterpriseUserManager getUserManager( SecurityContext securityContext )
+    public EnterpriseUserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
     {
-        return new PersonalUserManager( userManager, securityContext, securityLog );
+        return new PersonalUserManager( userManager, authSubject, securityLog, isUserManager );
     }
 
     @Override

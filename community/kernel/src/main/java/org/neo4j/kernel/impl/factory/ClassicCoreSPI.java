@@ -28,11 +28,11 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -180,12 +180,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, securityContext, timeout );
+            KernelTransaction kernelTx = dataSource.kernelAPI.get().newTransaction( type, loginContext, timeout );
             kernelTx.registerCloseListener(
                     txId -> dataSource.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             dataSource.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );

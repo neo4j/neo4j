@@ -109,7 +109,7 @@ public class EnterpriseSecurityModule extends SecurityModule
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ), true );
+                    ctx -> authManager.getUserManager( ctx.get( SECURITY_CONTEXT ).subject(), ctx.get( SECURITY_CONTEXT ).isAdmin() ), true );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
                 procedures.registerProcedure( UserManagementProcedures.class, true,

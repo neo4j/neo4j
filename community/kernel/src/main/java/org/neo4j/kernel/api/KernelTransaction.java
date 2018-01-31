@@ -24,6 +24,7 @@ import java.util.Optional;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -158,7 +159,7 @@ public interface KernelTransaction extends Transaction
 
     /**
      * @return start time of this transaction, i.e. basically {@link System#currentTimeMillis()} when user called
-     * {@link Kernel#newTransaction(Type, SecurityContext)}.
+     * {@link Kernel#newTransaction(Type, LoginContext)}.
      */
     long startTime();
 

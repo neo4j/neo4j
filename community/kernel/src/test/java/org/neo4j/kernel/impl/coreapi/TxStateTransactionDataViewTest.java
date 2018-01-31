@@ -30,14 +30,15 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
+import org.neo4j.internal.kernel.api.Token;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -345,7 +346,7 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read() );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().freeze( mock( Token.class ) ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );

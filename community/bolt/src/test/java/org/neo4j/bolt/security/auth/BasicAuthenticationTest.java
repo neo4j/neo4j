@@ -60,8 +60,7 @@ public class BasicAuthenticationTest
                 authentication.authenticate( map( "scheme", "basic", "principal", "mike", "credentials", "secret2" ) );
 
         // Then
-        assertThat(result.getSecurityContext().mode(), equalTo( AccessMode.Static.FULL));
-        assertThat( result.getSecurityContext().subject().username(), equalTo( "mike" ) );
+        assertThat( result.getLoginContext().subject().username(), equalTo( "mike" ) );
     }
 
     @Test

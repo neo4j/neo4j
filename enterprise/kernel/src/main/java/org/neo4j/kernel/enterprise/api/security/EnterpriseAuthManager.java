@@ -29,7 +29,7 @@ public interface EnterpriseAuthManager extends AuthManager
     void clearAuthCache();
 
     @Override
-    EnterpriseSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
+    EnterpriseLoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
 
     /**
      * Implementation that does no authentication.
@@ -37,9 +37,9 @@ public interface EnterpriseAuthManager extends AuthManager
     EnterpriseAuthManager NO_AUTH = new EnterpriseAuthManager()
     {
         @Override
-        public EnterpriseSecurityContext login( Map<String,Object> authToken )
+        public EnterpriseLoginContext login( Map<String,Object> authToken )
         {
-            return EnterpriseSecurityContext.AUTH_DISABLED;
+            return EnterpriseLoginContext.AUTH_DISABLED;
         }
 
         @Override

@@ -30,12 +30,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext.Frozen;
 
-class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
+class StandardEnterpriseLoginContext implements EnterpriseLoginContext
 {
     private static final String SCHEMA_READ_WRITE = "schema:read,write";
     private static final String TOKEN_CREATE = "token:create";
@@ -46,20 +49,14 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     private final ShiroSubject shiroSubject;
     private final NeoShiroSubject neoShiroSubject;
 
-    StandardEnterpriseSecurityContext( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
+    StandardEnterpriseLoginContext( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
         this.neoShiroSubject = new NeoShiroSubject();
     }
 
-    public EnterpriseUserManager getUserManager()
-    {
-        return authManager.getUserManager( this );
-    }
-
-    @Override
-    public boolean isAdmin()
+    private boolean isAdmin()
     {
         return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( "*" );
     }
@@ -70,8 +67,7 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
         return neoShiroSubject;
     }
 
-    @Override
-    public StandardAccessMode mode()
+    private StandardAccessMode mode( Token token )
     {
         boolean isAuthenticated = shiroSubject.isAuthenticated();
         return new StandardAccessMode(
@@ -86,22 +82,10 @@ class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
     }
 
     @Override
-    public String toString()
+    public EnterpriseSecurityContext freeze( Token token )
     {
-        return defaultString( "enterprise-security-context" );
-    }
-
-    @Override
-    public EnterpriseSecurityContext freeze()
-    {
-        StandardAccessMode mode = mode();
+        StandardAccessMode mode = mode( token );
         return new Frozen( neoShiroSubject, mode, mode.roles, isAdmin() );
-    }
-
-    @Override
-    public EnterpriseSecurityContext withMode( AccessMode mode )
-    {
-        return new Frozen( neoShiroSubject, mode, queryForRoleNames(), isAdmin() );
     }
 
     @Override
