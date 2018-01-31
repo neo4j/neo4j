@@ -17,36 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
 
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
-import org.neo4j.util.FeatureToggles;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.Objects.requireNonNull;
 
-public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
+public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
 {
     protected static final String LOW_WATERMARK_NAME = "low_watermark";
     protected static final String HIGH_WATERMARK_NAME = "high_watermark";
 
-    private final AtomicInteger queueSize = new AtomicInteger( 0 );
-    private final Channel channel;
+    private final ConcurrentHashMap<String, AtomicInteger> counters = new ConcurrentHashMap<>();
     private final Log log;
     private final int lowWatermark;
     private final int highWatermark;
 
-    public BoltChannelAutoReadLimiter( Channel channel, Log log )
+    public BoltConnectionReadLimiter( Log log )
     {
-        this( channel, log, FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, LOW_WATERMARK_NAME, 100 ),
-                FeatureToggles.getInteger( BoltChannelAutoReadLimiter.class, HIGH_WATERMARK_NAME, 300 ) );
+        this( log, FeatureToggles.getInteger( BoltConnectionReadLimiter.class, LOW_WATERMARK_NAME, 100 ),
+                FeatureToggles.getInteger( BoltConnectionReadLimiter.class, HIGH_WATERMARK_NAME, 300 ) );
     }
 
-    public BoltChannelAutoReadLimiter( Channel channel, Log log, int lowWatermark, int highWatermark )
+    public BoltConnectionReadLimiter( Log log, int lowWatermark, int highWatermark )
     {
         if ( highWatermark <= 0 )
         {
@@ -58,7 +59,6 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
             throw new IllegalArgumentException( "invalid lowWatermark value" );
         }
 
-        this.channel = requireNonNull( channel );
         this.log = log;
         this.lowWatermark = lowWatermark;
         this.highWatermark = highWatermark;
@@ -75,25 +75,21 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
     }
 
     @Override
-    public void enqueued( Job job )
+    public void enqueued( BoltConnection to, Job job )
     {
-        checkLimitsOnEnqueue( queueSize.incrementAndGet() );
+        checkLimitsOnEnqueue( to, counters.compute( to.id(), ( k, v ) -> v == null ? new AtomicInteger( 0 ) : v ).incrementAndGet() );
     }
 
     @Override
-    public void dequeued( Job job )
+    public void drained( BoltConnection from, Collection<Job> batch )
     {
-        checkLimitsOnDequeue( queueSize.decrementAndGet() );
+        checkLimitsOnDequeue( from, counters.compute( from.id(), ( k, v ) -> v == null ? new AtomicInteger( 0 ) : v ).addAndGet( -batch.size() ) );
     }
 
-    @Override
-    public void drained( Collection<Job> jobs )
+    private void checkLimitsOnEnqueue( BoltConnection connection, int currentSize )
     {
-        checkLimitsOnDequeue( queueSize.addAndGet( -jobs.size() ) );
-    }
+        Channel channel = connection.channel();
 
-    private void checkLimitsOnEnqueue( int currentSize )
-    {
         if ( currentSize > highWatermark && channel.config().isAutoRead() )
         {
             if ( log != null )
@@ -105,8 +101,10 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
         }
     }
 
-    private void checkLimitsOnDequeue( int currentSize )
+    private void checkLimitsOnDequeue( BoltConnection connection, int currentSize )
     {
+        Channel channel = connection.channel();
+
         if ( currentSize <= lowWatermark && !channel.config().isAutoRead() )
         {
             if ( log != null )

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
@@ -50,24 +51,24 @@ public class BoltMessagingProtocolHandlerImpl implements BoltMessagingProtocolHa
     private final BoltV1Dechunker dechunker;
     private final Neo4jPack neo4jPack;
 
-    private final BoltWorker worker;
+    private final BoltConnection connection;
 
     private final AtomicInteger inFlight = new AtomicInteger( 0 );
 
     private final Log internalLog;
 
-    public BoltMessagingProtocolHandlerImpl( BoltChannel boltChannel, BoltWorker worker, Neo4jPack neo4jPack,
+    public BoltMessagingProtocolHandlerImpl( BoltChannel boltChannel, BoltConnection connection, Neo4jPack neo4jPack,
             TransportThrottleGroup throttleGroup, LogService logging )
     {
         this.neo4jPack = neo4jPack;
         this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE, throttleGroup );
         this.packer = new BoltResponseMessageWriter(
                 neo4jPack.newPacker( chunkedOutput ), chunkedOutput, boltChannel.log() );
-        this.worker = worker;
+        this.connection = connection;
         this.internalLog = logging.getInternalLog( getClass() );
         this.dechunker = new BoltV1Dechunker(
                 neo4jPack,
-                new BoltMessageRouter( internalLog, boltChannel.log(), worker, packer, this::onMessageDone ),
+                new BoltMessageRouter( internalLog, boltChannel.log(), connection, packer, this::onMessageDone ),
                 this::onMessageStarted );
     }
 
@@ -87,7 +88,7 @@ public class BoltMessagingProtocolHandlerImpl implements BoltMessagingProtocolHa
         catch ( Throwable t )
         {
             internalLog.error( "Failed to handle incoming Bolt message. Connection will be closed.", t );
-            worker.halt();
+            connection.stop();
         }
         finally
         {
@@ -105,7 +106,7 @@ public class BoltMessagingProtocolHandlerImpl implements BoltMessagingProtocolHa
     public synchronized void close()
     {
         dechunker.close();
-        worker.halt();
+        connection.stop();
         chunkedOutput.close();
     }
 

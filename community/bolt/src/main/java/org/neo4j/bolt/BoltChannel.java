@@ -75,6 +75,12 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     }
 
     @Override
+    public String id()
+    {
+        return rawChannel().id().asLongText();
+    }
+
+    @Override
     public SocketAddress clientAddress()
     {
         return channelHandlerContext.channel().remoteAddress();

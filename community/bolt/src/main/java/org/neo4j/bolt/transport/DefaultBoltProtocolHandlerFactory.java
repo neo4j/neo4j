@@ -22,24 +22,24 @@ package org.neo4j.bolt.transport;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
-import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFactory
 {
-    private final WorkerFactory workerFactory;
+    private final BoltConnectionFactory connectionFactory;
     private final TransportThrottleGroup throttleGroup;
     private final LogService logService;
 
-    public DefaultBoltProtocolHandlerFactory( WorkerFactory workerFactory, TransportThrottleGroup throttleGroup,
+    public DefaultBoltProtocolHandlerFactory( BoltConnectionFactory connectionFactory, TransportThrottleGroup throttleGroup,
             LogService logService )
     {
-        this.workerFactory = workerFactory;
+        this.connectionFactory = connectionFactory;
         this.throttleGroup = throttleGroup;
         this.logService = logService;
     }
@@ -63,13 +63,11 @@ public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFac
 
     private BoltMessagingProtocolHandler newMessagingProtocolHandler( BoltChannel channel, Neo4jPack neo4jPack )
     {
-        return new BoltMessagingProtocolHandlerImpl( channel, newBoltWorker( channel ), neo4jPack, throttleGroup, logService );
+        return new BoltMessagingProtocolHandlerImpl( channel, newBoltConnection( channel ), neo4jPack, throttleGroup, logService );
     }
 
-    private BoltWorker newBoltWorker( BoltChannel channel )
+    private BoltConnection newBoltConnection( BoltChannel channel )
     {
-        Log log = logService.getInternalLog( BoltChannelAutoReadLimiter.class );
-        BoltChannelAutoReadLimiter limiter = new BoltChannelAutoReadLimiter( channel.rawChannel(), log );
-        return workerFactory.newWorker( channel, limiter );
+        return connectionFactory.newConnection( channel );
     }
 }

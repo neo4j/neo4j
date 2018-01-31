@@ -91,7 +91,7 @@ public class StartClient
     public static final String ARG_NAME = "name";
 
     /**
-     * The PID (process ID) to connect to.
+     * The PID (processNextBatch ID) to connect to.
      */
     public static final String ARG_PID = "pid";
 
@@ -221,7 +221,7 @@ public class StartClient
                 err.println( "Warning: -" + ARG_READONLY + " is ignored unless you connect with -" + ARG_PATH + "!" );
             }
 
-            // Start server on the supplied process
+            // Start server on the supplied processNextBatch
             if ( pid != null )
             {
                 startServer( pid, args );

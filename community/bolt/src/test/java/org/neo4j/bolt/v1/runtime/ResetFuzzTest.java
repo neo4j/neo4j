@@ -26,14 +26,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltScheduler;
+import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
+import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
+import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
+import org.neo4j.bolt.runtime.OutOfBandStrategy;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -47,6 +56,7 @@ import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -61,6 +71,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
+import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
@@ -82,11 +93,13 @@ public class ResetFuzzTest
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
+    private final BoltScheduler boltScheduler = life.add(new ExecutorBoltScheduler( Config.defaults(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler, NullLogService.getInstance() ));
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), mock( BoltChannel.class ), clock );
-    private final ThreadedWorkerFactory workerFactory =
-            new ThreadedWorkerFactory( ( boltChannel, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
-    private final BoltChannel boltChannel = mock( BoltChannel.class );
+    private final BoltConnectionFactory connectionFactory =
+            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltScheduler, mock( OutOfBandStrategy.class ), NullLogService.getInstance(),
+                    clock, null );
+    private BoltChannel boltChannel;
 
     private final List<List<RequestMessage>> sequences = asList(
             asList( run( "test", map() ), discardAll() ),
@@ -96,17 +109,24 @@ public class ResetFuzzTest
 
     private final List<RequestMessage> sent = new LinkedList<>();
 
+    @Before
+    public void setup()
+    {
+        boltChannel = mock( BoltChannel.class );
+        when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
+    }
+
     @Test
     public void shouldAlwaysReturnToReadyAfterReset() throws Throwable
     {
         // given
         life.start();
-        BoltWorker boltWorker = workerFactory.newWorker( boltChannel );
-        boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", Collections.emptyMap(), nullResponseHandler() ) );
+        BoltConnection boltConnection = connectionFactory.newConnection( boltChannel );
+        boltConnection.enqueue( session -> session.init( "ResetFuzzTest/0.0", Collections.emptyMap(), nullResponseHandler() ) );
 
         NullBoltMessageLogger boltLogger = NullBoltMessageLogger.getInstance();
         BoltMessageRouter router = new BoltMessageRouter(
-                NullLog.getInstance(), boltLogger, boltWorker, new BoltResponseMessageHandler<IOException>()
+                NullLog.getInstance(), boltLogger, boltConnection, new BoltResponseMessageHandler<IOException>()
         {
             @Override
             public void onRecord( QueryResult.Record item )
@@ -136,19 +156,19 @@ public class ResetFuzzTest
         while ( System.currentTimeMillis() < deadline )
         {
             dispatchRandomSequenceOfMessages( router );
-            assertWorkerWorks( boltWorker );
+            assertSchedulerWorks( boltConnection );
         }
     }
 
-    private void assertWorkerWorks( BoltWorker worker ) throws InterruptedException
+    private void assertSchedulerWorks( BoltConnection connection ) throws InterruptedException
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        worker.enqueue( machine -> machine.reset( recorder ) );
+        connection.enqueue( machine -> machine.reset( recorder ) );
 
         try
         {
             RecordedBoltResponse response = recorder.nextResponse();
-            assertThat( SUCCESS, equalTo( response.message() ) );
+            assertThat( response.message(), equalTo( SUCCESS ) );
             assertThat( machine.state(), equalTo( BoltStateMachine.State.READY ) );
             assertThat( liveTransactions.get(), equalTo( 0L ) );
         }

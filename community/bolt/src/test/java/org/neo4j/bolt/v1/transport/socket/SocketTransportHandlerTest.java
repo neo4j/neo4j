@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.runtime.SynchronousBoltConnection;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
@@ -257,7 +258,7 @@ public class SocketTransportHandlerTest
                 throw new IllegalArgumentException( "Unknown version: " + version );
             }
 
-            return new BoltMessagingProtocolHandlerImpl( channel, new SynchronousBoltWorker( machine ),
+            return new BoltMessagingProtocolHandlerImpl( channel, new SynchronousBoltConnection( machine ),
                     neo4jPack, TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
         };
 

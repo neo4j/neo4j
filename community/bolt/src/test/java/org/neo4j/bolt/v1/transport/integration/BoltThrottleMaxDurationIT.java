@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
@@ -166,7 +167,7 @@ public class BoltThrottleMaxDurationIT
         }
 
         logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( Matchers.containsString( WorkerFactory.class.getPackage().getName() ) ).error( containsString( "crashed" ),
+                AssertableLogProvider.inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error( containsString( "crashed" ),
                         matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
     }
 

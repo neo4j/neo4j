@@ -37,9 +37,9 @@ public class ArbiterBootstrapperTestProxy
     {
         ServerCommandLineArgs args = ServerCommandLineArgs.parse( argv );
 
-        // This sysout will be intercepted by the parent process and will trigger
+        // This sysout will be intercepted by the parent processNextBatch and will trigger
         // a start of a timeout. The whole reason for this class to be here is to
-        // split awaiting for the process to start and actually awaiting the cluster client to start.
+        // split awaiting for the processNextBatch to start and actually awaiting the cluster client to start.
         System.out.println( START_SIGNAL );
         try ( ArbiterBootstrapper arbiter = new ArbiterBootstrapper() )
         {

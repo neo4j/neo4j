@@ -120,7 +120,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         catch ( TransactionFailureException tfe )
         {
             String locationMsg = (server == null) ? "" :
-                    " Another process may be using database location " + server.getDatabase().getLocation();
+                    " Another processNextBatch may be using database location " + server.getDatabase().getLocation();
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }

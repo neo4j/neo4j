@@ -17,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt;
+package org.neo4j.bolt.runtime;
 
-import java.net.SocketAddress;
+import org.neo4j.bolt.BoltChannel;
 
-public interface BoltConnectionDescriptor
+public interface BoltConnectionFactory
 {
-    String id();
+    /**
+     * Create a new connection bound to the specified channel
+     *
+     * @param channel the underlying channel
+     * @return the newly created connection instance
+     */
+    BoltConnection newConnection( BoltChannel channel );
 
-    SocketAddress clientAddress();
-
-    SocketAddress serverAddress();
 }

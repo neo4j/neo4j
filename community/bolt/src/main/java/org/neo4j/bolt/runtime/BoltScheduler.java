@@ -17,15 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt;
+package org.neo4j.bolt.runtime;
 
-import java.net.SocketAddress;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface BoltConnectionDescriptor
+public interface BoltScheduler extends Lifecycle, BoltConnectionListener, BoltConnectionQueueMonitor
 {
-    String id();
 
-    SocketAddress clientAddress();
-
-    SocketAddress serverAddress();
 }

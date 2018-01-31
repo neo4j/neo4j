@@ -325,7 +325,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
          * This is a side-channel call and we should not close anything directly.
          * Just mark the transaction and set isTerminated to true and then the session
          * thread will close down the connection eventually.
-         */
+            */
         ctx.isTerminated.set( true );
         ctx.statementProcessor.markCurrentTransactionForTermination();
         spi.onTerminate( this );
@@ -809,7 +809,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
     }
 
-    interface SPI
+    public interface SPI
     {
         void reportError( Neo4jError err );
 

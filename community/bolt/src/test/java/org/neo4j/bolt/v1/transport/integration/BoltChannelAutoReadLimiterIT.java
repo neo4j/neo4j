@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
+import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
@@ -130,10 +130,10 @@ public class BoltChannelAutoReadLimiterIT
         }
 
         logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( BoltChannelAutoReadLimiter.class ).warn( CoreMatchers.containsString( "disabled" ), CoreMatchers.anything(),
+                AssertableLogProvider.inLog( BoltConnectionReadLimiter.class ).warn( CoreMatchers.containsString( "disabled" ), CoreMatchers.anything(),
                         CoreMatchers.anything() ) );
         logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( BoltChannelAutoReadLimiter.class ).warn( CoreMatchers.containsString( "enabled" ), CoreMatchers.anything(),
+                AssertableLogProvider.inLog( BoltConnectionReadLimiter.class ).warn( CoreMatchers.containsString( "enabled" ), CoreMatchers.anything(),
                         CoreMatchers.anything() ) );
     }
 
