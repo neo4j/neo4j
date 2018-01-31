@@ -27,9 +27,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -63,6 +61,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -75,7 +74,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -652,9 +650,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutIndex( int propertyId, Value value,
             Statement statement, int labelId )
     {
-        PrimitiveLongResourceIterator nodeIds = statement.readOperations().nodesGetForLabel( labelId );
-        return map2nodes( new PropertyValueFilteringNodeIdIterator( nodeIds, statement.readOperations(), propertyId, value ),
-                statement, nodeIds );
+        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
+
+        NodeLabelIndexCursor nodeLabelCursor = transaction.cursors().allocateNodeLabelIndexCursor();
+        NodeCursor nodeCursor = transaction.cursors().allocateNodeCursor();
+        PropertyCursor propertyCursor = transaction.cursors().allocatePropertyCursor();
+
+        transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
+
+        return new NodeLabelPropertyIterator( transaction.dataRead(), nodeLabelCursor, nodeCursor, propertyCursor, statement, propertyId, value );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -760,42 +764,72 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return spi.name() + " [" + getStoreDir() + "]";
     }
 
-    private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
+    private class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
     {
-        private final PrimitiveLongIterator nodesWithLabel;
-        private final ReadOperations statement;
+        private final Read read;
+        private final NodeLabelIndexCursor nodeLabelCursor;
+        private final NodeCursor nodeCursor;
+        private final PropertyCursor propertyCursor;
         private final int propertyKeyId;
         private final Value value;
 
-        PropertyValueFilteringNodeIdIterator( PrimitiveLongIterator nodesWithLabel, ReadOperations statement,
-                int propertyKeyId, Value value )
+        NodeLabelPropertyIterator(
+                Read read,
+                NodeLabelIndexCursor nodeLabelCursor,
+                NodeCursor nodeCursor,
+                PropertyCursor propertyCursor,
+                Statement statement,
+                int propertyKeyId,
+                Value value )
         {
-            this.nodesWithLabel = nodesWithLabel;
-            this.statement = statement;
+            super( statement );
+            this.read = read;
+            this.nodeLabelCursor = nodeLabelCursor;
+            this.nodeCursor = nodeCursor;
+            this.propertyCursor = propertyCursor;
             this.propertyKeyId = propertyKeyId;
             this.value = value;
         }
 
         @Override
-        protected boolean fetchNext()
+        protected long fetchNext()
         {
-            for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
+            boolean hasNext;
+            do
             {
-                long nextValue = nodesWithLabel.next();
-                try
+                hasNext = nodeLabelCursor.next();
+
+            } while ( hasNext && !hasPropertyWithValue() );
+
+            if ( hasNext )
+            {
+                return nodeLabelCursor.nodeReference();
+            }
+            else
+            {
+                close();
+                return NO_ID;
+            }
+        }
+
+        @Override
+        void closeResources( Statement statement )
+        {
+            IOUtils.closeAllSilently( statement, nodeLabelCursor, nodeCursor, propertyCursor );
+        }
+
+        private boolean hasPropertyWithValue()
+        {
+            read.singleNode( nodeLabelCursor.nodeReference(), nodeCursor );
+            if ( nodeCursor.next() )
+            {
+                nodeCursor.properties( propertyCursor );
+                while ( propertyCursor.next() )
                 {
-                    Value propertyValue = statement.nodeGetProperty( nextValue, propertyKeyId );
-                    if ( propertyValue != null )
+                    if ( propertyCursor.propertyKey() == propertyKeyId && propertyCursor.propertyValue().equals( value ) )
                     {
-                        if ( propertyValue.equals( value ) )
-                        {
-                            return next( nextValue );
-                        }
+                        return true;
                     }
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    // continue to the next node
                 }
             }
             return false;
@@ -888,21 +922,48 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     {
         return new GraphPropertiesProxy( this );
     }
-    private static final long UNINITIALIZED = -2L;
-    private static final long NO_ID = -1L;
 
-    private final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> implements ResourceIterator<Node>
+    private final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingNodeResourceIterator
     {
-
         private final CURSOR cursor;
-        private final Statement statement;
-        private long next;
-        private boolean closed;
-        private static final long NOT_INITIALIZED = -2L;
 
         NodeCursorResourceIterator( CURSOR cursor, Statement statement )
         {
+            super( statement );
             this.cursor = cursor;
+        }
+
+        long fetchNext()
+        {
+            if ( cursor.next() )
+            {
+                return cursor.nodeReference();
+            }
+            else
+            {
+                close();
+                return NO_ID;
+            }
+        }
+
+        @Override
+        void closeResources( Statement statement )
+        {
+            IOUtils.closeAllSilently( statement, cursor );
+        }
+    }
+
+    private abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
+    {
+        private final Statement statement;
+        private long next;
+        private boolean closed;
+
+        private static final long NOT_INITIALIZED = -2L;
+        protected static final long NO_ID = -1L;
+
+        PrefetchingNodeResourceIterator( Statement statement )
+        {
             this.statement = statement;
             this.next = NOT_INITIALIZED;
         }
@@ -912,7 +973,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         {
             if ( next == NOT_INITIALIZED )
             {
-                fetchNext();
+                next = fetchNext();
             }
             return next != NO_ID;
         }
@@ -926,31 +987,22 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 throw new NoSuchElementException(  );
             }
             Node nodeProxy = newNodeProxy( next );
-            fetchNext();
+            next = fetchNext();
             return nodeProxy;
         }
 
-        private void fetchNext()
-        {
-            if ( cursor.next() )
-            {
-                next = cursor.nodeReference();
-            }
-            else
-            {
-                close();
-            }
-        }
-
-        @Override
         public void close()
         {
             if ( !closed )
             {
                 next = NO_ID;
-                IOUtils.closeAllSilently( statement, cursor );
+                closeResources( statement );
                 closed = true;
             }
         }
+
+        abstract long fetchNext();
+
+        abstract void closeResources( Statement statement );
     }
 }
