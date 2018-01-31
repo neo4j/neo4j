@@ -41,7 +41,7 @@ public class ShellException extends Exception
         this( message, (String) null );
     }
 
-    private ShellException( String message, Throwable cause )
+    public ShellException( String message, Throwable cause )
     {
         super( message, cause );
         this.stackTraceAsString = null;

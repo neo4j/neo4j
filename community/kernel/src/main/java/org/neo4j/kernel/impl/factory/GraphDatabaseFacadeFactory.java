@@ -29,7 +29,6 @@ import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
@@ -198,7 +197,7 @@ public class GraphDatabaseFacadeFactory
             }
         } );
 
-        Throwable error = null;
+        RuntimeException error = null;
         try
         {
             // Done after create to avoid a redundant
@@ -222,7 +221,7 @@ public class GraphDatabaseFacadeFactory
                 }
                 catch ( Throwable shutdownError )
                 {
-                    error = Exceptions.withSuppressed( shutdownError, error );
+                    error.addSuppressed( shutdownError );
                 }
             }
         }
@@ -230,7 +229,7 @@ public class GraphDatabaseFacadeFactory
         if ( error != null )
         {
             msgLog.log( "Failed to start database", error );
-            throw Exceptions.launderedException( error );
+            throw error;
         }
 
         return graphDatabaseFacade;

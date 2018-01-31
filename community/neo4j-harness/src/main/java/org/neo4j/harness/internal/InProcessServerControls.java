@@ -28,7 +28,6 @@ import java.util.Optional;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.ServerControls;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
@@ -82,9 +81,9 @@ public class InProcessServerControls implements ServerControls
         {
             additionalClosable.close();
         }
-        catch ( Throwable e )
+        catch ( IOException e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         try
         {

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.LongSupplier;
 
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -210,8 +209,8 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
         }
         catch ( FileNotFoundException cause )
         {
-            throw Exceptions.withCause( new FileNotFoundException(
-                    format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) ), cause );
+            throw (FileNotFoundException) new FileNotFoundException(
+                    format( "File could not be opened [%s]", fileToOpen.getCanonicalPath() ) ).initCause( cause );
         }
         catch ( Throwable unexpectedError )
         {

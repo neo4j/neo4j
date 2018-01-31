@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -60,6 +59,7 @@ import static org.neo4j.com.Protocol.addLengthFieldPipes;
 import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 import static org.neo4j.com.ResourcePool.DEFAULT_CHECK_INTERVAL;
 import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
 /**
@@ -336,7 +336,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         catch ( Throwable e )
         {
             failure = e;
-            throw Exceptions.launderedException( ComException.class, e );
+            throwIfUnchecked( e );
+            throw new RuntimeException( e );
         }
         finally
         {
@@ -376,30 +377,23 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     private ChannelContext acquireChannelContext( RequestType<T> type )
     {
-        try
+        if ( channelPool == null )
         {
-            if ( channelPool == null )
-            {
-                throw new ComException( String.format( "Client for %s is stopped", destination.toString() ) );
-            }
+            throw new ComException( String.format( "Client for %s is stopped", destination.toString() ) );
+        }
 
-            // Calling acquire is dangerous since it may be a blocking call... and if this
-            // thread holds a lock which others may want to be able to communicate with
-            // the server things go stiff.
-            ChannelContext result = channelPool.acquire();
-            if ( result == null )
-            {
-                msgLog.error( "Unable to acquire new channel for " + type );
-                throw traceComException(
-                        new ComException( "Unable to acquire new channel for " + type ),
-                        "Client.acquireChannelContext" );
-            }
-            return result;
-        }
-        catch ( Throwable e )
+        // Calling acquire is dangerous since it may be a blocking call... and if this
+        // thread holds a lock which others may want to be able to communicate with
+        // the server things go stiff.
+        ChannelContext result = channelPool.acquire();
+        if ( result == null )
         {
-            throw Exceptions.launderedException( ComException.class, e );
+            msgLog.error( "Unable to acquire new channel for " + type );
+            throw traceComException(
+                    new ComException( "Unable to acquire new channel for " + type ),
+                    "Client.acquireChannelContext" );
         }
+        return result;
     }
 
     private void dispose( ChannelContext channelContext )

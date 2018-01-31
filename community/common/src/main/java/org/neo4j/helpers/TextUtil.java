@@ -186,18 +186,17 @@ public class TextUtil
             {
                 token = token.trim();
             }
-            if ( token.length() == 0 )
+            if ( token.length() != 0 )
             {
-                // Skip it
-            }
-            else if ( inside )
-            {
-                // Don't split
-                result.add( token );
-            }
-            else
-            {
-                Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, preserveEscapeCharacters ) );
+                if ( inside )
+                {
+                    // Don't split
+                    result.add( token );
+                }
+                else
+                {
+                    Collections.addAll( result, TextUtil.splitAndKeepEscapedSpaces( token, preserveEscapeCharacters ) );
+                }
             }
             inside = !inside;
         }

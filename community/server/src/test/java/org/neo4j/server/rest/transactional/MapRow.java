@@ -27,8 +27,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 
-import static org.neo4j.helpers.Exceptions.withCause;
-
 public class MapRow implements Result.ResultRow
 {
     private final Map<String, Object> map;
@@ -54,7 +52,8 @@ public class MapRow implements Result.ResultRow
         }
         catch ( ClassCastException e )
         {
-            throw withCause( new NoSuchElementException( "Element '" + key + "' is not a " + type.getSimpleName() ), e );
+            throw (NoSuchElementException) new NoSuchElementException(
+                    "Element '" + key + "' is not a " + type.getSimpleName() ).initCause( e );
         }
     }
 

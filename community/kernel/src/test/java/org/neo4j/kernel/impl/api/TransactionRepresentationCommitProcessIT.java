@@ -104,7 +104,7 @@ public class TransactionRepresentationCommitProcessIT
 
         Thread.sleep( SECONDS.toMillis( 2 ) );
         done.set( true );
-        workers.awaitAndThrowOnError( RuntimeException.class );
+        workers.awaitAndThrowOnError();
 
         NeoStores neoStores = getDependency(RecordStorageEngine.class).testAccessNeoStores();
         assertThat( "Count store should be rotated once at least", neoStores.getCounts().txId(), greaterThan( 0L ) );

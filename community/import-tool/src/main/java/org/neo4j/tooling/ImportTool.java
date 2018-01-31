@@ -78,7 +78,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
@@ -829,7 +829,8 @@ public class ImportTool
         {
             /* Shhhh */
         } );
-        return launderedException( e ); // throw in order to have process exit with !0
+        throwIfUnchecked( e );
+        return new RuntimeException( e ); // throw in order to have process exit with !0
     }
 
     private static void printErrorMessage( String string, Exception e, boolean stackTrace, PrintStream err )

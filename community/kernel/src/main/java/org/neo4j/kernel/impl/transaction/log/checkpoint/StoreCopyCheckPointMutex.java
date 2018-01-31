@@ -24,12 +24,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 /**
  * Mutex between {@link #storeCopy(ThrowingAction) store-copy} and {@link #checkPoint() check-point}.
@@ -111,10 +110,15 @@ public class StoreCopyCheckPointMutex
                 {
                     beforeFirstConcurrentStoreCopy.apply();
                 }
+                catch ( IOException e )
+                {
+                    storeCopyActionError = e;
+                    throw e;
+                }
                 catch ( Throwable e )
                 {
                     storeCopyActionError = e;
-                    throw launderedException( IOException.class, e );
+                    throw new IOException( e );
                 }
                 storeCopyActionCompleted = true;
             }

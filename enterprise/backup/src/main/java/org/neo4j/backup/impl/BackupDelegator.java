@@ -31,7 +31,6 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedExcepti
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -57,9 +56,9 @@ class BackupDelegator extends LifecycleAdapter
         {
             remoteStore.copy( fromAddress, expectedStoreId, destDir.toFile() );
         }
-        catch ( StreamingTransactionsFailedException | StoreCopyFailedException e )
+        catch ( StreamingTransactionsFailedException e )
         {
-            throw Exceptions.launderedException( StoreCopyFailedException.class, e );
+            throw new StoreCopyFailedException( e );
         }
     }
 

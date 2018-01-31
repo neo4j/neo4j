@@ -34,7 +34,6 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
 import org.neo4j.com.TransactionStreamResponse;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -233,7 +232,7 @@ public class TestMasterCommittingAtSlave
         }
         catch ( Throwable e )
         {
-            throw Exceptions.launderedException( e );
+            throw new RuntimeException( e );
         }
         return result;
     }

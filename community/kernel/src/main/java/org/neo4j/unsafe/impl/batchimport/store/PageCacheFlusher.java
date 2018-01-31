@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.io.pagecache.PageCache;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 
 /**
  * A dedicated thread which constantly call {@link PageCache#flushAndForce()} until a call to {@link #halt()} is made.
@@ -76,7 +76,8 @@ class PageCacheFlusher extends Thread
         halt.await();
         if ( error != null )
         {
-            throw launderedException( error );
+            throwIfUnchecked( error );
+            throw new RuntimeException(  error );
         }
     }
 }

@@ -57,7 +57,6 @@ import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
-import static org.neo4j.helpers.Exceptions.launderedException;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
@@ -198,7 +197,7 @@ public class OnlineBackupCommandCcIT
         }
         catch ( Exception e )
         {
-            throw launderedException( e );
+            throw new RuntimeException( e );
         }
         return DbRepresentation.of( clusterLeader( cluster ).database() );
     }

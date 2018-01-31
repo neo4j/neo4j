@@ -40,7 +40,6 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
 {
     private final IndexSamplingConfig samplingConfig;
     private NonUniqueIndexSampler sampler;
-    private boolean updateSampling;
 
     public NonUniqueLuceneIndexPopulator( SchemaIndex luceneIndex, IndexSamplingConfig samplingConfig )
     {

@@ -437,7 +437,7 @@ public class EncodingIdMapper implements IdMapper
             toExclusive = last ? totalCount : toExclusive + stride;
             workers.start( new DetectWorker( fromInclusive, toExclusive, last, progress ) );
         }
-        workers.awaitAndThrowOnErrorStrict( RuntimeException.class );
+        workers.awaitAndThrowOnErrorStrict();
 
         long numberOfCollisions = 0;
         for ( DetectWorker detectWorker : workers )

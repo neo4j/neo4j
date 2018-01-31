@@ -34,7 +34,6 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
@@ -89,7 +88,7 @@ public class Dump extends Start
         }
         catch ( Exception e )
         {
-            throw launderedException( ShellException.class, "Error parsing input " + line, e );
+            throw new ShellException( "Error parsing input " + line, e );
         }
     }
 

@@ -66,7 +66,6 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -486,7 +485,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 }
                 catch ( Exception e )
                 {
-                    throw launderedException( e );
+                    throw new RuntimeException( e );
                 }
             }
             return indexMap;

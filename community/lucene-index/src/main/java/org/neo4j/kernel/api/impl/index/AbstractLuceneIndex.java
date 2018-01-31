@@ -36,7 +36,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
@@ -278,7 +277,7 @@ public abstract class AbstractLuceneIndex
                 }
                 catch ( IOException ex )
                 {
-                    throw Exceptions.withCause( ex, e );
+                    e.addSuppressed( ex );
                 }
             }
             throw e;

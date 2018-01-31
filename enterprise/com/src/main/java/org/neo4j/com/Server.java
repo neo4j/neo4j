@@ -49,7 +49,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -272,7 +271,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
 
             ctx.getChannel().close();
             tryToCloseChannel( ctx.getChannel() );
-            throw Exceptions.launderedException( e );
+            throw e;
         }
     }
 
@@ -590,7 +589,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 targetBuffer.clear( true );
                 writeFailureResponse( e, targetBuffer );
                 tryToFinishOffChannel( channel, context );
-                throw Exceptions.launderedException( e );
+                throw new RuntimeException( e );
             }
             finally
             {
