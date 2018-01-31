@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.hamcrest.Matchers
 import org.neo4j.cypher.internal.{ExecutionEngine, StringCacheMonitor}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -127,10 +128,16 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     (0 until 1000).foreach { _ => createLabeledNode("Dog") }
     engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).toList
 
-    // then
     logProvider.assertAtLeastOnce(
-      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache after 0 seconds: $query" )
-    )
+      AssertableLogProvider
+        .inLog(classOf[ExecutionEngine])
+        .info(
+          Matchers.allOf[String](
+            Matchers.containsString("Discarded stale query from the query cache"),
+            Matchers.containsString(query)
+          )
+        )
+      )
   }
 }
 
