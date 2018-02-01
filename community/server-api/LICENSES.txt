@@ -1,6 +1,7 @@
 This file contains the full license text of the included third party
 libraries. For an overview of the licenses see the NOTICE.txt file.
 
+
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
   Apache Commons Configuration
@@ -215,6 +216,7 @@ Apache Software License, Version 2.0
    limitations under the License.
 
 
+
 ------------------------------------------------------------------------------
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
@@ -245,6 +247,7 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 
 ------------------------------------------------------------------------------
@@ -598,7 +601,8 @@ State of California (excluding conflict-of-law provisions). Any
 litigation relating to this License shall be subject to the jurisdiction 
 of the Federal Courts of the Northern District of California and the 
 state courts of the State of California, with venue lying in Santa Clara 
-County, California. 
+County, California.
+
 
 
 

@@ -20,5 +20,3 @@ Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html), included
 in the LICENSE.txt file.
 
 Full license texts are found in LICENSES.txt.
-
-
