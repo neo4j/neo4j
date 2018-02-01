@@ -64,7 +64,10 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     {
         // When an index is first created using `CREATE INDEX` or `graph.schema.for*` then a call will be made here,
         // however, the KnownSpatialIndex will not yet exist, since that can only be created on demand
-        assert indexMap.isEmpty();
+        if ( !indexMap.isEmpty() )
+        {
+            throw new IOException( "Trying to create a new spatial populator when the index had already been created." );
+        }
     }
 
     @Override
@@ -77,10 +80,6 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
         Map<CoordinateReferenceSystem,Collection<IndexEntryUpdate<?>>> batchMap = new HashMap<>();
-        for ( Map.Entry<CoordinateReferenceSystem,SpatialKnownIndex> index : indexMap.entrySet() )
-        {
-            batchMap.put( index.getKey(), new ArrayList<>() );
-        }
         for ( IndexEntryUpdate<?> update : updates )
         {
             selectUpdates( batchMap, update.values() ).add( update );
