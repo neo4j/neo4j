@@ -63,6 +63,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
+        this.query = query;
 
         IndexQuery firstPredicate = query[0];
         switch ( firstPredicate.type() )
