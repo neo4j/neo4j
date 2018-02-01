@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionC
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, _}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
@@ -41,7 +42,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.selectionCursor
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
@@ -176,26 +177,23 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
                              types: Option[Array[Int]]): Iterator[RelationshipValue] = {
     val read = reads()
     read.singleNode(node, nodeCursor)
-    if (!nodeCursor.next()) return Iterator.empty
-    val factory = new RelationshipFactory[RelationshipValue] {
-      override def relationship(id: Long, startNodeId: Long, typeId: Int,
-                                endNodeId: Long): RelationshipValue =
-        fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, startNodeId, typeId, endNodeId))
-    }
-
-    val cursor = selectionCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor,
-                                 toGraphDb(dir), types.orNull)
-    new CursorIterator[RelationshipValue] {
-
-      override protected def close(): Unit = cursor.close()
-
-      override protected def fetchNext(): RelationshipValue =
-        if (cursor.next())
-          fromRelationshipProxy(entityAccessor.newRelationshipProxy(cursor.relationshipReference(),
-                                                                    cursor.sourceNodeReference(),
-                                                                    cursor.`type`(),
-                                                                    cursor.targetNodeReference()))
-        else null
+    if (!nodeCursor.next())Iterator.empty
+    else {
+      val cursor = dir match {
+        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+      }
+      new CursorIterator[RelationshipValue] {
+        override protected def close(): Unit = cursor.close()
+        override protected def fetchNext(): RelationshipValue =
+          if (cursor.next())
+            fromRelationshipProxy(entityAccessor.newRelationshipProxy(cursor.relationshipReference(),
+                                                                      cursor.sourceNodeReference(),
+                                                                      cursor.`type`(),
+                                                                      cursor.targetNodeReference()))
+          else null
+      }
     }
   }
 
@@ -204,8 +202,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val read = reads()
     read.singleNode(node, nodeCursor)
     if (!nodeCursor.next()) RelationshipIterator.EMPTY
-    else new RelationshipCursorIterator(
-      selectionCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, toGraphDb(dir), types.orNull))
+    else {
+      val cursor = dir match {
+        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+      }
+      new RelationshipCursorIterator(cursor)
+    }
   }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,

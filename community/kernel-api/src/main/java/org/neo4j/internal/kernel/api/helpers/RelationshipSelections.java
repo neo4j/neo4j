@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -37,64 +36,163 @@ public final class RelationshipSelections
     }
 
     /**
-     * Returns a selection cursor given the provided node cursor, direction and relationship types.
+     * Returns an outgoing selection cursor given the provided node cursor and relationship types.
      *
      * @param cursors A cursor factor used for allocating the needed cursors
      * @param node A node cursor positioned at the current node.
-     * @param direction The direction of the the relationship.
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipSelectionCursor selectionCursor( CursorFactory cursors, NodeCursor node,
-            Direction direction, int[] types )
+    public static RelationshipSelectionCursor outgoingCursor( CursorFactory cursors, NodeCursor node, int[] types )
     {
         if ( node.isDense() )
         {
             RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
-            setupDense( selectionCursor, cursors, node, direction, types );
+            setupOutgoingDense( selectionCursor, cursors, node, types );
             return selectionCursor;
         }
         else
         {
             RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
-
-            setupSparse( selectionCursor, cursors, node, direction, types );
+            setupOutgoingSparse( selectionCursor, cursors, node, types );
             return selectionCursor;
         }
     }
 
     /**
-     * Returns a resource iterator given the provided node cursor, direction and relationship types.
+     * Returns an incoming selection cursor given the provided node cursor and relationship types.
      *
      * @param cursors A cursor factor used for allocating the needed cursors
      * @param node A node cursor positioned at the current node.
-     * @param direction The direction of the the relationship.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor incomingCursor( CursorFactory cursors, NodeCursor node, int[] types )
+    {
+        if ( node.isDense() )
+        {
+            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
+            setupIncomingDense( selectionCursor, cursors, node, types );
+            return selectionCursor;
+        }
+        else
+        {
+            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
+            setupIncomingSparse( selectionCursor, cursors, node, types );
+            return selectionCursor;
+        }
+    }
+
+    /**
+     * Returns a multi-directed selection cursor given the provided node cursor and relationship types.
+     *
+     * @param cursors A cursor factor used for allocating the needed cursors
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @return A cursor that allows traversing the relationship chain.
+     */
+    public static RelationshipSelectionCursor allCursor( CursorFactory cursors, NodeCursor node, int[] types )
+    {
+        if ( node.isDense() )
+        {
+            RelationshipDenseSelectionCursor selectionCursor = new RelationshipDenseSelectionCursor();
+            setupAllDense( selectionCursor, cursors, node, types );
+            return selectionCursor;
+        }
+        else
+        {
+            RelationshipSparseSelectionCursor selectionCursor = new RelationshipSparseSelectionCursor();
+            setupAllSparse( selectionCursor, cursors, node, types );
+            return selectionCursor;
+        }
+    }
+
+    /**
+     * Returns an outgoing resource iterator given the provided node cursor, direction and relationship types.
+     *
+     * @param cursors A cursor factor used for allocating the needed cursors
+     * @param node A node cursor positioned at the current node.
      * @param types The types of the relationship
      * @param factory factory for creating instance of generic type T
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> selectionIterator( CursorFactory cursors, NodeCursor node,
-            Direction direction, int[] types, RelationshipFactory<T> factory )
+    public static <T> ResourceIterator<T> outgoingIterator( CursorFactory cursors, NodeCursor node, int[] types,
+            RelationshipFactory<T> factory )
     {
         if ( node.isDense() )
         {
             RelationshipDenseSelectionIterator<T> selectionIterator =
                     new RelationshipDenseSelectionIterator<>( factory );
-            setupDense( selectionIterator, cursors, node, direction, types );
+            setupOutgoingDense( selectionIterator, cursors, node, types );
             return selectionIterator;
         }
         else
         {
             RelationshipSparseSelectionIterator<T> selectionIterator =
                     new RelationshipSparseSelectionIterator<>( factory );
-
-            setupSparse( selectionIterator, cursors, node, direction, types );
+            setupOutgoingSparse( selectionIterator, cursors, node, types );
             return selectionIterator;
         }
     }
 
-    private static void setupDense( RelationshipDenseSelection denseSelection, CursorFactory cursors, NodeCursor node,
-            Direction direction, int[] types )
+    /**
+     * Returns an incoming resource iterator given the provided node cursor, direction and relationship types.
+     *
+     * @param cursors A cursor factor used for allocating the needed cursors
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @param factory factory for creating instance of generic type T
+     * @return An iterator that allows traversing the relationship chain.
+     */
+    public static <T> ResourceIterator<T> incomingIterator( CursorFactory cursors, NodeCursor node, int[] types,
+            RelationshipFactory<T> factory )
+    {
+        if ( node.isDense() )
+        {
+            RelationshipDenseSelectionIterator<T> selectionIterator =
+                    new RelationshipDenseSelectionIterator<>( factory );
+            setupIncomingDense( selectionIterator, cursors, node, types );
+            return selectionIterator;
+        }
+        else
+        {
+            RelationshipSparseSelectionIterator<T> selectionIterator =
+                    new RelationshipSparseSelectionIterator<>( factory );
+            setupIncomingSparse( selectionIterator, cursors, node, types );
+            return selectionIterator;
+        }
+    }
+
+    /**
+     * Returns a multi-directed resource iterator given the provided node cursor, direction and relationship types.
+     *
+     * @param cursors A cursor factor used for allocating the needed cursors
+     * @param node A node cursor positioned at the current node.
+     * @param types The types of the relationship
+     * @param factory factory for creating instance of generic type T
+     * @return An iterator that allows traversing the relationship chain.
+     */
+    public static <T> ResourceIterator<T> allIterator( CursorFactory cursors, NodeCursor node, int[] types,
+            RelationshipFactory<T> factory )
+    {
+        if ( node.isDense() )
+        {
+            RelationshipDenseSelectionIterator<T> selectionIterator =
+                    new RelationshipDenseSelectionIterator<>( factory );
+            setupAllDense( selectionIterator, cursors, node, types );
+            return selectionIterator;
+        }
+        else
+        {
+            RelationshipSparseSelectionIterator<T> selectionIterator =
+                    new RelationshipSparseSelectionIterator<>( factory );
+            setupAllSparse( selectionIterator, cursors, node, types );
+            return selectionIterator;
+        }
+    }
+
+    private static void setupOutgoingDense( RelationshipDenseSelection denseSelection, CursorFactory cursors,
+            NodeCursor node, int[] types )
     {
 
         RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor();
@@ -102,20 +200,7 @@ public final class RelationshipSelections
         try
         {
             node.relationships( groupCursor );
-            switch ( direction )
-            {
-            case OUTGOING:
-                denseSelection.outgoing( groupCursor, traversalCursor, types );
-                break;
-            case INCOMING:
-                denseSelection.incoming( groupCursor, traversalCursor, types );
-                break;
-            case BOTH:
-                denseSelection.all( groupCursor, traversalCursor, types );
-                break;
-            default:
-                throw new IllegalStateException( "Unknown direction: " + direction );
-            }
+            denseSelection.outgoing( groupCursor, traversalCursor, types );
         }
         catch ( Throwable t )
         {
@@ -125,27 +210,84 @@ public final class RelationshipSelections
         }
     }
 
-    private static void setupSparse( RelationshipSparseSelection sparseSelection,
-            CursorFactory cursors, NodeCursor node, Direction direction, int[] types )
+    private static void setupIncomingDense( RelationshipDenseSelection denseSelection, CursorFactory cursors,
+            NodeCursor node, int[] types )
+    {
+
+        RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor();
+        RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
+        try
+        {
+            node.relationships( groupCursor );
+            denseSelection.incoming( groupCursor, traversalCursor, types );
+        }
+        catch ( Throwable t )
+        {
+            groupCursor.close();
+            traversalCursor.close();
+            throw t;
+        }
+    }
+
+    private static void setupAllDense( RelationshipDenseSelection denseSelection, CursorFactory cursors,
+            NodeCursor node, int[] types )
+    {
+
+        RelationshipGroupCursor groupCursor = cursors.allocateRelationshipGroupCursor();
+        RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
+        try
+        {
+            node.relationships( groupCursor );
+            denseSelection.all( groupCursor, traversalCursor, types );
+        }
+        catch ( Throwable t )
+        {
+            groupCursor.close();
+            traversalCursor.close();
+            throw t;
+        }
+    }
+
+    private static void setupOutgoingSparse( RelationshipSparseSelection sparseSelection,
+            CursorFactory cursors, NodeCursor node, int[] types )
     {
         RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
         try
         {
             node.allRelationships( traversalCursor );
-            switch ( direction )
-            {
-            case OUTGOING:
-                sparseSelection.outgoing( traversalCursor, types );
-                break;
-            case INCOMING:
-                sparseSelection.incoming( traversalCursor, types );
-                break;
-            case BOTH:
-                sparseSelection.all( traversalCursor, types );
-                break;
-            default:
-                throw new IllegalStateException( "Unknown direction: " + direction );
-            }
+            sparseSelection.outgoing( traversalCursor, types );
+        }
+        catch ( Throwable t )
+        {
+            traversalCursor.close();
+            throw t;
+        }
+    }
+
+    private static void setupIncomingSparse( RelationshipSparseSelection sparseSelection,
+            CursorFactory cursors, NodeCursor node, int[] types )
+    {
+        RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
+        try
+        {
+            node.allRelationships( traversalCursor );
+            sparseSelection.incoming( traversalCursor, types );
+        }
+        catch ( Throwable t )
+        {
+            traversalCursor.close();
+            throw t;
+        }
+    }
+
+    private static void setupAllSparse( RelationshipSparseSelection sparseSelection,
+            CursorFactory cursors, NodeCursor node, int[] types )
+    {
+        RelationshipTraversalCursor traversalCursor = cursors.allocateRelationshipTraversalCursor();
+        try
+        {
+            node.allRelationships( traversalCursor );
+            sparseSelection.all( traversalCursor, types );
         }
         catch ( Throwable t )
         {

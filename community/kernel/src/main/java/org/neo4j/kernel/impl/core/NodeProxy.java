@@ -67,7 +67,9 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.selectionIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingIterator;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
@@ -758,8 +760,17 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
-
-        return selectionIterator( transaction.cursors(), node, direction, typeIds, spi::newRelationshipProxy );
+        switch ( direction )
+        {
+        case OUTGOING:
+            return outgoingIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+        case INCOMING:
+            return incomingIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+        case BOTH:
+            return allIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
+        }
     }
 
     private int[] relTypeIds( RelationshipType[] types, Statement statement )

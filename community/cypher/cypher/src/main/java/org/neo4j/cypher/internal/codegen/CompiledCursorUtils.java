@@ -106,7 +106,17 @@ public final class CompiledCursorUtils
         {
             return RelationshipSelectionCursor.EMPTY;
         }
-       return RelationshipSelections.selectionCursor( cursors, node, direction, types );
+        switch ( direction )
+        {
+        case OUTGOING:
+            return RelationshipSelections.outgoingCursor( cursors, node, types );
+        case INCOMING:
+            return RelationshipSelections.incomingCursor( cursors, node, types );
+        case BOTH:
+            return RelationshipSelections.allCursor( cursors, node, types );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
+        }
     }
 
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
