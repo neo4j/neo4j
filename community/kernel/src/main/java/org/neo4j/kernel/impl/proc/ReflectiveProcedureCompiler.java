@@ -407,14 +407,13 @@ public class ReflectiveProcedureCompiler
                     boolean hasNext = out.hasNext();
                     if ( !hasNext )
                     {
-                        closeable.close();
+                        close();
                     }
                     return hasNext;
                 }
-                catch ( RuntimeException | IOException e )
+                catch ( Exception e )
                 {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
-                            "Failed to call procedure `%s`: %s", signature, e.getMessage() );
+                    throw closeAndCreateProcedureException( e );
                 }
             }
 
@@ -426,21 +425,42 @@ public class ReflectiveProcedureCompiler
                     Object record = out.next();
                     return outputMapper.apply( record );
                 }
-                catch ( RuntimeException e )
+                catch ( Exception e )
                 {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
-                            "Failed to call procedure `%s`: %s", signature, e.getMessage() );
+                    throw closeAndCreateProcedureException( e );
                 }
             }
 
             @Override
-            public void close() throws Exception
+            public void close() throws IOException
             {
                 if ( closeable != null )
                 {
                     closeable.close();
                     closeable = null;
                 }
+            }
+
+            private ProcedureException closeAndCreateProcedureException( Exception e )
+            {
+                ProcedureException procedureException =
+                        new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
+                                "Failed to call procedure `%s`: %s", signature.name(), "Caused by: " + e );
+                try
+                {
+                    close();
+                }
+                catch ( Exception exceptionDuringClose )
+                {
+                    try
+                    {
+                        procedureException.addSuppressed( exceptionDuringClose );
+                    }
+                    catch ( Throwable ignore )
+                    {
+                    }
+                }
+                return procedureException;
             }
         }
     }
