@@ -54,11 +54,7 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
         this.states = states;
         this.generator = generator;
         this.startId = startId;
-        this.numberOfBatches = totalCount / batchSize;
-        if ( totalCount % batchSize != 0 )
-        {
-            numberOfBatches++;
-        }
+        this.numberOfBatches = batchSize == 0 ? 0 : (totalCount - 1) / batchSize + 1;
     }
 
     @Override

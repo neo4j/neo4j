@@ -265,7 +265,7 @@ public class Cd extends TransactionProvidingApp
 
     private Object[] splitNodeTitleAndId( String string )
     {
-        int index = string.lastIndexOf( "," );
+        int index = string.lastIndexOf( ',' );
         String title = null;
         Long id = null;
         try

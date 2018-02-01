@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -49,9 +50,9 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
-import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
-import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -360,7 +361,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 @Override
                 public UpstreamDatabaseSelectionStrategy next()
                 {
-                    return null;
+                    throw new NoSuchElementException();
                 }
             };
         }

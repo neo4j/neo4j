@@ -197,6 +197,6 @@ public class RestfulGraphDatabasePagedTraversalTest
                 .get( 0 )
                 .toString();
 
-        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
+        return locationUri.substring( locationUri.lastIndexOf( '/' ) + 1 );
     }
 }

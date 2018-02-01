@@ -126,7 +126,7 @@ public class Start extends TransactionProvidingApp
 
     private String trimQuery( String query )
     {
-        return query.substring( 0, query.lastIndexOf( ";" ) );
+        return query.substring( 0, query.lastIndexOf( ';' ) );
     }
 
     protected void handleResult( Output out, Result result, long startTime )

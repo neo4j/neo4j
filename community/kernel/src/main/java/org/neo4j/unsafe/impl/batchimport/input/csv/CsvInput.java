@@ -245,11 +245,14 @@ public class CsvInput implements Input
                                     additional += additionalCalculator.applyAsInt( entity );
                                 }
                             }
-                            long entityCount = entities > 0 ? (long) (((double) source.length() / iterator.position()) * entities) : 0;
-                            estimates[0] += entityCount;
-                            estimates[1] += ((double) properties / entities) * entityCount;
-                            estimates[2] += ((double) propertySize / entities) * entityCount;
-                            estimates[3] += ((double) additional / entities) * entityCount;
+                            if ( entities > 0 )
+                            {
+                                long entityCountInSource = (long) (((double) source.length() / iterator.position()) * entities);
+                                estimates[0] += entityCountInSource;
+                                estimates[1] += ((double) properties / entities) * entityCountInSource;
+                                estimates[2] += ((double) propertySize / entities) * entityCountInSource;
+                                estimates[3] += ((double) additional / entities) * entityCountInSource;
+                            }
                         }
                     }
                 }

@@ -113,7 +113,7 @@ public class DbStructureTool
             );
         }
 
-        int index = classNameWithPackage.lastIndexOf( "." );
+        int index = classNameWithPackage.lastIndexOf( '.' );
 
         if ( index < 0 )
         {

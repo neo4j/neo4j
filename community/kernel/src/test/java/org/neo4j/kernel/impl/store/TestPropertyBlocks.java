@@ -740,10 +740,10 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
         node.setProperty( "Double3", 3.0 );
         newTransaction();
         assertEquals( recordsInUseAtStart + 2, propertyRecordsInUse() );
-        assertEquals( new Double( 1.0 ), node.getProperty( "Double1" ) );
-        assertEquals( new Integer( 1 ), node.getProperty( "Int1" ) );
-        assertEquals( new Integer( 2 ), node.getProperty( "Int2" ) );
-        assertEquals( new Double( 3.0 ), node.getProperty( "Double3" ) );
+        assertEquals( 1.0, node.getProperty( "Double1" ) );
+        assertEquals( 1, node.getProperty( "Int1" ) );
+        assertEquals( 2, node.getProperty( "Int2" ) );
+        assertEquals( 3.0, node.getProperty( "Double3" ) );
     }
 
     @Test

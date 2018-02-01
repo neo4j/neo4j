@@ -112,7 +112,7 @@ public final class ParseUtil
         {
             return;
         }
-        int split = keyValue.indexOf( ":" );
+        int split = keyValue.indexOf( ':' );
         if ( split < 0 )
         {
             throw new IllegalArgumentException( "Keys and values must be separated with ':'" );

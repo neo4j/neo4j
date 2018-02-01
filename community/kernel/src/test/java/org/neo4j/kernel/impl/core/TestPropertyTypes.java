@@ -655,7 +655,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Integer( propertyValue[i] ) );
+            assertEquals( array2[i], Integer.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -688,7 +688,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Short( propertyValue[i] ) );
+            assertEquals( array2[i], Short.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -853,7 +853,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Long( propertyValue[i] ) );
+            assertEquals( array2[i], Long.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );
@@ -886,7 +886,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( array2.length, propertyValue.length );
         for ( int i = 0; i < array2.length; i++ )
         {
-            assertEquals( array2[i], new Byte( propertyValue[i] ) );
+            assertEquals( array2[i], Byte.valueOf( propertyValue[i] ) );
         }
 
         node1.removeProperty( key );

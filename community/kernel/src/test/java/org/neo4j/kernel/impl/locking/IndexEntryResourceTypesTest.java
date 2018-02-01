@@ -109,7 +109,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new byte[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new byte[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new byte[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Byte( (byte) 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Byte.valueOf( (byte) 1  ) ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{1, 2} ) ) );
@@ -117,7 +117,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new short[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new short[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new short[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Short( (short) 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Short.valueOf( (short) 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Short[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Short[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Short[]{1, 2} ) ) );
@@ -141,7 +141,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new int[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new int[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new int[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Integer( 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Integer.valueOf( 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Integer[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Integer[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Integer[]{1, 2} ) ) );
@@ -149,7 +149,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new long[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new long[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new long[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Long( 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Long.valueOf( 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Long[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Long[]{1L} ) ) );
         hasher.hash( 42, array( exact( 1, new Long[]{1L, 2L} ) ) );
@@ -180,7 +180,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new byte[]{} ), exact( ~1, new byte[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new byte[]{1} ), exact( ~1, new byte[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new byte[]{1, 2} ), exact( ~1, new byte[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Byte( (byte) 1 ) ), exact( ~1, new Byte( (byte) 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Byte.valueOf( (byte) 1 ) ), exact( ~1, Byte.valueOf( (byte) 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{} ), exact( ~1, new Byte[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{1} ), exact( ~1, new Byte[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Byte[]{1, 2} ), exact( ~1, new Byte[]{1, 2} ) ) );
@@ -188,7 +188,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new short[]{} ), exact( ~1, new short[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new short[]{1} ), exact( ~1, new short[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new short[]{1, 2} ), exact( ~1, new short[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Short( (short) 1 ) ), exact( ~1, new Short( (short) 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Short.valueOf( (short) 1 ) ), exact( ~1, Short.valueOf( (short) 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Short[]{} ), exact( ~1, new Short[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Short[]{1} ), exact( ~1, new Short[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Short[]{1, 2} ), exact( ~1, new Short[]{1, 2} ) ) );
@@ -212,7 +212,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new int[]{} ), exact( ~1, new int[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new int[]{1} ), exact( ~1, new int[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new int[]{1, 2} ), exact( ~1, new int[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Integer( 1 ) ), exact( ~1, new Integer( 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Integer.valueOf( 1 ) ), exact( ~1, Integer.valueOf( 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Integer[]{} ), exact( ~1, new Integer[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Integer[]{1} ), exact( ~1, new Integer[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new Integer[]{1, 2} ), exact( ~1, new Integer[]{1, 2} ) ) );
@@ -220,7 +220,7 @@ public class IndexEntryResourceTypesTest
         hasher.hash( 42, array( exact( 1, new long[]{} ), exact( ~1, new long[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new long[]{1} ), exact( ~1, new long[]{1} ) ) );
         hasher.hash( 42, array( exact( 1, new long[]{1, 2} ), exact( ~1, new long[]{1, 2} ) ) );
-        hasher.hash( 42, array( exact( 1, new Long( 1 ) ), exact( ~1, new Long( 1 ) ) ) );
+        hasher.hash( 42, array( exact( 1, Long.valueOf( 1 ) ), exact( ~1, Long.valueOf( 1 ) ) ) );
         hasher.hash( 42, array( exact( 1, new Long[]{} ), exact( ~1, new Long[]{} ) ) );
         hasher.hash( 42, array( exact( 1, new Long[]{1L} ), exact( ~1, new Long[]{1L} ) ) );
         hasher.hash( 42, array( exact( 1, new Long[]{1L, 2L} ), exact( ~1, new Long[]{1L, 2L} ) ) );

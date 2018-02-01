@@ -40,7 +40,7 @@ public class PingerHandler implements HttpRequestHandler
             throws HttpException, IOException
     {
         final String requestUri = httpRequest.getRequestLine().getUri();
-        final int offset = requestUri.indexOf( "?" );
+        final int offset = requestUri.indexOf( '?' );
         if ( offset > -1 )
         {
             String query = requestUri.substring( offset + 1 );

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.codegen;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
 /**
@@ -119,6 +120,10 @@ public class DefaultTopTable<T extends Comparable<Object>> implements Iterable<T
             @SuppressWarnings( "unchecked" )
             public T next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return (T) array[--cursor];
             }
         };
