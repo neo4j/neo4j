@@ -24,6 +24,7 @@ import java.util.Set;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -36,7 +37,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Collections.emptySet;
 
-class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
+class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
     private Read read;
     private RecordCursor<DynamicRecord> labelCursor;
@@ -46,7 +47,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private HasChanges hasChanges = HasChanges.MAYBE;
     private Set<Long> addedNodes;
 
-    NodeCursor()
+    DefaultNodeCursor()
     {
         super( NO_ID );
     }

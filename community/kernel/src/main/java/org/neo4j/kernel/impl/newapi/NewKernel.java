@@ -38,7 +38,7 @@ public class NewKernel implements Kernel, Modes
     private final InwardKernel kernel;
 
     private StorageStatement statement;
-    private Cursors cursors;
+    private DefaultCursors cursors;
 
     private volatile boolean isRunning;
 
@@ -73,7 +73,7 @@ public class NewKernel implements Kernel, Modes
     public void start()
     {
         statement = engine.storeReadLayer().newStatement();
-        this.cursors = new Cursors();
+        this.cursors = new DefaultCursors();
         isRunning = true;
     }
 

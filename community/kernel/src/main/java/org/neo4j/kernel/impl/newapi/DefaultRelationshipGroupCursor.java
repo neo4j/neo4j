@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.Record;
+import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -32,7 +34,7 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeN
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 
-class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
+class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
@@ -40,7 +42,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     private PageCursor page;
     private PageCursor edgePage;
 
-    RelationshipGroupCursor()
+    DefaultRelationshipGroupCursor()
     {
         super( NO_ID );
     }
@@ -225,11 +227,11 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     }
 
     @Override
-    public void outgoing( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
+    public void outgoing( RelationshipTraversalCursor cursor )
     {
         if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered(
+            ((DefaultRelationshipTraversalCursor) cursor).buffered(
                     getOwningNode(), bufferedGroup.outgoing, RelationshipDirection.OUTGOING, bufferedGroup.label, read );
         }
         else
@@ -239,11 +241,11 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     }
 
     @Override
-    public void incoming( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
+    public void incoming( RelationshipTraversalCursor cursor )
     {
         if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered(
+            ((DefaultRelationshipTraversalCursor) cursor).buffered(
                     getOwningNode(), bufferedGroup.incoming, RelationshipDirection.INCOMING, bufferedGroup.label, read );
         }
         else
@@ -253,11 +255,11 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
     }
 
     @Override
-    public void loops( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
+    public void loops( RelationshipTraversalCursor cursor )
     {
         if ( isBuffered() )
         {
-            ((RelationshipTraversalCursor) cursor).buffered(
+            ((DefaultRelationshipTraversalCursor) cursor).buffered(
                     getOwningNode(), bufferedGroup.loops, RelationshipDirection.LOOP, bufferedGroup.label, read );
         }
         else
@@ -376,7 +378,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
             {
                 firstOut = edge.getId();
             }
-            outgoing = new RelationshipTraversalCursor.Record( edge, outgoing );
+            outgoing = new DefaultRelationshipTraversalCursor.Record( edge, outgoing );
             outgoingCount++;
         }
 
@@ -386,7 +388,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
             {
                 firstIn = edge.getId();
             }
-            incoming = new RelationshipTraversalCursor.Record( edge, incoming );
+            incoming = new DefaultRelationshipTraversalCursor.Record( edge, incoming );
             incomingCount++;
         }
 
@@ -396,7 +398,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord implements org.neo
             {
                 firstLoop = edge.getId();
             }
-            loops = new RelationshipTraversalCursor.Record( edge, loops );
+            loops = new DefaultRelationshipTraversalCursor.Record( edge, loops );
             loopsCount++;
         }
 

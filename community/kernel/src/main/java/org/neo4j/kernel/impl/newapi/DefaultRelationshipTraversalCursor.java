@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -29,8 +30,8 @@ import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static java.lang.String.format;
 
-class RelationshipTraversalCursor extends RelationshipCursor
-        implements org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+class DefaultRelationshipTraversalCursor extends RelationshipCursor
+        implements RelationshipTraversalCursor
 {
     private enum GroupState
     {
@@ -115,7 +116,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
     private long next;
     private Record buffer;
     private PageCursor pageCursor;
-    private final RelationshipGroupCursor group;
+    private final DefaultRelationshipGroupCursor group;
     private GroupState groupState;
     private FilterState filterState;
     private boolean filterStore;
@@ -123,7 +124,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
 
     private PrimitiveLongIterator addedRelationships;
 
-    RelationshipTraversalCursor( RelationshipGroupCursor group )
+    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group )
     {
         this.group = group;
     }

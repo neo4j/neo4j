@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -40,8 +41,8 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
 import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-final class NodeValueIndexCursor extends IndexCursor<IndexProgressor>
-        implements org.neo4j.internal.kernel.api.NodeValueIndexCursor, NodeValueClient
+final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
+        implements NodeValueIndexCursor, NodeValueClient
 {
     private Read read;
     private long node;
@@ -50,7 +51,7 @@ final class NodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private PrimitiveLongIterator added = emptyIterator();
     private PrimitiveLongSet removed = emptySet();
 
-    NodeValueIndexCursor()
+    DefaultNodeValueIndexCursor()
     {
         node = NO_ID;
     }

@@ -20,22 +20,19 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.ExplicitClient;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class NodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
-        implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, ExplicitClient
+class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
+        implements RelationshipExplicitIndexCursor, ExplicitClient
 {
     private Read read;
     private int expectedSize;
-    private long node;
+    private long relationship;
     private float score;
-
-    NodeExplicitIndexCursor()
-    {
-        node = NO_ID;
-    }
 
     @Override
     public void initialize( ExplicitIndexProgressor progressor, int expectedSize )
@@ -47,7 +44,7 @@ class NodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
     @Override
     public boolean acceptEntity( long reference, float score )
     {
-        this.node = reference;
+        this.relationship = reference;
         this.score = score;
         return true;
     }
@@ -76,22 +73,52 @@ class NodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
     }
 
     @Override
-    public void node( NodeCursor cursor )
+    public void relationship( RelationshipScanCursor cursor )
     {
-        read.singleNode( node, cursor );
+        read.singleRelationship( relationship, cursor );
     }
 
     @Override
-    public long nodeReference()
+    public void sourceNode( NodeCursor cursor )
     {
-        return node;
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void targetNode( NodeCursor cursor )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public int relationshipLabel()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long sourceNodeReference()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long targetNodeReference()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public long relationshipReference()
+    {
+        return relationship;
     }
 
     @Override
     public void close()
     {
         super.close();
-        node = NO_ID;
+        relationship = NO_ID;
         score = 0;
         expectedSize = 0;
         read = null;
@@ -108,12 +135,12 @@ class NodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor>
     {
         if ( isClosed() )
         {
-            return "NodeExplicitIndexCursor[closed state]";
+            return "RelationshipExplicitIndexCursor[closed state]";
         }
         else
         {
-            return "NodeExplicitIndexCursor[node=" + node + ", expectedSize=" + expectedSize + ", score=" + score +
-                    ", underlying record=" + super.toString() + " ]";
+            return "RelationshipExplicitIndexCursor[relationship=" + relationship + ", expectedSize=" + expectedSize + ", score=" + score +
+                    " ,underlying record=" + super.toString() + " ]";
         }
     }
 }

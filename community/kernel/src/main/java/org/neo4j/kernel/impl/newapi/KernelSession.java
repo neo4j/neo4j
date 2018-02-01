@@ -55,7 +55,7 @@ class KernelSession implements Session
     }
 
     @Override
-    public org.neo4j.internal.kernel.api.Token token()
+    public KernelToken token()
     {
         return token;
     }

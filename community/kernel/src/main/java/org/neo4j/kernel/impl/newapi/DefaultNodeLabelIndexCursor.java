@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.NodeLabelClient;
@@ -33,8 +34,8 @@ import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-class NodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
-        implements org.neo4j.internal.kernel.api.NodeLabelIndexCursor, NodeLabelClient
+class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
+        implements NodeLabelIndexCursor, NodeLabelClient
 {
     private Read read;
     private long node;
@@ -42,7 +43,7 @@ class NodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgressor>
     private PrimitiveLongIterator added;
     private Set<Long> removed;
 
-    NodeLabelIndexCursor()
+    DefaultNodeLabelIndexCursor()
     {
         node = NO_ID;
     }

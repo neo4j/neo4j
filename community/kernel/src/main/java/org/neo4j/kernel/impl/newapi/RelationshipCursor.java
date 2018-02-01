@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.Set;
+
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -54,23 +58,23 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
     @Override
     public boolean hasProperties()
     {
-        return nextProp != PropertyCursor.NO_ID;
+        return nextProp != DefaultPropertyCursor.NO_ID;
     }
 
     @Override
-    public void source( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public void source( NodeCursor cursor )
     {
         read.singleNode( sourceNodeReference(), cursor );
     }
 
     @Override
-    public void target( org.neo4j.internal.kernel.api.NodeCursor cursor )
+    public void target( NodeCursor cursor )
     {
         read.singleNode( targetNodeReference(), cursor );
     }
 
     @Override
-    public void properties( org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public void properties( PropertyCursor cursor )
     {
         read.relationshipProperties( relationshipReference(), propertiesReference(), cursor );
     }
