@@ -28,7 +28,6 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
   extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    generator.createRelExtractor(relVar.name)
     types.foreach {
       case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }
@@ -48,5 +47,5 @@ case class ExpandIntoLoopDataGenerator(opName: String, fromVar: Variable, dir: S
     generator.nextRelationship(iterVar, dir, relVar.name)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.hasNextRelationship(iterVar)
+  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceRelationshipSelectionCursor(iterVar)
 }

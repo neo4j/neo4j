@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
+
+import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 
 public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
 {

@@ -22,6 +22,9 @@ package org.neo4j.cypher.internal.codegen;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 
@@ -38,14 +41,16 @@ public class CompiledExpandUtilsTest
     {
         // GIVEN
         ReadOperations readOperations = mock( ReadOperations.class );
+        Read read = mock( Read.class );
+        NodeCursor nodeCursor = mock( NodeCursor.class );
         when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING ) ).thenReturn( 1 );
         when( readOperations.nodeGetDegree( 2L, Direction.INCOMING ) ).thenReturn( 3 );
 
         // WHEN
-       connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L );
+        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor, 1L, Direction.OUTGOING, 2L );
 
         // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 1L, Direction.OUTGOING );
+        verify( read, times( 1 ) ).singleNode( 1L, nodeCursor);
     }
 
     @Test
@@ -53,14 +58,17 @@ public class CompiledExpandUtilsTest
     {
         // GIVEN
         ReadOperations readOperations = mock( ReadOperations.class );
+        Read read = mock( Read.class );
+        NodeCursor nodeCursor = mock( NodeCursor.class );
+
         when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING ) ).thenReturn( 3 );
         when( readOperations.nodeGetDegree( 2L, Direction.INCOMING ) ).thenReturn( 1 );
 
         // WHEN
-        connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L );
+        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor, 1L, Direction.OUTGOING, 2L );
 
         // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 2L, Direction.INCOMING );
+        verify( read, times( 1 ) ).singleNode( 2L, nodeCursor );
     }
 
     @Test
@@ -68,14 +76,16 @@ public class CompiledExpandUtilsTest
     {
         // GIVEN
         ReadOperations readOperations = mock( ReadOperations.class );
+        Read read = mock( Read.class );
+        NodeCursor nodeCursor = mock( NodeCursor.class );
         when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING, 1 ) ).thenReturn( 1 );
         when( readOperations.nodeGetDegree( 2L, Direction.INCOMING, 1 ) ).thenReturn( 3 );
 
         // WHEN
-        connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L, new int[]{1} );
+        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor, 1L, Direction.OUTGOING, 2L, new int[]{1} );
 
         // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 1L, Direction.OUTGOING, new int[]{1} );
+        verify( read, times( 1 ) ).singleNode( 1L, nodeCursor);
     }
 
     @Test
@@ -83,14 +93,16 @@ public class CompiledExpandUtilsTest
     {
         // GIVEN
         ReadOperations readOperations = mock( ReadOperations.class );
+        Read read = mock( Read.class );
+        NodeCursor nodeCursor = mock( NodeCursor.class );
         when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING, 1 ) ).thenReturn( 3 );
         when( readOperations.nodeGetDegree( 2L, Direction.INCOMING, 1 ) ).thenReturn( 1 );
 
         // WHEN
-        connectingRelationships( readOperations, 1L, Direction.OUTGOING, 2L, new int[]{1} );
+        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor , 1L, Direction.OUTGOING, 2L, new int[]{1} );
 
         // THEN
-        verify( readOperations, times( 1 ) ).nodeGetRelationships( 2L, Direction.INCOMING, new int[]{1} );
+        verify( read, times( 1 ) ).singleNode( 2L, nodeCursor );
     }
 
 }

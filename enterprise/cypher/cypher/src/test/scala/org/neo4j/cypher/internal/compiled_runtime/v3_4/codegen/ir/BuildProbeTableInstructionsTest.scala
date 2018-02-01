@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.StubNodeCursor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, NodeProxy}
 import org.neo4j.values.AnyValue

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionC
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
 import org.neo4j.cypher.internal.util.v3_4.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, _}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
@@ -41,6 +42,8 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
+import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -170,24 +173,44 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     else tokenWrite.labelGetOrCreateForName(labelName)
   }
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] = {
-    val relationships = types match {
-      case None =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
-      case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds)
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection,
+                             types: Option[Array[Int]]): Iterator[RelationshipValue] = {
+    val read = reads()
+    read.singleNode(node, nodeCursor)
+    if (!nodeCursor.next())Iterator.empty
+    else {
+      val cursor = dir match {
+        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+      }
+      new CursorIterator[RelationshipValue] {
+        override protected def close(): Unit = cursor.close()
+        override protected def fetchNext(): RelationshipValue =
+          if (cursor.next())
+            fromRelationshipProxy(entityAccessor.newRelationshipProxy(cursor.relationshipReference(),
+                                                                      cursor.sourceNodeReference(),
+                                                                      cursor.`type`(),
+                                                                      cursor.targetNodeReference()))
+          else null
+      }
     }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor).map(fromRelationshipProxy)
   }
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection,
-                                               types: Option[Array[Int]]): RelationshipIterator =
-    types match {
-      case None =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
-      case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds)
+                                               types: Option[Array[Int]]): RelationshipIterator = {
+    val read = reads()
+    read.singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) RelationshipIterator.EMPTY
+    else {
+      val cursor = dir match {
+        case OUTGOING => outgoingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case INCOMING => incomingCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+        case BOTH => allCursor(transactionalContext.kernelTransaction.cursors(), nodeCursor, types.orNull)
+      }
+      new RelationshipCursorIterator(cursor)
     }
+  }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long,
                                   endNodeId: Long): RelationshipValue = try {
@@ -274,35 +297,24 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def seek(index: IndexReference, query: IndexQuery*) = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexSeek(index, nodeCursor, IndexOrder.NONE, query:_*)
-    nodeValueIndexCursorToIterator(nodeCursor)
+    new CursorIterator[NodeValue] {
+      override protected def fetchNext(): NodeValue = {
+        if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+        else null
+      }
+
+      override protected def close(): Unit = nodeCursor.close()
+    }
   }
 
   private def scan(index: IndexReference) = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
     reads().nodeIndexScan(index, nodeCursor, IndexOrder.NONE)
-    new PrimitiveLongResourceIterator {
-      private var _next: Long = fetchNext()
+    new PrimitiveCursorIterator {
+      override protected def fetchNext(): Long =
+        if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
-      private def fetchNext() =
-        if (nodeCursor.next()) nodeCursor.nodeReference()
-        else -1L
-
-      override def hasNext: Boolean = _next >= 0
-
-      override def next(): Long = {
-        if (!hasNext) {
-          nodeCursor.close()
-          Iterator.empty.next()
-        }
-
-        val current = _next
-        _next = fetchNext()
-        if (!hasNext) nodeCursor.close()
-
-        current
-      }
-
-      override def close(): Unit = nodeCursor.close()
+      override protected def close(): Unit = nodeCursor.close()
     }
   }
 
@@ -388,33 +400,21 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
-    nodeLabelIndexCursorToIterator(cursor)
+    new CursorIterator[NodeValue] {
+      override protected def fetchNext(): NodeValue = {
+        if (cursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(cursor.nodeReference()))
+        else null
+      }
+      override protected def close(): Unit = cursor.close()
+    }
   }
 
   override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = {
     val cursor = allocateAndTraceNodeLabelIndexCursor()
     reads().nodeLabelScan(id, cursor)
-    new PrimitiveLongIterator {
-      private var _next: Long = fetchNext()
-
-      private def fetchNext() =
-        if (cursor.next()) cursor.nodeReference()
-        else -1L
-
-      override def hasNext: Boolean = _next >= 0
-
-      override def next(): Long = {
-        if (!hasNext) {
-          cursor.close()
-          Iterator.empty.next()
-        }
-
-        val current = _next
-        _next = fetchNext()
-        if (!hasNext) cursor.close()
-
-        current
-      }
+    new PrimitiveCursorIterator {
+      override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
+      override protected def close(): Unit = cursor.close()
     }
   }
 
@@ -509,33 +509,22 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def all: Iterator[NodeValue] = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      nodeCursorToIterator(nodeCursor)
+      new CursorIterator[NodeValue] {
+        override protected def fetchNext(): NodeValue = {
+          if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
+          else null
+        }
+
+        override protected def close(): Unit = nodeCursor.close()
+      }
     }
 
     override def allPrimitive: PrimitiveLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
-      new PrimitiveLongIterator {
-        private var _next: Long = fetchNext()
-
-        private def fetchNext() =
-          if (nodeCursor.next()) nodeCursor.nodeReference()
-          else -1L
-
-        override def hasNext: Boolean = _next >= 0
-
-        override def next(): Long = {
-          if (!hasNext) {
-            nodeCursor.close()
-            Iterator.empty.next()
-          }
-
-          val current = _next
-          _next = fetchNext()
-          if (!hasNext) nodeCursor.close()
-
-          current
-        }
+      new PrimitiveCursorIterator {
+        override protected def fetchNext(): Long = if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
+        override protected def close(): Unit = nodeCursor.close()
       }
     }
 
@@ -1001,77 +990,100 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     cursor
   }
 
-  private def nodeCursorToIterator(nodeCursor: NodeCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
-    private var _next: NodeValue = fetchNext()
 
-    private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-      else null
-    }
+  abstract class CursorIterator[T] extends Iterator[T] {
+    private var _next: T = fetchNext()
+
+    protected def fetchNext(): T
+    protected def close(): Unit
 
     override def hasNext: Boolean = _next != null
 
-    override def next(): NodeValue = {
+    override def next(): T = {
       if (!hasNext) {
-        nodeCursor.close()
+        close()
         Iterator.empty.next()
       }
 
       val current = _next
       _next = fetchNext()
       if (!hasNext) {
-        nodeCursor.close()
+       close()
       }
       current
     }
   }
 
-  private def nodeValueIndexCursorToIterator(nodeCursor: NodeValueIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
-    private var _next: NodeValue = fetchNext()
+  class RelationshipCursorIterator(selectionCursor: RelationshipSelectionCursor) extends RelationshipIterator {
+    import RelationshipCursorIterator.{NOT_INITIALIZED, NO_ID}
 
-    private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-      else null
+    private var _next = NOT_INITIALIZED
+    private var typeId: Int = NO_ID
+    private var source: Long = NO_ID
+    private var target: Long = NO_ID
+
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+      visitor.visit(relationshipId, typeId, source, target)
+      true
     }
 
-    override def hasNext: Boolean = _next != null
+    private def fetchNext(): Long = if (selectionCursor.next()) selectionCursor.relationshipReference() else -1L
 
-    override def next(): NodeValue = {
+    override def hasNext: Boolean = {
+      if (_next == NOT_INITIALIZED) {
+        _next = fetchNext()
+      }
+
+      _next >= 0
+    }
+
+    //We store the current state in case the underlying cursor is
+    //closed when calling next.
+    private def storeState(): Unit = {
+      typeId = selectionCursor.`type`()
+      source = selectionCursor.sourceNodeReference()
+      target = selectionCursor.targetNodeReference()
+    }
+
+    override def next(): Long = {
       if (!hasNext) {
-        nodeCursor.close()
+        selectionCursor.close()
         Iterator.empty.next()
       }
 
       val current = _next
+      storeState()
+      //Note that if no more elements are found the selection cursor
+      //will be closed so no need to do a extra check after fetching.
       _next = fetchNext()
-      if (!hasNext) {
-        nodeCursor.close()
-      }
+
       current
     }
   }
 
-  private def nodeLabelIndexCursorToIterator(nodeCursor: NodeLabelIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
-    private var _next: NodeValue = fetchNext()
+  object RelationshipCursorIterator {
+    private val NOT_INITIALIZED = -2L
+    private val NO_ID = -1
+  }
 
-    private def fetchNext() = {
-      if (nodeCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeCursor.nodeReference()))
-      else null
-    }
+  abstract class PrimitiveCursorIterator extends PrimitiveLongResourceIterator {
+    private var _next: Long = fetchNext()
 
-    override def hasNext: Boolean = _next != null
+    protected def fetchNext(): Long
 
-    override def next(): NodeValue = {
+    override def hasNext: Boolean = _next >= 0
+
+    override def next(): Long = {
       if (!hasNext) {
-        nodeCursor.close()
+        close()
         Iterator.empty.next()
       }
 
       val current = _next
       _next = fetchNext()
-      if (!hasNext) {
-        nodeCursor.close()
-      }
+      if (!hasNext) close()
+
       current
     }
   }

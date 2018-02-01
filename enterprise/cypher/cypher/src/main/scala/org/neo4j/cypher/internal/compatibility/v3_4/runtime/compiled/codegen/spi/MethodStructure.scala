@@ -166,7 +166,7 @@ trait MethodStructure[E] {
   def hasNextNode(iterVar: String): E
   def advanceNodeCursor(iterVar: String): E
   def advanceNodeLabelIndexCursor(iterVar: String): E
-  def hasNextRelationship(iterVar: String): E
+  def advanceRelationshipSelectionCursor(iterVar: String): E
   def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String): Unit
   def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String): Unit
   def nodeIdSeek(nodeIdVar: String, expression: E, codeGenType: CodeGenType)(block: MethodStructure[E] => Unit): Unit
@@ -176,7 +176,6 @@ trait MethodStructure[E] {
   def indexSeek(iterVar: String, descriptorVar: String, value: E, codeGenType: CodeGenType): Unit
   def relType(relIdVar: String, typeVar: String): Unit
   def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String): Unit
-  def createRelExtractor(extractorName: String): Unit
   def nodeCountFromCountStore(expression: E): E
   def relCountFromCountStore(start: E, end: E, types: E*): E
   def token(t: Int): E

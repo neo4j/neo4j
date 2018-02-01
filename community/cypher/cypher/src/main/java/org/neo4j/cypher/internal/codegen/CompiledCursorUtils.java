@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.neo4j.graphdb.Direction;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.storageengine.api.EntityType;
@@ -92,6 +96,34 @@ public final class CompiledCursorUtils
         singleNode( read, nodeCursor, node );
 
         return nodeCursor.labels().contains( label );
+    }
+
+    public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
+            long nodeId, Direction direction, int[] types )
+    {
+        read.singleNode( nodeId, node );
+        if ( !node.next() )
+        {
+            return RelationshipSelectionCursor.EMPTY;
+        }
+        switch ( direction )
+        {
+        case OUTGOING:
+            return RelationshipSelections.outgoingCursor( cursors, node, types );
+        case INCOMING:
+            return RelationshipSelections.incomingCursor( cursors, node, types );
+        case BOTH:
+            return RelationshipSelections.allCursor( cursors, node, types );
+        default:
+            throw new IllegalStateException( "Unknown direction " + direction );
+        }
+    }
+
+    public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
+            long nodeId,
+            Direction direction )
+    {
+        return nodeGetRelationships( read, cursors, node, nodeId, direction, null );
     }
 
     private static void singleNode( Read read, NodeCursor nodeCursor, long node ) throws EntityNotFoundException

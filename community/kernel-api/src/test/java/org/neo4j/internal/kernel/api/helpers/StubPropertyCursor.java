@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;

@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.internal.kernel.api.helpers;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.LabelSet;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.values.storable.Value;
 
 public class StubNodeCursor implements NodeCursor
