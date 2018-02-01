@@ -246,7 +246,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         nodeCursor = body.field(typeRef[NodeCursor], "nodeCursor"),
         propertyCursor = body.field(typeRef[PropertyCursor], "propertyCursor"),
         dataRead = body.field(typeRef[Read], "dataRead"),
-        tokenRead = body.field(typeRef[TokenRead], "tokenRead")
+        tokenRead = body.field(typeRef[TokenRead], "tokenRead"),
+        schemaRead = body.field(typeRef[SchemaRead], "schemaRead")
       )
       // the "COLUMNS" static field
       body.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](Seq.empty))
@@ -257,6 +258,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       Templates.getOrLoadReadOperations(body, fields)
       Templates.getOrLoadCursors(body, fields)
       Templates.getOrLoadTokenRead(body, fields)
+      Templates.getOrLoadSchemaRead(body, fields)
       Templates.nodeCursor(body, fields)
       Templates.propertyCursor(body, fields)
       body.handle()

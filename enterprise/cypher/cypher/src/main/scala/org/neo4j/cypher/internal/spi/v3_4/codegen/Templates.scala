@@ -262,6 +262,21 @@ object Templates {
     }
   }
 
+  def getOrLoadSchemaRead(clazz: ClassGenerator, fields: Fields) = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[SchemaRead], "getOrLoadSchemaRead")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val schemaRead = Expression.get(generate.self(), fields.schemaRead)
+      using(generate.ifStatement(Expression.isNull(schemaRead))) { block =>
+        val transactionalContext: MethodReference = method[QueryContext, QueryTransactionalContext]("transactionalContext")
+        val schemaRead: MethodReference = method[QueryTransactionalContext, SchemaRead]("schemaRead")
+        val queryContext = Expression.get(block.self(), fields.queryContext)
+        block.put(block.self(), fields.schemaRead,
+                  Expression.invoke(Expression.invoke(queryContext, transactionalContext), schemaRead))
+      }
+      generate.returns(schemaRead)
+    }
+  }
+
   def setCompletable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setCompletable",
                                                                                param[Completable]("closeable")).
     put(self(classHandle), typeRef[Completable], "closeable", load("closeable", typeRef[Completable])).

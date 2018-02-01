@@ -246,6 +246,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def tokenRead: TokenRead
 
+  def schemaRead: SchemaRead
+
   def dataWrite: Write
 
   def readOperations: ReadOperations

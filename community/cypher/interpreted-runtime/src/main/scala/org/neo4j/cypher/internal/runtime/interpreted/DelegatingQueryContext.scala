@@ -300,5 +300,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def tokenRead: TokenRead = inner.tokenRead
 
+  override def schemaRead: SchemaRead = inner.schemaRead
+
   override def dataWrite: Write = inner.dataWrite
 }

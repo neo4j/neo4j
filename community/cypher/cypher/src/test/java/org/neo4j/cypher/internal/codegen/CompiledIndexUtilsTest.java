@@ -21,13 +21,11 @@ package org.neo4j.cypher.internal.codegen;
 
 import org.junit.Test;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,39 +33,41 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.api.index.IndexQueryHelper.exact;
+import static org.mockito.Mockito.when;
 
 public class CompiledIndexUtilsTest
 {
+
     @Test
-    public void shouldCallIndexSeek()
-            throws EntityNotFoundException, IndexNotApplicableKernelException, IndexNotFoundKernelException
+    public void shouldCallIndexSeek() throws KernelException
     {
+
         // GIVEN
-        ReadOperations read = mock( ReadOperations.class );
+        Read read = mock( Read.class );
+        CapableIndexReference index = mock( CapableIndexReference.class );
+        when( index.properties() ).thenReturn( new int[]{42} );
 
         // WHEN
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 12, 42 );
-        CompiledIndexUtils.indexSeek( read, descriptor, 42, "hello" );
+        CompiledIndexUtils.indexSeek( read, mock( CursorFactory.class ), index, "hello" );
 
         // THEN
-        verify( read, times( 1 ) ).indexQuery( descriptor, exact( 42, "hello" ) );
+        verify( read, times( 1 ) ).nodeIndexSeek( any(), any(), any(), any() );
     }
 
     @Test
-    public void shouldHandleNullInIndexSeek()
-            throws EntityNotFoundException, IndexNotApplicableKernelException, IndexNotFoundKernelException
+    public void shouldHandleNullInIndexSeek() throws KernelException
     {
         // GIVEN
-        ReadOperations read = mock( ReadOperations.class );
+        Read read = mock( Read.class );
+        CapableIndexReference index = mock( CapableIndexReference.class );
+        when( index.properties() ).thenReturn( new int[]{42} );
 
         // WHEN
-        IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 12, 42 );
-        PrimitiveLongIterator iterator =
-                CompiledIndexUtils.indexSeek( read, descriptor, 42, null );
+        NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ),
+                index, null );
 
         // THEN
-        verify( read, never() ).indexQuery( any( ), any(  ) );
-        assertFalse( iterator.hasNext() );
+        verify( read, never() ).nodeIndexSeek( any(), any(), any() );
+        assertFalse( cursor.next() );
     }
 }

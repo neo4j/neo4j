@@ -35,5 +35,6 @@ case class Fields(closer: FieldReference,
                   nodeCursor: FieldReference,
                   propertyCursor: FieldReference,
                   dataRead: FieldReference,
-                  tokenRead: FieldReference
+                  tokenRead: FieldReference,
+                  schemaRead: FieldReference
                  )
