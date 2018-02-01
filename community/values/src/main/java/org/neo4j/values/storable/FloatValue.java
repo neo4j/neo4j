@@ -44,24 +44,6 @@ public final class FloatValue extends FloatingPointValue
     }
 
     @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeFloatingPoint( value );

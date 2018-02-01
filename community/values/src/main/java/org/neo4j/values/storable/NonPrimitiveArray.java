@@ -19,73 +19,68 @@
  */
 package org.neo4j.values.storable;
 
-import java.time.LocalDateTime;
 import java.util.Arrays;
-
-import org.neo4j.graphdb.spatial.Geometry;
-
-import static java.lang.String.format;
 
 public abstract class NonPrimitiveArray<T extends Comparable<? super T>> extends ArrayValue
 {
     protected abstract T[] value();
 
     @Override
-    public boolean equals( boolean[] x )
+    public final boolean equals( boolean[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char[] x )
+    public final boolean equals( char[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String[] x )
+    public final boolean equals( String[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( byte[] x )
+    public final boolean equals( byte[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( short[] x )
+    public final boolean equals( short[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( int[] x )
+    public final boolean equals( int[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( long[] x )
+    public final boolean equals( long[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( float[] x )
+    public final boolean equals( float[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( double[] x )
+    public final boolean equals( double[] x )
     {
         return false;
     }
 
     @Override
-    public NumberType numberType()
+    public final NumberType numberType()
     {
         return NumberType.NO_NUMBER;
     }

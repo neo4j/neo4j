@@ -500,36 +500,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( long x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( double x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         writer.writeDuration( months, days, seconds, nanos );

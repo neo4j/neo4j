@@ -51,30 +51,6 @@ public abstract class BooleanValue extends ScalarValue
         return ValueGroup.BOOLEAN;
     }
 
-    @Override
-    public boolean equals( long x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( double x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
     public abstract boolean booleanValue();
 
     public abstract int compareTo( BooleanValue other );
