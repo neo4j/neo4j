@@ -100,7 +100,7 @@ abstract class Read implements TxStateHolder,
         ((DefaultNodeValueIndexCursor) cursor).setRead( this );
         IndexProgressor.NodeValueClient target = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index );
-        if ( !reader.hasFullNumberPrecision( query ) )
+        if ( !reader.hasFullValuePrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
             int j = 0;
@@ -108,8 +108,9 @@ abstract class Read implements TxStateHolder,
             {
                 switch ( q.type() )
                 {
+                case rangeGeometric:
                 case rangeNumeric:
-                    if ( !reader.hasFullNumberPrecision( q ) )
+                    if ( !reader.hasFullValuePrecision( q ) )
                     {
                         filters[j++] = q;
                     }
@@ -118,7 +119,7 @@ abstract class Read implements TxStateHolder,
                     Value value = ((IndexQuery.ExactPredicate) q).value();
                     if ( value.valueGroup() == ValueGroup.NUMBER || Values.isArrayValue( value ) || value.valueGroup() == ValueGroup.GEOMETRY )
                     {
-                        if ( !reader.hasFullNumberPrecision( q ) )
+                        if ( !reader.hasFullValuePrecision( q ) )
                         {
                             filters[j++] = q;
                         }

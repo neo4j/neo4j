@@ -149,7 +149,7 @@ class SpatialFusionIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
     }

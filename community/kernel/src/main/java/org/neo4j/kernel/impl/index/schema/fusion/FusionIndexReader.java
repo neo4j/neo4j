@@ -164,7 +164,7 @@ class FusionIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         if ( predicates.length > 1 )
         {
@@ -176,10 +176,10 @@ class FusionIndexReader implements IndexReader
         {
             Value value = ((ExactPredicate) predicate).value();
             return selector.select(
-                    nativeReader.hasFullNumberPrecision( predicates ),
-                    spatialReader.hasFullNumberPrecision( predicates ),
-                    luceneReader.hasFullNumberPrecision( predicates ), value );
+                    nativeReader.hasFullValuePrecision( predicates ),
+                    spatialReader.hasFullValuePrecision( predicates ),
+                    luceneReader.hasFullValuePrecision( predicates ), value );
         }
-        return predicates[0] instanceof NumberRangePredicate && nativeReader.hasFullNumberPrecision( predicates );
+        return predicates[0] instanceof NumberRangePredicate && nativeReader.hasFullValuePrecision( predicates );
     }
 }

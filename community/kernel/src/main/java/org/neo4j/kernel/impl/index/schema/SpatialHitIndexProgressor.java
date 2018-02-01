@@ -28,19 +28,12 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> implements IndexProgressor
+public class SpatialHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY, VALUE>
 {
-    final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    final NodeValueClient client;
-    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
-    private boolean closed;
-
-    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
+    SpatialHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
     {
-        this.seeker = seeker;
-        this.client = client;
-        this.toRemoveFromOnClose = toRemoveFromOnClose;
+        super( seeker, client, toRemoveFromOnClose );
     }
 
     @Override
@@ -51,8 +44,7 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
             while ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                Value[] values = client.needsValues() ? new Value[]{ key.asValue()} : null;
-                if ( client.acceptNode( key.getEntityId(), values ) )
+                if ( client.acceptNode( key.getEntityId(), (Value[]) null ) )
                 {
                     return true;
                 }
@@ -62,24 +54,6 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
-        }
-    }
-
-    @Override
-    public void close()
-    {
-        if ( !closed )
-        {
-            closed = true;
-            try
-            {
-                seeker.close();
-                toRemoveFromOnClose.remove( seeker );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
         }
     }
 }

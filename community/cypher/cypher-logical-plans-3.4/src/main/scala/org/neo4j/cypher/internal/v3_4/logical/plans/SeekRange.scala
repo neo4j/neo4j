@@ -50,8 +50,6 @@ object InequalitySeekRange {
 sealed trait InequalitySeekRange[+V] extends SeekRange[V] {
   def mapBounds[P](f: V => P): InequalitySeekRange[P]
 
-  def existsBound(f: V => Boolean): Boolean
-
   def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]]
 
   // Test if value falls into this range using the implicitly given ordering
@@ -69,8 +67,6 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
 
   override def mapBounds[P](f: V => P): HalfOpenSeekRange[P]
 
-  override def existsBound(f: V => Boolean): Boolean = bounds.exists(b => f(b.endPoint))
-
   // returns the limit of this half open seek range, i.e.
   // the greatest bound if this is a RangeGreaterThan and
   // the smallest bound if this is a RangeLessThan
@@ -85,8 +81,6 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
 
 final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V]) extends InequalitySeekRange[V] {
   override def mapBounds[P](f: V => P): RangeBetween[P] = copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
-
-  override def existsBound(f: V => Boolean): Boolean = greaterThan.existsBound(f) || lessThan.existsBound(f)
 
   override def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]] = {
     val greaterThanBounds = greaterThan.bounds.map(Left(_))

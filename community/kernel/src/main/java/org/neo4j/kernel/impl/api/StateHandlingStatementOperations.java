@@ -839,7 +839,7 @@ public class StateHandlingStatementOperations implements
          * a fresh reader that isn't associated with the current transaction and hence will not be
          * automatically closed. */
         PrimitiveLongResourceIterator committed = resourceIterator( reader.query( query ), reader );
-        PrimitiveLongResourceIterator exactMatches = reader.hasFullNumberPrecision( query )
+        PrimitiveLongResourceIterator exactMatches = reader.hasFullValuePrecision( query )
                 ? committed : LookupFilter.exactIndexMatches( this, state, committed, query );
         PrimitiveLongIterator changesFiltered =
                 filterIndexStateChangesForSeek( state, exactMatches, index, IndexQuery.asValueTuple( query ) );
@@ -853,7 +853,7 @@ public class StateHandlingStatementOperations implements
         StorageStatement storeStatement = state.getStoreStatement();
         IndexReader reader = storeStatement.getIndexReader( index );
         PrimitiveLongResourceIterator committed = reader.query( predicates );
-        PrimitiveLongResourceIterator exactMatches = reader.hasFullNumberPrecision( predicates )
+        PrimitiveLongResourceIterator exactMatches = reader.hasFullValuePrecision( predicates )
                 ? committed : LookupFilter.exactIndexMatches( this, state, committed, predicates );
 
         IndexQuery firstPredicate = predicates[0];

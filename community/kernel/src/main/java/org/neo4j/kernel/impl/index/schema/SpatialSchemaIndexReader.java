@@ -140,7 +140,7 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
                 treeKeyFrom.fromDerivedValue( Long.MIN_VALUE, range.min );
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
                 RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
-                IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
+                IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
                 multiProgressor.initialize( descriptor, hitProgressor, query );
             }
         }
@@ -156,7 +156,27 @@ public class SpatialSchemaIndexReader<KEY extends SpatialSchemaKey, VALUE extend
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] query )
+    {
+        if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
+        {
+            client.initialize( descriptor, IndexProgressor.EMPTY, query );
+            return;
+        }
+        try
+        {
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo );
+            IndexProgressor hitProgressor = new SpatialHitIndexProgressor<>( seeker, client, openSeekers );
+            client.initialize( descriptor, hitProgressor, query );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
     }

@@ -145,7 +145,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     }
 
     @Override
-    public abstract boolean hasFullNumberPrecision( IndexQuery... predicates );
+    public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
 
     abstract void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates );
 

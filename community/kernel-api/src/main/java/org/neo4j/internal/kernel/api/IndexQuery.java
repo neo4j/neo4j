@@ -408,12 +408,6 @@ public abstract class IndexQuery
                 PointValue point = (PointValue) value;
                 return point.withinRange( from, fromInclusive, to, toInclusive );
             }
-            else if ( value instanceof LongValue )
-            {
-                // This is called from the hilbert space filling curve index which decomposed 2D range into 1D long curve index
-                // This will return false positives that need to be filtered later
-                return true;
-            }
             return false;
         }
 

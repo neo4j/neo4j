@@ -121,7 +121,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return true;
     }
