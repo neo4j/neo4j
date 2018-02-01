@@ -720,7 +720,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     {
                         found = false;
                         // Scan record backwards in the page
-                        for ( int offset = recordsPerPage * recordSize; offset >= 0; offset -= recordSize )
+                        for ( int offset = recordsPerPage * recordSize - recordSize; offset >= 0; offset -= recordSize )
                         {
                             cursor.setOffset( offset );
                             if ( isInUse( cursor ) && !isJustLegacyStoreTrailer( cursor, offset, recordSize ) )
