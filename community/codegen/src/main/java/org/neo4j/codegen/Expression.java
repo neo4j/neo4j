@@ -259,7 +259,7 @@ public abstract class Expression extends ExpressionTemplate
 
     private static Expression[] expressions( Expression first, Expression[] more )
     {
-        Expression[] result = new Expression[more.length];
+        Expression[] result = new Expression[more.length + 1];
         result[0] = first;
         System.arraycopy( more, 0, result, 1, more.length );
         return result;
