@@ -147,12 +147,9 @@ public class DefaultFormat extends RepresentationFormat
             {
                 if ( missing == null )
                 {
-                    (missing = new HashSet<>()).add( key );
+                    missing = new HashSet<>();
                 }
-                else
-                {
-                    missing.add( key );
-                }
+                missing.add( key );
             }
         }
         if ( missing != null )

@@ -36,7 +36,7 @@ public class DefaultComparatorTopTableTest
 
     private static long[] expectedValues = new long[]{0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L};
 
-    private static Comparator<Long> comparator = ( x, y ) -> (x < y) ? -1 : ((x.equals( y )) ? 0 : 1);
+    private static final Comparator<Long> comparator = Long::compare;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -1281,9 +1281,8 @@ public class DatabaseActions
                 representationCreator = WEIGHTED_PATH_REPRESENTATION_CREATOR;
                 return GraphAlgoFactory.dijkstra( expander, costEvaluator );
             default:
+                throw new RuntimeException( "Failed to find matching algorithm" );
             }
-
-            throw new RuntimeException( "Failed to find matching algorithm" );
         }
     }
 
