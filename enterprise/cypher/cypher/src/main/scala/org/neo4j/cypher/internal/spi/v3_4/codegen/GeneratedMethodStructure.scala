@@ -1449,7 +1449,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
     using(generator.ifStatement(and(
       gt(generator.load(nodeIdVar), constant(-1L)),
-      invoke(readOperations, nodeExists, generator.load(nodeIdVar))
+      invoke(dataRead, nodeExists, generator.load(nodeIdVar))
     ))) { ifBody =>
       block(copy(generator = ifBody))
     }

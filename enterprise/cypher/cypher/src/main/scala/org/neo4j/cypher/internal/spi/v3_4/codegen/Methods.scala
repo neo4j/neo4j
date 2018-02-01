@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api._
+import org.neo4j.internal.kernel.api.{IndexQuery, Read, TokenRead}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -101,7 +102,7 @@ object Methods {
   val loadParameter = method[CompiledConversionUtils, Object]("loadParameter", typeRef[AnyValue], typeRef[EmbeddedProxySPI])
   val relationshipTypeGetForName = method[TokenRead, Int]("relationshipType", typeRef[String])
   val relationshipTypeGetName = method[TokenRead, String]("relationshipTypeName", typeRef[Int])
-  val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
+  val nodeExists = method[Read, Boolean]("nodeExists", typeRef[Long])
   val indexQuery = method[ReadOperations, PrimitiveLongResourceIterator]("indexQuery", typeRef[IndexDescriptor], typeRef[Array[IndexQuery]])
   val indexQueryExact = method[IndexQuery, IndexQuery.ExactPredicate]("exact", typeRef[Int], typeRef[Object])
   val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Array[IndexQuery.ExactPredicate]])
