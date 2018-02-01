@@ -623,11 +623,6 @@
         <version>1.2.17</version>
       </dependency>
       <dependency>
-        <groupId>org.codehaus.janino</groupId>
-        <artifactId>janino</artifactId>
-        <version>2.6.1</version>
-      </dependency>
-      <dependency>
         <groupId>net.sf.opencsv</groupId>
         <artifactId>opencsv</artifactId>
         <version>2.3</version>
