@@ -44,4 +44,9 @@ public interface SpaceFillingCurveConfiguration
      * @return the maximum depth to which the algorithm should recurse in the space filling curve.
      */
     int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel );
+
+    /**
+     * @return the size to use when initializing the ArrayList to store ranges.
+     */
+    int initialRangesListCapacity();
 }

@@ -40,4 +40,12 @@ public class TraverseToBottomConfiguration implements SpaceFillingCurveConfigura
     {
         return getClass().getSimpleName();
     }
+
+    @Override
+    public int initialRangesListCapacity()
+    {
+        // When traversing to bottom, we can get extremely large lists and can't estimate the length.
+        // Thus, we can just as well start with a short list.
+        return 10;
+    }
 }

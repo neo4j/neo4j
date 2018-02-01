@@ -40,8 +40,8 @@ public class PartialOverlapConfiguration extends StandardConfiguration
 
     /**
      * This simply stops at the maxDepth calculated in the maxDepth() function, or
-     * if the overlap is over by some fraction which is 99% at the top levels, bu reduces
-     * linearly to 0.5 when we get to maxDepth.
+     * if the overlap is over some fraction 99% (by default) at the top levels, but reduces
+     * linearly to 0.5 (by default) when we get to maxDepth.
      * <p>
      * {@inheritDoc}
      */

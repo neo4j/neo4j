@@ -267,7 +267,7 @@ public abstract class SpaceFillingCurve
     {
         SearchEnvelope search = new SearchEnvelope( this, referenceEnvelope );
         SearchEnvelope wholeExtent = new SearchEnvelope( 0, this.getWidth(), nbrDim );
-        ArrayList<LongRange> results = new ArrayList<>(1000);
+        ArrayList<LongRange> results = new ArrayList<>( config.initialRangesListCapacity() );
 
         if ( monitor != null )
         {

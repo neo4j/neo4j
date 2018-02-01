@@ -26,9 +26,9 @@ import org.neo4j.gis.spatial.index.Envelope;
  */
 class SearchEnvelope
 {
-    long[] min; // inclusive lower bounds
-    long[] max; // exclusive upper bounds
-    int nbrDim;
+    private long[] min; // inclusive lower bounds
+    private long[] max; // exclusive upper bounds
+    private int nbrDim;
 
     SearchEnvelope( SpaceFillingCurve curve, Envelope referenceEnvelope )
     {
@@ -37,6 +37,7 @@ class SearchEnvelope
         this.nbrDim = referenceEnvelope.getDimension();
         for ( int i = 0; i < nbrDim; i++ )
         {
+            // getNormalizedCoord gives inclusive bounds. Need to increment to make the upper exclusive.
             this.max[i] += 1;
         }
     }
@@ -99,12 +100,16 @@ class SearchEnvelope
         return true;
     }
 
-    /** Only valid for intersecting envelopes
+    /**
+     * Calculates the faction of the overlapping area between {@code this} and {@code} other compared
+     * to the area of {@code this}.
+     *
+     * Must only be called for intersecting envelopes
      */
     double fractionOf( SearchEnvelope other )
     {
         double fraction = 1.0;
-        for ( int i = 0; i < min.length; i++ )
+        for ( int i = 0; i < nbrDim; i++ )
         {
             long min = Math.max( this.min[i], other.min[i] );
             long max = Math.min( this.max[i], other.max[i] );
@@ -120,7 +125,7 @@ class SearchEnvelope
     public long getArea()
     {
         long area = 1;
-        for ( int i = 0; i < min.length; i++ )
+        for ( int i = 0; i < nbrDim; i++ )
         {
             area *= max[i] - min[i];
         }

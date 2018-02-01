@@ -24,6 +24,12 @@ import org.neo4j.gis.spatial.index.Envelope;
 public class StandardConfiguration implements SpaceFillingCurveConfiguration
 {
     public static final int DEFAULT_EXTRA_LEVELS = 1;
+
+    /**
+     * After estimating the search ratio, we know the level at which tiles have approximately the same size as
+     * our search area. This number dictates the amount of levels we go deeper than that, to trim down the amount
+     * of false positives.
+     */
     protected int extraLevels;
 
     StandardConfiguration()
@@ -51,8 +57,7 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
     /**
      * If the search area is exactly one of the finest grained tiles (tile at maxLevel), then
      * we want the search to traverse to maxLevel, however, for each area that is 4x larger, we would
-     * traverse one level shallower. This is achieved by a log of the ration of areas,
-     * to the base of 4 (for 2D).
+     * traverse one level shallower. This is achieved by a log (base 4 for 2D, base 8 for 3D) of the ratio of areas.
      * <p>
      * {@inheritDoc}
      */
@@ -60,13 +65,19 @@ public class StandardConfiguration implements SpaceFillingCurveConfiguration
     public int maxDepth( Envelope referenceEnvelope, Envelope range, int nbrDim, int maxLevel )
     {
         double searchRatio = range.getArea() / referenceEnvelope.getArea();
-        final int i = (int) (Math.log( searchRatio ) / Math.log( Math.pow( 2, nbrDim ) )) + extraLevels;
-        return i;
+        return (int) (Math.log( searchRatio ) / Math.log( Math.pow( 2, nbrDim ) )) + extraLevels;
     }
 
     @Override
     public String toString()
     {
         return getClass().getSimpleName() + "(" + extraLevels + ")";
+    }
+
+    @Override
+    public int initialRangesListCapacity()
+    {
+        // Probably big enough to for the majority of index queries.
+        return 1000;
     }
 }

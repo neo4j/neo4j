@@ -447,6 +447,7 @@ public class SpaceFillingCurveTest
         final int xmax = 100;
         final int ymin = -100;
         final int ymax = 100;
+        // Chosen to be smaller than 10, and "random" enough to not intersect with tile borders on higher levels.
         final double rectangleStepsPerDimension = 9.789;
         final double extensionFactor = 5;
         String formatHeader1 = "Level  Depth Limitation Configuration                  Area Ratio              Ranges                  Depth";
@@ -478,7 +479,7 @@ public class SpaceFillingCurveTest
                     for ( double yExtent = minExtent; yExtent <= ymax; yExtent *= extensionFactor )
                     {
                         // Filter out very thin rectangles
-                        double aspect = xExtent > yExtent ? xExtent / yExtent : yExtent / xExtent;
+                        double aspect = xExtent > yExtent ? (xExtent / yExtent) : (yExtent / xExtent);
                         if ( aspect < maxAspect )
                         {
                             // For different positions of the rectangle
@@ -527,6 +528,10 @@ public class SpaceFillingCurveTest
         }
     }
 
+    /**
+     * This test can be uses to reproduce a bug with a single search envelope, if {@link #shouldHaveReasonableCoveredArea()}
+     * fails an assertion. It should be ignored by default.
+     */
     @Ignore
     public void debugSingle()
     {
