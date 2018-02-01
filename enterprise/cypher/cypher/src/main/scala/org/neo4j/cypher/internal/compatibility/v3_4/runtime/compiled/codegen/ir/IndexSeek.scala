@@ -36,16 +36,16 @@ case class IndexSeek(opName: String, labelName: String, propNames: Seq[String], 
     generator.newIndexReference(descriptorVar, labelVar, propKeyVar)
   }
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
       generator.indexSeek(iterVar, descriptorVar, expression.generateExpression(generator), expression.codeGenType)
       generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
     generator.nodeFromNodeValueIndexCursor(nextVar.name, iterVar)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceNodeValueIndexCursor(iterVar)
+  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceNodeValueIndexCursor(iterVar)
 }

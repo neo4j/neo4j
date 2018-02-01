@@ -27,17 +27,17 @@ case class ScanForLabel(opName: String, labelName: String, labelVar: String) ext
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.lookupLabelId(labelVar, labelName)
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.labelScan(iterVar, labelVar)
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
     generator.nodeFromNodeLabelIndexCursor(nextVar.name, iterVar)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E =
+  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E =
     generator.advanceNodeLabelIndexCursor(iterVar)
 }
