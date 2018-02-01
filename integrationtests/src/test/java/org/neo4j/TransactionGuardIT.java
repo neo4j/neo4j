@@ -33,6 +33,7 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -61,6 +62,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -736,7 +738,15 @@ public class TransactionGuardIT
 
         CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.ENTERPRISE, TransactionGuardTerminationEditionModule::new );
+            // XXX: This has to be a Function, JVM crashes with ClassFormatError if you pass a lambda here
+            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>() // Don't make a lambda
+            {
+                @Override
+                public EditionModule apply( PlatformModule platformModule )
+                {
+                    return new TransactionGuardTerminationEditionModule( platformModule );
+                }
+            } );
         }
         @Override
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
