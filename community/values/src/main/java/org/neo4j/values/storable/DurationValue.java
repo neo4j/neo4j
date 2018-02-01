@@ -204,8 +204,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
     static final int NANOS_PER_SECOND = 1_000_000_000;
     static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
     /** 30.4375 days = 30 days, 10 hours, 30 minutes */
-    private static final double AVERAGE_DAYS_PER_MONTH = 365.25 / 12;
-    static final long AVG_SECONDS_PER_MONTH = 2_629_800;
+    private static final double AVERAGE_DAYS_PER_MONTH = 365.2425 / 12;
+    private static final long AVG_SECONDS_PER_MONTH = 2_629_746;
     private final long months;
     private final long days;
     private final long seconds;
