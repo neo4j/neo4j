@@ -492,7 +492,7 @@ public class IndexPopulationJobTest
                             added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
                             break;
                         default:
-                            throw new IllegalArgumentException( update.updateMode().name() );
+                            // ignore removals
                     }
                 }
 
