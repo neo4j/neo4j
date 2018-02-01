@@ -163,7 +163,7 @@ public class Neo4jWithSocket extends ExternalResource
                 ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
-    private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
+    private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction )
     {
         Map<String,String> settings = new HashMap<>();
         settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );

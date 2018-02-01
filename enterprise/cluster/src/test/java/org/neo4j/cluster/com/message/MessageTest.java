@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 public class MessageTest
 {
     @Test
-    public void respondingToInternalMessageShouldProduceCorrectMessage() throws Exception
+    public void respondingToInternalMessageShouldProduceCorrectMessage()
     {
         // Given
         final Object payload = new Object();
@@ -48,7 +48,7 @@ public class MessageTest
     }
 
     @Test
-    public void respondingToExternalMessageShouldProperlySetToHeaders() throws Exception
+    public void respondingToExternalMessageShouldProperlySetToHeaders()
     {
         // Given
         final Object payload = new Object();

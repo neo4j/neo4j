@@ -45,7 +45,7 @@ public class ProgressTrackerImplTest
     private ProgressTrackerImpl tracker = new ProgressTrackerImpl( session );
 
     @Test
-    public void shouldReportThatOperationIsNotReplicatedInitially() throws Exception
+    public void shouldReportThatOperationIsNotReplicatedInitially()
     {
         // when
         Progress progress = tracker.start( operationA );
@@ -92,7 +92,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldBeAbleToAbortTracking() throws Exception
+    public void shouldBeAbleToAbortTracking()
     {
         // when
         tracker.start( operationA );
@@ -106,7 +106,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldCheckThatOneOperationDoesNotAffectProgressOfOther() throws Exception
+    public void shouldCheckThatOneOperationDoesNotAffectProgressOfOther()
     {
         // given
         Progress progressA = tracker.start( operationA );
@@ -151,7 +151,7 @@ public class ProgressTrackerImplTest
     }
 
     @Test
-    public void shouldIgnoreOtherSessions() throws Exception
+    public void shouldIgnoreOtherSessions()
     {
         // given
         GlobalSession sessionB = new GlobalSession( UUID.randomUUID(), null );
@@ -173,7 +173,7 @@ public class ProgressTrackerImplTest
         assertEquals( false, progressA.futureResult().isDone() );
     }
 
-    private Thread replicationEventWaiter( Progress progress ) throws InterruptedException
+    private Thread replicationEventWaiter( Progress progress )
     {
         Thread waiter = new Thread( () ->
         {

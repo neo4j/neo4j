@@ -34,7 +34,7 @@ public class StringDeserializationTest
     private final Header.Entry entry3 = new Header.Entry( null, Type.END_ID, null, extractors.int_() );
 
     @Test
-    public void shouldProvideDelimiterAfterFirstEmptyField() throws Exception
+    public void shouldProvideDelimiterAfterFirstEmptyField()
     {
         // given
         StringDeserialization deserialization = new StringDeserialization( configuration );
@@ -50,7 +50,7 @@ public class StringDeserializationTest
     }
 
     @Test
-    public void shouldProvideDelimiterBeforeLastEmptyField() throws Exception
+    public void shouldProvideDelimiterBeforeLastEmptyField()
     {
         // given
         StringDeserialization deserialization = new StringDeserialization( configuration );

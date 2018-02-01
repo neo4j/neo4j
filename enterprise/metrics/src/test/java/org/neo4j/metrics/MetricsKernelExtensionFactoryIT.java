@@ -230,7 +230,7 @@ public class MetricsKernelExtensionFactoryIT
     }
 
     @Test
-    public void mustBeAbleToStartWithNullTracer() throws Exception
+    public void mustBeAbleToStartWithNullTracer()
     {
         // Start the database
         File disabledTracerDb = clusterRule.directory( "disabledTracerDb" );

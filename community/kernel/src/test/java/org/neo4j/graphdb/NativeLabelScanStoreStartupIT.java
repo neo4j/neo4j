@@ -133,7 +133,7 @@ public class NativeLabelScanStoreStartupIT
         scrambleFile( storeFile( storeDirectory ) );
     }
 
-    private void deleteLabelScanStoreFiles( File storeDirectory ) throws IOException
+    private void deleteLabelScanStoreFiles( File storeDirectory )
     {
         assertTrue( storeFile( storeDirectory ).delete() );
     }

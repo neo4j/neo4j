@@ -46,7 +46,7 @@ public class CausalClusteringBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management )
     {
         if ( isCausalClustering( management ) )
         {
@@ -56,7 +56,7 @@ public class CausalClusteringBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         if ( isCausalClustering( management ) )
         {

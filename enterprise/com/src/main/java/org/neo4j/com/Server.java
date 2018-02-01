@@ -155,7 +155,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         chunkSize = config.getChunkSize();
         assertChunkSizeIsWithinFrameSize( chunkSize, frameLength );
@@ -201,7 +201,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         String name = getClass().getSimpleName();
         msgLog.info( name + " communication server shutting down and unbinding from  " + socketAddress );
@@ -236,7 +236,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception
+    public ChannelPipeline getPipeline()
     {
         ChannelPipeline pipeline = Channels.pipeline();
         pipeline.addLast( "monitor", new MonitorChannelHandler( byteCounterMonitor ) );
@@ -246,14 +246,13 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
     {
         channelGroup.add( e.getChannel() );
     }
 
     @Override
     public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
-            throws Exception
     {
         try
         {
@@ -318,7 +317,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
     {
         msgLog.warn( "Exception from Netty", e.getCause() );
     }
@@ -602,7 +601,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
 
         @Override
-        public void obligation( long txId ) throws IOException
+        public void obligation( long txId )
         {
             targetBuffer.writeByte( -1 );
             targetBuffer.writeLong( txId );

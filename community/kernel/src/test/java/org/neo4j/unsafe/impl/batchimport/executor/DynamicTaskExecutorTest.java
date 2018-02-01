@@ -50,7 +50,7 @@ public class DynamicTaskExecutorTest
     public final RepeatRule repeater = new RepeatRule();
 
     @Test
-    public void shouldExecuteTasksInParallel() throws Exception
+    public void shouldExecuteTasksInParallel()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 2, 0, 5, PARK,
@@ -79,7 +79,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldIncrementNumberOfProcessorsWhenRunning() throws Exception
+    public void shouldIncrementNumberOfProcessorsWhenRunning()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 0, 5, PARK,
@@ -143,7 +143,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldExecuteMultipleTasks() throws Exception
+    public void shouldExecuteMultipleTasks()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 30, 0, 5, PARK,
@@ -283,7 +283,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldRespectMaxProcessors() throws Exception
+    public void shouldRespectMaxProcessors()
     {
         // GIVEN
         int maxProcessors = 4;
@@ -321,7 +321,7 @@ public class DynamicTaskExecutorTest
     }
 
     @Test
-    public void shouldNoticeBadHealthBeforeBeingClosed() throws Exception
+    public void shouldNoticeBadHealthBeforeBeingClosed()
     {
         // GIVEN
         TaskExecutor<Void> executor = new DynamicTaskExecutor<>( 1, 2, 2, PARK, "test" );
@@ -389,7 +389,7 @@ public class DynamicTaskExecutorTest
     private static class EmptyTask implements Task<Void>
     {
         @Override
-        public void run( Void nothing ) throws Exception
+        public void run( Void nothing )
         {   // Do nothing
         }
     }

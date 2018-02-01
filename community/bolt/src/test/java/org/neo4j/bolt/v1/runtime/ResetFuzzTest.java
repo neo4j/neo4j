@@ -109,22 +109,22 @@ public class ResetFuzzTest
                 NullLog.getInstance(), boltLogger, boltWorker, new BoltResponseMessageHandler<IOException>()
         {
             @Override
-            public void onRecord( QueryResult.Record item ) throws IOException
+            public void onRecord( QueryResult.Record item )
             {
             }
 
             @Override
-            public void onIgnored() throws IOException
+            public void onIgnored()
             {
             }
 
             @Override
-            public void onFailure( Status status, String errorMessage ) throws IOException
+            public void onFailure( Status status, String errorMessage )
             {
             }
 
             @Override
-            public void onSuccess( MapValue metadata ) throws IOException
+            public void onSuccess( MapValue metadata )
             {
             }
         }, Runnables.EMPTY_RUNNABLE );
@@ -221,7 +221,7 @@ public class ResetFuzzTest
         }
 
         @Override
-        public AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException
+        public AuthenticationResult authenticate( Map<String,Object> authToken )
         {
             return AuthenticationResult.AUTH_DISABLED;
         }

@@ -56,7 +56,7 @@ public class TestGrowingFileMemoryMapping
     public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
 
     @Test
-    public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions() throws Exception
+    public void shouldGrowAFileWhileContinuingToMemoryMapNewRegions()
     {
         // don't run on windows because memory mapping doesn't work properly there
         assumeTrue( !SystemUtils.IS_OS_WINDOWS );

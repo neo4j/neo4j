@@ -208,7 +208,7 @@ public class RecordingChannel implements Channel
         return new BlockingReadHandler<ChannelBuffer>()
         {
             @Override
-            public ChannelBuffer read() throws IOException, InterruptedException
+            public ChannelBuffer read()
             {
                 return recievedMessages.poll();
             }
@@ -296,13 +296,13 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public ChannelFuture rethrowIfFailed() throws Exception
+        public ChannelFuture rethrowIfFailed()
         {
             return null;
         }
 
         @Override
-        public ChannelFuture sync() throws InterruptedException
+        public ChannelFuture sync()
         {
             return null;
         }
@@ -314,7 +314,7 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public ChannelFuture await() throws InterruptedException
+        public ChannelFuture await()
         {
             return null;
         }
@@ -326,13 +326,13 @@ public class RecordingChannel implements Channel
         }
 
         @Override
-        public boolean await( long timeout, TimeUnit unit ) throws InterruptedException
+        public boolean await( long timeout, TimeUnit unit )
         {
             return false;
         }
 
         @Override
-        public boolean await( long timeoutMillis ) throws InterruptedException
+        public boolean await( long timeoutMillis )
         {
             return false;
         }

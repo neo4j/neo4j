@@ -37,7 +37,7 @@ public class ConcurrentMapStateTest
     private final Lock lock = mock( Lock.class );
 
     @Test
-    public void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate() throws Exception
+    public void shouldCreateAnUpdaterForTheNextUnseenVersionUpdate()
     {
         // given
         long initialVersion = 42;
@@ -55,7 +55,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap() throws Exception
+    public void shouldCreateAnUpdaterForAnUnseenVersionUpdateWithAGap()
     {
         // given
         long initialVersion = 42;
@@ -74,7 +74,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder() throws Exception
+    public void shouldCreateAnUpdaterForMultipleVersionUpdatesInOrder()
     {
         // given
         long initialVersion = 42;
@@ -103,7 +103,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder() throws Exception
+    public void shouldCreateAnUpdaterForMultipleVersionUpdatesNotInOrder()
     {
         // given
         long initialVersion = 42;
@@ -132,7 +132,7 @@ public class ConcurrentMapStateTest
     }
 
     @Test
-    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion() throws Exception
+    public void shouldUseEmptyUpdaterOnVersionLowerOrEqualToTheInitialVersion()
     {
         // given
         long initialVersion = 42;

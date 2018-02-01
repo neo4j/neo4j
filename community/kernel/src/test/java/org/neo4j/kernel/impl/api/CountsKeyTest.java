@@ -32,7 +32,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relations
 public class CountsKeyTest
 {
     @Test
-    public void shouldSortNodeKeysBeforeRelationshipKeys() throws Exception
+    public void shouldSortNodeKeysBeforeRelationshipKeys()
     {
         // given
         CountsKey[] array = {

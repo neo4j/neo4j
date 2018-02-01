@@ -94,7 +94,7 @@ public class TestRelationshipCount
     }
 
     @Test
-    public void convertNodeToDense() throws Exception
+    public void convertNodeToDense()
     {
         Node node = getGraphDb().createNode();
         EnumMap<MyRelTypes,Set<Relationship>> rels = new EnumMap<>( MyRelTypes.class );
@@ -150,7 +150,7 @@ public class TestRelationshipCount
         testGetRelationshipTypes( node, new HashSet<>( asList( RelType.INITIAL.name() ) ) );
     }
 
-    private void testGetRelationshipTypes( Node node, Set<String> expectedTypes ) throws Exception
+    private void testGetRelationshipTypes( Node node, Set<String> expectedTypes )
     {
         assertExpectedRelationshipTypes( expectedTypes, node, false );
         node.createRelationshipTo( getGraphDb().createNode(), RelType.TYPE1 );
@@ -206,7 +206,7 @@ public class TestRelationshipCount
     }
 
     @Test
-    public void withoutLoops() throws Exception
+    public void withoutLoops()
     {
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -271,7 +271,7 @@ public class TestRelationshipCount
     }
 
     @Test
-    public void withLoops() throws Exception
+    public void withLoops()
     {
         // Just to make sure it doesn't work by accident what with ids aligning with count
         for ( int i = 0; i < 10; i++ )
@@ -300,7 +300,7 @@ public class TestRelationshipCount
     }
 
     @Test
-    public void ensureRightDegree() throws Exception
+    public void ensureRightDegree()
     {
         for ( int initialSize : new int[] { 0, 95, 200 } )
         {

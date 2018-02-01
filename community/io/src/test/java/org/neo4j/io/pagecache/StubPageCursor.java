@@ -81,13 +81,13 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         return true;
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         return true;
     }
@@ -109,7 +109,7 @@ public class StubPageCursor extends PageCursor
     }
 
     @Override
-    public boolean shouldRetry() throws IOException
+    public boolean shouldRetry()
     {
         if ( needsRetry )
         {

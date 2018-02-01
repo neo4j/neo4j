@@ -181,7 +181,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
         startupLatch.await();
     }
 
-    public void awaitTermination() throws InterruptedException
+    public void awaitTermination()
     {
         shutdownLatch.await();
     }

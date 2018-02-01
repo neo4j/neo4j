@@ -51,7 +51,7 @@ public class IterableStore<RECORD extends AbstractBaseRecord> implements Bounded
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         closeIterator();
     }

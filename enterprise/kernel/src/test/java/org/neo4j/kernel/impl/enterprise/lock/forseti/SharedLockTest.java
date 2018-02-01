@@ -30,7 +30,7 @@ public class SharedLockTest
 {
 
     @Test
-    public void shouldUpgradeToUpdateLock() throws Exception
+    public void shouldUpgradeToUpdateLock()
     {
         // Given
         ForsetiClient clientA = mock( ForsetiClient.class );
@@ -48,7 +48,7 @@ public class SharedLockTest
     }
 
     @Test
-    public void shouldReleaseSharedLock() throws Exception
+    public void shouldReleaseSharedLock()
     {
         // Given
         ForsetiClient clientA = mock( ForsetiClient.class );

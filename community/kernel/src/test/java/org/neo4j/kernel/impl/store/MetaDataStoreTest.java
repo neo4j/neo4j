@@ -777,7 +777,7 @@ public class MetaDataStoreTest
         }
     }
 
-    private MetaDataStore newMetaDataStore() throws IOException
+    private MetaDataStore newMetaDataStore()
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),

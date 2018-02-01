@@ -82,7 +82,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldNotAccessGroupsOfBareNode() throws Exception
+    public void shouldNotAccessGroupsOfBareNode()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -99,7 +99,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldTraverseRelationshipsOfGivenType() throws Exception
+    public void shouldTraverseRelationshipsOfGivenType()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -168,7 +168,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldFollowSpecificRelationship() throws Exception
+    public void shouldFollowSpecificRelationship()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -232,7 +232,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldHaveBeenAbleToCreateDenseAndSparseNodes() throws Exception
+    public void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor() )

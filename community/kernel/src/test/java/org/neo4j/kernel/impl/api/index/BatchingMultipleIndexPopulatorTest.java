@@ -74,7 +74,7 @@ public class BatchingMultipleIndexPopulatorTest
     private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         clearProperty( QUEUE_THRESHOLD_NAME );
         clearProperty( TASK_QUEUE_SIZE_NAME );

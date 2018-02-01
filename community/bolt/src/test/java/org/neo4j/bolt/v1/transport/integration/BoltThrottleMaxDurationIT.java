@@ -68,8 +68,7 @@ public class BoltThrottleMaxDurationIT
 {
     private AssertableLogProvider logProvider;
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            fsRule::get, getSettingsFunction() );
+    private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
@@ -109,7 +108,7 @@ public class BoltThrottleMaxDurationIT
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         client = cf.newInstance();
         address = server.lookupDefaultConnector();

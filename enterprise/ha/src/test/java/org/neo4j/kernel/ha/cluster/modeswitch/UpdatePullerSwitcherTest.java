@@ -62,7 +62,7 @@ public class UpdatePullerSwitcherTest
     }
 
     @Test
-    public void slaveUpdatePuller() throws Throwable
+    public void slaveUpdatePuller()
     {
         UpdatePuller updatePuller = modeSwitcher.getSlaveImpl();
         assertSame( slaveUpdatePuller, updatePuller );
@@ -70,7 +70,7 @@ public class UpdatePullerSwitcherTest
     }
 
     @Test
-    public void switchToPendingTest() throws Exception
+    public void switchToPendingTest()
     {
         modeSwitcher.switchToSlave();
         verify( slaveUpdatePuller ).start();

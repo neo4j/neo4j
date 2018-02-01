@@ -45,14 +45,14 @@ public class RaftMembershipStateTest
     private Set<MemberId> membersB = asSet( member( 0 ), member( 1 ), member( 2 ), member( 3 ) );
 
     @Test
-    public void shouldHaveCorrectInitialState() throws Exception
+    public void shouldHaveCorrectInitialState()
     {
         assertThat( state.getLatest(), hasSize( 0 ) );
         assertFalse( state.uncommittedMemberChangeInLog() );
     }
 
     @Test
-    public void shouldUpdateLatestOnAppend() throws Exception
+    public void shouldUpdateLatestOnAppend()
     {
         // when
         state.append( 0, membersA );
@@ -69,7 +69,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldKeepLatestOnCommit() throws Exception
+    public void shouldKeepLatestOnCommit()
     {
         // given
         state.append( 0, membersA );
@@ -85,7 +85,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldLowerUncommittedFlagOnCommit() throws Exception
+    public void shouldLowerUncommittedFlagOnCommit()
     {
         // given
         state.append( 0, membersA );
@@ -99,7 +99,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldRevertToCommittedStateOnTruncation() throws Exception
+    public void shouldRevertToCommittedStateOnTruncation()
     {
         // given
         state.append( 0, membersA );
@@ -116,7 +116,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldNotTruncateEarlierThanIndicated() throws Exception
+    public void shouldNotTruncateEarlierThanIndicated()
     {
         // given
         state.append( 0, membersA );
@@ -148,7 +148,7 @@ public class RaftMembershipStateTest
     }
 
     @Test
-    public void shouldRefuseToAppendToTheSameIndexTwice() throws Exception
+    public void shouldRefuseToAppendToTheSameIndexTwice()
     {
         // given
         state.append( 0, membersA );

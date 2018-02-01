@@ -55,7 +55,7 @@ public class StoreStreamingProtocolTest
     private PageCache pageCache;
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         pageCache = pageCacheRule.getPageCache( fs.get() );
     }
@@ -95,7 +95,7 @@ public class StoreStreamingProtocolTest
     }
 
     @Test
-    public void shouldBeAbleToEndWithFailure() throws Exception
+    public void shouldBeAbleToEndWithFailure()
     {
         // given
         StoreStreamingProtocol protocol = new StoreStreamingProtocol();
@@ -112,7 +112,7 @@ public class StoreStreamingProtocolTest
     }
 
     @Test
-    public void shouldBeAbleToEndWithSuccess() throws Exception
+    public void shouldBeAbleToEndWithSuccess()
     {
         // given
         StoreStreamingProtocol protocol = new StoreStreamingProtocol();

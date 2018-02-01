@@ -314,7 +314,7 @@ public class MasterClient214 extends Client<Master> implements MasterClient
         }
 
         @Override
-        public void write( ChannelBuffer buffer ) throws IOException
+        public void write( ChannelBuffer buffer )
         {
             buffer.writeInt( type.typeId() );
             buffer.writeInt( resourceIds.length );

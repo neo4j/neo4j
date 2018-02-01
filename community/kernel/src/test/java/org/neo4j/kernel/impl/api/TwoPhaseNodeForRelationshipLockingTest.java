@@ -164,7 +164,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
                     private boolean first = skipFirst;
 
                     @Override
-                    public Cursor<RelationshipItem> answer( InvocationOnMock invocation ) throws Throwable
+                    public Cursor<RelationshipItem> answer( InvocationOnMock invocation )
                     {
                         try
                         {
@@ -246,7 +246,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         public final Set<Long> set = new HashSet<>();
 
         @Override
-        public void accept( Long input ) throws KernelException
+        public void accept( Long input )
         {
             assertNotNull( input );
             set.add( input );

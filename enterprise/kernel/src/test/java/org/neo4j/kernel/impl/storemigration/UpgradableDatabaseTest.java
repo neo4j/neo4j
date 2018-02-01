@@ -133,7 +133,7 @@ public class UpgradableDatabaseTest
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
+        public void shouldDetectOldVersionAsDifferentFromCurrent()
         {
             // given
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
@@ -211,7 +211,7 @@ public class UpgradableDatabaseTest
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
+        public void shouldDetectOldVersionAsDifferentFromCurrent()
         {
             // given
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();

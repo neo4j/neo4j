@@ -42,7 +42,7 @@ public class NetworkReceiverTest
     static final int PORT = 1234;
 
     @Test
-    public void testGetURIWithWildCard() throws Exception
+    public void testGetURIWithWildCard()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );
@@ -56,7 +56,7 @@ public class NetworkReceiverTest
     }
 
     @Test
-    public void testGetURIWithLocalHost() throws Exception
+    public void testGetURIWithLocalHost()
     {
         NetworkReceiver networkReceiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                 mock( NetworkReceiver.Configuration.class ), mock( LogProvider.class ) );

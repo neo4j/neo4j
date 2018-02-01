@@ -106,7 +106,7 @@ public class PluginRealmTest
         }
     }
 
-    private static void logLines( AuthProviderOperations api ) throws Throwable
+    private static void logLines( AuthProviderOperations api )
     {
         AuthProviderOperations.Log log = api.log();
         if ( log.isDebugEnabled() )

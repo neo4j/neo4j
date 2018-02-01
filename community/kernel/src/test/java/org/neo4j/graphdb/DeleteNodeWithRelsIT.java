@@ -34,7 +34,7 @@ public class DeleteNodeWithRelsIT
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels() throws Exception
+    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
         GraphDatabaseService db = this.db.getGraphDatabaseAPI();

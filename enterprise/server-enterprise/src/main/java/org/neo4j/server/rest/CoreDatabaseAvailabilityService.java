@@ -65,7 +65,7 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
     }
 
     @GET
-    public Response discover() throws BadInputException
+    public Response discover()
     {
         if ( coreDatabase == null )
         {
@@ -77,7 +77,7 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
 
     @GET
     @Path( IS_WRITABLE_PATH )
-    public Response isWritable() throws BadInputException
+    public Response isWritable()
     {
         if ( coreDatabase == null )
         {
@@ -94,7 +94,7 @@ public class CoreDatabaseAvailabilityService implements AdvertisableService
 
     @GET
     @Path( IS_READ_ONLY_PATH )
-    public Response isReadOnly() throws BadInputException
+    public Response isReadOnly()
     {
         if ( coreDatabase == null )
         {

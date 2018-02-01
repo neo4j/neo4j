@@ -93,7 +93,7 @@ public class RaftTestFixture
         return members;
     }
 
-    public void bootstrap( MemberId[] members ) throws RaftMachine.BootstrapException, IOException
+    public void bootstrap( MemberId[] members ) throws IOException
     {
         for ( MemberFixture member : members() )
         {

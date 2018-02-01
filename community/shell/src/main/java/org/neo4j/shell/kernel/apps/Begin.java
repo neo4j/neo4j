@@ -45,7 +45,7 @@ public class Begin extends NonTransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
+            throws RemoteException
     {
         String lineWithoutApp = parser.getLineWithoutApp();
         if ( !acceptableText( lineWithoutApp ) )

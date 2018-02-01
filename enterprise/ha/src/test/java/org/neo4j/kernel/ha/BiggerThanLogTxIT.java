@@ -56,7 +56,7 @@ public class BiggerThanLogTxIT
     }
 
     @Test
-    public void shouldHandleSlaveCommittingLargeTx() throws Exception
+    public void shouldHandleSlaveCommittingLargeTx()
     {
         // GIVEN
         GraphDatabaseService slave = cluster.getAnySlave();
@@ -81,7 +81,7 @@ public class BiggerThanLogTxIT
     }
 
     @Test
-    public void shouldHandleMasterCommittingLargeTx() throws Exception
+    public void shouldHandleMasterCommittingLargeTx()
     {
         // GIVEN
         GraphDatabaseService slave = cluster.getAnySlave();

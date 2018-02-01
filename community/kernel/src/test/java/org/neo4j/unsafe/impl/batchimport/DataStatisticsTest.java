@@ -76,7 +76,7 @@ public class DataStatisticsTest
     }
 
     @Test
-    public void shouldGrowArrayProperly() throws Exception
+    public void shouldGrowArrayProperly()
     {
         // given
         DataStatistics stats = new DataStatistics( 1, 1, new RelationshipTypeCount[0] );

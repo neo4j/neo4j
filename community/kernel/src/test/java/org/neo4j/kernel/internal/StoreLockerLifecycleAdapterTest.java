@@ -43,7 +43,7 @@ public class StoreLockerLifecycleAdapterTest
     public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
-    public void shouldAllowDatabasesToUseFilesetsSequentially() throws Exception
+    public void shouldAllowDatabasesToUseFilesetsSequentially()
     {
         newDb().shutdown();
         newDb().shutdown();
@@ -62,7 +62,7 @@ public class StoreLockerLifecycleAdapterTest
                 stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
     }
 
-    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config ) throws Exception
+    private void shouldNotAllowDatabasesToUseFilesetsConcurrently( Map<String,String> config )
     {
         GraphDatabaseService db = newDb();
         try

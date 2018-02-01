@@ -43,7 +43,7 @@ public class DefaultFileSystemAbstractionTest extends FileSystemAbstractionTest
     }
 
     @Test
-    public void shouldFailGracefullyWhenPathCannotBeCreated() throws Exception
+    public void shouldFailGracefullyWhenPathCannotBeCreated()
     {
         path = new File( testDirectory.directory(), String.valueOf( UUID.randomUUID() ) )
         {

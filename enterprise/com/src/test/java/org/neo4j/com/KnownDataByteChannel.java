@@ -48,7 +48,7 @@ public class KnownDataByteChannel implements ReadableByteChannel
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

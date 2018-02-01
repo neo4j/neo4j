@@ -46,7 +46,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
     @Override
-    public void setUp() throws Throwable
+    public void setUp()
     {
         // tests are required to setup database with specific configs
     }

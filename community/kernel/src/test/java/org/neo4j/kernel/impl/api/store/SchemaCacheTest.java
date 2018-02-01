@@ -173,7 +173,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void adding_constraints_should_be_idempotent() throws Exception
+    public void adding_constraints_should_be_idempotent()
     {
         // given
         SchemaCache cache = newSchemaCache();
@@ -190,7 +190,7 @@ public class SchemaCacheTest
     }
 
     @Test
-    public void shouldResolveIndexDescriptor() throws Exception
+    public void shouldResolveIndexDescriptor()
     {
         // Given
         SchemaCache cache = newSchemaCache();

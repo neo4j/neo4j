@@ -215,7 +215,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
             new DumpStore<R, TokenStore<R, T>>( System.out )
             {
                 @Override
-                protected Object transform( R record ) throws Exception
+                protected Object transform( R record )
                 {
                     if ( record.inUse() )
                     {
@@ -270,7 +270,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         new DumpStore<NodeRecord,NodeStore>( System.out )
         {
             @Override
-            protected Object transform( NodeRecord record ) throws Exception
+            protected Object transform( NodeRecord record )
             {
                 return record.inUse() ? record : "";
             }

@@ -45,7 +45,6 @@ public enum AtomicBroadcastState
                                                     Message<AtomicBroadcastMessage> message,
                                                     MessageHolder outgoing
                 )
-                        throws Throwable
                 {
 
                     switch ( message.getMessageType() )
@@ -77,7 +76,6 @@ public enum AtomicBroadcastState
                                            Message<AtomicBroadcastMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -123,7 +121,6 @@ public enum AtomicBroadcastState
                                                     Message<AtomicBroadcastMessage> message,
                                                     MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

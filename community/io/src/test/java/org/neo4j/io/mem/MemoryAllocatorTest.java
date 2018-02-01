@@ -44,7 +44,7 @@ public class MemoryAllocatorTest
     }
 
     @Test
-    public void allocatedPointerMustNotBeNull() throws Exception
+    public void allocatedPointerMustNotBeNull()
     {
         MemoryAllocator mman = createAllocator( EIGHT_PAGES );
         long address = mman.allocateAligned( PageCache.PAGE_SIZE, 8 );
@@ -52,7 +52,7 @@ public class MemoryAllocatorTest
     }
 
     @Test
-    public void allocatedPointerMustBePageAligned() throws Exception
+    public void allocatedPointerMustBePageAligned()
     {
         MemoryAllocator mman = createAllocator( EIGHT_PAGES );
         long address = mman.allocateAligned( PageCache.PAGE_SIZE, UnsafeUtil.pageSize() );
@@ -60,7 +60,7 @@ public class MemoryAllocatorTest
     }
 
     @Test
-    public void mustBeAbleToAllocatePastMemoryLimit() throws Exception
+    public void mustBeAbleToAllocatePastMemoryLimit()
     {
         MemoryAllocator mman = createAllocator( ONE_PAGE );
         for ( int i = 0; i < 4100; i++ )
@@ -71,13 +71,13 @@ public class MemoryAllocatorTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void alignmentCannotBeZero() throws Exception
+    public void alignmentCannotBeZero()
     {
         createAllocator( ONE_PAGE ).allocateAligned( 8, 0 );
     }
 
     @Test
-    public void mustBeAbleToAllocateSlabsLargerThanGrabSize() throws Exception
+    public void mustBeAbleToAllocateSlabsLargerThanGrabSize()
     {
         MemoryAllocator mman = createAllocator( "2 MiB" );
         long page1 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
@@ -89,7 +89,7 @@ public class MemoryAllocatorTest
     }
 
     @Test
-    public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() throws Exception
+    public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory()
     {
         MemoryAllocator mman = createAllocator( ONE_PAGE );
         // We haven't allocated anything, so usedMemory should be zero, and the available memory should be the

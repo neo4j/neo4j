@@ -37,7 +37,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordNotInUse() throws Exception
+    public void shouldNotReportAnythingForRecordNotInUse()
     {
         // given
         RelationshipTypeTokenRecord label = notInUse( new RelationshipTypeTokenRecord( 42 ) );
@@ -50,7 +50,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock() throws Exception
+    public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock()
     {
         // given
         RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
@@ -63,7 +63,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportDynamicBlockNotInUse() throws Exception
+    public void shouldReportDynamicBlockNotInUse()
     {
         // given
         RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );
@@ -79,7 +79,7 @@ public class RelationshipTypeTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportEmptyName() throws Exception
+    public void shouldReportEmptyName()
     {
         // given
         RelationshipTypeTokenRecord label = inUse( new RelationshipTypeTokenRecord( 42 ) );

@@ -68,7 +68,7 @@ public class LuceneSchemaIndexProviderTest
     }
 
     @Test
-    public void shouldFailToInvokePopulatorInReadOnlyMode() throws Exception
+    public void shouldFailToInvokePopulatorInReadOnlyMode()
     {
         Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,

@@ -105,7 +105,7 @@ public class BashVariableInterpreter
          * @return the replacement.
          * @throws ShellException if there should be some communication error.
          */
-        String getReplacement( ShellServer server, Session session ) throws ShellException;
+        String getReplacement( ShellServer server, Session session );
     }
 
     /**

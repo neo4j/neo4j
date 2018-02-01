@@ -140,7 +140,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public long closeTransaction() throws TransactionFailureException
+    public long closeTransaction()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

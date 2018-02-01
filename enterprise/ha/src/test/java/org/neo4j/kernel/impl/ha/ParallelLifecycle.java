@@ -130,6 +130,6 @@ class ParallelLifecycle extends LifecycleAdapter
 
     private interface Action
     {
-        void act( Lifecycle lifecycle ) throws Throwable;
+        void act( Lifecycle lifecycle );
     }
 }

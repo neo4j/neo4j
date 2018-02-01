@@ -136,7 +136,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return getCurrent( getServer(), session );
     }
 
-    public static boolean isCurrent( Session session, NodeOrRelationship thing ) throws ShellException
+    public static boolean isCurrent( Session session, NodeOrRelationship thing )
     {
         String currentThing = session.getCurrent();
         return currentThing != null && currentThing.equals(
@@ -149,7 +149,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static void setCurrent( Session session,
-                                      NodeOrRelationship current ) throws ShellException
+                                      NodeOrRelationship current )
     {
         session.setCurrent( current.getTypedId().toString() );
     }
@@ -182,7 +182,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static Direction getDirection( String direction,
-        Direction defaultDirection ) throws ShellException
+        Direction defaultDirection )
     {
         return parseEnum( Direction.class, direction, defaultDirection );
     }
@@ -683,7 +683,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @return the working directory as a list.
      * @throws RemoteException if an RMI error occurs.
      */
-    public static List<TypedId> readCurrentWorkingDir( Session session ) throws RemoteException
+    public static List<TypedId> readCurrentWorkingDir( Session session )
     {
         List<TypedId> list = new ArrayList<>();
         String path = session.getPath();
@@ -697,7 +697,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return list;
     }
 
-    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session ) throws RemoteException
+    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session )
     {
         String path = makePath( paths );
         session.setPath( path );

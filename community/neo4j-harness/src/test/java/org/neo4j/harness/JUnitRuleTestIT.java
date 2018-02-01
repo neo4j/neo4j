@@ -68,7 +68,7 @@ public class JUnitRuleTestIT
             .withExtension( "/test", MyUnmanagedExtension.class );
 
     @Test
-    public void shouldExtensionWork() throws Exception
+    public void shouldExtensionWork()
     {
         // Given the rule in the beginning of this class
 
@@ -128,7 +128,7 @@ public class JUnitRuleTestIT
         ruleWithDirectory.apply( new Statement()
         {
             @Override
-            public void evaluate() throws Throwable
+            public void evaluate()
             {
                 // Then the database is not empty
                 Result result = ruleWithDirectory.getGraphDatabaseService()

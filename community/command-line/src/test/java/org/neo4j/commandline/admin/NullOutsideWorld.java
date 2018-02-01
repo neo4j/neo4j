@@ -78,7 +78,7 @@ public class NullOutsideWorld implements OutsideWorld
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

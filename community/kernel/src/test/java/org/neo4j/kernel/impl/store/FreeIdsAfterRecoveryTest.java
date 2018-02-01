@@ -50,7 +50,7 @@ public class FreeIdsAfterRecoveryTest
             .around( pageCacheRule );
 
     @Test
-    public void shouldCompletelyRebuildIdGeneratorsAfterCrash() throws Exception
+    public void shouldCompletelyRebuildIdGeneratorsAfterCrash()
     {
         // GIVEN
         StoreFactory storeFactory = new StoreFactory(

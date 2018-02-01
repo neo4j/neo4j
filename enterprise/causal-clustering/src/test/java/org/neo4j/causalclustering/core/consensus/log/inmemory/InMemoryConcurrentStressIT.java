@@ -29,7 +29,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class InMemoryConcurrentStressIT extends ConcurrentStressIT<InMemoryConcurrentStressIT.LifecycledInMemoryRaftLog>
 {
     @Override
-    public LifecycledInMemoryRaftLog createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable
+    public LifecycledInMemoryRaftLog createRaftLog( FileSystemAbstraction fsa, File dir )
     {
         return new LifecycledInMemoryRaftLog();
     }
@@ -38,25 +38,25 @@ public class InMemoryConcurrentStressIT extends ConcurrentStressIT<InMemoryConcu
     {
 
         @Override
-        public void init() throws Throwable
+        public void init()
         {
 
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
 
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
 
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
 
         }

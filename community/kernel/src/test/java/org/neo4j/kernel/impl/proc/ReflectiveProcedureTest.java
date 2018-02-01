@@ -68,7 +68,7 @@ public class ReflectiveProcedureTest
     private ComponentRegistry components;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,

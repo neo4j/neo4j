@@ -31,7 +31,7 @@ public class PositionCacheTest
     private final LogPosition BEGINNING = new LogPosition( 0, SegmentHeader.SIZE );
 
     @Test
-    public void shouldReturnSaneDefaultPosition() throws Exception
+    public void shouldReturnSaneDefaultPosition()
     {
         // when
         LogPosition position = cache.lookup( 5 );
@@ -41,7 +41,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldReturnBestPosition() throws Exception
+    public void shouldReturnBestPosition()
     {
         // given
         cache.put( pos( 4 ) );
@@ -55,7 +55,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldReturnExactMatch() throws Exception
+    public void shouldReturnExactMatch()
     {
         // given
         cache.put( pos( 4 ) );
@@ -70,7 +70,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldNotReturnPositionAhead() throws Exception
+    public void shouldNotReturnPositionAhead()
     {
         // given
         cache.put( pos( 4 ) );
@@ -85,7 +85,7 @@ public class PositionCacheTest
     }
 
     @Test
-    public void shouldPushOutOldEntries() throws Exception
+    public void shouldPushOutOldEntries()
     {
         // given
         int count = PositionCache.CACHE_SIZE + 4;

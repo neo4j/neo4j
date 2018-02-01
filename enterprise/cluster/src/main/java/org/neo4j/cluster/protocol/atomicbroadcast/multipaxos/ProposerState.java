@@ -42,7 +42,6 @@ public enum ProposerState
                                              Message<ProposerMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == ProposerMessage.join )
                     {
@@ -60,7 +59,6 @@ public enum ProposerState
                                              Message<ProposerMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

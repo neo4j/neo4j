@@ -152,7 +152,7 @@ public class RecordFormatsMigrationIT
         assertStoreFormat( HighLimit.RECORD_FORMATS );
     }
 
-    private void assertStoreFormat( RecordFormats expected ) throws IOException
+    private void assertStoreFormat( RecordFormats expected )
     {
         Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )

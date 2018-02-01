@@ -90,7 +90,7 @@ public class ReadOnlyLuceneSchemaIndexTest
     }
 
     @Test
-    public void readOnlyIndexMode() throws Exception
+    public void readOnlyIndexMode()
     {
         assertTrue( luceneSchemaIndex.isReadOnly() );
     }

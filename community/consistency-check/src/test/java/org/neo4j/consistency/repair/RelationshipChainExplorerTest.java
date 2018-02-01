@@ -74,7 +74,7 @@ public class RelationshipChainExplorerTest
     }
 
     @Test
-    public void shouldLoadAllConnectedRelationshipRecordsAndTheirFullChainsOfRelationshipRecords() throws Exception
+    public void shouldLoadAllConnectedRelationshipRecordsAndTheirFullChainsOfRelationshipRecords()
     {
         // given
         RecordStore<RelationshipRecord> relationshipStore = store.getRelationshipStore();
@@ -90,7 +90,7 @@ public class RelationshipChainExplorerTest
     }
 
     @Test
-    public void shouldCopeWithAChainThatReferencesNotInUseZeroValueRecords() throws Exception
+    public void shouldCopeWithAChainThatReferencesNotInUseZeroValueRecords()
     {
         // given
         RecordStore<RelationshipRecord> relationshipStore = store.getRelationshipStore();

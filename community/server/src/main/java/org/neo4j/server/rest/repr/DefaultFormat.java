@@ -113,7 +113,7 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    public List<Object> readList( String input ) throws BadInputException
+    public List<Object> readList( String input )
     {
         try
         {
@@ -126,7 +126,7 @@ public class DefaultFormat extends RepresentationFormat
     }
 
     @Override
-    public URI readUri( String input ) throws BadInputException
+    public URI readUri( String input )
     {
         try
         {

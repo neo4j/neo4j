@@ -31,13 +31,13 @@ public interface InputChunk extends Closeable
     InputChunk EMPTY = new InputChunk()
     {
         @Override
-        public boolean next( InputEntityVisitor visitor ) throws IOException
+        public boolean next( InputEntityVisitor visitor )
         {
             return false;
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     };

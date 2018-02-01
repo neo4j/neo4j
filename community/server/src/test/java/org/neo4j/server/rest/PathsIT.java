@@ -305,7 +305,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
     @Test
     @Graph( value = { "a to c", "a to d", "c to b", "d to e", "b to f", "c to f", "f to g", "d to g", "e to g",
     "c to g" } )
-    public void shouldReturn404WhenFailingToFindASinglePath() throws JsonParseException
+    public void shouldReturn404WhenFailingToFindASinglePath()
     {
         long a = nodeId( data.get(), "a" );
         long g = nodeId( data.get(), "g" );

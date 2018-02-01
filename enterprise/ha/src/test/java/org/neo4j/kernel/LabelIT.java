@@ -125,7 +125,7 @@ public class LabelIT
             bridge.unbindTransactionFromCurrentThread();
         }
 
-        public void resume() throws Exception
+        public void resume()
         {
             bridge.bindTransactionToCurrentThread( graphDbTx );
         }

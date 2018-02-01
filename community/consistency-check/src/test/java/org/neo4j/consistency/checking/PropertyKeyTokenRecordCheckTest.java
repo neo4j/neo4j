@@ -37,7 +37,7 @@ public class PropertyKeyTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordNotInUse() throws Exception
+    public void shouldNotReportAnythingForRecordNotInUse()
     {
         // given
         PropertyKeyTokenRecord key = notInUse( new PropertyKeyTokenRecord( 42 ) );
@@ -50,7 +50,7 @@ public class PropertyKeyTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock() throws Exception
+    public void shouldNotReportAnythingForRecordThatDoesNotReferenceADynamicBlock()
     {
         // given
         PropertyKeyTokenRecord key = inUse( new PropertyKeyTokenRecord( 42 ) );
@@ -63,7 +63,7 @@ public class PropertyKeyTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportDynamicBlockNotInUse() throws Exception
+    public void shouldReportDynamicBlockNotInUse()
     {
         // given
         PropertyKeyTokenRecord key = inUse( new PropertyKeyTokenRecord( 42 ) );
@@ -79,7 +79,7 @@ public class PropertyKeyTokenRecordCheckTest extends
     }
 
     @Test
-    public void shouldReportEmptyName() throws Exception
+    public void shouldReportEmptyName()
     {
         // given
         PropertyKeyTokenRecord key = inUse( new PropertyKeyTokenRecord( 42 ) );

@@ -218,7 +218,7 @@ public class ConstraintIndexCreator
      * You MUST hold a schema write lock before you call this method.
      */
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
-            throws TransactionFailureException, DropIndexFailureException
+            throws TransactionFailureException
     {
         try ( KernelTransaction transaction =
                       kernelSupplier.get().newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );

@@ -125,7 +125,7 @@ public class UpstreamDatabaseStrategySelectorTest
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
             return Optional.ofNullable( memberId );
         }
@@ -145,7 +145,7 @@ public class UpstreamDatabaseStrategySelectorTest
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
             return Optional.of( new MemberId( UUID.randomUUID() ) );
         }
@@ -160,7 +160,7 @@ public class UpstreamDatabaseStrategySelectorTest
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
             return Optional.of( new MemberId( UUID.randomUUID() ) );
         }

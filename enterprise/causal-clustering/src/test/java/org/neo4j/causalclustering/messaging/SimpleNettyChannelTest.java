@@ -36,7 +36,7 @@ public class SimpleNettyChannelTest
     private EmbeddedChannel nettyChannel = new EmbeddedChannel();
 
     @Test
-    public void shouldWriteOnNettyChannel() throws Exception
+    public void shouldWriteOnNettyChannel()
     {
         // given
         SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
@@ -58,7 +58,7 @@ public class SimpleNettyChannelTest
     }
 
     @Test
-    public void shouldWriteAndFlushOnNettyChannel() throws Exception
+    public void shouldWriteAndFlushOnNettyChannel()
     {
         // given
         SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
@@ -73,7 +73,7 @@ public class SimpleNettyChannelTest
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowWhenWritingOnDisposedChannel() throws Exception
+    public void shouldThrowWhenWritingOnDisposedChannel()
     {
         // given
         SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
@@ -86,7 +86,7 @@ public class SimpleNettyChannelTest
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowWhenWriteAndFlushingOnDisposedChannel() throws Exception
+    public void shouldThrowWhenWriteAndFlushingOnDisposedChannel()
     {
         // given
         SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );

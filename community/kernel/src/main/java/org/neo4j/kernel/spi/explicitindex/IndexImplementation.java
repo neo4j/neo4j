@@ -87,7 +87,7 @@ public interface IndexImplementation extends Lifecycle
      * Makes available index resource for recovery.
      */
     @Override
-    void init() throws Throwable;
+    void init();
 
     /**
      * Makes available index resource for online transaction processing.

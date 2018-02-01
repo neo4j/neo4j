@@ -262,7 +262,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public long prune( long safeIndex ) throws IOException
+    public long prune( long safeIndex )
     {
         long pruneIndex = pruner.getIndexToPruneFrom( safeIndex, state.segments );
         SegmentFile oldestNotDisposed = state.segments.prune( pruneIndex );

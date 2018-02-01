@@ -56,7 +56,7 @@ public class KernelTransactionTimeoutMonitorTest
     }
 
     @Test
-    public void terminateExpiredTransactions() throws Exception
+    public void terminateExpiredTransactions()
     {
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 1, 3 );
@@ -93,7 +93,7 @@ public class KernelTransactionTimeoutMonitorTest
     }
 
     @Test
-    public void skipTransactionWithoutTimeout() throws Exception
+    public void skipTransactionWithoutTimeout()
     {
         HashSet<KernelTransactionHandle> transactions = new HashSet<>();
         KernelTransactionImplementation tx1 = prepareTxMock( 3, 0 );

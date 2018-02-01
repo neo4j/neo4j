@@ -1135,13 +1135,12 @@ public class IndexingServiceTest
 
         @Override
         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
-                throws IndexEntryConflictException, IOException
         {
             latch.waitForAllToStart();
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
             latch.finish();
         }
@@ -1251,7 +1250,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation ) throws Throwable
+        public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation )
         {
             final Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor =
                     visitor( invocation.getArgument( 2 ) );
@@ -1318,7 +1317,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public String answer( InvocationOnMock invocation ) throws Throwable
+        public String answer( InvocationOnMock invocation )
         {
             int id = invocation.getArgument( 0 );
             return kind + "[" + id + "]";

@@ -54,7 +54,7 @@ public class CausalClusteringProceduresIT
     }
 
     @Test
-    public void coreProceduresShouldBeAvailable() throws Throwable
+    public void coreProceduresShouldBeAvailable()
     {
         String[] coreProcs = new String[]{
                 "dbms.cluster.role", // Server role
@@ -80,7 +80,7 @@ public class CausalClusteringProceduresIT
     }
 
     @Test
-    public void readReplicaProceduresShouldBeAvailable() throws Exception
+    public void readReplicaProceduresShouldBeAvailable()
     {
         // given
         String[] readReplicaProcs = new String[]{

@@ -122,7 +122,7 @@ public class RESTApiModule implements ServerModule
         }
     }
 
-    private URI restApiUri() throws URISyntaxException
+    private URI restApiUri()
     {
         return config.get( ServerSettings.rest_api_path );
     }

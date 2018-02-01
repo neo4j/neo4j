@@ -31,7 +31,7 @@ import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 public class AuthorizationHeadersTest
 {
     @Test
-    public void shouldParseHappyPath() throws Exception
+    public void shouldParseHappyPath()
     {
         // Given
         String username = "jake";
@@ -47,7 +47,7 @@ public class AuthorizationHeadersTest
     }
 
     @Test
-    public void shouldHandleSadPaths() throws Exception
+    public void shouldHandleSadPaths()
     {
         // When & then
         assertNull( decode( "" ) );

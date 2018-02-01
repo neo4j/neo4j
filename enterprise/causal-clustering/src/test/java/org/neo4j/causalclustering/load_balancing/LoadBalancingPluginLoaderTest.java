@@ -173,7 +173,7 @@ public class LoadBalancingPluginLoaderTest
 
         @Override
         public void init( TopologyService topologyService, LeaderLocator leaderLocator, LogProvider logProvider,
-                Config config ) throws Throwable
+                Config config )
         {
             wasInitialized = true;
         }

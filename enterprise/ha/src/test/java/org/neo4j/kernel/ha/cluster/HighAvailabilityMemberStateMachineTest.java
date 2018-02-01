@@ -107,7 +107,7 @@ import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitche
 public class HighAvailabilityMemberStateMachineTest
 {
     @Test
-    public void shouldStartFromPending() throws Exception
+    public void shouldStartFromPending()
     {
         // Given
         HighAvailabilityMemberStateMachine memberStateMachine = buildMockedStateMachine();
@@ -515,7 +515,7 @@ public class HighAvailabilityMemberStateMachineTest
                 new Response<HandshakeResult>( new HandshakeResult( 0, 42 ), storeId, mock( ResourceReleaser.class ) )
                 {
                     @Override
-                    public void accept( Handler handler ) throws IOException
+                    public void accept( Handler handler )
                     {
                     }
 

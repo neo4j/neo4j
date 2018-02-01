@@ -28,22 +28,22 @@ import java.util.concurrent.TimeUnit;
 public class JobSchedulerAdapter implements JobScheduler
 {
     @Override
-    public void init() throws Throwable
+    public void init()
     {   // no-op
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {   // no-op
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {   // no-op
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {   // no-op
     }
 

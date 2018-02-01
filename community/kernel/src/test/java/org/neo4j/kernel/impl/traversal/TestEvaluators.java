@@ -68,7 +68,7 @@ public class TestEvaluators extends TraversalTestBase
     }
 
     @Test
-    public void lastRelationshipTypeEvaluator() throws Exception
+    public void lastRelationshipTypeEvaluator()
     {
         Node a = getNodeWithName( "a" );
         expectPaths( getGraphDb().traversalDescription().evaluator( lastRelationshipTypeIs(
@@ -94,7 +94,7 @@ public class TestEvaluators extends TraversalTestBase
     }
 
     @Test
-    public void depths() throws Exception
+    public void depths()
     {
         Node a = getNodeWithName( "a" );
         expectPaths( getGraphDb().traversalDescription().evaluator( Evaluators.atDepth( 1 ) ).traverse( a ), "a,b", "a,f" );

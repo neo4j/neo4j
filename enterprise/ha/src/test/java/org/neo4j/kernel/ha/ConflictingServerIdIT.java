@@ -41,7 +41,7 @@ public class ConflictingServerIdIT
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void testConflictingIdDoesNotSilentlyFail() throws Exception
+    public void testConflictingIdDoesNotSilentlyFail()
     {
         HighlyAvailableGraphDatabase master = null;
         HighlyAvailableGraphDatabase dbWithId21 = null;

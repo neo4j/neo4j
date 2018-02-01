@@ -38,7 +38,6 @@ public enum SnapshotState
                                            Message<SnapshotMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -117,7 +116,6 @@ public enum SnapshotState
                                            Message<SnapshotMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

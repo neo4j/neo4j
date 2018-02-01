@@ -77,7 +77,6 @@ public class StateMachineProxyFactory
     }
 
     Object invoke( StateMachine stateMachine, Method method, Object arg )
-            throws Throwable
     {
         if ( method.getName().equals( "toString" ) )
         {

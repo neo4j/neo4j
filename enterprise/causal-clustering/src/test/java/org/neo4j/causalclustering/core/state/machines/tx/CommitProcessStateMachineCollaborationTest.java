@@ -41,7 +41,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 public class CommitProcessStateMachineCollaborationTest
 {
     @Test
-    public void shouldFailTransactionIfLockSessionChanges() throws Exception
+    public void shouldFailTransactionIfLockSessionChanges()
     {
         // given
         int initialLockSessionId = 23;

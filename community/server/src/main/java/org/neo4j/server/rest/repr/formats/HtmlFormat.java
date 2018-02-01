@@ -365,7 +365,7 @@ public class HtmlFormat extends RepresentationFormat
     }
 
     @Override
-    public List<Object> readList( String input ) throws BadInputException
+    public List<Object> readList( String input )
     {
         throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
                 .entity( "Cannot read html" )
@@ -373,7 +373,7 @@ public class HtmlFormat extends RepresentationFormat
     }
 
     @Override
-    public Map<String, Object> readMap( String input, String... requiredKeys ) throws BadInputException
+    public Map<String, Object> readMap( String input, String... requiredKeys )
     {
         throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
                 .entity( "Cannot read html" )
@@ -381,7 +381,7 @@ public class HtmlFormat extends RepresentationFormat
     }
 
     @Override
-    public URI readUri( String input ) throws BadInputException
+    public URI readUri( String input )
     {
         throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
                 .entity( "Cannot read html" )
@@ -389,7 +389,7 @@ public class HtmlFormat extends RepresentationFormat
     }
 
     @Override
-    public Object readValue( String input ) throws BadInputException
+    public Object readValue( String input )
     {
         throw new WebApplicationException( Response.status( Response.Status.UNSUPPORTED_MEDIA_TYPE )
                 .entity( "Cannot read html" )

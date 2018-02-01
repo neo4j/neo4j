@@ -65,7 +65,7 @@ public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldLogStartup() throws Exception
+    public void shouldLogStartup()
     {
         // Check the logs
         String logContent = out.toString();

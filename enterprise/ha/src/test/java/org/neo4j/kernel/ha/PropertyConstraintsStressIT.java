@@ -117,7 +117,7 @@ public class PropertyConstraintsStressIT
         clearData();
     }
 
-    private void clearData() throws InterruptedException
+    private void clearData()
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );

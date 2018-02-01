@@ -82,7 +82,7 @@ public class ReplicatedTransactionStateMachineTest
     }
 
     @Test
-    public void shouldFailFutureForTransactionCommittedUnderWrongLockSession() throws Exception
+    public void shouldFailFutureForTransactionCommittedUnderWrongLockSession()
     {
         // given
         int txLockSessionId = 23;

@@ -47,7 +47,7 @@ public class NodeStoreScanTest
     private final NodeStore nodeStore = mock( NodeStore.class );
 
     @Test
-    public void shouldGiveBackCompletionPercentage() throws Throwable
+    public void shouldGiveBackCompletionPercentage()
     {
         // given
         long total = 10;

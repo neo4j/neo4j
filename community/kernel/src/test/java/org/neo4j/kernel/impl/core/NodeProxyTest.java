@@ -65,7 +65,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode() throws Exception
+    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExistOnNode()
     {
         // Given a database with PROPERTY_KEY in it
         createNodeWith( PROPERTY_KEY );
@@ -157,7 +157,7 @@ public class NodeProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist() throws Exception
+    public void shouldThrowHumaneExceptionsWhenPropertyDoesNotExist()
     {
         // Given a database without PROPERTY_KEY in it
 

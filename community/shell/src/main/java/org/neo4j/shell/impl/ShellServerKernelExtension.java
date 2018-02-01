@@ -37,7 +37,7 @@ public final class ShellServerKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
@@ -57,7 +57,7 @@ public final class ShellServerKernelExtension implements Lifecycle
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

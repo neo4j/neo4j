@@ -52,13 +52,13 @@ public class IndexConstraintsTest
     private GraphDatabaseService graphDb;
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
-    public void shutdown() throws IOException
+    public void shutdown()
     {
         graphDb.shutdown();
     }

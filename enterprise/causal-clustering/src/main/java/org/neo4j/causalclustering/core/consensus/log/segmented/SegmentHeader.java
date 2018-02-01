@@ -114,7 +114,7 @@ class SegmentHeader
         }
 
         @Override
-        public SegmentHeader unmarshal0( ReadableChannel channel ) throws IOException, EndOfStreamException
+        public SegmentHeader unmarshal0( ReadableChannel channel ) throws IOException
         {
             long prevFileLastIndex = channel.getLong();
             long version = channel.getLong();

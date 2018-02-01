@@ -317,7 +317,7 @@ public class RebuildFromLogsTest
         }
 
         @Override
-        void checkConsistency( File target, PageCache pageCache ) throws Exception, InconsistentStoreException
+        void checkConsistency( File target, PageCache pageCache ) throws InconsistentStoreException
         {
             throw new InconsistentStoreException( new ConsistencySummaryStatistics() );
         }

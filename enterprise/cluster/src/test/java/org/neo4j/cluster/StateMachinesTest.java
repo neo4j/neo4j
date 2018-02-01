@@ -51,7 +51,7 @@ import static org.neo4j.cluster.com.message.Message.internal;
 public class StateMachinesTest
 {
     @Test
-    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder() throws Exception
+    public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder()
     {
         // Given
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
@@ -73,7 +73,7 @@ public class StateMachinesTest
     }
 
     @Test
-    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages() throws Exception
+    public void shouldAlwaysAddItsInstanceIdToOutgoingMessages()
     {
         InstanceId me = new InstanceId( 42 );
         final List<Message> sentOut = new LinkedList<>();
@@ -136,7 +136,7 @@ public class StateMachinesTest
                 {
                     @Override
                     public State<?, ?> handle( List context, Message<TestMessage> message,
-                                               MessageHolder outgoing ) throws Throwable
+                                               MessageHolder outgoing )
                     {
                         context.add( message.getMessageType() );
 

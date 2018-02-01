@@ -62,7 +62,6 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
 
     @Override
     public void read( DynamicRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
-            throws IOException
     {
         byte headerByte = cursor.getByte();
         boolean inUse = isInUse( headerByte );
@@ -99,7 +98,7 @@ public class DynamicRecordFormat extends BaseOneByteHeaderRecordFormat<DynamicRe
     }
 
     @Override
-    public void write( DynamicRecord record, PageCursor cursor, int recordSize ) throws IOException
+    public void write( DynamicRecord record, PageCursor cursor, int recordSize )
     {
         if ( record.inUse() )
         {

@@ -26,7 +26,7 @@ import static org.junit.Assert.assertNotEquals;
 public class LongEncoderTest
 {
     @Test
-    public void shouldProperlyEncodeLength() throws Exception
+    public void shouldProperlyEncodeLength()
     {
         // GIVEN
         Encoder encoder = new LongEncoder();

@@ -45,7 +45,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
@@ -93,7 +93,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
         Map<String, Object> map = new HashMap<>();
         map.put("jim", "tobias");
@@ -103,12 +103,12 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
         response.close();
     }
 
-    private JaxRsResponse updatePropertiesOnServer( final Map<String,Object> map ) throws JsonParseException
+    private JaxRsResponse updatePropertiesOnServer( final Map<String,Object> map )
     {
         return RestRequest.req().put(propertiesUri.toString(), JsonHelper.createJsonFrom(map));
     }
 
-    private String getPropertyUri( final String key ) throws Exception
+    private String getPropertyUri( final String key )
     {
         return propertiesUri.toString() + "/" + key ;
     }
@@ -138,7 +138,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception
+    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
         JaxRsResponse response = RestRequest.req().put(badUri.toString() + "/foo", JsonHelper.createJsonFrom("bar"));
         assertEquals(404, response.getStatus());

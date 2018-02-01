@@ -77,7 +77,7 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         FileSystemAbstraction fs = dependencies.fileSystem();
         File storeDir = context.storeDir();

@@ -98,7 +98,7 @@ public class BackupUsageTest
         return runBackup( false, args );
     }
 
-    private String runBackup( boolean debug, String... args ) throws UnsupportedEncodingException
+    private String runBackup( boolean debug, String... args )
     {
         ParameterisedOutsideWorld outsideWorld = // ParameterisedOutsideWorld used for suppressing #close() doing System.exit()
                 new ParameterisedOutsideWorld( System.console(), System.out, System.err, System.in, new DefaultFileSystemAbstraction() );

@@ -37,7 +37,7 @@ public class PageCacheLifecycle extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         pageCache.close();
     }

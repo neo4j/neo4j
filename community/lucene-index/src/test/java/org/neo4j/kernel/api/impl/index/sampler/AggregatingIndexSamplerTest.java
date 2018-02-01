@@ -58,7 +58,7 @@ public class AggregatingIndexSamplerTest
         }
 
         @Override
-        public IndexSample sampleIndex() throws IndexNotFoundKernelException
+        public IndexSample sampleIndex()
         {
             return new IndexSample( value, value, value * 2 );
         }

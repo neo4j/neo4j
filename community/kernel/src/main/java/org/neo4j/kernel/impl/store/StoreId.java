@@ -108,7 +108,7 @@ public final class StoreId implements Externalizable
     }
 
     @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    public void readExternal( ObjectInput in ) throws IOException
     {
         creationTime = in.readLong();
         randomId = in.readLong();

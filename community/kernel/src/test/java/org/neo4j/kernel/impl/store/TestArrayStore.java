@@ -64,7 +64,7 @@ public class TestArrayStore
     private NeoStores neoStores;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File dir = testDirectory.graphDbDir();
         FileSystemAbstraction fs = fileSystemRule.get();
@@ -77,7 +77,7 @@ public class TestArrayStore
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( neoStores != null )
         {
@@ -86,7 +86,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void intArrayPropertiesShouldBeBitPacked() throws Exception
+    public void intArrayPropertiesShouldBeBitPacked()
     {
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new int[] { 1, 2, 3, 4, 5, 6, 7 }, PropertyType.INT, 3 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.INT, 4 );
@@ -94,7 +94,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void longArrayPropertiesShouldBeBitPacked() throws Exception
+    public void longArrayPropertiesShouldBeBitPacked()
     {
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7 }, PropertyType.LONG, 3 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.LONG, 4 );
@@ -103,7 +103,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void doubleArrayPropertiesShouldNotBeBitPacked() throws Exception
+    public void doubleArrayPropertiesShouldNotBeBitPacked()
     {
         //TODO Enabling right-trim would allow doubles that are integers, like 42.0, to pack well
         //While enabling the default left-trim would only allow some extreme doubles to pack, like Double.longBitsToDouble( 0x1L )
@@ -119,7 +119,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void byteArrayPropertiesShouldNotBeBitPacked() throws Exception
+    public void byteArrayPropertiesShouldNotBeBitPacked()
     {
         /* Byte arrays are always stored unpacked. For two reasons:
          * - They are very unlikely to gain anything from bit packing
@@ -129,7 +129,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void stringArrayGetsStoredAsUtf8() throws Exception
+    public void stringArrayGetsStoredAsUtf8()
     {
         String[] array = new String[] { "first", "second" };
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -148,7 +148,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void pointArraysOfWgs84() throws Exception
+    public void pointArraysOfWgs84()
     {
         PointValue[] array = new PointValue[]{
                 Values.pointValue( CoordinateReferenceSystem.WGS84, -45.0, -45.0 ),
@@ -159,7 +159,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void pointArraysOfCartesian() throws Exception
+    public void pointArraysOfCartesian()
     {
         PointValue[] array = new PointValue[]{
                 Values.pointValue( CoordinateReferenceSystem.Cartesian, -100.0, -100.0 ),
@@ -170,7 +170,7 @@ public class TestArrayStore
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void pointArraysOfMixedCRS() throws Exception
+    public void pointArraysOfMixedCRS()
     {
         PointValue[] array =
                 new PointValue[]{
@@ -185,7 +185,7 @@ public class TestArrayStore
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void pointArraysOfMixedDimension() throws Exception
+    public void pointArraysOfMixedDimension()
     {
         PointValue[] array =
                 new PointValue[]{

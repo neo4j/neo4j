@@ -143,7 +143,7 @@ public class NeoStoresTest
     private PropertyLoader propertyLoader;
 
     @Before
-    public void setUpNeoStores() throws Exception
+    public void setUpNeoStores()
     {
         storeDir = dir.graphDbDir();
         Config config = Config.defaults();
@@ -588,7 +588,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void testSetLatestConstraintTx() throws Exception
+    public void testSetLatestConstraintTx()
     {
         // given
         Config config = Config.defaults();
@@ -1532,7 +1532,7 @@ public class NeoStoresTest
         }
     }
 
-    private void deleteRelationships( long nodeId ) throws Exception
+    private void deleteRelationships( long nodeId )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
               Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )

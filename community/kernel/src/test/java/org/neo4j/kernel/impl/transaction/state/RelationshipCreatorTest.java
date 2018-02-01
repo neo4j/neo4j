@@ -75,7 +75,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void shouldOnlyChangeLockedRecordsWhenUpgradingToDenseNode() throws Exception
+    public void shouldOnlyChangeLockedRecordsWhenUpgradingToDenseNode()
     {
         // GIVEN
         long nodeId = createNodeWithRelationships( DENSE_NODE_THRESHOLD );

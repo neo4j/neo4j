@@ -37,7 +37,7 @@ public class IdleChannelReaperHandler extends ChannelDuplexHandler
     }
 
     @Override
-    public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
+    public void userEventTriggered( ChannelHandlerContext ctx, Object evt )
     {
         if ( evt instanceof IdleStateEvent && evt == IdleStateEvent.ALL_IDLE_STATE_EVENT )
         {

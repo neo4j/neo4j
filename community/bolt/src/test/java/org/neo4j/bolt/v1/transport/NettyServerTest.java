@@ -75,7 +75,7 @@ public class NettyServerTest
                 return new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    public void initChannel( SocketChannel ch ) throws Exception
+                    public void initChannel( SocketChannel ch )
                     {
                     }
                 };

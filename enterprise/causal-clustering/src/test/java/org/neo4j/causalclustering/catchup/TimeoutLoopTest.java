@@ -120,7 +120,7 @@ public class TimeoutLoopTest
     }
 
     @Test
-    public void shouldTranslateExecutionExceptionToCatchUpClientException() throws Exception
+    public void shouldTranslateExecutionExceptionToCatchUpClientException()
     {
         // given
         CompletableFuture<Long> future = new CompletableFuture<>();

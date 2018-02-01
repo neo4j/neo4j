@@ -31,19 +31,14 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
 {
     static final RelationshipState EMPTY = new RelationshipState()
     {
-        private UnsupportedOperationException notDefined( String field )
-        {
-            return new UnsupportedOperationException( field + " not defined" );
-        }
-
         @Override
         public long getId()
         {
-            throw notDefined( "id" );
+            throw new UnsupportedOperationException( "id not defined" );
         }
 
         @Override
-        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor ) throws EX
+        public <EX extends Exception> boolean accept( RelationshipVisitor<EX> visitor )
         {
             return false;
         }

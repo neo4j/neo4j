@@ -236,7 +236,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
     Admin adds user Henrik to role Publisher → fail
     */
     @Test
-    public void userDeletion2() throws Throwable
+    public void userDeletion2()
     {
         assertEmpty( adminSubject, "CALL dbms.security.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.security.deleteUser('Henrik')" );
@@ -251,7 +251,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
     Admin removes user Henrik from role Publisher → fail
     */
     @Test
-    public void userDeletion3() throws Throwable
+    public void userDeletion3()
     {
         assertEmpty( adminSubject, "CALL dbms.security.createUser('Henrik', 'bar', false)" );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + PUBLISHER + "', 'Henrik')" );

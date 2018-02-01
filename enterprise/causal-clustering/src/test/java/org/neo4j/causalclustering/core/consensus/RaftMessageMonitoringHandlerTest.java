@@ -61,7 +61,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldSendMessagesToDelegate() throws Exception
+    public void shouldSendMessagesToDelegate()
     {
         // when
         handler.handle( message );
@@ -71,7 +71,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldUpdateDelayMonitor() throws Exception
+    public void shouldUpdateDelayMonitor()
     {
         // when
         handler.handle( message );
@@ -81,7 +81,7 @@ public class RaftMessageMonitoringHandlerTest
     }
 
     @Test
-    public void shouldTimeDelegate() throws Exception
+    public void shouldTimeDelegate()
     {
         // when
         handler.handle( message );

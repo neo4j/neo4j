@@ -50,14 +50,14 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         sharedDiscoveryService.registerReadReplica( memberId, addresses );
         log.info( "Registered read replica member id: %s at %s", memberId, addresses );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         sharedDiscoveryService.unRegisterReadReplica( memberId);
     }

@@ -52,14 +52,14 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatString() throws Exception
+    public void canFormatString()
     {
         String entity = json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
     }
 
     @Test
-    public void canFormatListOfStrings() throws Exception
+    public void canFormatListOfStrings()
     {
         String entity = json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
@@ -67,14 +67,14 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatInteger() throws Exception
+    public void canFormatInteger()
     {
         String entity = json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", entity );
     }
 
     @Test
-    public void canFormatEmptyObject() throws Exception
+    public void canFormatEmptyObject()
     {
         String entity = json.assemble( new MappingRepresentation( "empty" )
         {
@@ -87,7 +87,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithStringField() throws Exception
+    public void canFormatObjectWithStringField()
     {
         String entity = json.assemble( new MappingRepresentation( "string" )
         {
@@ -101,7 +101,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithUriField() throws Exception
+    public void canFormatObjectWithUriField()
     {
         String entity = json.assemble( new MappingRepresentation( "uri" )
         {
@@ -117,7 +117,7 @@ public class JsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithNestedObject() throws Exception
+    public void canFormatObjectWithNestedObject()
     {
         String entity = json.assemble( new MappingRepresentation( "nesting" )
         {

@@ -48,7 +48,7 @@ public class DeferringLockClientTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void releaseOfNotHeldSharedLockThrows() throws Exception
+    public void releaseOfNotHeldSharedLockThrows()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -69,7 +69,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void releaseOfNotHeldExclusiveLockThrows() throws Exception
+    public void releaseOfNotHeldExclusiveLockThrows()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -90,7 +90,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldDeferAllLocks() throws Exception
+    public void shouldDeferAllLocks()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -123,7 +123,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldStopUnderlyingClient() throws Exception
+    public void shouldStopUnderlyingClient()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -137,7 +137,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldPrepareUnderlyingClient() throws Exception
+    public void shouldPrepareUnderlyingClient()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -151,7 +151,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldCloseUnderlyingClient() throws Exception
+    public void shouldCloseUnderlyingClient()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -165,7 +165,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowOnAcquireWhenStopped() throws Exception
+    public void shouldThrowOnAcquireWhenStopped()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -186,7 +186,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowOnAcquireWhenClosed() throws Exception
+    public void shouldThrowOnAcquireWhenClosed()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -207,7 +207,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleaseNotYetAcquiredExclusive() throws Exception
+    public void shouldThrowWhenReleaseNotYetAcquiredExclusive()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -226,7 +226,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleaseNotYetAcquiredShared() throws Exception
+    public void shouldThrowWhenReleaseNotYetAcquiredShared()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -245,7 +245,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleaseNotMatchingAcquired() throws Exception
+    public void shouldThrowWhenReleaseNotMatchingAcquired()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -266,7 +266,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void shouldThrowWhenReleasingLockMultipleTimes() throws Exception
+    public void shouldThrowWhenReleasingLockMultipleTimes()
     {
         // GIVEN
         Locks.Client actualClient = mock( Locks.Client.class );
@@ -288,7 +288,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void exclusiveLockAcquiredMultipleTimesCanNotBeReleasedAtOnce() throws Exception
+    public void exclusiveLockAcquiredMultipleTimesCanNotBeReleasedAtOnce()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();
@@ -307,7 +307,7 @@ public class DeferringLockClientTest
     }
 
     @Test
-    public void sharedLockAcquiredMultipleTimesCanNotBeReleasedAtOnce() throws Exception
+    public void sharedLockAcquiredMultipleTimesCanNotBeReleasedAtOnce()
     {
         // GIVEN
         TestLocks actualLocks = new TestLocks();

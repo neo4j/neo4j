@@ -38,13 +38,13 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
     }
 
     @Override
-    protected boolean lookup( Key key, ValueSink sink ) throws IOException
+    protected boolean lookup( Key key, ValueSink sink )
     {
         throw new IllegalStateException( "Cannot read in state: " + stateName() );
     }
 
     @Override
-    protected DataProvider dataProvider() throws IOException
+    protected DataProvider dataProvider()
     {
         throw new IllegalStateException( "Cannot read in state: " + stateName() );
     }
@@ -74,7 +74,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         throw new IllegalStateException( "Cannot close() in state: " + stateName() );
     }
@@ -132,7 +132,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         }
 
         @Override
-        ProgressiveState<Key> stop() throws IOException
+        ProgressiveState<Key> stop()
         {
             return this;
         }
@@ -150,7 +150,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         }
 
         @Override
-        ProgressiveState<Key> stop() throws IOException
+        ProgressiveState<Key> stop()
         {
             return new Stopped<>( keyFormat(), stateFactory );
         }
@@ -202,13 +202,12 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 @Override
                 ProgressiveState<Key> rotate( boolean force, RotationStrategy strategy, RotationTimerFactory timerFactory,
                                               Consumer<Headers.Builder> headers )
-                        throws IOException
                 {
                     return state;
                 }
 
                 @Override
-                public void close() throws IOException
+                public void close()
                 {
                 }
 
@@ -373,13 +372,13 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
         }
 
         @Override
-        protected boolean lookup( Key key, ValueSink sink ) throws IOException
+        protected boolean lookup( Key key, ValueSink sink )
         {
             throw new IllegalStateException( "Cannot read in state: " + stateName() );
         }
 
         @Override
-        protected DataProvider dataProvider() throws IOException
+        protected DataProvider dataProvider()
         {
             throw new IllegalStateException( "Cannot read in state: " + stateName() );
         }

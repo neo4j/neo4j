@@ -128,7 +128,7 @@ public class ConfigurableIOLimiter implements IOLimiter
     // their IOPS limit setting a bit more.
 
     @Override
-    public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
+    public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
     {
         long state = stateUpdater.get( this );
         if ( getDisabledCounter( state ) > 0 )

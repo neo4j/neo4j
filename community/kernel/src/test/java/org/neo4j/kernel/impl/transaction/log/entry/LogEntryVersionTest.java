@@ -33,7 +33,7 @@ public class LogEntryVersionTest
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void shouldBeAbleToSelectAnyVersion() throws Exception
+    public void shouldBeAbleToSelectAnyVersion()
     {
         for ( LogEntryVersion version : LogEntryVersion.values() )
         {
@@ -49,21 +49,21 @@ public class LogEntryVersionTest
     }
 
     @Test
-    public void shouldWarnAboutOldLogVersion() throws Exception
+    public void shouldWarnAboutOldLogVersion()
     {
         expect.expect( UnsupportedLogVersionException.class );
         LogEntryVersion.byVersion( (byte)-4 );
     }
 
     @Test
-    public void shouldWarnAboutNewerLogVersion() throws Exception
+    public void shouldWarnAboutNewerLogVersion()
     {
         expect.expect( UnsupportedLogVersionException.class );
         LogEntryVersion.byVersion( (byte)-42 ); // unused for now
     }
 
     @Test
-    public void moreRecent() throws Exception
+    public void moreRecent()
     {
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V2_3 ) );
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0 ) );

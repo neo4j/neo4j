@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 public class IndexProceduresTest
 {
     @Test
-    public void closeStatementOnClose() throws Exception
+    public void closeStatementOnClose()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         Statement statement = mock( Statement.class );

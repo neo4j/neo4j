@@ -41,7 +41,7 @@ public class MultiExecutionMonitorTest
     public final CleanupRule cleanup = new CleanupRule();
 
     @Test
-    public void shouldCheckMultipleMonitors() throws Exception
+    public void shouldCheckMultipleMonitors()
     {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();

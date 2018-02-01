@@ -256,7 +256,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public FileWatcher fileWatcher() throws IOException
+    public FileWatcher fileWatcher()
     {
         return FileWatcher.SILENT_WATCHER;
     }
@@ -390,7 +390,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void deleteRecursively( File path ) throws IOException
+    public void deleteRecursively( File path )
     {
         if ( isDirectory( path ) )
         {
@@ -829,7 +829,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public long transferTo( long position, long count, WritableByteChannel target ) throws IOException
+        public long transferTo( long position, long count, WritableByteChannel target )
         {
             throw new UnsupportedOperationException();
         }
@@ -900,7 +900,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared ) throws IOException
+        public java.nio.channels.FileLock tryLock( long position, long size, boolean shared )
         {
             synchronized ( data.channels )
             {
@@ -913,7 +913,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        protected void implCloseChannel() throws IOException
+        protected void implCloseChannel()
         {
             data.close( this );
         }
@@ -1132,7 +1132,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         }
 
         @Override
-        public void release() throws IOException
+        public void release()
         {
             synchronized ( file.channels )
             {

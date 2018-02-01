@@ -40,7 +40,6 @@ public class GraphTransactionRule extends ExternalResource
 
     @Override
     protected void before()
-        throws Throwable
     {
         begin();
     }

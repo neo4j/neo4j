@@ -32,7 +32,7 @@ public class NettyHandshakeServer extends SimpleChannelInboundHandler<ServerMess
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, ServerMessage msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, ServerMessage msg )
     {
         msg.dispatch( handler );
     }

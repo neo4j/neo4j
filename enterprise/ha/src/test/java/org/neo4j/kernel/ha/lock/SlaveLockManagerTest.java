@@ -56,7 +56,7 @@ public class SlaveLockManagerTest
     }
 
     @Test
-    public void shutsDownLocalLocks() throws Throwable
+    public void shutsDownLocalLocks()
     {
         Locks localLocks = mock( Locks.class );
         SlaveLockManager slaveLockManager = newSlaveLockManager( localLocks );
@@ -67,7 +67,7 @@ public class SlaveLockManagerTest
     }
 
     @Test
-    public void doesNotCreateClientsAfterShutdown() throws Throwable
+    public void doesNotCreateClientsAfterShutdown()
     {
         SlaveLockManager slaveLockManager =
                 newSlaveLockManager( new CommunityLockManger( Config.defaults(), Clocks.systemClock() ) );

@@ -111,13 +111,13 @@ public class SessionResetIT
     private Driver driver;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         driver = GraphDatabase.driver( db.boltURI(), Config.build().withEncryptionLevel( NONE ).toConfig() );
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         IOUtils.closeAllSilently( driver );
     }

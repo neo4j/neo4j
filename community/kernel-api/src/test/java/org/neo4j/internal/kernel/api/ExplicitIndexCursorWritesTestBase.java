@@ -390,7 +390,7 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         return nodeId;
     }
 
-    private long addRelationshipToExplicitIndex() throws Exception
+    private long addRelationshipToExplicitIndex()
     {
         long relId;
         try ( org.neo4j.graphdb.Transaction ctx = graphDb.beginTx() )

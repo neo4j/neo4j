@@ -747,7 +747,7 @@ public class TestPropertyBlocks extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord() throws Exception
+    public void deleteNodeWithNewPropertyRecordShouldFreeTheNewRecord()
     {
         final long propcount = getIdGenerator( IdType.PROPERTY ).getNumberOfIdsInUse();
         Node node = getGraphDb().createNode();

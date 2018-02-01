@@ -75,7 +75,6 @@ public enum SnapshotMessage
         }
 
         public void setState( SnapshotProvider provider, ObjectInputStreamFactory objectInputStreamFactory )
-                throws IOException
         {
             ByteArrayInputStream bin = new ByteArrayInputStream( buf );
 

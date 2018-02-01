@@ -382,7 +382,7 @@ public class FusionIndexPopulatorTest
     }
 
     @Test
-    public void shouldIncludeSampleOnCorrectPopulator() throws Exception
+    public void shouldIncludeSampleOnCorrectPopulator()
     {
         // given
         Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();

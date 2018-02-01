@@ -80,7 +80,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         ) );
     }
 
-    private Map<String,String> getPropertyPairs() throws IOException
+    private Map<String,String> getPropertyPairs()
     {
         Map<String,String> properties = new HashMap<>();
 

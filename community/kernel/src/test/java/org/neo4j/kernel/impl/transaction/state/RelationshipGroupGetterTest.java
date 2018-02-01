@@ -58,7 +58,7 @@ public class RelationshipGroupGetterTest
     public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCache );
 
     @Test
-    public void shouldAbortLoadingGroupChainIfComeTooFar() throws Exception
+    public void shouldAbortLoadingGroupChainIfComeTooFar()
     {
         // GIVEN a node with relationship group chain 2-->4-->10-->23
         File dir = new File( "dir" );

@@ -109,7 +109,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     }
 
     @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
         KEY treeKeyFrom = layout.newKey();
         KEY treeKeyTo = layout.newKey();

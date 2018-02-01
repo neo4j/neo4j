@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class QueryEngineProviderTest
 {
     @Test
-    public void shouldUsePickTheEngineWithLowestPriority() throws Throwable
+    public void shouldUsePickTheEngineWithLowestPriority()
     {
         // Given
         QueryEngineProvider provider1 = mock( QueryEngineProvider.class );
@@ -56,7 +56,7 @@ public class QueryEngineProviderTest
     }
 
     @Test
-    public void shouldPickTheOneAndOnlyQueryEngineAvailable() throws Throwable
+    public void shouldPickTheOneAndOnlyQueryEngineAvailable()
     {
         // Given
         QueryEngineProvider provider = mock( QueryEngineProvider.class );

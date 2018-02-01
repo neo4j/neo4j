@@ -189,7 +189,7 @@ public class IndexFailureOnStartupTest
         }
 
         @Override
-        public void run( FileSystemAbstraction fs, File base ) throws IOException
+        public void run( FileSystemAbstraction fs, File base )
         {
             File indexRootDirectory = new File( soleIndexDir( base ), "1" /*the partition*/ );
             File[] files = fs.listFiles( indexRootDirectory, ( dir, name ) -> name.startsWith( prefix ) );

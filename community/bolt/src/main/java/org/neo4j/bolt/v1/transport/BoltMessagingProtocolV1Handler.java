@@ -78,7 +78,7 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
      * deserialization, see the Netty HTTP parser for an example.
      */
     @Override
-    public void handle( ChannelHandlerContext channelContext, ByteBuf data ) throws IOException
+    public void handle( ChannelHandlerContext channelContext, ByteBuf data )
     {
         try
         {

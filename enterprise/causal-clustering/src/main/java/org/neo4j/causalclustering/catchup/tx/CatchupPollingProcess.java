@@ -122,7 +122,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start()
     {
         state = TX_PULLING;
         timer = timerService.create( TX_PULLER_TIMER, Groups.pullUpdates, timeout -> onTimeout() );
@@ -131,13 +131,13 @@ public class CatchupPollingProcess extends LifecycleAdapter
         upToDateFuture = new CompletableFuture<>();
     }
 
-    public Future<Boolean> upToDateFuture() throws InterruptedException
+    public Future<Boolean> upToDateFuture()
     {
         return upToDateFuture;
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         state = CANCELLED;
         timer.cancel( SYNC_WAIT );

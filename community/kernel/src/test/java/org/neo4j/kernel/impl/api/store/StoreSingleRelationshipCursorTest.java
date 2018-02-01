@@ -75,7 +75,7 @@ public class StoreSingleRelationshipCursorTest
     }
 
     @Test
-    public void retrieveUsedRelationship() throws Exception
+    public void retrieveUsedRelationship()
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         createRelationshipRecord( relationshipStore, true );

@@ -257,7 +257,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldRollbackTransactionAndTellRegistryToForgetItsHandle() throws Exception
+    public void shouldRollbackTransactionAndTellRegistryToForgetItsHandle()
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();
@@ -460,7 +460,7 @@ public class TransactionHandleTest
     }
 
     @Test
-    public void shouldInterruptTransaction() throws Exception
+    public void shouldInterruptTransaction()
     {
         // given
         TransitionalPeriodTransactionMessContainer kernel = mockKernel();

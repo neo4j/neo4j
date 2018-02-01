@@ -207,7 +207,7 @@ public class ClusterNetworkIT
 
     @Test
     public void testCluster()
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws InterruptedException
     {
         final long start = System.currentTimeMillis();
         timer.scheduleAtFixedRate( new TimerTask()

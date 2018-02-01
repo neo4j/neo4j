@@ -53,7 +53,7 @@ public class ManyMergesStressTest
     public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     @Test
-    public void shouldWorkFine() throws Throwable
+    public void shouldWorkFine()
     {
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         GraphDatabaseQueryService graph = new GraphDatabaseCypherService( db );

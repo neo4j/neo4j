@@ -288,7 +288,6 @@ public class CheckPointerImplTest
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
-                    throws IOException
             {
                 return 0;
             }
@@ -314,7 +313,6 @@ public class CheckPointerImplTest
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
-                    throws IOException
             {
                 return 0;
             }
@@ -343,7 +341,6 @@ public class CheckPointerImplTest
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
-                    throws IOException
             {
                 return 0;
             }

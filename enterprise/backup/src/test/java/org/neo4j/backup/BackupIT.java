@@ -118,7 +118,7 @@ public class BackupIT
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         servers = new ArrayList<>();
         serverPath = testDir.directory( "server" );
@@ -350,7 +350,7 @@ public class BackupIT
     }
 
     @Test
-    public void backupIndexWithNoCommits() throws Exception
+    public void backupIndexWithNoCommits()
     {
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = null;
@@ -428,7 +428,7 @@ public class BackupIT
     }
 
     @Test
-    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase() throws Exception
+    public void shouldRetainFileLocksAfterFullBackupOnLiveDatabase()
     {
         int backupPort = PortAuthority.allocatePort();
         File sourcePath = testDir.directory( "serverdb-lock" );
@@ -451,7 +451,7 @@ public class BackupIT
     }
 
     @Test
-    public void shouldIncrementallyBackupDenseNodes() throws Exception
+    public void shouldIncrementallyBackupDenseNodes()
     {
         int backupPort = PortAuthority.allocatePort();
         GraphDatabaseService db = startGraphDatabase( serverPath, true, backupPort );
@@ -599,7 +599,7 @@ public class BackupIT
         }
 
         @Override
-        protected void startup( File path ) throws Throwable
+        protected void startup( File path )
         {
             GraphDatabaseService db = null;
             try
@@ -633,7 +633,7 @@ public class BackupIT
         return MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_CHECKSUM );
     }
 
-    private ServerInterface startServer( File path, int backupPort ) throws Exception
+    private ServerInterface startServer( File path, int backupPort )
     {
         ServerInterface server = new EmbeddedServer( path, "127.0.0.1:" + backupPort );
         server.awaitStarted();
@@ -641,7 +641,7 @@ public class BackupIT
         return server;
     }
 
-    private void shutdownServer( ServerInterface server ) throws Exception
+    private void shutdownServer( ServerInterface server )
     {
         server.shutdown();
         servers.remove( server );

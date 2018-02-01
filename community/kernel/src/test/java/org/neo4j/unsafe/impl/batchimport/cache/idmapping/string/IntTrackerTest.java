@@ -34,7 +34,7 @@ public class IntTrackerTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldKeepIdsAndMarkDuplicates() throws Exception
+    public void shouldKeepIdsAndMarkDuplicates()
     {
         // given
         int length = 10_000;

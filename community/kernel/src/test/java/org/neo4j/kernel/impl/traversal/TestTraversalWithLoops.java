@@ -31,7 +31,7 @@ import org.neo4j.graphdb.traversal.Uniqueness;
 public class TestTraversalWithLoops extends TraversalTestBase
 {
     @Test
-    public void traverseThroughNodeWithLoop() throws Exception
+    public void traverseThroughNodeWithLoop()
     {
         /*
          * (a)-->(b)-->(c)-->(d)-->(e)

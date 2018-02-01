@@ -74,7 +74,7 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         this.dataSource = new LuceneDataSource( storeDir, config, indexStore.get(), fileSystemAbstraction, operationalMode );
         this.dataSource.init();

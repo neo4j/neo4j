@@ -45,14 +45,14 @@ public class ArrayIOCursor<T> implements IOCursor<T>
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         assert !closed;
         return pos++ < entries.length;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         closed = true;
     }

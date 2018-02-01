@@ -73,7 +73,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    private void performTest( String neostoreFileName ) throws Exception
+    private void performTest( String neostoreFileName )
     {
         File idFile = new File( storeDir, neostoreFileName + ".id" );
         // emulate the need for rebuilding id generators by deleting it

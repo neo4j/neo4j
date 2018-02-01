@@ -406,7 +406,7 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         throw unsupportedNext();
     }
@@ -418,7 +418,7 @@ public class CompositePageCursor extends PageCursor
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         throw unsupportedNext();
     }

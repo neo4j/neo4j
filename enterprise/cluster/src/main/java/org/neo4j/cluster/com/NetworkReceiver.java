@@ -124,7 +124,6 @@ public class NetworkReceiver
 
     @Override
     public void init()
-            throws Throwable
     {
         ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
@@ -167,7 +166,6 @@ public class NetworkReceiver
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 
@@ -177,7 +175,7 @@ public class NetworkReceiver
     }
 
     private int listen( int minPort, int maxPort )
-            throws URISyntaxException, ChannelException
+            throws ChannelException
     {
         ChannelException ex = null;
         for ( int checkPort = minPort; checkPort <= maxPort; checkPort++ )
@@ -303,7 +301,7 @@ public class NetworkReceiver
             implements ChannelPipelineFactory
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        public ChannelPipeline getPipeline()
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addLast( "frameDecoder",
@@ -318,7 +316,7 @@ public class NetworkReceiver
             extends SimpleChannelHandler
     {
         @Override
-        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             Channel ctxChannel = ctx.getChannel();
             openedChannel( getURI( (InetSocketAddress) ctxChannel.getRemoteAddress() ), ctxChannel );
@@ -326,7 +324,7 @@ public class NetworkReceiver
         }
 
         @Override
-        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event ) throws Exception
+        public void messageReceived( ChannelHandlerContext ctx, MessageEvent event )
         {
             if ( !bindingDetected )
             {
@@ -354,20 +352,20 @@ public class NetworkReceiver
         }
 
         @Override
-        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelDisconnected( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( getURI( (InetSocketAddress) ctx.getChannel().getRemoteAddress() ) );
             channels.remove( ctx.getChannel() );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
         {
             if ( !(e.getCause() instanceof ConnectException) )
             {

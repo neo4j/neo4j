@@ -31,7 +31,7 @@ public class TestCommandMode
 {
 
     @Test
-    public void shouldInferCorrectModes() throws Exception
+    public void shouldInferCorrectModes()
     {
         assertThat( fromRecordState( true, true ), equalTo( Command.Mode.CREATE ) );
         assertThat( fromRecordState( false, true ), equalTo( Command.Mode.UPDATE ) );

@@ -65,7 +65,7 @@ public class IdGeneratorImplContractTest extends IdGeneratorContractTest
     }
 
     @After
-    public void verifyFileCleanup() throws Exception
+    public void verifyFileCleanup()
     {
         File file = idGeneratorFile();
         if ( file.exists() )

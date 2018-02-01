@@ -113,8 +113,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseLoginC
     }
 
     @Override
-    public InternalTransaction beginLocalTransactionAsUser( EnterpriseLoginContext loginContext,
-            KernelTransaction.Type txType ) throws Throwable
+    public InternalTransaction beginLocalTransactionAsUser( EnterpriseLoginContext loginContext, KernelTransaction.Type txType )
     {
         return db.beginTransaction( txType, loginContext );
     }
@@ -160,7 +159,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseLoginC
     }
 
     @Override
-    public void tearDown() throws Throwable
+    public void tearDown()
     {
         db.shutdown();
     }

@@ -291,7 +291,7 @@ public class ForsetiFalseDeadlockTest
         loopRunTest( testRuns );
     }
 
-    private void loopRunTest( int testRuns ) throws InterruptedException, java.util.concurrent.ExecutionException
+    private void loopRunTest( int testRuns )
     {
         List<Throwable> exceptionList = new ArrayList<>();
         loopRun( testRuns, exceptionList );

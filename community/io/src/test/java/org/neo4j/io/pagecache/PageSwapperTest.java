@@ -73,7 +73,7 @@ public abstract class PageSwapperTest
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
     private final MemoryAllocator mman = MemoryAllocator.createAllocator( "32 KiB", new LocalMemoryTracker() );
 
-    protected abstract PageSwapperFactory swapperFactory() throws Exception;
+    protected abstract PageSwapperFactory swapperFactory();
 
     protected abstract void mkdirs( File dir ) throws IOException;
 

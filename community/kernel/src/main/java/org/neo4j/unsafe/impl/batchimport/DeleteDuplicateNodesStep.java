@@ -55,7 +55,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     }
 
     @Override
-    protected void process() throws IOException
+    protected void process()
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();

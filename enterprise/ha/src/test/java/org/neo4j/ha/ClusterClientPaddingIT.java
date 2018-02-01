@@ -51,7 +51,7 @@ public class ClusterClientPaddingIT
     }
 
     @Test
-    public void additionalClusterClientCanHelpBreakTiesWhenMasterIsShutDown() throws Throwable
+    public void additionalClusterClientCanHelpBreakTiesWhenMasterIsShutDown()
     {
         HighlyAvailableGraphDatabase sittingMaster = cluster.getMaster();
         cluster.shutdown( sittingMaster );

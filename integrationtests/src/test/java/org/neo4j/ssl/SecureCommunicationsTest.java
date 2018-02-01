@@ -288,7 +288,8 @@ public class SecureCommunicationsTest
         return makeSslContext( sslResource, forServer, SslProvider.JDK.name() );
     }
 
-    private SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider ) throws CertificateException, IOException
+    private SslContext makeSslContext( SslResource sslResource, boolean forServer, String sslProvider ) throws
+            IOException
     {
         Map<String,String> config = new HashMap<>();
         config.put( SslSystemSettings.netty_ssl_provider.name(), sslProvider );
@@ -332,7 +333,7 @@ public class SecureCommunicationsTest
                     .childHandler( new ChannelInitializer<SocketChannel>()
                     {
                         @Override
-                        protected void initChannel( SocketChannel ch ) throws Exception
+                        protected void initChannel( SocketChannel ch )
                         {
                             ChannelPipeline pipeline = ch.pipeline();
 
@@ -416,7 +417,7 @@ public class SecureCommunicationsTest
         }
 
         @Override
-        protected void initChannel( SocketChannel channel ) throws Exception
+        protected void initChannel( SocketChannel channel )
         {
             ChannelPipeline pipeline = channel.pipeline();
 
@@ -441,13 +442,13 @@ public class SecureCommunicationsTest
         }
 
         @Override
-        protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg ) throws Exception
+        protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg )
         {
             collectedData.writeBytes( msg );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
         {
             //cause.printStackTrace();
         }
@@ -456,13 +457,13 @@ public class SecureCommunicationsTest
     private class Responder extends SimpleChannelInboundHandler<ByteBuf>
     {
         @Override
-        protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg ) throws Exception
+        protected void channelRead0( ChannelHandlerContext ctx, ByteBuf msg )
         {
             ctx.channel().writeAndFlush( ctx.alloc().buffer().writeBytes( RESPONSE ) );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
         {
             //cause.printStackTrace();
         }

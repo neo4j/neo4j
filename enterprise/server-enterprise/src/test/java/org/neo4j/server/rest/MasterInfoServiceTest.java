@@ -134,7 +134,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportMasterAsGenerallyAvailableForTransactionProcessing() throws Exception
+    public void shouldReportMasterAsGenerallyAvailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -151,7 +151,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing() throws Exception
+    public void shouldReportSlaveAsGenerallyAvailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );
@@ -168,7 +168,7 @@ public class MasterInfoServiceTest
     }
 
     @Test
-    public void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing() throws Exception
+    public void shouldReportNonMasterOrSlaveAsUnavailableForTransactionProcessing()
     {
         // given
         HighlyAvailableGraphDatabase database = mock( HighlyAvailableGraphDatabase.class );

@@ -84,7 +84,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
      * @throws IOException if log files cannot be read
      */
     @Override
-    public RecoveryStartInformation get() throws IOException
+    public RecoveryStartInformation get()
     {
         LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
         CheckPoint lastCheckPoint = logTailInformation.lastCheckPoint;

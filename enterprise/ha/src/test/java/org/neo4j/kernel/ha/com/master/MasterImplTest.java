@@ -409,7 +409,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockDeadlocks() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockDeadlocks()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -431,7 +431,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringSharedLockDeadlocks() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringSharedLockDeadlocks()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -453,7 +453,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockThrowsIllegalResource() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringExclusiveLockThrowsIllegalResource()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
@@ -475,7 +475,7 @@ public class MasterImplTest
     }
 
     @Test
-    public void lockResultMustHaveMessageWhenAcquiringSharedLockThrowsIllegalResource() throws Exception
+    public void lockResultMustHaveMessageWhenAcquiringSharedLockThrowsIllegalResource()
     {
         MasterImpl.SPI spi = mockedSpi();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();

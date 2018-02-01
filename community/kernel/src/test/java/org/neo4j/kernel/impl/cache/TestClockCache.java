@@ -180,7 +180,7 @@ public class TestClockCache
     }
 
     @Test
-    public void shouldUpdateSizeWhenRemoving() throws Exception
+    public void shouldUpdateSizeWhenRemoving()
     {
         ClockCache<String, Integer> cache = new ClockCache<>( "foo", 3 );
         cache.put( "bar", 42 );

@@ -77,7 +77,7 @@ public class NumberSchemaIndexProviderTest
     /* getPopulator */
 
     @Test
-    public void getPopulatorMustThrowIfInReadOnlyMode() throws Exception
+    public void getPopulatorMustThrowIfInReadOnlyMode()
     {
         // given
         provider = newReadOnlyProvider();
@@ -96,7 +96,7 @@ public class NumberSchemaIndexProviderTest
     }
 
     @Test
-    public void getPopulatorMustCreateUniquePopulatorForTypeUnique() throws Exception
+    public void getPopulatorMustCreateUniquePopulatorForTypeUnique()
     {
         // given
         provider = newProvider();
@@ -109,7 +109,7 @@ public class NumberSchemaIndexProviderTest
     }
 
     @Test
-    public void getPopulatorMustCreateNonUniquePopulatorForTypeGeneral() throws Exception
+    public void getPopulatorMustCreateNonUniquePopulatorForTypeGeneral()
     {
         // given
         provider = newProvider();
@@ -308,7 +308,7 @@ public class NumberSchemaIndexProviderTest
     // pattern: open populator, markAsFailed, close populator, getInitialState, getPopulationFailure
 
     @Test
-    public void shouldReportInitialStateAsPopulatingIfIndexDoesntExist() throws Exception
+    public void shouldReportInitialStateAsPopulatingIfIndexDoesntExist()
     {
         // given
         provider = newProvider();

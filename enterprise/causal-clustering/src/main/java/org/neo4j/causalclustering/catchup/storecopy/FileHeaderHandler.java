@@ -43,7 +43,7 @@ public class FileHeaderHandler extends SimpleChannelInboundHandler<FileHeader>
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, FileHeader fileHeader ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, FileHeader fileHeader )
     {
         log.info( "Receiving file: %s", fileHeader.fileName() );
         handler.onFileHeader( fileHeader );

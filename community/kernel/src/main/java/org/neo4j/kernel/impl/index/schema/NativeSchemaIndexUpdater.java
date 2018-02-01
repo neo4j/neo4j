@@ -66,7 +66,7 @@ class NativeSchemaIndexUpdater<KEY extends NativeSchemaKey, VALUE extends Native
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close() throws IOException
     {
         if ( manageClosingOfWriter )
         {

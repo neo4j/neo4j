@@ -122,7 +122,6 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
     @Override
     public void init()
-            throws Throwable
     {
         serializer = new AtomicBroadcastSerializer( lenientObjectInputStream, lenientObjectOutputStream );
 
@@ -140,19 +139,16 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
     @Override
     public void start()
-            throws Throwable
     {
     }
 
     @Override
     public void stop()
-            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-            throws Throwable
     {
         snapshot.setSnapshotProvider( null );
 

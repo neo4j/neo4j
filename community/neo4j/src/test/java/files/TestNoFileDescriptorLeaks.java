@@ -51,7 +51,7 @@ public class TestNoFileDescriptorLeaks
     }
 
     @Test
-    public void mustNotLeakFileDescriptorsFromMerge() throws Exception
+    public void mustNotLeakFileDescriptorsFromMerge()
     {
         // GIVEN
         try ( Transaction tx = db.beginTx() )

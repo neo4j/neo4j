@@ -35,7 +35,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     private static final String SOME_MIXED_CHARS = "abc421#¤åäö(/&€";
     private static final String SOME_LATIN_1_CHARS = "abcdefghijklmnopqrstuvwxyz";
     @Test
-    public void bitPackingOfLengthyArrays() throws Exception
+    public void bitPackingOfLengthyArrays()
     {
         long arrayRecordsBefore = dynamicArrayRecordsInUse();
 
@@ -96,7 +96,7 @@ public class TestLengthyArrayPacking extends AbstractNeo4jTestCase
     }
 
     private void makeSureRightAmountOfDynamicRecordsUsed( Object value, int expectedAddedDynamicRecords,
-            DynamicRecordCounter recordCounter ) throws Exception
+            DynamicRecordCounter recordCounter )
     {
         long stringRecordsBefore = recordCounter.count();
         Node node = getGraphDb().createNode();

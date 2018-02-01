@@ -109,7 +109,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
-        public Builder withInternalLog( File logFile ) throws IOException
+        public Builder withInternalLog( File logFile )
         {
             this.debugLog = logFile;
             return this;
@@ -210,17 +210,17 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 

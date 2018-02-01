@@ -65,7 +65,7 @@ public class ClientReconnectIT extends AbstractShellIT
         client.shutdown();
     }
 
-    private void makeRemoveAvailableOnPort( int serverPort ) throws RemoteException
+    private void makeRemoveAvailableOnPort( int serverPort )
     {
         long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 30 );
         do

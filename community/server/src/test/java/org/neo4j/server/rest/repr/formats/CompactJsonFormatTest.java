@@ -45,14 +45,14 @@ public class CompactJsonFormatTest
     }
 
     @Test
-    public void canFormatString() throws Exception
+    public void canFormatString()
     {
         String entity = json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( entity, "\"expected value\"" );
     }
 
     @Test
-    public void canFormatListOfStrings() throws Exception
+    public void canFormatListOfStrings()
     {
         String entity = json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
@@ -60,14 +60,14 @@ public class CompactJsonFormatTest
     }
 
     @Test
-    public void canFormatInteger() throws Exception
+    public void canFormatInteger()
     {
         String entity = json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", entity );
     }
 
     @Test
-    public void canFormatObjectWithStringField() throws Exception
+    public void canFormatObjectWithStringField()
     {
         String entity = json.assemble( new MappingRepresentation( "string" )
         {

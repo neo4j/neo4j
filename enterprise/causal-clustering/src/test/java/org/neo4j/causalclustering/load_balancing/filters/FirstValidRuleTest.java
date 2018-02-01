@@ -33,7 +33,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class FirstValidRuleTest
 {
     @Test
-    public void shouldUseResultOfFirstNonEmpty() throws Exception
+    public void shouldUseResultOfFirstNonEmpty()
     {
         // given
         Filter<Integer> removeValuesOfFive = data -> data.stream().filter( value -> value != 5 ).collect( Collectors.toSet() );

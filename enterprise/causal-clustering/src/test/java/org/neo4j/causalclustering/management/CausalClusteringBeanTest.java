@@ -76,7 +76,7 @@ public class CausalClusteringBeanTest
     }
 
     @Test
-    public void getCurrentRoleFromRaftMachine() throws Exception
+    public void getCurrentRoleFromRaftMachine()
     {
         when( raftMachine.currentRole() ).thenReturn( Role.LEADER, Role.FOLLOWER, Role.CANDIDATE );
         assertEquals( "LEADER", ccBean.getRole() );

@@ -28,7 +28,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 public class GroupCacheTest
 {
     @Test
-    public void shouldHandleSingleByteCount() throws Exception
+    public void shouldHandleSingleByteCount()
     {
         // given
         int max = 256;
@@ -52,7 +52,7 @@ public class GroupCacheTest
     }
 
     @Test
-    public void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds() throws Exception
+    public void shouldSwitchToTwoByteVersionBeyondSingleByteGroupIds()
     {
         // given
         int max = 257;

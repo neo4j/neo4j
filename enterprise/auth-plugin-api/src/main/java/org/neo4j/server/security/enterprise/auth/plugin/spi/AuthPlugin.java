@@ -84,7 +84,7 @@ public interface AuthPlugin extends AuthProviderLifecycle
         }
 
         @Override
-        public void initialize( AuthProviderOperations authProviderOperations ) throws Throwable
+        public void initialize( AuthProviderOperations authProviderOperations )
         {
             authProviderOperations.setAuthenticationCachingEnabled( true );
         }

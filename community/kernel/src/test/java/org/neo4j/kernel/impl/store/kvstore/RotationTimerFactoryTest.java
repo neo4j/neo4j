@@ -30,7 +30,7 @@ import org.neo4j.time.FakeClock;
 public class RotationTimerFactoryTest
 {
     @Test
-    public void testTimer() throws Exception
+    public void testTimer()
     {
         // GIVEN
         FakeClock fakeClock = Clocks.fakeClock( 10000 , TimeUnit.MILLISECONDS );

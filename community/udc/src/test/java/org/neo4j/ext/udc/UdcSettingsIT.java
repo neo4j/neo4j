@@ -32,7 +32,7 @@ public class UdcSettingsIT
     public static final String TEST_HOST_AND_PORT = "test.ucd.neo4j.org:8080";
 
     @Test
-    public void testUdcHostSettingIsUnchanged() throws Exception
+    public void testUdcHostSettingIsUnchanged()
     {
         //noinspection deprecation
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()

@@ -48,13 +48,13 @@ public class SchemaImplTest
     private GraphDatabaseService db;
 
     @Before
-    public void createDb() throws Exception
+    public void createDb()
     {
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( new File( "mydb" ) );
     }
 
     @After
-    public void shutdownDb() throws Exception
+    public void shutdownDb()
     {
         db.shutdown();
     }

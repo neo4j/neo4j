@@ -929,7 +929,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testEmptyString() throws Exception
+    public void testEmptyString()
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "1", 2 );
@@ -943,55 +943,55 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonBooleanArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonBooleanArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new boolean[] {false, false, false}, true );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonByteArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonByteArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new byte[] {0, 0, 0}, (byte)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonShortArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonShortArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new short[] {0, 0, 0}, (short)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonIntArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonIntArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new int[] {0, 0, 0}, 1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonLongArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonLongArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new long[] {0, 0, 0}, 1L );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonFloatArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonFloatArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new float[] {0F, 0F, 0F}, 1F );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonDoubleArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonDoubleArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new double[] {0D, 0D, 0D}, 1D );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonCharArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonCharArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new char[] {'0', '0', '0'}, '1' );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonStringArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonStringArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( new String[] {"zero", "zero", "zero"}, "one" );
     }
@@ -1010,55 +1010,55 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongBooleanArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Boolean.TYPE ), true );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongByteArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongByteArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Byte.TYPE ), (byte)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongShortArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongShortArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Short.TYPE ), (short)1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongIntArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongIntArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Integer.TYPE ), 1 );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongLongArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongLongArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Long.TYPE ), 1L );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongFloatArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Float.TYPE ), 1F );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongDoubleArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Double.TYPE ), 1D );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongCharArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongCharArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongArray( Character.TYPE ), '1' );
     }
 
     @Test
-    public void shouldNotBeAbleToPoisonVeryLongStringArrayProperty() throws Exception
+    public void shouldNotBeAbleToPoisonVeryLongStringArrayProperty()
     {
         shouldNotBeAbleToPoisonArrayProperty( veryLongStringArray(), "one" );
     }

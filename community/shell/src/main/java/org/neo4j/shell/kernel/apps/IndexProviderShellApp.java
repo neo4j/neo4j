@@ -359,7 +359,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         return query2 != null ? theIndex.query( query1, query2 ) : theIndex.query( query1 );
     }
 
-    private void index( AppCommandParser parser, Session session, Output out ) throws ShellException, RemoteException
+    private void index( AppCommandParser parser, Session session, Output out ) throws ShellException
     {
         NodeOrRelationship current = getCurrent( session );
         String index = getIndexName( parser );

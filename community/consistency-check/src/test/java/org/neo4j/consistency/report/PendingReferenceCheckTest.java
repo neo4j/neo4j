@@ -49,7 +49,7 @@ public class PendingReferenceCheckTest
     private final PendingReferenceCheck<PropertyRecord> referenceCheck;
 
     @Test
-    public void shouldAllowSkipAfterSkip() throws Exception
+    public void shouldAllowSkipAfterSkip()
     {
         // given
         referenceCheck.skip();
@@ -58,7 +58,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldAllowSkipAfterCheckReference() throws Exception
+    public void shouldAllowSkipAfterCheckReference()
     {
         // given
         referenceCheck.checkReference( new PropertyRecord( 0 ), null );
@@ -67,7 +67,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldAllowSkipAfterCheckDiffReference() throws Exception
+    public void shouldAllowSkipAfterCheckDiffReference()
     {
         // given
         referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
@@ -76,7 +76,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckReferenceAfterSkip() throws Exception
+    public void shouldNotAllowCheckReferenceAfterSkip()
     {
         // given
         referenceCheck.skip();
@@ -95,7 +95,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckDiffReferenceAfterSkip() throws Exception
+    public void shouldNotAllowCheckDiffReferenceAfterSkip()
     {
         // given
         referenceCheck.skip();
@@ -114,7 +114,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckReferenceAfterCheckReference() throws Exception
+    public void shouldNotAllowCheckReferenceAfterCheckReference()
     {
         // given
         referenceCheck.checkReference( new PropertyRecord( 0 ), null );
@@ -133,7 +133,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckDiffReferenceAfterCheckReference() throws Exception
+    public void shouldNotAllowCheckDiffReferenceAfterCheckReference()
     {
         // given
         referenceCheck.checkReference( new PropertyRecord( 0 ), null );
@@ -152,7 +152,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckReferenceAfterCheckDiffReference() throws Exception
+    public void shouldNotAllowCheckReferenceAfterCheckDiffReference()
     {
         // given
         referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );
@@ -171,7 +171,7 @@ public class PendingReferenceCheckTest
     }
 
     @Test
-    public void shouldNotAllowCheckDiffReferenceAfterCheckDiffReference() throws Exception
+    public void shouldNotAllowCheckDiffReferenceAfterCheckDiffReference()
     {
         // given
         referenceCheck.checkDiffReference( new PropertyRecord( 0 ), new PropertyRecord( 0 ), null );

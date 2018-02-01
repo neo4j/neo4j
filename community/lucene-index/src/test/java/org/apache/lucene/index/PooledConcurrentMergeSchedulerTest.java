@@ -46,13 +46,13 @@ public class PooledConcurrentMergeSchedulerTest
     private IndexWriter indexWriter = mock( IndexWriter.class );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         mergeScheduler = new TestPooledConcurrentMergeScheduler();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         mergeScheduler.getExecutionLatch().countDown();
     }
@@ -129,7 +129,6 @@ public class PooledConcurrentMergeSchedulerTest
 
         @Override
         protected synchronized MergeThread getMergeThread( IndexWriter writer, MergePolicy.OneMerge merge )
-                throws IOException
         {
             return new BlockingMerge( writer, merge, executionLatch );
         }

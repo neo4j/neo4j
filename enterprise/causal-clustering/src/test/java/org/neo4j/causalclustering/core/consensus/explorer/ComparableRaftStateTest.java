@@ -32,7 +32,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class ComparableRaftStateTest
 {
     @Test
-    public void twoIdenticalStatesShouldBeEqual() throws Exception
+    public void twoIdenticalStatesShouldBeEqual()
     {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();

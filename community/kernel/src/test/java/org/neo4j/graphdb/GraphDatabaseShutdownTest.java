@@ -66,7 +66,7 @@ public class GraphDatabaseShutdownTest
     }
 
     @Test
-    public void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown() throws Exception
+    public void transactionShouldReleaseLocksWhenGraphDbIsBeingShutdown()
     {
         // GIVEN
         final Locks locks = db.getDependencyResolver().resolveDependency( Locks.class );

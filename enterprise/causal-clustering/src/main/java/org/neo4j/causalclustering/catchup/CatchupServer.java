@@ -134,7 +134,7 @@ public class CatchupServer extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start()
     {
         if ( channel != null )
         {
@@ -236,7 +236,7 @@ public class CatchupServer extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop()
     {
         if ( channel == null )
         {

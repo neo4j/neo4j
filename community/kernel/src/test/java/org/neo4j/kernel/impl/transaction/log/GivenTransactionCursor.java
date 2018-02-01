@@ -42,7 +42,7 @@ public class GivenTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         if ( index + 1 < transactions.length )
         {
@@ -53,7 +53,7 @@ public class GivenTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

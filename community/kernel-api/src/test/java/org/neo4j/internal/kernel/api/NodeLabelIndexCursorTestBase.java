@@ -50,7 +50,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindNodesByLabel() throws Exception
+    public void shouldFindNodesByLabel()
     {
         // given
         int one = token.nodeLabel( "One" );
@@ -88,7 +88,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Ignore
-    public void shouldFindNodesByDisjunction() throws Exception
+    public void shouldFindNodesByDisjunction()
     {
         // given
         int first = token.nodeLabel( "First" );
@@ -106,7 +106,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Ignore
-    public void shouldFindNodesByConjunction() throws Exception
+    public void shouldFindNodesByConjunction()
     {
         // given
         int first = token.nodeLabel( "First" );

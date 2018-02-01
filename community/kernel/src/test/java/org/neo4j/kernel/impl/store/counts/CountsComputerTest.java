@@ -319,7 +319,7 @@ public class CountsComputerTest
                 CONFIG, new File( dir, COUNTS_STORE_BASE ) );
     }
 
-    private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
+    private void rebuildCounts( long lastCommittedTransactionId )
     {
         cleanupCountsForRebuilding();
 

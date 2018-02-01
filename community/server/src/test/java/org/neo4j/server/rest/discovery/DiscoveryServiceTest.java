@@ -74,7 +74,7 @@ public class DiscoveryServiceTest
         when( dependencyResolver.resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegister );
     }
 
-    private Config mockConfig() throws URISyntaxException
+    private Config mockConfig()
     {
         HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );

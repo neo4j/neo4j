@@ -144,7 +144,7 @@ public interface InputEntityVisitor extends Closeable
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     }

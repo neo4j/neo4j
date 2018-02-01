@@ -49,7 +49,7 @@ public class ReadOnlyIndexReferenceTest
     }
 
     @Test
-    public void obtainingWriterIsUnsupported() throws Exception
+    public void obtainingWriterIsUnsupported()
     {
         expectedException.expect( UnsupportedOperationException.class );
         expectedException.expectMessage( "Read only indexes do not have index writers." );

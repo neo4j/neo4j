@@ -63,7 +63,7 @@ public class IndexRestartIT
     private final Label myLabel = label( "MyLabel" );
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
@@ -73,7 +73,7 @@ public class IndexRestartIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
@@ -83,7 +83,7 @@ public class IndexRestartIT
      * as possible. If this proves to be flaky, remove it right away.
      */
     @Test
-    public void shouldBeAbleToDropIndexWhileItIsPopulating() throws Exception
+    public void shouldBeAbleToDropIndexWhileItIsPopulating()
     {
         // GIVEN
         startDb();
@@ -108,7 +108,7 @@ public class IndexRestartIT
     }
 
     @Test
-    public void shouldHandleRestartOfOnlineIndex() throws Exception
+    public void shouldHandleRestartOfOnlineIndex()
     {
         // Given
         startDb();
@@ -129,7 +129,7 @@ public class IndexRestartIT
     }
 
     @Test
-    public void shouldHandleRestartIndexThatHasNotComeOnlineYet() throws Exception
+    public void shouldHandleRestartIndexThatHasNotComeOnlineYet()
     {
         // Given
         startDb();

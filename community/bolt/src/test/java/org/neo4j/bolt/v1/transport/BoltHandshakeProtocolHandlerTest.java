@@ -51,7 +51,7 @@ public class BoltHandshakeProtocolHandlerTest
     private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     @Test
-    public void shouldChooseFirstAvailableProtocol() throws Throwable
+    public void shouldChooseFirstAvailableProtocol()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
@@ -75,7 +75,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldHandleFragmentedMessage() throws Throwable
+    public void shouldHandleFragmentedMessage()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
@@ -107,7 +107,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldHandleHandshakeFollowedByMessageInSameBuffer() throws Throwable
+    public void shouldHandleHandshakeFollowedByMessageInSameBuffer()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
@@ -134,7 +134,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldHandleVersionBoundary() throws Throwable
+    public void shouldHandleVersionBoundary()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
@@ -158,7 +158,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldFallBackToNoneProtocolIfNoMatch() throws Throwable
+    public void shouldFallBackToNoneProtocolIfNoMatch()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
@@ -181,7 +181,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldRejectIfInvalidHandshake() throws Throwable
+    public void shouldRejectIfInvalidHandshake()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
@@ -204,7 +204,7 @@ public class BoltHandshakeProtocolHandlerTest
     }
 
     @Test
-    public void shouldRejectIfInsecureHandshake() throws Throwable
+    public void shouldRejectIfInsecureHandshake()
     {
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {

@@ -66,7 +66,7 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly() throws IOException
+    public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
@@ -169,7 +169,7 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage() throws IOException
+    public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );

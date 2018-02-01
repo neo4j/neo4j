@@ -47,13 +47,13 @@ public class FileWatcherLifecycleAdapter extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         fileWatchers = jobScheduler.threadFactory( JobScheduler.Groups.fileWatch );
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         watcher = fileWatchers.newThread( eventWatcher );
         watcher.start();

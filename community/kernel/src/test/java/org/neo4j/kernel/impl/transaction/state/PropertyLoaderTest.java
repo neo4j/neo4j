@@ -72,7 +72,7 @@ public class PropertyLoaderTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
 
     @Before
-    public void setUpMocking() throws Exception
+    public void setUpMocking()
     {
         doReturn( nodeStore ).when( neoStores ).getNodeStore();
         when( nodeStore.newRecord() ).thenAnswer( invocation -> new NodeRecord( -1 ) );

@@ -268,7 +268,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnTheCursorToTheCacheOnClose() throws Throwable
+        public void shouldReturnTheCursorToTheCacheOnClose()
         {
             // given
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
@@ -313,14 +313,14 @@ public class StorePropertyCursorTest
         }
 
         @AfterClass
-        public static void tearDown() throws IOException
+        public static void tearDown()
         {
             neoStores.close();
             pageCache.close();
         }
 
         @Test
-        public void ignore() throws Exception
+        public void ignore()
         {
             // JUnit gets confused if this class has no method with the @Test annotation.
             // This is also why this class is not abstract.
@@ -343,7 +343,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnAProperty() throws Throwable
+        public void shouldReturnAProperty()
         {
             // given
             int keyId = 11;
@@ -403,7 +403,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnAPropertyBySkippingOne() throws Throwable
+        public void shouldReturnAPropertyBySkippingOne()
         {
             // given
             int keyId1 = 11;
@@ -435,7 +435,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnTwoProperties() throws Throwable
+        public void shouldReturnTwoProperties()
         {
             // given
             int keyId1 = 11;
@@ -485,7 +485,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReuseCorrectlyCursor() throws Throwable
+        public void shouldReuseCorrectlyCursor()
         {
             // given
             int keyId = 11;

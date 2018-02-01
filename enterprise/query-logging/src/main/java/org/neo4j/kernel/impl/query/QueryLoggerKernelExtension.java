@@ -53,7 +53,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
     }
 
     @Override
-    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, final Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( @SuppressWarnings( "unused" ) KernelContext context, final Dependencies dependencies )
     {
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
         Config config = dependencies.config();

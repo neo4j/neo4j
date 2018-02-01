@@ -117,7 +117,7 @@ public class Start extends TransactionProvidingApp
     }
 
     private Result getResult( String query, Session session )
-            throws ShellException, RemoteException, QueryExecutionKernelException
+            throws ShellException, QueryExecutionKernelException
     {
         Map<String,Object> parameters = getParameters( session );
         TransactionalContext tc = createTransactionContext( query, parameters, session );
@@ -155,7 +155,7 @@ public class Start extends TransactionProvidingApp
         out.println( "WARNING: " + exception.getMessage() );
     }
 
-    private Map<String,Object> getParameters( Session session ) throws ShellException
+    private Map<String,Object> getParameters( Session session )
     {
         try
         {

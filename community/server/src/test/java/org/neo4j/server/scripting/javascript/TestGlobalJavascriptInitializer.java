@@ -25,7 +25,7 @@ public class TestGlobalJavascriptInitializer
 {
 
     @Test( expected = RuntimeException.class )
-    public void shouldNotAllowChangingMode() throws Exception
+    public void shouldNotAllowChangingMode()
     {
         // Given
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
@@ -35,7 +35,7 @@ public class TestGlobalJavascriptInitializer
     }
 
     @Test
-    public void initializingTheSameModeTwiceIsFine() throws Exception
+    public void initializingTheSameModeTwiceIsFine()
     {
         // Given
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );

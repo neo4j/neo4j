@@ -48,7 +48,7 @@ public class TruncateLogCommand implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightCache inFlightCache, Log log ) throws IOException
+    public void applyTo( InFlightCache inFlightCache, Log log )
     {
         log.debug( "Start truncating in-flight-map from index %d. Current map:%n%s", fromIndex, inFlightCache );
         inFlightCache.truncate( fromIndex );

@@ -146,7 +146,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
 
     @Override
     public long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
-            throws IOException, TransactionFailureException
+            throws TransactionFailureException
     {
         return transactionCommitProcess.commit( new TransactionToApply( preparedTransaction ), CommitEvent.NULL,
                 TransactionApplicationMode.EXTERNAL );

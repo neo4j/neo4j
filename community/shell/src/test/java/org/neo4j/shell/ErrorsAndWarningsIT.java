@@ -41,7 +41,7 @@ public class ErrorsAndWarningsIT extends AbstractShellIT
     }
 
     @Test
-    public void unsupportedQueryShouldBeSilent() throws IOException
+    public void unsupportedQueryShouldBeSilent()
     {
         // When
         InputStream realStdin = System.in;

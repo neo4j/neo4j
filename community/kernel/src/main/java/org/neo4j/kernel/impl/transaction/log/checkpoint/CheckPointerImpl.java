@@ -78,7 +78,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         threshold.initialize( transactionIdStore.getLastClosedTransactionId() );
     }

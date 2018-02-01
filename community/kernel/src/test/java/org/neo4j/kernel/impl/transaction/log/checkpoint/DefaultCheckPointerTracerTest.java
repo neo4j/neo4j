@@ -43,7 +43,7 @@ public class DefaultCheckPointerTracerTest
     private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
     @Test
-    public void shouldCountEventsAnAccumulatedTotalTime() throws Throwable
+    public void shouldCountEventsAnAccumulatedTotalTime()
     {
         DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
 
@@ -61,7 +61,7 @@ public class DefaultCheckPointerTracerTest
     }
 
     @Test
-    public void shouldReturnZeroIfNoDataIsAvailable() throws Throwable
+    public void shouldReturnZeroIfNoDataIsAvailable()
     {
         DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
 

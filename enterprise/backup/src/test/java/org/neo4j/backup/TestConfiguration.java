@@ -56,7 +56,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testOnByDefault() throws Exception
+    public void testOnByDefault()
     {
         int port = PortAuthority.allocatePort();
 
@@ -67,7 +67,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testOffByConfig() throws Exception
+    public void testOffByConfig()
     {
         int port = PortAuthority.allocatePort();
 
@@ -87,7 +87,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testEnableDefaultsInConfig() throws Exception
+    public void testEnableDefaultsInConfig()
     {
         int port = PortAuthority.allocatePort();
 
@@ -101,7 +101,7 @@ public class TestConfiguration
     }
 
     @Test
-    public void testEnableCustomPortInConfig() throws Exception
+    public void testEnableCustomPortInConfig()
     {
         int customPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( sourceDir )

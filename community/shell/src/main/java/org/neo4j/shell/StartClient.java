@@ -429,7 +429,7 @@ public class StartClient
         }
     }
 
-    static Map<String,Serializable> getSessionVariablesFromArgs( Args args ) throws RemoteException, ShellException
+    static Map<String,Serializable> getSessionVariablesFromArgs( Args args ) throws ShellException
     {
         String profile = args.get( "profile", null );
         Map<String,Serializable> session = new HashMap<>();
@@ -454,7 +454,7 @@ public class StartClient
         return session;
     }
 
-    private static void applyProfileFile( File file, Map<String,Serializable> session ) throws ShellException
+    private static void applyProfileFile( File file, Map<String,Serializable> session )
     {
         try ( FileInputStream fis = new FileInputStream( file ) )
         {

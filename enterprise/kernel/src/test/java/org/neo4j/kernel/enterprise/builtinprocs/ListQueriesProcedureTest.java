@@ -95,7 +95,7 @@ public class ListQueriesProcedureTest
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
 
     @Test
-    public void shouldContainTheQueryItself() throws Exception
+    public void shouldContainTheQueryItself()
     {
         // given
         String query = "CALL dbms.listQueries";
@@ -110,7 +110,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldNotIncludeDeprecatedFields() throws Exception
+    public void shouldNotIncludeDeprecatedFields()
     {
         // when
         Result result = db.execute( "CALL dbms.listQueries" );
@@ -310,7 +310,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldContainSpecificConnectionDetails() throws Exception
+    public void shouldContainSpecificConnectionDetails()
     {
         // when
         Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );

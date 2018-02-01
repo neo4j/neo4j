@@ -39,67 +39,67 @@ public class ByteBufferFlushableChannel implements FlushableChannel, Flushable
     }
 
     @Override
-    public Flushable prepareForFlush() throws IOException
+    public Flushable prepareForFlush()
     {
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte value ) throws IOException
+    public FlushableChannel put( byte value )
     {
         buffer.put( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putShort( short value ) throws IOException
+    public FlushableChannel putShort( short value )
     {
         buffer.putShort( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putInt( int value ) throws IOException
+    public FlushableChannel putInt( int value )
     {
         buffer.putInt( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putLong( long value ) throws IOException
+    public FlushableChannel putLong( long value )
     {
         buffer.putLong( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat( float value ) throws IOException
+    public FlushableChannel putFloat( float value )
     {
         buffer.putFloat( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble( double value ) throws IOException
+    public FlushableChannel putDouble( double value )
     {
         buffer.putDouble( value );
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length ) throws IOException
+    public FlushableChannel put( byte[] value, int length )
     {
         buffer.put( value, 0, length );
         return this;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
     }
 }

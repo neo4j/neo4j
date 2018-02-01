@@ -34,7 +34,7 @@ public class UtilsTest
 {
 
     @Test
-    public void shouldDetectCollisions() throws Exception
+    public void shouldDetectCollisions()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -48,7 +48,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldNotReportDisjointArraysAsCollision() throws Exception
+    public void shouldNotReportDisjointArraysAsCollision()
     {
         // GIVEN
         long[] first = new long[] {1, 4, 7, 10, 100, 101};
@@ -62,7 +62,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldBeCorrectForSomeRandomBatches() throws Exception
+    public void shouldBeCorrectForSomeRandomBatches()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();
@@ -85,7 +85,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeIdsInto() throws Exception
+    public void shouldMergeIdsInto()
     {
         // GIVEN
         long[] values = new long[]{2, 4, 10, 11, 14};
@@ -101,7 +101,7 @@ public class UtilsTest
     }
 
     @Test
-    public void shouldMergeSomeRandomIdsInto() throws Exception
+    public void shouldMergeSomeRandomIdsInto()
     {
         // GIVEN
         Random random = ThreadLocalRandom.current();

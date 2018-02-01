@@ -42,7 +42,7 @@ public class DataProducer implements ReadableByteChannel
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         if ( closed )
         {
@@ -52,7 +52,7 @@ public class DataProducer implements ReadableByteChannel
     }
 
     @Override
-    public int read( ByteBuffer dst ) throws IOException
+    public int read( ByteBuffer dst )
     {
         int toFill = min( dst.remaining(), bytesLeftToProduce );
         int leftToFill = toFill;

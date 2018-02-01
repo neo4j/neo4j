@@ -30,7 +30,7 @@ import org.neo4j.string.UTF8;
 public class FileHeaderDecoder extends ByteToMessageDecoder
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out )
     {
         int length = msg.readInt();
         byte[] bytes = new byte[length];

@@ -41,13 +41,13 @@ public interface LabelScanWriter extends Closeable
     LabelScanWriter EMPTY = new LabelScanWriter()
     {
         @Override
-        public void write( NodeLabelUpdate update ) throws IOException
+        public void write( NodeLabelUpdate update )
         {
             // do nothing
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             // nothing to close
         }

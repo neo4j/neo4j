@@ -42,7 +42,7 @@ public class PropertyExistenceEnforcerTest
 {
 
     @Test
-    public void constraintPropertyIdsNotUpdatedByConstraintEnforcer() throws Exception
+    public void constraintPropertyIdsNotUpdatedByConstraintEnforcer()
     {
         UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 1, 70, 8 );
         NodeKeyConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForLabel( 2, 12, 7, 13 );

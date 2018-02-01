@@ -54,7 +54,7 @@ public class DeleteUserStressIT
     private final Set<Throwable> errors = ConcurrentHashMap.newKeySet();
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         adminDriver = GraphDatabase.driver( db.boltURI(), basic( "neo4j", "neo4j" ) );
         try ( Session session = adminDriver.session();

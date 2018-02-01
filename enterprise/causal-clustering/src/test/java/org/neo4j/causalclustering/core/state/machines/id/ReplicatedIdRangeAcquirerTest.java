@@ -75,7 +75,7 @@ public class ReplicatedIdRangeAcquirerTest
     }
 
     private void consecutiveAllocationFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateForGivenInitialHighId(
-            long initialHighId ) throws Exception
+            long initialHighId )
     {
         Set<Long> idAllocations = new HashSet<>();
         int idRangeLength = 8;

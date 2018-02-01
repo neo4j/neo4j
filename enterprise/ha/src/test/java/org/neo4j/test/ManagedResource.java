@@ -39,7 +39,7 @@ public abstract class ManagedResource<R> implements TestRule
         return result;
     }
 
-    protected abstract R createResource( TestDirectory dir ) throws Exception;
+    protected abstract R createResource( TestDirectory dir );
 
     protected abstract void disposeResource( R resource );
 

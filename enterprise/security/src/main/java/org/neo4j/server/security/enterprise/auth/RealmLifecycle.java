@@ -29,22 +29,22 @@ public interface RealmLifecycle
     class Adapter implements RealmLifecycle
     {
         @Override
-        public void initialize() throws Throwable
+        public void initialize()
         {
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop()
         {
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown()
         {
         }
     }

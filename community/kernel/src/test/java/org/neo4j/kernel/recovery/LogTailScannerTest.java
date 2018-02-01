@@ -521,7 +521,7 @@ public class LogTailScannerTest
 
     interface LogCreator
     {
-        void create( long version, Map<Entry,LogPosition> positions ) throws IOException;
+        void create( long version, Map<Entry,LogPosition> positions );
     }
 
     // Marker interface, helping compilation/test creation

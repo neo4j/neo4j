@@ -1287,7 +1287,7 @@ public class ImportToolTest
     }
 
     private void shouldPrintReferenceLinkAsPartOfErrorMessage( List<String> nodeIds,
-            Iterator<RelationshipDataLine> relationshipDataLines, String message ) throws Exception
+            Iterator<RelationshipDataLine> relationshipDataLines, String message )
     {
         Configuration config = Configuration.COMMAS;
         try

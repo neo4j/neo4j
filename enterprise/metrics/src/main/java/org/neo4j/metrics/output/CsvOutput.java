@@ -98,7 +98,7 @@ public class CsvOutput implements Lifecycle, EventReporter
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         csvReporter.stop();
     }

@@ -52,21 +52,21 @@ public class BloomProcedures
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
-    public void awaitPopulation() throws Exception
+    public void awaitPopulation()
     {
         provider.awaitPopulation();
     }
 
     @Description( "Returns the node property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedNodePropertyKeys()
     {
         return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
 
     @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.getIndexedRelationshipPropertyKeys", mode = READ )
-    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys() throws Exception
+    public Stream<PropertyOutput> getIndexedRelationshipPropertyKeys()
     {
         return provider.getProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS ).stream().map( PropertyOutput::new );
     }
@@ -87,7 +87,7 @@ public class BloomProcedures
 
     @Description( "Check the status of the Bloom fulltext index add-on" )
     @Procedure( name = "bloom.indexStatus", mode = READ )
-    public Stream<StatusOutput> indexStatus() throws Exception
+    public Stream<StatusOutput> indexStatus()
     {
         InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
         InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );

@@ -58,7 +58,7 @@ public class Properties implements Answer<Object>, Iterable<String>
     }
 
     @Override
-    public Object answer( InvocationOnMock invocation ) throws Throwable
+    public Object answer( InvocationOnMock invocation )
     {
         Object[] arguments = invocation.getArguments();
         @SuppressWarnings( "SuspiciousMethodCalls" )

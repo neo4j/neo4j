@@ -31,7 +31,7 @@ import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 public class ClientMessageEncoder extends MessageToByteEncoder<ServerMessage>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, ServerMessage msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, ServerMessage msg, ByteBuf out )
     {
         msg.dispatch( new Encoder( out ) );
     }

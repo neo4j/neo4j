@@ -54,7 +54,7 @@ public class ExecutingQueryListTest
     }
 
     @Test
-    public void shouldNotChangeAListWhenRemovingAQueryThatIsNotInTheList() throws Exception
+    public void shouldNotChangeAListWhenRemovingAQueryThatIsNotInTheList()
     {
         // given
         ExecutingQuery query1 = createExecutingQuery( 1, "query1" );

@@ -183,7 +183,6 @@ public class DatabaseRebuildTool
 
     private ConsoleInput console( final File fromPath, final GraphDatabaseBuilder dbBuilder,
             InputStream in, Listener<PrintStream> prompt, LifeSupport life )
-            throws Exception
     {
         // We must have this indirection here since in order to perform CC (one of the commands) we must shut down
         // the database and let CC instantiate its own to run on. After that completes the db

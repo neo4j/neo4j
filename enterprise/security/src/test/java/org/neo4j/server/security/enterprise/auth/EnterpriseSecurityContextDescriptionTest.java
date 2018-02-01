@@ -58,7 +58,7 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithoutRoles() throws Throwable
+    public void shouldMakeNiceDescriptionWithoutRoles()
     {
         assertThat( context().description(), equalTo( "user 'mats' with no roles" ) );
     }
@@ -107,14 +107,14 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabled() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabled()
     {
         EnterpriseSecurityContext disabled = EnterpriseSecurityContext.AUTH_DISABLED;
         assertThat( disabled.description(), equalTo( "AUTH_DISABLED with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
     {
         EnterpriseSecurityContext disabled = EnterpriseSecurityContext.AUTH_DISABLED;
         EnterpriseSecurityContext restricted =

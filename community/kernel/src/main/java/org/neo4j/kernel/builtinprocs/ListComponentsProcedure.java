@@ -66,7 +66,6 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
 
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input )
-            throws ProcedureException
     {
         return asRawIterator( singletonList(
                 new Object[]{"Neo4j Kernel", singletonList( neo4jVersion ), neo4jEdition}).iterator() );

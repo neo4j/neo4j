@@ -50,7 +50,7 @@ public class TestIndexImplOnNeo
     private GraphDatabaseService db;
 
     @Before
-    public void createDb() throws Exception
+    public void createDb()
     {
         db = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) )
@@ -64,7 +64,7 @@ public class TestIndexImplOnNeo
     }
 
     @After
-    public void shutdownDb() throws Exception
+    public void shutdownDb()
     {
         db.shutdown();
     }

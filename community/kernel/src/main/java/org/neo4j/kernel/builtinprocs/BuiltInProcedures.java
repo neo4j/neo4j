@@ -195,7 +195,6 @@ public class BuiltInProcedures
     @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." )
     @Procedure( name = "db.awaitIndexes", mode = READ )
     public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
-            throws ProcedureException
     {
         graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
@@ -222,7 +221,7 @@ public class BuiltInProcedures
 
     @Description( "Show the schema of the data." )
     @Procedure( name = "db.schema", mode = READ )
-    public Stream<SchemaProcedure.GraphResult> metaGraph() throws ProcedureException
+    public Stream<SchemaProcedure.GraphResult> metaGraph()
     {
         return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
     }
@@ -390,7 +389,6 @@ public class BuiltInProcedures
     @Description( "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekNodes", mode = READ )
     public Stream<NodeResult> nodeAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value )
-            throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -407,7 +405,7 @@ public class BuiltInProcedures
 
     @Description( "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ )
-    public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
+    public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query )
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -426,7 +424,7 @@ public class BuiltInProcedures
                   "= 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekRelationships", mode = READ )
     public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key,
-            @Name( "value" ) Object value ) throws ProcedureException
+            @Name( "value" ) Object value )
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -446,7 +444,6 @@ public class BuiltInProcedures
                   "('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchRelationships", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query )
-            throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {

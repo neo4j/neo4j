@@ -562,7 +562,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps )
         {
             PageCache pageCache = deps.pageCache();
             File storeDir = context.storeDir();

@@ -88,7 +88,7 @@ public class BatchingTransactionAppenderTest
     private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10 );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
     }
@@ -197,7 +197,7 @@ public class BatchingTransactionAppenderTest
     }
 
     @Test
-    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead() throws Exception
+    public void shouldNotAppendCommittedTransactionsWhenTooFarAhead()
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();

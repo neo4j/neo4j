@@ -165,7 +165,7 @@ public class KernelTransactionTestBase
 
         @Override
         public long commit( TransactionToApply batch, CommitEvent commitEvent,
-                            TransactionApplicationMode mode ) throws TransactionFailureException
+                            TransactionApplicationMode mode )
         {
             assert transaction == null : "Designed to only allow one transaction";
             assert batch.next() == null : "Designed to only allow one transaction";

@@ -56,7 +56,7 @@ public class BatchingMessageHandlerTest
     private Function<Runnable,ContinuousJob> jobSchedulerFactory = ( Runnable ignored ) -> mockJob;
 
     @Test
-    public void shouldInvokeInnerHandlerWhenRun() throws Throwable
+    public void shouldInvokeInnerHandlerWhenRun()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -101,7 +101,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchRequests() throws Throwable
+    public void shouldBatchRequests()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -126,7 +126,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage() throws Throwable
+    public void shouldBatchUsingReceivedInstantOfFirstReceivedMessage()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(
@@ -151,7 +151,7 @@ public class BatchingMessageHandlerTest
     }
 
     @Test
-    public void shouldBatchNewEntriesAndHandleOtherMessagesSingularly() throws Throwable
+    public void shouldBatchNewEntriesAndHandleOtherMessagesSingularly()
     {
         // given
         BatchingMessageHandler batchHandler = new BatchingMessageHandler(

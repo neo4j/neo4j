@@ -694,7 +694,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                                throws ConstraintValidationException
                         {
                             storeLayer.releaseRelationship( id );
                         }

@@ -34,7 +34,7 @@ public class IntegerResponse extends Response<Integer>
     }
 
     @Override
-    public void accept( Handler handler ) throws IOException
+    public void accept( Handler handler )
     {
     }
 

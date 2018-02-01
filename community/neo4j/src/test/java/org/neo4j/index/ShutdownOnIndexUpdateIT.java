@@ -51,7 +51,7 @@ public class ShutdownOnIndexUpdateIT
     private static Label constraintIndexLabel = Label.label( "ConstraintIndexLabel" );
 
     @Test
-    public void shutdownWhileFinishingTransactionWithIndexUpdates() throws Exception
+    public void shutdownWhileFinishingTransactionWithIndexUpdates()
     {
         createConstraint( database );
         waitIndexesOnline( database );

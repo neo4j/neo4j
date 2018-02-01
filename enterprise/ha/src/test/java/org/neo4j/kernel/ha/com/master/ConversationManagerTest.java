@@ -53,7 +53,7 @@ public class ConversationManagerTest
     private ConversationManager conversationManager;
 
     @Test
-    public void testStart() throws Exception
+    public void testStart()
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
@@ -69,7 +69,7 @@ public class ConversationManagerTest
     }
 
     @Test
-    public void testStop() throws Exception
+    public void testStop()
     {
         JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
         when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );

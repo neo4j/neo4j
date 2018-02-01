@@ -31,7 +31,7 @@ import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresho
 public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
 {
     @Test
-    public void mustCreateThresholdThatTriggersAfterTransactionCount() throws Exception
+    public void mustCreateThresholdThatTriggersAfterTransactionCount()
     {
         CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 1 ); // Initialise at transaction id offset by 1.
@@ -47,7 +47,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustCreateThresholdThatTriggersAfterTime() throws Exception
+    public void mustCreateThresholdThatTriggersAfterTime()
     {
         CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 1 );
@@ -65,7 +65,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustNotTriggerBeforeTimeWithTooFewCommittedTransactions() throws Throwable
+    public void mustNotTriggerBeforeTimeWithTooFewCommittedTransactions()
     {
         withIntervalTime( "100ms" );
         CheckPointThreshold threshold = createThreshold();
@@ -76,7 +76,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustTriggerWhenTimeThresholdIsReachedAndThereAreCommittedTransactions() throws Throwable
+    public void mustTriggerWhenTimeThresholdIsReachedAndThereAreCommittedTransactions()
     {
         withIntervalTime( "100ms" );
         CheckPointThreshold threshold = createThreshold();
@@ -90,7 +90,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustNotTriggerWhenTimeThresholdIsReachedAndThereAreNoCommittedTransactions() throws Throwable
+    public void mustNotTriggerWhenTimeThresholdIsReachedAndThereAreNoCommittedTransactions()
     {
         withIntervalTime( "100ms" );
         CheckPointThreshold threshold = createThreshold();
@@ -134,7 +134,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustNotTriggerOnTransactionCountWhenThereAreNoNewTransactions() throws Throwable
+    public void mustNotTriggerOnTransactionCountWhenThereAreNoNewTransactions()
     {
         withIntervalTx( 2 );
         CheckPointThreshold threshold = createThreshold();
@@ -144,7 +144,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustNotTriggerOnTransactionCountWhenCountIsBellowThreshold() throws Throwable
+    public void mustNotTriggerOnTransactionCountWhenCountIsBellowThreshold()
     {
         withIntervalTx( 2 );
         CheckPointThreshold threshold = createThreshold();
@@ -154,7 +154,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustTriggerOnTransactionCountWhenCountIsAtThreshold() throws Throwable
+    public void mustTriggerOnTransactionCountWhenCountIsAtThreshold()
     {
         withIntervalTx( 2 );
         CheckPointThreshold threshold = createThreshold();
@@ -166,7 +166,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustNotTriggerOnTransactionCountAtThresholdIfCheckPointAlreadyHappened() throws Throwable
+    public void mustNotTriggerOnTransactionCountAtThresholdIfCheckPointAlreadyHappened()
     {
         withIntervalTx( 2 );
         CheckPointThreshold threshold = createThreshold();
@@ -177,7 +177,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustNotTriggerWhenTransactionCountIsWithinThresholdSinceLastTrigger() throws Exception
+    public void mustNotTriggerWhenTransactionCountIsWithinThresholdSinceLastTrigger()
     {
         withIntervalTx( 2 );
         CheckPointThreshold threshold = createThreshold();
@@ -188,7 +188,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
     }
 
     @Test
-    public void mustTriggerOnTransactionCountWhenCountIsAtThresholdSinceLastCheckPoint() throws Throwable
+    public void mustTriggerOnTransactionCountWhenCountIsAtThresholdSinceLastCheckPoint()
     {
         withIntervalTx( 2 );
         CheckPointThreshold threshold = createThreshold();
@@ -202,7 +202,7 @@ public class CheckPointThresholdTest extends CheckPointThresholdTestSupport
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void timeBasedThresholdMustSuggestSchedulingFrequency() throws Exception
+    public void timeBasedThresholdMustSuggestSchedulingFrequency()
     {
         // By default, the transaction count based threshold wants a higher check frequency than the time based
         // default threshold.

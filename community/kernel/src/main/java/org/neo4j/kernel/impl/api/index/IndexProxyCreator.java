@@ -61,7 +61,7 @@ class IndexProxyCreator
             final SchemaIndexProvider.Descriptor providerDescriptor,
             final boolean flipToTentative,
             final IndexingService.Monitor monitor,
-            final IndexPopulationJob populationJob ) throws IOException
+            final IndexPopulationJob populationJob )
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 

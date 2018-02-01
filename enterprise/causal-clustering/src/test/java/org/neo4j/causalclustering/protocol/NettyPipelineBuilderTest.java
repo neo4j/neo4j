@@ -41,14 +41,14 @@ public class NettyPipelineBuilderTest
     private EmbeddedChannel channel = new EmbeddedChannel();
 
     @Test
-    public void shouldLogExceptionInbound() throws Exception
+    public void shouldLogExceptionInbound()
     {
         // given
         RuntimeException ex = new RuntimeException();
         NettyPipelineBuilder.with( channel.pipeline(), log ).add( new ChannelInboundHandlerAdapter()
         {
             @Override
-            public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+            public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
                 throw ex;
             }
@@ -62,7 +62,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogUnhandledMessageInbound() throws Exception
+    public void shouldLogUnhandledMessageInbound()
     {
         // given
         Object msg = new Object();
@@ -76,7 +76,7 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogUnhandledMessageOutbound() throws Exception
+    public void shouldLogUnhandledMessageOutbound()
     {
         // given
         Object msg = new Object();
@@ -90,13 +90,13 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogExceptionOutbound() throws Exception
+    public void shouldLogExceptionOutbound()
     {
         RuntimeException ex = new RuntimeException();
         NettyPipelineBuilder.with( channel.pipeline(), log ).add( new ChannelOutboundHandlerAdapter()
         {
             @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
                 throw ex;
             }
@@ -110,13 +110,13 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldLogExceptionOutboundWithVoidPromise() throws Exception
+    public void shouldLogExceptionOutboundWithVoidPromise()
     {
         RuntimeException ex = new RuntimeException();
         NettyPipelineBuilder.with( channel.pipeline(), log ).add( new ChannelOutboundHandlerAdapter()
         {
             @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
                 throw ex;
             }
@@ -130,14 +130,14 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldNotLogAnythingForHandledInbound() throws Exception
+    public void shouldNotLogAnythingForHandledInbound()
     {
         // given
         Object msg = new Object();
         ChannelInboundHandlerAdapter handler = new ChannelInboundHandlerAdapter()
         {
             @Override
-            public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+            public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
                 // handled
             }
@@ -152,14 +152,14 @@ public class NettyPipelineBuilderTest
     }
 
     @Test
-    public void shouldNotLogAnythingForHandledOutbound() throws Exception
+    public void shouldNotLogAnythingForHandledOutbound()
     {
         // given
         Object msg = new Object();
         ChannelOutboundHandlerAdapter encoder = new ChannelOutboundHandlerAdapter()
         {
             @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
                 ctx.write( ctx.alloc().buffer() );
             }

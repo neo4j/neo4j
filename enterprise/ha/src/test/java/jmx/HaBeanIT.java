@@ -102,7 +102,7 @@ public class HaBeanIT
         return firstOrNull( filter( item ->  item.getScheme().equals( scheme ), uris ) );
     }
 
-    private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
+    private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster )
     {
         ClusterMemberInfo master = member( instancesInCluster, 1 );
         assertEquals( 1137, getUriForScheme( "ha", Iterables.map( URI::create, Arrays.asList( master.getUris() ) ) ).getPort() );

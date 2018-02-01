@@ -66,7 +66,7 @@ public class ArrayEncoderTest
     private static final char PADDING = '=';
 
     @Test
-    public void encodingShouldContainOnlyBase64EncodingChars() throws Exception
+    public void encodingShouldContainOnlyBase64EncodingChars()
     {
         String[] array = {
                 "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant.",
@@ -102,7 +102,7 @@ public class ArrayEncoderTest
     }
 
     @Test
-    public void shouldEncodeArrays() throws Exception
+    public void shouldEncodeArrays()
     {
         assertEncoding( "D1.0|2.0|3.0|", new int[]{1, 2, 3} );
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );

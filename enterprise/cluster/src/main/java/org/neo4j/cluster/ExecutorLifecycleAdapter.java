@@ -40,12 +40,12 @@ public class ExecutorLifecycleAdapter
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         executor = executorServiceFactory.newInstance();
     }
@@ -62,7 +62,7 @@ public class ExecutorLifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

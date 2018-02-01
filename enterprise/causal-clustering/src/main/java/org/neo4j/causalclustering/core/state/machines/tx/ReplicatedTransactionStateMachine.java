@@ -119,7 +119,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     }
 
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
         // implicitly flushed
     }

@@ -121,7 +121,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void queryIndexWithSortByNumeric() throws Exception
+    public void queryIndexWithSortByNumeric()
     {
         Index<Node> index = nodeIndex();
         commitTx();
@@ -143,7 +143,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void queryIndexWithSortByString() throws Exception
+    public void queryIndexWithSortByString()
     {
         Index<Node> index = nodeIndex();
         commitTx();
@@ -895,13 +895,13 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void testNumericValuesExactIndex() throws Exception
+    public void testNumericValuesExactIndex()
     {
         testNumericValues( nodeIndex( LuceneIndexImplementation.EXACT_CONFIG ) );
     }
 
     @Test
-    public void testNumericValuesFulltextIndex() throws Exception
+    public void testNumericValuesFulltextIndex()
     {
         testNumericValues( nodeIndex( LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
@@ -1001,7 +1001,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void sortNumericValues() throws Exception
+    public void sortNumericValues()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node node1 = graphDb.createNode();
@@ -1368,7 +1368,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKey(
-            EntityCreator<T> creator, Index<T> index ) throws Exception
+            EntityCreator<T> creator, Index<T> index )
     {
         String key1 = "key1";
         String key2 = "key2";
@@ -1412,7 +1412,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKeyValue(
-            EntityCreator<T> creator, Index<T> index ) throws Exception
+            EntityCreator<T> creator, Index<T> index )
     {
         String key1 = "key1";
         String value1 = "value1";
@@ -1458,7 +1458,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKeyFulltext(
-            EntityCreator<T> creator, Index<T> index ) throws Exception
+            EntityCreator<T> creator, Index<T> index )
     {
         String key1 = "key1";
         String key2 = "key2";
@@ -1506,7 +1506,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     @SuppressWarnings( "unchecked" )
     private <T extends PropertyContainer> void testRemoveWithoutKeyValueFulltext(
-            EntityCreator<T> creator, Index<T> index ) throws Exception
+            EntityCreator<T> creator, Index<T> index )
     {
         String value = "value";
         String key1 = "key1";
@@ -1590,7 +1590,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void notAbleToIndexWithForbiddenKey() throws Exception
+    public void notAbleToIndexWithForbiddenKey()
     {
         Index<Node> index = graphDb.index().forNodes( "check-for-null" );
         Node node = graphDb.createNode();
@@ -1636,7 +1636,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx1() throws Exception
+    public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx1()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node node = graphDb.createNode();
@@ -1648,7 +1648,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx2() throws Exception
+    public void canQueryWithWildcardEvenIfAlternativeRemovalMethodsUsedInSameTx2()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node node = graphDb.createNode();
@@ -1660,7 +1660,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void updateIndex() throws Exception
+    public void updateIndex()
     {
         String TEXT = "text";
         String NUMERIC = "numeric";
@@ -1686,7 +1686,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void exactIndexWithCaseInsensitive() throws Exception
+    public void exactIndexWithCaseInsensitive()
     {
         Index<Node> index = nodeIndex( stringMap( "analyzer", LowerCaseKeywordAnalyzer.class.getName() ) );
         Node node = graphDb.createNode();
@@ -1699,7 +1699,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void exactIndexWithCaseInsensitiveWithBetterConfig() throws Exception
+    public void exactIndexWithCaseInsensitiveWithBetterConfig()
     {
         Index<Node> index = graphDb.index().forNodes( "exact-case-insensitive",
                 stringMap( "type", "exact", "to_lower_case", "true" ) );
@@ -1713,7 +1713,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void notAbleToRemoveWithForbiddenKey() throws Exception
+    public void notAbleToRemoveWithForbiddenKey()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node node = graphDb.createNode();
@@ -1867,7 +1867,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void getOrCreateNodeWithUniqueFactory() throws Exception
+    public void getOrCreateNodeWithUniqueFactory()
     {
         final String key = "name";
         final String value = "Mattias";
@@ -1898,7 +1898,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void getOrCreateRelationshipWithUniqueFactory() throws Exception
+    public void getOrCreateRelationshipWithUniqueFactory()
     {
         final String key = "name";
         final String value = "Mattias";
@@ -1958,7 +1958,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void useStandardAnalyzer() throws Exception
+    public void useStandardAnalyzer()
     {
         Index<Node> index = nodeIndex( stringMap( "analyzer", MyStandardAnalyzer.class.getName() ) );
         Node node = graphDb.createNode();
@@ -1966,14 +1966,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void numericValueForGetInExactIndex() throws Exception
+    public void numericValueForGetInExactIndex()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         numericValueForGet( index );
     }
 
     @Test
-    public void numericValueForGetInFulltextIndex() throws Exception
+    public void numericValueForGetInFulltextIndex()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.FULLTEXT_CONFIG );
         numericValueForGet( index );
@@ -1990,7 +1990,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void combinedNumericalQuery() throws Exception
+    public void combinedNumericalQuery()
     {
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
 
@@ -2006,7 +2006,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void failureToCreateAnIndexShouldNotLeaveConfigurationBehind() throws Exception
+    public void failureToCreateAnIndexShouldNotLeaveConfigurationBehind()
     {
         // WHEN
         try
@@ -2027,7 +2027,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void shouldBeAbleToQueryAllMatchingDocsAfterRemovingWithWildcard() throws Exception
+    public void shouldBeAbleToQueryAllMatchingDocsAfterRemovingWithWildcard()
     {
         // GIVEN
         Index<Node> index = nodeIndex( EXACT_CONFIG );
@@ -2070,7 +2070,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void shouldNotBeAbleToAddNullValuesToNodeIndex() throws Exception
+    public void shouldNotBeAbleToAddNullValuesToNodeIndex()
     {
         // GIVEN
         Index<Node> index = nodeIndex( EXACT_CONFIG );
@@ -2099,7 +2099,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void shouldNotBeAbleToAddNullValuesToRelationshipIndex() throws Exception
+    public void shouldNotBeAbleToAddNullValuesToRelationshipIndex()
     {
         // GIVEN
         RelationshipIndex index = relationshipIndex( EXACT_CONFIG );
@@ -2185,7 +2185,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void shouldRemoveAllMatchingIndexEntriesWhenCallingRemoveWithEntityAndKey() throws Exception
+    public void shouldRemoveAllMatchingIndexEntriesWhenCallingRemoveWithEntityAndKey()
     {
         // GIVEN
         Index<Node> index = nodeIndex( FULLTEXT_CONFIG );

@@ -59,7 +59,7 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldSupportBuiltInProcedures() throws Exception
+    public void shouldSupportBuiltInProcedures()
     {
         cluster.addReadReplicaWithId( 0 ).start();
 
@@ -91,7 +91,7 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveCoreMembers() throws Exception
+    public void shouldBeAbleToAddAndRemoveCoreMembers()
     {
         // when
         cluster.getCoreMemberById( 0 ).shutdown();
@@ -114,7 +114,7 @@ public class ClusterFormationIT
     }
 
     @Test
-    public void shouldBeAbleToAddAndRemoveCoreMembersUnderModestLoad() throws Exception
+    public void shouldBeAbleToAddAndRemoveCoreMembersUnderModestLoad()
     {
         // given
         ExecutorService executorService = Executors.newSingleThreadExecutor();

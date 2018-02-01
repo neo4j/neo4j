@@ -45,37 +45,37 @@ public class PathRepresentationTest
 {
 
     @Test
-    public void shouldHaveLength() throws BadInputException
+    public void shouldHaveLength()
     {
         assertNotNull( pathrep().length() );
     }
 
     @Test
-    public void shouldHaveStartNodeLink() throws BadInputException
+    public void shouldHaveStartNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().startNode() );
     }
 
     @Test
-    public void shouldHaveEndNodeLink() throws BadInputException
+    public void shouldHaveEndNodeLink()
     {
         assertUriMatches( NODE_URI_PATTERN, pathrep().endNode() );
     }
 
     @Test
-    public void shouldHaveNodeList() throws BadInputException
+    public void shouldHaveNodeList()
     {
         assertNotNull( pathrep().nodes() );
     }
 
     @Test
-    public void shouldHaveRelationshipList() throws BadInputException
+    public void shouldHaveRelationshipList()
     {
         assertNotNull( pathrep().relationships() );
     }
 
     @Test
-    public void shouldHaveDirectionList() throws BadInputException
+    public void shouldHaveDirectionList()
     {
         assertNotNull( pathrep().directions() );
     }

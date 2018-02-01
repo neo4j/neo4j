@@ -301,7 +301,7 @@ public class BoltStateMachineTest
         BoltResponseRecorder recorder = new BoltResponseRecorder()
         {
             @Override
-            public void onRecords( BoltResult result, boolean pull ) throws Exception
+            public void onRecords( BoltResult result, boolean pull )
             {
                 throw new RuntimeException( "I've been expecting you, Mr Bond." );
             }
@@ -399,7 +399,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void actionsDisallowedBeforeInitialized() throws Throwable
+    public void actionsDisallowedBeforeInitialized()
     {
         // Given
         BoltStateMachine machine = newMachine();
@@ -477,7 +477,7 @@ public class BoltStateMachineTest
     }
 
     @Test
-    public void shouldCallOnTerminateWhenClosing() throws Throwable
+    public void shouldCallOnTerminateWhenClosing()
     {
         // Given
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );

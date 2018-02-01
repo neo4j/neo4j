@@ -110,7 +110,7 @@ public class UnbindFromClusterCommand implements AdminCommand
     }
 
     private void confirmTargetDirectoryIsWritable( Path pathToSpecificDatabase )
-            throws CommandFailed, CannotWriteException, IOException
+            throws CannotWriteException, IOException
     {
         try ( Closeable ignored = StoreLockChecker.check( pathToSpecificDatabase ) )
         {

@@ -94,7 +94,7 @@ public class AuthProcedures
 
     @Description( "Show the current user." )
     @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
-    public Stream<UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
+    public Stream<UserResult> showCurrentUser()
     {
         return Stream.of( userResultForName( securityContext.subject().username() ) );
     }

@@ -1588,7 +1588,7 @@ public class GBPTreeTest
         List<CleanupJob> startedJobs = new LinkedList<>();
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
             CleanupJob job;
             while ( (job = jobs.poll()) != null )
@@ -1670,7 +1670,7 @@ public class GBPTreeTest
                         return super.io( pageId, pf_flags );
                     }
 
-                    private void maybeBlock() throws IOException
+                    private void maybeBlock()
                     {
                         if ( blockOnNextIO.get() )
                         {

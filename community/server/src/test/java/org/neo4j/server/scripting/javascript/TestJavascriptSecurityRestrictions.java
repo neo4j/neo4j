@@ -45,7 +45,7 @@ public class TestJavascriptSecurityRestrictions
     }
 
     @Test
-    public void shouldBeAbleToAccessWhiteListedThings() throws Exception
+    public void shouldBeAbleToAccessWhiteListedThings()
     {
         // Given
         String classThatShouldBeInaccessible = TestJavascriptSecurityRestrictions.class.getName();
@@ -62,7 +62,7 @@ public class TestJavascriptSecurityRestrictions
     }
 
     @Test( expected = EvaluationException.class )
-    public void shouldNotBeAbleToImportUnsafeClasses() throws Exception
+    public void shouldNotBeAbleToImportUnsafeClasses()
     {
         // Given
         String classThatShouldBeInaccessible = TestJavascriptSecurityRestrictions.class.getName();
@@ -75,7 +75,7 @@ public class TestJavascriptSecurityRestrictions
     }
 
     @Test( expected = EvaluationException.class )
-    public void shouldNotBeAbleToUseReflectionToInstantiateThings() throws Exception
+    public void shouldNotBeAbleToUseReflectionToInstantiateThings()
     {
         // Given
         ScriptExecutor executor = new JavascriptExecutor(

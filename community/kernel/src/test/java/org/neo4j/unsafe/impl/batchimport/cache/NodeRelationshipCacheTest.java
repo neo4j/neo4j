@@ -80,7 +80,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldReportCorrectNumberOfDenseNodes() throws Exception
+    public void shouldReportCorrectNumberOfDenseNodes()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, 100, base );
@@ -103,7 +103,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldGoThroughThePhases() throws Exception
+    public void shouldGoThroughThePhases()
     {
         // GIVEN
         int nodeCount = 10;
@@ -126,7 +126,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldObserveFirstRelationshipAsEmptyInEachDirection() throws Exception
+    public void shouldObserveFirstRelationshipAsEmptyInEachDirection()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
@@ -163,7 +163,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldResetCountAfterGetOnDenseNodes() throws Exception
+    public void shouldResetCountAfterGetOnDenseNodes()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
@@ -185,7 +185,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldGetAndPutRelationshipAroundChunkEdge() throws Exception
+    public void shouldGetAndPutRelationshipAroundChunkEdge()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10 );
@@ -203,7 +203,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldPutRandomStuff() throws Exception
+    public void shouldPutRandomStuff()
     {
         // GIVEN
         int typeId = 10;
@@ -241,7 +241,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldPut6ByteRelationshipIds() throws Exception
+    public void shouldPut6ByteRelationshipIds()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
@@ -262,7 +262,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldFailFastIfTooBigRelationshipId() throws Exception
+    public void shouldFailFastIfTooBigRelationshipId()
     {
         // GIVEN
         int typeId = 10;
@@ -284,7 +284,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldVisitChangedNodes() throws Exception
+    public void shouldVisitChangedNodes()
     {
         // GIVEN
         int nodes = 10;
@@ -335,7 +335,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldFailFastOnTooHighCountOnNode() throws Exception
+    public void shouldFailFastOnTooHighCountOnNode()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 10, 100, base );
@@ -359,7 +359,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldKeepNextGroupIdForNextRound() throws Exception
+    public void shouldKeepNextGroupIdForNextRound()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
@@ -415,7 +415,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldHaveDenseNodesWithBigCounts() throws Exception
+    public void shouldHaveDenseNodesWithBigCounts()
     {
         // A count of a dense node follow a different path during import, first there's counting per node
         // then import goes into actual import of relationships where individual chain degrees are
@@ -444,7 +444,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldCacheMultipleDenseNodeRelationshipHeads() throws Exception
+    public void shouldCacheMultipleDenseNodeRelationshipHeads()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );
@@ -480,7 +480,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldHaveSparseNodesWithBigCounts() throws Exception
+    public void shouldHaveSparseNodesWithBigCounts()
     {
         // GIVEN
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1, 100, base );
@@ -498,7 +498,7 @@ public class NodeRelationshipCacheTest
     }
 
     @Test
-    public void shouldFailFastOnTooHighNodeCount() throws Exception
+    public void shouldFailFastOnTooHighNodeCount()
     {
         // given
         cache = new NodeRelationshipCache( NumberArrayFactory.HEAP, 1 );

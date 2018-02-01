@@ -284,7 +284,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
     }
 
-    protected void createResources() throws IOException
+    protected void createResources()
     {
     }
 

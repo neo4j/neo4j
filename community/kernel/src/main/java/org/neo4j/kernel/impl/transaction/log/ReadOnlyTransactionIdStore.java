@@ -102,7 +102,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void awaitClosedTransactionId( long txId, long timeoutMillis ) throws InterruptedException, TimeoutException
+    public void awaitClosedTransactionId( long txId, long timeoutMillis )
     {
         throw new UnsupportedOperationException( "Not implemented" );
     }

@@ -144,7 +144,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldReturnNonExistentRuleAddedInTransaction() throws Exception
+    public void shouldReturnNonExistentRuleAddedInTransaction()
     {
         // GIVEN
         // -- non-existent rule added in the transaction
@@ -161,7 +161,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup() throws Exception
+    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup()
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
@@ -181,7 +181,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup() throws Exception
+    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup()
     {
         // GIVEN
         // -- the store already have an index on the label and a different property
@@ -235,7 +235,7 @@ public class SchemaTransactionStateTest
     private StoreStatement storeStatement;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         txState = new TxState();
         state = StatementOperationsTestHelper.mockedState( txState );
@@ -274,7 +274,7 @@ public class SchemaTransactionStateTest
         return new Labels( nodeId, labelIds );
     }
 
-    private void commitLabels( Labels... labels ) throws Exception
+    private void commitLabels( Labels... labels )
     {
         Map<Integer, Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )

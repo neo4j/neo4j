@@ -71,7 +71,7 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
      * @throws IOException on I/O error.
      */
     public static TransactionCursor fromLogFile( LogFiles logFiles, LogFile logFile, LogPosition backToPosition,
-            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor ) throws IOException
+            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor )
     {
         long highestVersion = logFiles.getHighestLogVersion();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();

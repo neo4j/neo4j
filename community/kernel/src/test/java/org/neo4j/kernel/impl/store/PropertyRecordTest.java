@@ -64,7 +64,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void shouldIterateOverBlocks() throws Exception
+    public void shouldIterateOverBlocks()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );
@@ -88,7 +88,7 @@ public class PropertyRecordTest
     }
 
     @Test
-    public void shouldBeAbleToRemoveBlocksDuringIteration() throws Exception
+    public void shouldBeAbleToRemoveBlocksDuringIteration()
     {
         // GIVEN
         PropertyRecord record = new PropertyRecord( 0 );

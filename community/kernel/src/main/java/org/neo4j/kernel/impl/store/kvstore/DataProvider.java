@@ -30,13 +30,13 @@ interface DataProvider extends EntryVisitor<WritableBuffer>, Closeable
     DataProvider EMPTY_DATA_PROVIDER = new DataProvider()
     {
         @Override
-        public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
+        public boolean visit( WritableBuffer key, WritableBuffer value )
         {
             return false;
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     };

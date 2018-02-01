@@ -63,7 +63,7 @@ public class ServerGroupsIT
     private Cluster cluster;
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( cluster != null )
         {

@@ -178,13 +178,13 @@ public class TxPullRequestHandlerTest
             }
 
             @Override
-            public boolean next() throws IOException
+            public boolean next()
             {
                 return cursor.next();
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
                 cursor.close();
             }

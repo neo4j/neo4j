@@ -46,7 +46,7 @@ public final class LockManagerBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         return new LockManagerImpl( management, true );
     }

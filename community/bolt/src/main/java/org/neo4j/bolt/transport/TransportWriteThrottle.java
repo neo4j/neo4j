@@ -151,7 +151,7 @@ public class TransportWriteThrottle implements TransportThrottle
     {
 
         @Override
-        public void channelWritabilityChanged( ChannelHandlerContext ctx ) throws Exception
+        public void channelWritabilityChanged( ChannelHandlerContext ctx )
         {
             release( ctx.channel() );
         }

@@ -42,7 +42,7 @@ public class ExecutionPlanConverterTest
 {
 
     @Test
-    public void profileStatisticConversion() throws Exception
+    public void profileStatisticConversion()
     {
         MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", getProfilerStatistics(), getIdentifiers(),

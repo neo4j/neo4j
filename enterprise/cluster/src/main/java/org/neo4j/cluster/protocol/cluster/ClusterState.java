@@ -55,7 +55,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
@@ -380,7 +380,6 @@ public enum ClusterState
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -450,7 +449,7 @@ public enum ClusterState
             {
                 @Override
                 public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
@@ -572,7 +571,6 @@ public enum ClusterState
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

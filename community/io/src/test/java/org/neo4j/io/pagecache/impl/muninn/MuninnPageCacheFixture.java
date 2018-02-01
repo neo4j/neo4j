@@ -44,7 +44,7 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
     }
 
     @Override
-    public void tearDownPageCache( MuninnPageCache pageCache ) throws IOException
+    public void tearDownPageCache( MuninnPageCache pageCache )
     {
         if ( backgroundFlushLatch != null )
         {

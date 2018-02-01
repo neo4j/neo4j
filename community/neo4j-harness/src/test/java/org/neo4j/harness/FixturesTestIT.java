@@ -215,7 +215,7 @@ public class FixturesTestIT
         }
     }
 
-    private TestServerBuilder getServerBuilder( File targetFolder ) throws IOException
+    private TestServerBuilder getServerBuilder( File targetFolder )
     {
         TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder )
                 .withConfig( LegacySslPolicyConfig.certificates_directory.name(),

@@ -192,7 +192,7 @@ public class MasterClientTest
                 ConversationManager.class ), mock( Monitor.class ), masterConfig() );
     }
 
-    private MasterServer newMasterServer( MasterImpl masterImpl ) throws Throwable
+    private MasterServer newMasterServer( MasterImpl masterImpl )
     {
         return life.add( new MasterServer( masterImpl, NullLogProvider.getInstance(),
                 masterServerConfiguration(),
@@ -207,7 +207,7 @@ public class MasterClientTest
         return newMasterClient320( storeId, NO_OP_RESPONSE_UNPACKER );
     }
 
-    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId, ResponseUnpacker responseUnpacker )
     {
         return life.add( new MasterClient320( MASTER_SERVER_HOST, MASTER_SERVER_PORT, null, NullLogProvider.getInstance(),
                 storeId, TIMEOUT, TIMEOUT, 1, CHUNK_SIZE, responseUnpacker,

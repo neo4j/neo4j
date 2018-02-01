@@ -96,13 +96,13 @@ public interface CharReadable extends Closeable, SourceTraceability
         }
 
         @Override
-        public int read( char[] into, int offset, int length ) throws IOException
+        public int read( char[] into, int offset, int length )
         {
             return -1;
         }
 
         @Override
-        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
         {
             buffer.compact( buffer, from );
             return buffer;
@@ -115,7 +115,7 @@ public interface CharReadable extends Closeable, SourceTraceability
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     };

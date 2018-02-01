@@ -36,7 +36,7 @@ public class ProtocolRepositoryTest
     private ProtocolRepository protocolRepository = new ProtocolRepository( TestProtocols.values() );
 
     @Test
-    public void shouldReturnEmptyIfUnknownVersion() throws Throwable
+    public void shouldReturnEmptyIfUnknownVersion()
     {
         // when
         Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), -1 );
@@ -46,7 +46,7 @@ public class ProtocolRepositoryTest
     }
 
     @Test
-    public void shouldReturnEmptyIfUnknownName() throws Throwable
+    public void shouldReturnEmptyIfUnknownName()
     {
         // when
         Optional<Protocol> applicationProtocol = protocolRepository.select( "not a real protocol", 1 );
@@ -56,7 +56,7 @@ public class ProtocolRepositoryTest
     }
 
     @Test
-    public void shouldReturnEmptyIfNoVersions() throws Throwable
+    public void shouldReturnEmptyIfNoVersions()
     {
         // when
         Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), emptySet());
@@ -66,7 +66,7 @@ public class ProtocolRepositoryTest
     }
 
     @Test
-    public void shouldReturnProtocolIfKnownNameAndVersion() throws Throwable
+    public void shouldReturnProtocolIfKnownNameAndVersion()
     {
         // when
         Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), 1 );
@@ -76,7 +76,7 @@ public class ProtocolRepositoryTest
     }
 
     @Test
-    public void shouldReturnKnownProtocolVersionWhenFirstGivenVersionNotKnown() throws Throwable
+    public void shouldReturnKnownProtocolVersionWhenFirstGivenVersionNotKnown()
     {
         // when
         Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), asSet( -1, 1 ));
@@ -86,7 +86,7 @@ public class ProtocolRepositoryTest
     }
 
     @Test
-    public void shouldReturnProtocolOfHighestVersionRequestedAndSupported() throws Throwable
+    public void shouldReturnProtocolOfHighestVersionRequestedAndSupported()
     {
         // when
         Optional<Protocol> applicationProtocol = protocolRepository.select( TestProtocols.Identifier.RAFT.canonicalName(), asSet( 9, 1, 3, 2, 7 ) );
@@ -96,7 +96,7 @@ public class ProtocolRepositoryTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldNotInstantiateIfDuplicateProtocolsSupplied() throws Throwable
+    public void shouldNotInstantiateIfDuplicateProtocolsSupplied()
     {
         // given
         Protocol protocol = new Protocol()

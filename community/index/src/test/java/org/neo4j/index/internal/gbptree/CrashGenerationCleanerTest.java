@@ -323,7 +323,7 @@ public class CrashGenerationCleanerTest
         }
 
         private void write( PageCursor cursor, CorruptibleTreeNode node, Layout<MutableLong,MutableLong> layout, int stableGeneration, int unstableGeneration,
-                int crashGeneration ) throws IOException
+                int crashGeneration )
         {
             type.write( cursor, node, layout, oldStableGeneration, stableGeneration );
             Arrays.stream( pageCorruptions )

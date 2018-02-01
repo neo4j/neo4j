@@ -53,7 +53,7 @@ public class HelpCommandTest
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void printsUnknownCommandWhenUnknownCommandIsProvided() throws Exception
+    public void printsUnknownCommandWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         when( commandLocator.getAllProviders() ).thenReturn( Collections.EMPTY_LIST );
@@ -73,7 +73,7 @@ public class HelpCommandTest
     }
 
     @Test
-    public void printsAvailableCommandsWhenUnknownCommandIsProvided() throws Exception
+    public void printsAvailableCommandsWhenUnknownCommandIsProvided()
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         ArrayList<AdminCommand.Provider> mockCommands = new ArrayList<AdminCommand.Provider>()

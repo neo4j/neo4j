@@ -49,7 +49,6 @@ public class RaftMessageNettyHandler extends SimpleChannelInboundHandler<RaftMes
 
     @Override
     protected void channelRead0( ChannelHandlerContext channelHandlerContext, RaftMessages.ReceivedInstantClusterIdAwareMessage incomingMessage )
-            throws Exception
     {
         try
         {

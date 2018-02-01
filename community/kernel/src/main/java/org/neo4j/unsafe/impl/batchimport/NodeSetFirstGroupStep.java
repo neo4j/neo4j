@@ -66,7 +66,7 @@ public class NodeSetFirstGroupStep extends ProcessorStep<RelationshipGroupRecord
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
     {
         for ( RelationshipGroupRecord group : batch )
         {

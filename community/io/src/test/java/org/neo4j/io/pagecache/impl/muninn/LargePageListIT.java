@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class LargePageListIT
 {
     @Test
-    public void veryLargePageListsMustBeFullyAccessible() throws Exception
+    public void veryLargePageListsMustBeFullyAccessible()
     {
         // We need roughly 2 GiBs of memory for the meta-data here, which is why this is an IT and not a Test.
         // We add one extra page worth of data to the size here, to avoid ending up on a "convenient" boundary.

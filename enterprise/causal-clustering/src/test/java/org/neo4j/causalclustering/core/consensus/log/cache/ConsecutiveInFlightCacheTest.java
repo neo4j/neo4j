@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 public class ConsecutiveInFlightCacheTest
 {
     @Test
-    public void shouldTrackUsedMemory() throws Exception
+    public void shouldTrackUsedMemory()
     {
         int capacity = 4;
         ConsecutiveInFlightCache cache = new ConsecutiveInFlightCache( capacity, 1000, InFlightCacheMonitor.VOID, true );
@@ -62,7 +62,7 @@ public class ConsecutiveInFlightCacheTest
     }
 
     @Test
-    public void shouldReturnLatestItems() throws Exception
+    public void shouldReturnLatestItems()
     {
         // given
         int capacity = 4;
@@ -89,7 +89,7 @@ public class ConsecutiveInFlightCacheTest
     }
 
     @Test
-    public void shouldRemovePrunedItems() throws Exception
+    public void shouldRemovePrunedItems()
     {
         // given
         int capacity = 20;
@@ -121,7 +121,7 @@ public class ConsecutiveInFlightCacheTest
     }
 
     @Test
-    public void shouldRemoveTruncatedItems() throws Exception
+    public void shouldRemoveTruncatedItems()
     {
         // given
         int capacity = 20;

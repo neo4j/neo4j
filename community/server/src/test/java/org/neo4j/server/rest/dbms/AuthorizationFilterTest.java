@@ -69,7 +69,7 @@ public class AuthorizationFilterTest
         when( servletResponse.getOutputStream() ).thenReturn( new ServletOutputStream()
         {
             @Override
-            public void write( int b ) throws IOException
+            public void write( int b )
             {
                 outputStream.write( b );
             }

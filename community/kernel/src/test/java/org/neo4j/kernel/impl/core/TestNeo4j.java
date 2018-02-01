@@ -142,7 +142,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void testNodeChangePropertyArray() throws Exception
+    public void testNodeChangePropertyArray()
     {
         getTransaction().close();
 

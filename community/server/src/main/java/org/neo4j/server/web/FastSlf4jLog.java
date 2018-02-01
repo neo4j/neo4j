@@ -33,7 +33,7 @@ public class FastSlf4jLog
 {
     private boolean debugEnabled;
 
-    public FastSlf4jLog() throws Exception
+    public FastSlf4jLog()
     {
         this( "org.eclipse.jetty.util.log" );
     }

@@ -46,7 +46,7 @@ public class TestDatasourceCommitOrderDataVisibility
     private GraphDatabaseService graphDatabaseService;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         graphDatabaseService = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }

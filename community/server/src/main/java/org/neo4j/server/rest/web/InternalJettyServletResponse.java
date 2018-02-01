@@ -45,7 +45,7 @@ public class InternalJettyServletResponse extends Response
         private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         @Override
-        public void write( int c ) throws IOException
+        public void write( int c )
         {
             baos.write( c );
         }
@@ -114,13 +114,13 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public void sendError( int code, String message ) throws IOException
+    public void sendError( int code, String message )
     {
         setStatus( code, message );
     }
 
     @Override
-    public void sendRedirect( String location ) throws IOException
+    public void sendRedirect( String location )
     {
         setStatus( 304 );
         addHeader( "location", location );
@@ -245,7 +245,7 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public ServletOutputStream getOutputStream() throws IOException
+    public ServletOutputStream getOutputStream()
     {
         return output;
     }
@@ -257,7 +257,7 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public PrintWriter getWriter() throws IOException
+    public PrintWriter getWriter()
     {
         return new PrintWriter( new OutputStreamWriter( output, StandardCharsets.UTF_8 ) );
     }
@@ -295,7 +295,7 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public void flushBuffer() throws IOException
+    public void flushBuffer()
     {
     }
 
@@ -317,7 +317,7 @@ public class InternalJettyServletResponse extends Response
         return 1L;
     }
 
-    public void complete() throws IOException
+    public void complete()
     {
     }
 

@@ -974,7 +974,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @throws IOException on {@link PageCache} error.
      */
-    private void bumpUnstableGeneration() throws IOException
+    private void bumpUnstableGeneration()
     {
         generation = generation( stableGeneration( generation ), unstableGeneration( generation ) + 1 );
     }
@@ -997,7 +997,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *
      * @throws IOException on {@link PageCache} error.
      */
-    private CleanupJob createCleanupJob( boolean needsCleaning ) throws IOException
+    private CleanupJob createCleanupJob( boolean needsCleaning )
     {
         if ( !needsCleaning )
         {
@@ -1251,7 +1251,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             if ( !writerTaken.compareAndSet( true, false ) )
             {

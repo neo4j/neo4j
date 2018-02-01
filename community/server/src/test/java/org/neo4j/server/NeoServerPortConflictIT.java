@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 public class NeoServerPortConflictIT extends ExclusiveServerTestBase
 {
     @Test
-    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException, InterruptedException
+    public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
         int serverPort = PortAuthority.allocatePort();
         ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", serverPort );
@@ -74,7 +74,7 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     }
 
     @Test
-    public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException, InterruptedException
+    public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException
     {
         int serverPort = PortAuthority.allocatePort();
         int httpsPort = PortAuthority.allocatePort();

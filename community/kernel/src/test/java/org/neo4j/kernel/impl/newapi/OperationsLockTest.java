@@ -302,7 +302,7 @@ public class OperationsLockTest
 
     @Test
     public void shouldAcquireEntityWriteLockBeforeDeletingNode()
-            throws EntityNotFoundException, AutoIndexingKernelException, InvalidTransactionTypeKernelException
+            throws AutoIndexingKernelException
     {
         // GIVEN
         when( nodeCursor.next() ).thenReturn( true );
@@ -333,7 +333,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
     {
         // WHEN
         allStoreHolder.constraintsGetForSchema( descriptor );
@@ -344,7 +344,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
     {
         // WHEN
         allStoreHolder.constraintsGetForLabel( 42 );
@@ -355,7 +355,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints()
     {
         // WHEN
         allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
@@ -366,7 +366,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockLazilyBeforeGettingAllConstraints() throws Exception
+    public void shouldAcquireSchemaReadLockLazilyBeforeGettingAllConstraints()
     {
         // given
         int labelId = 1;

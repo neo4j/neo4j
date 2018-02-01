@@ -35,7 +35,7 @@ public class ReentrantLockServiceTest
     public final ThreadRepository threads = new ThreadRepository( 5, TimeUnit.SECONDS );
 
     @Test
-    public void shouldFormLinkedListOfWaitingLockOwners() throws Exception
+    public void shouldFormLinkedListOfWaitingLockOwners()
     {
         // given
         ReentrantLockService.OwnerQueueElement<Integer> queue = new ReentrantLockService.OwnerQueueElement<>( 0 );
@@ -112,7 +112,7 @@ public class ReentrantLockServiceTest
     }
 
     @Test
-    public void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased() throws Exception
+    public void shouldNotLeaveResidualLockStateAfterAllLocksHaveBeenReleased()
     {
         // given
         ReentrantLockService locks = new ReentrantLockService();
@@ -125,7 +125,7 @@ public class ReentrantLockServiceTest
     }
 
     @Test
-    public void shouldPresentLockStateInStringRepresentationOfLock() throws Exception
+    public void shouldPresentLockStateInStringRepresentationOfLock()
     {
         // given
         LockService locks = new ReentrantLockService();
@@ -170,14 +170,14 @@ public class ReentrantLockServiceTest
         private final ThreadRepository.Task release = new ThreadRepository.Task()
         {
             @Override
-            public void perform() throws Exception
+            public void perform()
             {
                 lock.release();
             }
         };
 
         @Override
-        public void perform() throws Exception
+        public void perform()
         {
             this.lock = locks.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK );
         }

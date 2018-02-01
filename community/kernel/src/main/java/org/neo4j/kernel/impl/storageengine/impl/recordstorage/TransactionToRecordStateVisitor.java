@@ -91,7 +91,6 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-            throws ConstraintValidationException
     {
         // record the state changes to be made to the store
         recordState.relCreate( id, type, startNode, endNode );
@@ -106,7 +105,7 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-            Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
+            Iterator<StorageProperty> changed, Iterator<Integer> removed )
     {
         while ( removed.hasNext() )
         {
@@ -166,7 +165,6 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     @Override
     public void visitNodeLabelChanges( long id, final Set<Integer> added, final Set<Integer> removed )
-            throws ConstraintValidationException
     {
         // record the state changes to be made to the store
         for ( Integer label : removed )

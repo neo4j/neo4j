@@ -41,7 +41,7 @@ public class LearnerContextTest
     private final LogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldOnlyAllowHigherLastLearnedInstanceId() throws Exception
+    public void shouldOnlyAllowHigherLastLearnedInstanceId()
     {
         // Given
 
@@ -63,7 +63,7 @@ public class LearnerContextTest
     }
 
     @Test
-    public void shouldTrackLastKnownUpToDateAliveInstance() throws Exception
+    public void shouldTrackLastKnownUpToDateAliveInstance()
     {
         // Given
 
@@ -87,7 +87,7 @@ public class LearnerContextTest
     }
 
     @Test
-    public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin() throws Exception
+    public void settingLastLearnedInstanceToNegativeOneShouldAlwaysWin()
     {
         // Given
         Config config = mock( Config.class );

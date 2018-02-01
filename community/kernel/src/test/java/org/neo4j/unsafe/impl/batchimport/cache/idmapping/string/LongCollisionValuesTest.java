@@ -54,7 +54,7 @@ public class LongCollisionValuesTest
     public NumberArrayFactory factory;
 
     @Test
-    public void shouldStoreAndLoadLongs() throws Exception
+    public void shouldStoreAndLoadLongs()
     {
         // given
         try ( LongCollisionValues values = new LongCollisionValues( factory, 100 ) )

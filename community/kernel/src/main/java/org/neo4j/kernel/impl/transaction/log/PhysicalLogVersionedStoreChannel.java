@@ -48,7 +48,7 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public void writeAll( ByteBuffer src, long position ) throws IOException
+    public void writeAll( ByteBuffer src, long position )
     {
         throw new UnsupportedOperationException( "Not needed" );
     }
@@ -61,13 +61,13 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public int read( ByteBuffer dst, long position ) throws IOException
+    public int read( ByteBuffer dst, long position )
     {
         throw new UnsupportedOperationException( "Not needed" );
     }
 
     @Override
-    public void readAll( ByteBuffer dst ) throws IOException
+    public void readAll( ByteBuffer dst )
     {
         throw new UnsupportedOperationException( "Not needed" );
     }
@@ -113,7 +113,7 @@ public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChanne
     }
 
     @Override
-    public long position() throws IOException
+    public long position()
     {
         return position;
     }

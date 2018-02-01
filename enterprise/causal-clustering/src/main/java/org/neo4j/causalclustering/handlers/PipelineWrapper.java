@@ -32,7 +32,7 @@ import static java.util.Collections.emptyList;
  */
 public interface PipelineWrapper
 {
-    default List<ChannelHandler> handlersFor( Channel channel ) throws Exception
+    default List<ChannelHandler> handlersFor( Channel channel )
     {
         return emptyList();
     }

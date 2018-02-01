@@ -31,7 +31,7 @@ public class StoreLockerLifecycleAdapter extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         storeLocker.checkLock();
     }

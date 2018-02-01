@@ -70,7 +70,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         }
     }
 
-    protected abstract ServerBootstrapper newBootstrapper() throws IOException;
+    protected abstract ServerBootstrapper newBootstrapper();
 
     @Test
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable

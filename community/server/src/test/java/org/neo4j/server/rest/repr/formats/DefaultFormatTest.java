@@ -42,7 +42,7 @@ public class DefaultFormatTest
     private DefaultFormat input;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         JsonFormat inner = new JsonFormat();
         ArrayList<MediaType> supported = new ArrayList<>();
@@ -83,7 +83,7 @@ public class DefaultFormatTest
     }
 
     @Test( expected = MediaTypeNotSupportedException.class )
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput() throws BadInputException
+    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput()
     {
         input.readValue( "<xml />" );
     }

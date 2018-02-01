@@ -111,14 +111,14 @@ public class AsyncRequestLog
     }
 
     @Override
-    protected synchronized void doStart() throws Exception
+    protected synchronized void doStart()
     {
         asyncLogProcessingExecutor.submit( asyncEventProcessor );
         asyncEventProcessor.awaitStartup();
     }
 
     @Override
-    protected synchronized void doStop() throws Exception
+    protected synchronized void doStop()
     {
         asyncEventProcessor.shutdown();
     }

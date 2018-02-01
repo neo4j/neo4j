@@ -122,7 +122,7 @@ public class UserManagementProcedures extends AuthProceduresBase
 
     @Description( "List all local users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
-    public Stream<UserResult> listUsers() throws InvalidArgumentsException, IOException
+    public Stream<UserResult> listUsers()
     {
         securityContext.assertCredentialsNotExpired();
         Set<String> users = userManager.getAllUsernames();
@@ -138,7 +138,7 @@ public class UserManagementProcedures extends AuthProceduresBase
 
     @Description( "List all available roles." )
     @Procedure( name = "dbms.security.listRoles", mode = DBMS )
-    public Stream<RoleResult> listRoles() throws InvalidArgumentsException, IOException
+    public Stream<RoleResult> listRoles()
     {
         securityContext.assertCredentialsNotExpired();
         Set<String> roles = userManager.getAllRoleNames();
@@ -148,7 +148,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Description( "List all roles assigned to the specified user." )
     @Procedure( name = "dbms.security.listRolesForUser", mode = DBMS )
     public Stream<StringResult> listRolesForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException, IOException
+            throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         return userManager.getRoleNamesForUser( username ).stream().map( StringResult::new );
@@ -157,7 +157,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     @Description( "List all users currently assigned the specified role." )
     @Procedure( name = "dbms.security.listUsersForRole", mode = DBMS )
     public Stream<StringResult> listUsersForRole( @Name( "roleName" ) String roleName )
-            throws InvalidArgumentsException, IOException
+            throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         return userManager.getUsernamesForRole( roleName ).stream().map( StringResult::new );

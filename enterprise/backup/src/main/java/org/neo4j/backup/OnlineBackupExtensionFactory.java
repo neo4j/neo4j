@@ -83,7 +83,7 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),
                 dependencies.logService().getInternalLogProvider(), dependencies.monitors(),

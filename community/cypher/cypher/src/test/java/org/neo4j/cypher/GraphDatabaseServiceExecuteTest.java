@@ -53,7 +53,7 @@ public class GraphDatabaseServiceExecuteTest
     public final DatabaseRule graphDb = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldExecuteCypher() throws Exception
+    public void shouldExecuteCypher()
     {
         // given
         final long before;
@@ -77,7 +77,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldNotReturnInternalGeographicPointType() throws Exception
+    public void shouldNotReturnInternalGeographicPointType()
     {
         // when
         Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
@@ -97,7 +97,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldNotReturnInternalCartesianPointType() throws Exception
+    public void shouldNotReturnInternalCartesianPointType()
     {
         // when
         Result execute = graphDb.execute( "RETURN point({x: 13.37, y: 13.37, crs:'cartesian'}) AS p" );
@@ -117,7 +117,7 @@ public class GraphDatabaseServiceExecuteTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotReturnInternalPointWhenInArray() throws Exception
+    public void shouldNotReturnInternalPointWhenInArray()
     {
         // when
         Result execute = graphDb.execute( "RETURN [point({longitude: 144.317718, latitude: -37.031738})] AS ps" );
@@ -129,7 +129,7 @@ public class GraphDatabaseServiceExecuteTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldNotReturnInternalPointWhenInMap() throws Exception
+    public void shouldNotReturnInternalPointWhenInMap()
     {
         // when
         Result execute = graphDb.execute( "RETURN {p: point({longitude: 144.317718, latitude: -37.031738})} AS m" );
@@ -140,7 +140,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext() throws Exception
+    public void shouldBeAbleToUseResultingPointFromOneQueryAsParameterToNext()
     {
         // given a point create by one cypher query
         Result execute = graphDb.execute( "RETURN point({longitude: 144.317718, latitude: -37.031738}) AS p" );
@@ -157,7 +157,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalPointAsParameterToQuery() throws Exception
+    public void shouldBeAbleToUseExternalPointAsParameterToQuery()
     {
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );
@@ -173,7 +173,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalGeometryAsParameterToQuery() throws Exception
+    public void shouldBeAbleToUseExternalGeometryAsParameterToQuery()
     {
         // given a point created from public interface
         Geometry geometry = makeFakePointAsGeometry( 144.317718, -37.031738, makeWGS84() );
@@ -189,7 +189,7 @@ public class GraphDatabaseServiceExecuteTest
     }
 
     @Test
-    public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery() throws Exception
+    public void shouldBeAbleToUseExternalPointArrayAsParameterToQuery()
     {
         // given a point created from public interface
         Point point = makeFakePoint( 144.317718, -37.031738, makeWGS84() );

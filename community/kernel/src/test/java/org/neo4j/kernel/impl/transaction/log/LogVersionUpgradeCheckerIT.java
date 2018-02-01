@@ -104,7 +104,7 @@ public class LogVersionUpgradeCheckerIT
         db.shutdown();
     }
 
-    private void createGraphDbAndKillIt() throws Exception
+    private void createGraphDbAndKillIt()
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )

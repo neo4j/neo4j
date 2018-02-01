@@ -405,7 +405,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldMatchAllValidVersions() throws Exception
+    public void shouldMatchAllValidVersions()
     {
         assertTrue( "1.8.M07".matches( VersionPattern ) );
         assertTrue( "1.8.RC1".matches( VersionPattern ) );
@@ -421,14 +421,14 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldFilterPlusBuildNumbers() throws Exception
+    public void shouldFilterPlusBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
                 is( equalTo( "1.9.0-M01" ) ) );
     }
 
     @Test
-    public void shouldNotFilterSnapshotBuildNumbers() throws Exception
+    public void shouldNotFilterSnapshotBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "2.0-SNAPSHOT" ),
                 is( equalTo( "2.0-SNAPSHOT" ) ) );
@@ -436,7 +436,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldNotFilterReleaseBuildNumbers() throws Exception
+    public void shouldNotFilterReleaseBuildNumbers()
     {
         assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ), is( equalTo( "1.9" ) ) );
     }
@@ -498,7 +498,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         return createDatabase( null, config );
     }
 
-    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config ) throws IOException
+    private GraphDatabaseService createDatabase( File storeDir, Map<String,String> config )
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         GraphDatabaseBuilder graphDatabaseBuilder =

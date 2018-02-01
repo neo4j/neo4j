@@ -38,7 +38,7 @@ public class ExceptionMonitoringHandler  extends ChannelHandlerAdapter
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
     {
         if ( ctx != null )
         {

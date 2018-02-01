@@ -247,7 +247,7 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            protected AcceptStatus accept( BytesRef term ) throws IOException
+            protected AcceptStatus accept( BytesRef term )
             {
                 return StringHelper.startsWith( term, prefix ) ? AcceptStatus.YES : AcceptStatus.END;
             }

@@ -95,7 +95,7 @@ public class UniqueDatabaseIndexPopulatorTest
     private LabelSchemaDescriptor schemaDescriptor;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         File folder = testDir.directory( "folder" );
         indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );

@@ -68,7 +68,7 @@ public class Payload
 
     @Override
     public void readExternal( ObjectInput in )
-            throws IOException, ClassNotFoundException
+            throws IOException
     {
         // NOTE: This was changed from reading only a byte in 2.2, which doesn't work
         len = in.readInt();

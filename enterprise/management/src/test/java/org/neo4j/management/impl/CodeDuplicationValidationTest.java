@@ -60,7 +60,7 @@ public class CodeDuplicationValidationTest
     }
 
     @Test
-    public void kernelBeanTypeNameMatchesExpected() throws Exception
+    public void kernelBeanTypeNameMatchesExpected()
     {
         assertEquals( Kernel.class.getName(), KernelProxy.KERNEL_BEAN_TYPE );
         assertEquals( Kernel.NAME, KernelProxy.KERNEL_BEAN_NAME );
@@ -73,7 +73,7 @@ public class CodeDuplicationValidationTest
     }
 
     @Test
-    public void interfacesGetsTheSameBeanNames() throws Exception
+    public void interfacesGetsTheSameBeanNames()
     {
         assertEqualBeanName( Kernel.class );
         assertEqualBeanName( Primitives.class );
@@ -94,7 +94,7 @@ public class CodeDuplicationValidationTest
     }
 
     @Test
-    public void generatesEqualObjectNames() throws Exception
+    public void generatesEqualObjectNames()
     {
         assertEquals( new DefaultManagementSupport().createMBeanQuery( "test-instance" ),
                 new CustomManagementSupport().createMBeanQuery( "test-instance" ) );

@@ -225,7 +225,6 @@ public class BranchedDataIT
     }
 
     private void retryOnTransactionFailure( GraphDatabaseService db, Consumer<GraphDatabaseService> tx )
-            throws Exception
     {
         DatabaseRule.tx( db, retryACoupleOfTimesOn( ANY_EXCEPTION ), tx );
     }

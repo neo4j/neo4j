@@ -52,7 +52,7 @@ public class ValidatorsTest
     }
 
     @Test
-    public void shouldValidateInList() throws Exception
+    public void shouldValidateInList()
     {
         try
         {

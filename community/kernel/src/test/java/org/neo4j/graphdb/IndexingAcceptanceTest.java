@@ -75,7 +75,7 @@ public class IndexingAcceptanceTest
      * the underlying add/remove vs. change internal details.
      */
     @Test
-    public void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother() throws Exception
+    public void shouldInterpretPropertyAsChangedEvenIfPropertyMovesFromOneRecordToAnother()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -112,7 +112,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction() throws Exception
+    public void shouldUseDynamicPropertiesToIndexANodeWhenAddedAlongsideExistingPropertiesInASeparateTransaction()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -152,7 +152,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void searchingForNodeByPropertyShouldWorkWithoutIndex() throws Exception
+    public void searchingForNodeByPropertyShouldWorkWithoutIndex()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -163,7 +163,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void searchingUsesIndexWhenItExists() throws Exception
+    public void searchingUsesIndexWhenItExists()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -175,7 +175,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime() throws Exception
+    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyAtTheSameTime()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -208,7 +208,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce() throws Exception
+    public void shouldCorrectlyUpdateIndexesWhenChangingLabelsAndPropertyMultipleTimesAllAtOnce()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -245,7 +245,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty() throws Exception
+    public void searchingByLabelAndPropertyReturnsEmptyWhenMissingLabelOrProperty()
     {
         // Given
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -255,7 +255,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction() throws Exception
+    public void shouldSeeIndexUpdatesWhenQueryingOutsideTransaction()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -269,7 +269,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void createdNodeShouldShowUpWithinTransaction() throws Exception
+    public void createdNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -291,7 +291,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void deletedNodeShouldShowUpWithinTransaction() throws Exception
+    public void deletedNodeShouldShowUpWithinTransaction()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -313,7 +313,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void createdNodeShouldShowUpInIndexQuery() throws Exception
+    public void createdNodeShouldShowUpInIndexQuery()
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
@@ -335,7 +335,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldBeAbleToQuerySupportedPropertyTypes() throws Exception
+    public void shouldBeAbleToQuerySupportedPropertyTypes()
     {
         // GIVEN
         String property = "name";
@@ -374,7 +374,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldRetrieveMultipleNodesWithSameValueFromIndex() throws Exception
+    public void shouldRetrieveMultipleNodesWithSameValueFromIndex()
     {
         // this test was included here for now as a precondition for the following test
 
@@ -404,7 +404,7 @@ public class IndexingAcceptanceTest
     }
 
     @Test
-    public void shouldThrowWhenMulitpleResultsForSingleNode() throws Exception
+    public void shouldThrowWhenMulitpleResultsForSingleNode()
     {
         // given
         GraphDatabaseService graph = dbRule.getGraphDatabaseAPI();

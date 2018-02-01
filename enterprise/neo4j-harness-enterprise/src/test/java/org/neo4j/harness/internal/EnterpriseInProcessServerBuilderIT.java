@@ -48,7 +48,7 @@ public class EnterpriseInProcessServerBuilderIT
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
+    public void shouldLaunchAServerInSpecifiedDirectory()
     {
         // Given
         File workDir = new File( testDir.directory(), "specific" );

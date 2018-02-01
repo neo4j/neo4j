@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class SecondaryUnitPrepareIdSequenceTest
 {
     @Test
-    public void shouldReturnIdImmediatelyAfterRecordId() throws Exception
+    public void shouldReturnIdImmediatelyAfterRecordId()
     {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();
@@ -48,7 +48,7 @@ public class SecondaryUnitPrepareIdSequenceTest
     }
 
     @Test
-    public void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce() throws Exception
+    public void shouldReturnIdImmediatelyAfterRecordIdOnlyOnce()
     {
         // given
         PrepareIdSequence idSequence = new SecondaryUnitPrepareIdSequence();

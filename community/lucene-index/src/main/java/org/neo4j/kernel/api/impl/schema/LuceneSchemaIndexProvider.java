@@ -119,7 +119,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {   // Nothing to shut down
     }
 

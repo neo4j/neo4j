@@ -50,13 +50,13 @@ public class NestedTransactionLocksIT
     private GraphDatabaseService db;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }

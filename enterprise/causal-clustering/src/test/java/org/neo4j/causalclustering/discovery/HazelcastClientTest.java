@@ -341,7 +341,7 @@ public class HazelcastClientTest
         // then no NPE has been thrown
     }
 
-    private Member makeMember( int id ) throws UnknownHostException
+    private Member makeMember( int id )
     {
         Member member = mock( Member.class );
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
@@ -682,14 +682,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit )
         {
             return false;
         }
 
         @Override
         public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
-                throws InterruptedException
         {
             return false;
         }
@@ -1085,14 +1084,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
-                throws InterruptedException
         {
             throw new UnsupportedOperationException();
         }
@@ -1488,7 +1486,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean awaitTermination( long timeout, TimeUnit unit ) throws InterruptedException
+        public boolean awaitTermination( long timeout, TimeUnit unit )
         {
             return false;
         }
@@ -1512,28 +1510,25 @@ public class HazelcastClientTest
         }
 
         @Override
-        public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks ) throws InterruptedException
+        public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks )
         {
             return null;
         }
 
         @Override
         public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
-                throws InterruptedException
         {
             return null;
         }
 
         @Override
-        public <T> T invokeAny( Collection<? extends Callable<T>> tasks ) throws InterruptedException,
-                ExecutionException
+        public <T> T invokeAny( Collection<? extends Callable<T>> tasks )
         {
             return null;
         }
 
         @Override
-        public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit ) throws
-                InterruptedException, ExecutionException, TimeoutException
+        public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
         {
             return null;
         }

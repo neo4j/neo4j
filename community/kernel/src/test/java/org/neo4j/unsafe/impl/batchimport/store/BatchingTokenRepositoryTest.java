@@ -56,7 +56,7 @@ public class BatchingTokenRepositoryTest
     public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
 
     @Test
-    public void shouldDedupLabelIds() throws Exception
+    public void shouldDedupLabelIds()
     {
         // GIVEN
         BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
@@ -69,7 +69,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldSortLabelIds() throws Exception
+    public void shouldSortLabelIds()
     {
         // GIVEN
         BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
@@ -88,7 +88,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldRespectExistingTokens() throws Exception
+    public void shouldRespectExistingTokens()
     {
         // given
         TokenStore<RelationshipTypeTokenRecord,RelationshipTypeToken> tokenStore = mock( TokenStore.class );
@@ -105,7 +105,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldFlushNewTokens() throws Exception
+    public void shouldFlushNewTokens()
     {
         // given
         try ( NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),

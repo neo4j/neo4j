@@ -32,7 +32,7 @@ public interface FulltextProvider extends AutoCloseable
     FulltextProvider NULL_PROVIDER = new FulltextProvider()
     {
         @Override
-        public void registerTransactionEventHandler() throws IOException
+        public void registerTransactionEventHandler()
         {
             throw noProvider();
         }
@@ -44,19 +44,19 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
-        public void openIndex( String identifier, FulltextIndexType type ) throws IOException
+        public void openIndex( String identifier, FulltextIndexType type )
         {
             throw noProvider();
         }
 
         @Override
-        public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
+        public void createIndex( String identifier, FulltextIndexType type, List<String> properties )
         {
             throw noProvider();
         }
 
         @Override
-        public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
+        public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type )
         {
             throw noProvider();
         }
@@ -75,7 +75,6 @@ public interface FulltextProvider extends AutoCloseable
 
         @Override
         public void changeIndexedProperties( String identifier, FulltextIndexType type, List<String> propertyKeys )
-                throws IOException, InvalidArgumentsException
         {
             throw noProvider();
         }
@@ -87,7 +86,7 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             throw noProvider();
         }
@@ -101,7 +100,7 @@ public interface FulltextProvider extends AutoCloseable
     String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
     String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
 
-    void registerTransactionEventHandler() throws IOException;
+    void registerTransactionEventHandler();
 
     /**
      * Wait for the asynchronous background population, if one is on-going, to complete.

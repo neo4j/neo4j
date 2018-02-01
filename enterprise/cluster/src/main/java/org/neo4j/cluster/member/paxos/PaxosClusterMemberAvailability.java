@@ -70,7 +70,6 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
 
     @Override
     public void init()
-            throws Throwable
     {
         serializer = new AtomicBroadcastSerializer( objectInputStreamFactory, objectOutputStreamFactory );
 
@@ -79,19 +78,16 @@ public class PaxosClusterMemberAvailability implements ClusterMemberAvailability
 
     @Override
     public void start()
-            throws Throwable
     {
     }
 
     @Override
     public void stop()
-            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-            throws Throwable
     {
         binding.removeBindingListener( bindingListener );
     }

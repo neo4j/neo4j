@@ -32,7 +32,7 @@ import static org.neo4j.helpers.collection.Iterables.count;
 public class GraphDatabaseFactoryStateTest
 {
     @Test
-    public void mustBeAbleToRemoveAddedKernelExtensions() throws Exception
+    public void mustBeAbleToRemoveAddedKernelExtensions()
     {
         DummyExtensionFactory extensionFactory = new DummyExtensionFactory();
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();

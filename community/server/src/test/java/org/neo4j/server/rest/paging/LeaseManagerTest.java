@@ -35,7 +35,7 @@ public class LeaseManagerTest
     private static final long SIXTY_SECONDS = 60;
 
     @Test
-    public void shouldNotAcceptLeasesWithNegativeTTL() throws Exception
+    public void shouldNotAcceptLeasesWithNegativeTTL()
     {
         FakeClock fakeClock = Clocks.fakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
@@ -44,7 +44,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldRetrieveAnExistingLeaseImmediatelyAfterCreation() throws Exception
+    public void shouldRetrieveAnExistingLeaseImmediatelyAfterCreation()
     {
         FakeClock fakeClock = Clocks.fakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
@@ -56,7 +56,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldRetrieveAnExistingLeaseSomeTimeAfterCreation() throws Exception
+    public void shouldRetrieveAnExistingLeaseSomeTimeAfterCreation()
     {
         FakeClock fakeClock = Clocks.fakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
@@ -70,7 +70,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldNotRetrieveALeaseAfterItExpired() throws Exception
+    public void shouldNotRetrieveALeaseAfterItExpired()
     {
         FakeClock fakeClock = Clocks.fakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );
@@ -83,7 +83,7 @@ public class LeaseManagerTest
     }
 
     @Test
-    public void shouldNotBarfWhenAnotherThreadOrRetrieveRevokesTheLease() throws Exception
+    public void shouldNotBarfWhenAnotherThreadOrRetrieveRevokesTheLease()
     {
         FakeClock fakeClock = Clocks.fakeClock();
         LeaseManager manager = new LeaseManager( fakeClock );

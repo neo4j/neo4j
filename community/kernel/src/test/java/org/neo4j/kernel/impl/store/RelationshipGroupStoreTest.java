@@ -75,7 +75,7 @@ public class RelationshipGroupStoreTest
     private ImpermanentGraphDatabase db;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         directory = testDir.graphDbDir();
         fs = new DefaultFileSystemAbstraction();
@@ -93,19 +93,19 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void createWithDefaultThreshold() throws Exception
+    public void createWithDefaultThreshold()
     {
         createAndVerify( null );
     }
 
     @Test
-    public void createWithCustomThreshold() throws Exception
+    public void createWithCustomThreshold()
     {
         createAndVerify( defaultThreshold * 2 );
     }
 
     @Test
-    public void createDenseNodeWithLowThreshold() throws Exception
+    public void createDenseNodeWithLowThreshold()
     {
         newDb( 2 );
 
@@ -174,7 +174,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly() throws Exception
+    public void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly()
     {
         newDb( 1 );
 
@@ -198,7 +198,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyRecordsForDenseNodeWithOneRelType() throws Exception
+    public void verifyRecordsForDenseNodeWithOneRelType()
     {
         newDb( 2 );
 
@@ -235,7 +235,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyRecordsForDenseNodeWithTwoRelTypes() throws Exception
+    public void verifyRecordsForDenseNodeWithTwoRelTypes()
     {
         newDb( 2 );
 
@@ -276,7 +276,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyGroupIsDeletedWhenNeeded() throws Exception
+    public void verifyGroupIsDeletedWhenNeeded()
     {
         // TODO test on a lower level instead
 

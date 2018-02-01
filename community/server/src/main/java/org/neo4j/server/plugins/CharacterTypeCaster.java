@@ -38,7 +38,7 @@ class CharacterTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    char[] convert( Object[] data ) throws BadInputException
+    char[] convert( Object[] data )
     {
         Character[] incoming = (Character[]) data;
         char[] result = new char[incoming.length];

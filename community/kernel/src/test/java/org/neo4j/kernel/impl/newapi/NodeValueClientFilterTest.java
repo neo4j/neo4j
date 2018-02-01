@@ -50,7 +50,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     private final List<Event> events = new ArrayList<>();
 
     @Test
-    public void shouldAcceptAllNodesOnNoFilters() throws Exception
+    public void shouldAcceptAllNodesOnNoFilters()
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
@@ -66,7 +66,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldRejectNodeNotInUse() throws Exception
+    public void shouldRejectNodeNotInUse()
     {
         // given
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
@@ -81,7 +81,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldRejectNodeWithNoProperties() throws Exception
+    public void shouldRejectNodeWithNoProperties()
     {
         // given
         store.node( 17, NO_ID, false, NO_ID, 0 );
@@ -97,7 +97,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldAcceptNodeWithMatchingProperty() throws Exception
+    public void shouldAcceptNodeWithMatchingProperty()
     {
         when( store.ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         // given
@@ -115,7 +115,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Test
-    public void shouldNotAcceptNodeWithoutMatchingProperty() throws Exception
+    public void shouldNotAcceptNodeWithoutMatchingProperty()
     {
         when( store.ktx.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
         // given

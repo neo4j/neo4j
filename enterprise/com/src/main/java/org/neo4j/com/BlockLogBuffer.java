@@ -83,7 +83,7 @@ public class BlockLogBuffer implements Closeable
         return this;
     }
 
-    private void flush( int howManyBytesToWrite ) throws IOException
+    private void flush( int howManyBytesToWrite )
     {
         target.writeBytes( byteArray, 0, howManyBytesToWrite );
         monitor.bytesWritten( howManyBytesToWrite );

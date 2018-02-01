@@ -68,7 +68,7 @@ public class ResponsePackerTest
         response.accept( new Response.Handler()
         {
             @Override
-            public void obligation( long txId ) throws IOException
+            public void obligation( long txId )
             {
                 fail( "Should not be called" );
             }
@@ -110,7 +110,7 @@ public class ResponsePackerTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
 
@@ -121,7 +121,7 @@ public class ResponsePackerTest
         }
 
         @Override
-        public boolean next() throws IOException
+        public boolean next()
         {
             transaction = new CommittedTransactionRepresentation( null, null,
                     new LogEntryCommit( txId++, 0 ) );

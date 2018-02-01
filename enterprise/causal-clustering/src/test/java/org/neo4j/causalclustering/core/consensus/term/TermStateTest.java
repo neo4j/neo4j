@@ -27,7 +27,7 @@ import static org.junit.Assert.fail;
 public class TermStateTest
 {
     @Test
-    public void shouldStoreCurrentTerm() throws Exception
+    public void shouldStoreCurrentTerm()
     {
         // given
         TermState termState = new TermState();
@@ -40,7 +40,7 @@ public class TermStateTest
     }
 
     @Test
-    public void rejectLowerTerm() throws Exception
+    public void rejectLowerTerm()
     {
         // given
         TermState termState = new TermState();

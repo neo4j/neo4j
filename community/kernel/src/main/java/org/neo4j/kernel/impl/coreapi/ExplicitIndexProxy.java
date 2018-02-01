@@ -86,36 +86,35 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                            ExplicitIndexNotFoundKernelException
+                            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
                     {
                         operations.nodeAddToExplicitIndex( name, id, key, value );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.nodeRemoveFromExplicitIndex( name, id, key, value );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.nodeRemoveFromExplicitIndex( name, id, key );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.nodeRemoveFromExplicitIndex( name, id );
                     }
 
                     @Override
                     void drop( DataWriteOperations operations, String name )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.nodeExplicitIndexDrop( name );
                     }
@@ -164,15 +163,14 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                            ExplicitIndexNotFoundKernelException
+                            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
                     {
                         operations.relationshipAddToExplicitIndex( name, id, key, value );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
+                            throws ExplicitIndexNotFoundKernelException,
                             EntityNotFoundException
                     {
                         operations.relationshipRemoveFromExplicitIndex( name, id, key, value );
@@ -180,7 +178,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
+                            throws ExplicitIndexNotFoundKernelException,
                             EntityNotFoundException
                     {
                         operations.relationshipRemoveFromExplicitIndex( name, id, key );
@@ -188,7 +186,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
+                            throws ExplicitIndexNotFoundKernelException,
                             EntityNotFoundException
                     {
                         operations.relationshipRemoveFromExplicitIndex( name, id );
@@ -196,7 +194,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void drop( DataWriteOperations operations, String name )
-                            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.relationshipExplicitIndexDrop( name );
                     }
@@ -222,23 +220,22 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                 throws ExplicitIndexNotFoundKernelException;
 
         abstract void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                ExplicitIndexNotFoundKernelException;
+                throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
+                throws ExplicitIndexNotFoundKernelException,
                 EntityNotFoundException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
+                throws ExplicitIndexNotFoundKernelException,
                 EntityNotFoundException;
 
         abstract void remove( DataWriteOperations operations, String name, long id )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException,
+                throws ExplicitIndexNotFoundKernelException,
                 EntityNotFoundException;
 
         abstract void drop( DataWriteOperations operations, String name )
-                throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException;
+                throws ExplicitIndexNotFoundKernelException;
 
         abstract long id( PropertyContainer entity );
     }

@@ -88,14 +88,14 @@ public class DataSourceManager implements Lifecycle, Supplier<InwardKernel>
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life = new LifeSupport();
         life.add( dataSource );
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
 
@@ -115,13 +115,13 @@ public class DataSourceManager implements Lifecycle, Supplier<InwardKernel>
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
         dataSource = null;

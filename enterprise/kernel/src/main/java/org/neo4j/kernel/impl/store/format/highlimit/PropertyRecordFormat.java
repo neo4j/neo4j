@@ -92,7 +92,6 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 
     @Override
     public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
-            throws IOException
     {
         int offset = cursor.getOffset();
         byte headerByte = cursor.getByte();

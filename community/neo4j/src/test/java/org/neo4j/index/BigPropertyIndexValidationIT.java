@@ -64,7 +64,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation() throws Exception
+    public void shouldFailTransactionThatIndexesLargePropertyDuringNodeCreation()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -95,7 +95,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation() throws Exception
+    public void shouldFailTransactionThatIndexesLargePropertyAfterNodeCreation()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
@@ -127,7 +127,7 @@ public class BigPropertyIndexValidationIT
     }
 
     @Test
-    public void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd() throws Exception
+    public void shouldFailTransactionThatIndexesLargePropertyOnLabelAdd()
     {
         // GIVEN
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();

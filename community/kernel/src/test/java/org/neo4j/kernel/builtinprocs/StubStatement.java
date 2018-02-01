@@ -57,13 +57,13 @@ public class StubStatement implements Statement
     }
 
     @Override
-    public DataWriteOperations dataWriteOperations() throws InvalidTransactionTypeKernelException
+    public DataWriteOperations dataWriteOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public SchemaWriteOperations schemaWriteOperations() throws InvalidTransactionTypeKernelException
+    public SchemaWriteOperations schemaWriteOperations()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

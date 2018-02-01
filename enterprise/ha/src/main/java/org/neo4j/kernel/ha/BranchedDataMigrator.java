@@ -39,7 +39,7 @@ public class BranchedDataMigrator extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         migrateBranchedDataDirectoriesToRootDirectory();
     }

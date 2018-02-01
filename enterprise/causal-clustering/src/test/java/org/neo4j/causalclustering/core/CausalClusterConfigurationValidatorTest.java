@@ -59,7 +59,7 @@ public class CausalClusterConfigurationValidatorTest
     }
 
     @Test
-    public void validateOnlyIfModeIsCoreOrReplica() throws Exception
+    public void validateOnlyIfModeIsCoreOrReplica()
     {
         // when
         Config config = Config.fromSettings(
@@ -74,7 +74,7 @@ public class CausalClusterConfigurationValidatorTest
     }
 
     @Test
-    public void validateSuccess() throws Exception
+    public void validateSuccess()
     {
         // when
         Config config = Config.fromSettings(
@@ -90,7 +90,7 @@ public class CausalClusterConfigurationValidatorTest
     }
 
     @Test
-    public void missingInitialMembers() throws Exception
+    public void missingInitialMembers()
     {
         // then
         expected.expect( InvalidSettingException.class );
@@ -101,7 +101,7 @@ public class CausalClusterConfigurationValidatorTest
     }
 
     @Test
-    public void missingBoltConnector() throws Exception
+    public void missingBoltConnector()
     {
         // then
         expected.expect( InvalidSettingException.class );

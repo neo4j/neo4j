@@ -125,7 +125,7 @@ class BackupCopyService
      * @param pattern pattern to follow if desired name is taken (requires %s for original name, and %d for iteration)
      * @return the resolved file name which can be the original desired, or a variation that matches the pattern
      */
-    private Path findAnAvailableBackupLocation( Path file, String pattern ) throws IOException
+    private Path findAnAvailableBackupLocation( Path file, String pattern )
     {
         if ( backupExists( file ) )
         {

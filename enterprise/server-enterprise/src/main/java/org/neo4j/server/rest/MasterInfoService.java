@@ -61,7 +61,7 @@ public class MasterInfoService implements AdvertisableService
     }
 
     @GET
-    public Response discover() throws BadInputException
+    public Response discover()
     {
         if ( haDb == null )
         {
@@ -77,7 +77,7 @@ public class MasterInfoService implements AdvertisableService
 
     @GET
     @Path( IS_MASTER_PATH )
-    public Response isMaster() throws BadInputException
+    public Response isMaster()
     {
         if ( haDb == null )
         {
@@ -100,7 +100,7 @@ public class MasterInfoService implements AdvertisableService
 
     @GET
     @Path( IS_SLAVE_PATH )
-    public Response isSlave() throws BadInputException
+    public Response isSlave()
     {
         if ( haDb == null )
         {

@@ -98,7 +98,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    public void degreesForDenseNodeWithPartiallyDeletedRelChains()
     {
         testDegreesForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -164,7 +164,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains()
     {
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelChains( false, false, false );
 
@@ -252,7 +252,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     private void testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain(
-            TestRelType... typesToDelete ) throws Exception
+            TestRelType... typesToDelete )
     {
         int inRelCount = randomRelCount();
         int outRelCount = randomRelCount();
@@ -330,7 +330,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testRelationshipTypesForDenseNode( this::noNodeChange,
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );
@@ -355,7 +355,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains() throws Exception
+    public void relationshipTypesForDenseNodeWithPartiallyDeletedRelChains()
     {
         testRelationshipTypesForDenseNode( this::markRandomRelsNotInUse,
                 asSet( TestRelType.IN, TestRelType.OUT, TestRelType.LOOP ) );
@@ -381,7 +381,6 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     private void testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain( TestRelType... typesToDelete )
-            throws Exception
     {
         int inRelCount = randomRelCount();
         int outRelCount = randomRelCount();

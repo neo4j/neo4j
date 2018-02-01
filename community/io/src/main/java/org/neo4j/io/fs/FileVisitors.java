@@ -122,25 +122,25 @@ public class FileVisitors
         return new FileVisitor<Path>()
         {
             @Override
-            public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException
+            public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs )
             {
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs )
             {
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult visitFileFailed( Path file, IOException e ) throws IOException
+            public FileVisitResult visitFileFailed( Path file, IOException e )
             {
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
-            public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
+            public FileVisitResult postVisitDirectory( Path dir, IOException e )
             {
                 return FileVisitResult.CONTINUE;
             }

@@ -62,7 +62,7 @@ public interface AuthenticationPlugin extends AuthProviderLifecycle
      * @see CustomCacheableAuthenticationInfo
      * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
      */
-    AuthenticationInfo authenticate( AuthToken authToken ) throws AuthenticationException;
+    AuthenticationInfo authenticate( AuthToken authToken );
 
     abstract class Adapter extends AuthProviderLifecycle.Adapter implements AuthenticationPlugin
     {
@@ -82,7 +82,7 @@ public interface AuthenticationPlugin extends AuthProviderLifecycle
         }
 
         @Override
-        public void initialize( AuthProviderOperations authProviderOperations ) throws Throwable
+        public void initialize( AuthProviderOperations authProviderOperations )
         {
             authProviderOperations.setAuthenticationCachingEnabled( true );
         }

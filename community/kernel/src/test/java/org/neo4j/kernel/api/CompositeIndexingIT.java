@@ -139,7 +139,7 @@ public class CompositeIndexingIT
     }
 
     @Parameterized.Parameters( name = "Index: {0}" )
-    public static Iterable<Object[]> parameterValues() throws IOException
+    public static Iterable<Object[]> parameterValues()
     {
         return Arrays.asList( Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1 ) ),
                 Iterators.array( IndexDescriptorFactory.forLabel( LABEL_ID, 1, 2 ) ),

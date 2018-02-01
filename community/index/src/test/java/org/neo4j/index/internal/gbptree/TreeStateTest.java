@@ -44,7 +44,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void readEmptyStateShouldThrow() throws Exception
+    public void readEmptyStateShouldThrow()
     {
         // GIVEN empty state
 
@@ -56,7 +56,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldReadValidPage() throws Exception
+    public void shouldReadValidPage()
     {
         // GIVEN valid state
         long pageId = cursor.getCurrentPageId();
@@ -72,7 +72,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void readBrokenStateShouldFail() throws Exception
+    public void readBrokenStateShouldFail()
     {
         // GIVEN broken state
         long pageId = cursor.getCurrentPageId();
@@ -91,7 +91,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidStableGeneration() throws Exception
+    public void shouldNotWriteInvalidStableGeneration()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;
@@ -110,7 +110,7 @@ public class TreeStateTest
     }
 
     @Test
-    public void shouldNotWriteInvalidUnstableGeneration() throws Exception
+    public void shouldNotWriteInvalidUnstableGeneration()
     {
         // GIVEN
         long generation = GenerationSafePointer.MAX_GENERATION + 1;

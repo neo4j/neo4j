@@ -27,7 +27,7 @@ import org.junit.Test;
 public class PaxosInstanceStoreTest
 {
     @Test
-    public void shouldReturnSameObjectWhenAskedById() throws Exception
+    public void shouldReturnSameObjectWhenAskedById()
     {
         // Given
         PaxosInstanceStore theStore = new PaxosInstanceStore();
@@ -41,7 +41,7 @@ public class PaxosInstanceStoreTest
     }
 
     @Test
-    public void shouldKeepAtMostGivenNumberOfInstances() throws Exception
+    public void shouldKeepAtMostGivenNumberOfInstances()
     {
         // Given
         final int instancesToKeep = 10;
@@ -69,7 +69,7 @@ public class PaxosInstanceStoreTest
     }
 
     @Test
-    public void leaveShouldClearStoredInstances() throws Exception
+    public void leaveShouldClearStoredInstances()
     {
         // Given
         PaxosInstanceStore theStore = new PaxosInstanceStore();

@@ -46,7 +46,7 @@ public class ReadReplicaStatusTest
     }
 
     @Test
-    public void testAnswers() throws Exception
+    public void testAnswers()
     {
         // when
         Response available = status.available();

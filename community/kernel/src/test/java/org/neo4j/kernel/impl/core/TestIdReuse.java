@@ -65,7 +65,7 @@ public class TestIdReuse
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
-    private void makeSureIdsGetsReused( String fileName, Object value, int iterations ) throws Exception
+    private void makeSureIdsGetsReused( String fileName, Object value, int iterations )
     {
         File storeDir = new File( "target/var/idreuse" );
         File file = new File( storeDir, fileName );

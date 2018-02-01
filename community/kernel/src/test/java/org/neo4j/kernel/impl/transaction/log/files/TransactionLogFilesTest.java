@@ -51,7 +51,7 @@ public class TransactionLogFilesTest
     private final String filename = "filename";
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         storeDirectory = testDirectory.directory();
     }

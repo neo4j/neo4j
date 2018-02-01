@@ -81,7 +81,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToReturnRelsWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r" );
@@ -95,7 +95,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToGetPropertyWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) OPTIONAL MATCH (:L)-[:T {prop:1337}]-(:L) WITH r MATCH ()-[r]-() return r.prop" );
@@ -107,7 +107,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToCheckPropertiesWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
@@ -120,7 +120,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToRemovePropertiesWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +
@@ -133,7 +133,7 @@ public class DeleteRelationshipStressIT
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToSetPropertiesWhileDeletingRelationship() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (:L)-[r:T {prop:42}]-(:L) " +

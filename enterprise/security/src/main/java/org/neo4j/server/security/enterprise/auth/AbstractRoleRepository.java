@@ -102,7 +102,7 @@ public abstract class AbstractRoleRepository extends LifecycleAdapter implements
     }
 
     @Override
-    public void setRoles( ListSnapshot<RoleRecord> rolesSnapshot ) throws InvalidArgumentsException, IOException
+    public void setRoles( ListSnapshot<RoleRecord> rolesSnapshot ) throws InvalidArgumentsException
     {
         for ( RoleRecord role : rolesSnapshot.values() )
         {

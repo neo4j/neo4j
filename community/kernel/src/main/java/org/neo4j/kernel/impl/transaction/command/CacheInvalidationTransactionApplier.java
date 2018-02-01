@@ -50,7 +50,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     }
 
     @Override
-    public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
+    public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
     {
         RelationshipTypeToken type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addRelationshipTypeToken( type );
@@ -59,7 +59,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     }
 
     @Override
-    public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+    public boolean visitLabelTokenCommand( LabelTokenCommand command )
     {
         Token labelId = labelTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addLabelToken( labelId );
@@ -68,7 +68,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     }
 
     @Override
-    public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
+    public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
     {
         Token index = propertyKeyTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addPropertyKeyToken( index );
@@ -77,7 +77,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         // Nothing to close
     }

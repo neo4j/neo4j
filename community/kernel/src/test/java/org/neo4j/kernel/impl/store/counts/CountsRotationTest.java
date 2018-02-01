@@ -121,7 +121,7 @@ public class CountsRotationTest
     }
 
     @Test
-    public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase() throws IOException
+    public void shouldCreateEmptyCountsTrackerStoreWhenCreatingDatabase()
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -236,7 +236,7 @@ public class CountsRotationTest
     }
 
     @Test
-    public void shouldRotateCountsStoreWhenClosingTheDatabase() throws IOException
+    public void shouldRotateCountsStoreWhenClosingTheDatabase()
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();

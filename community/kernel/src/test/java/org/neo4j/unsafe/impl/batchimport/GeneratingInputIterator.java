@@ -58,7 +58,7 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 
@@ -69,7 +69,7 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
     }
 
     @Override
-    public synchronized boolean next( InputChunk chunk ) throws IOException
+    public synchronized boolean next( InputChunk chunk )
     {
         if ( numberOfBatches > 1 )
         {
@@ -98,7 +98,7 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
         private long baseId;
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
 
@@ -136,6 +136,6 @@ public class GeneratingInputIterator<CHUNKSTATE> implements InputIterator
 
     public interface Generator<CHUNKSTATE>
     {
-        void accept( CHUNKSTATE state, InputEntityVisitor visitor, long id ) throws IOException;
+        void accept( CHUNKSTATE state, InputEntityVisitor visitor, long id );
     }
 }

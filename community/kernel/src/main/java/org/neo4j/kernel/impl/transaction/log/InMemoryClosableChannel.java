@@ -133,7 +133,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         reader.close();
         writer.close();
@@ -282,7 +282,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         }
 
         @Override
-        public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+        public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
         {
             positionMarker.mark( 0, buffer.position() );
             return positionMarker;
@@ -354,7 +354,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         }
 
         @Override
-        public void setCurrentPosition( long byteOffset ) throws IOException
+        public void setCurrentPosition( long byteOffset )
         {
             buffer.position( toIntExact( byteOffset ) );
         }
@@ -368,56 +368,56 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
         }
 
         @Override
-        public Writer put( byte b ) throws IOException
+        public Writer put( byte b )
         {
             buffer.put( b );
             return this;
         }
 
         @Override
-        public Writer putShort( short s ) throws IOException
+        public Writer putShort( short s )
         {
             buffer.putShort( s );
             return this;
         }
 
         @Override
-        public Writer putInt( int i ) throws IOException
+        public Writer putInt( int i )
         {
             buffer.putInt( i );
             return this;
         }
 
         @Override
-        public Writer putLong( long l ) throws IOException
+        public Writer putLong( long l )
         {
             buffer.putLong( l );
             return this;
         }
 
         @Override
-        public Writer putFloat( float f ) throws IOException
+        public Writer putFloat( float f )
         {
             buffer.putFloat( f );
             return this;
         }
 
         @Override
-        public Writer putDouble( double d ) throws IOException
+        public Writer putDouble( double d )
         {
             buffer.putDouble( d );
             return this;
         }
 
         @Override
-        public Writer put( byte[] bytes, int length ) throws IOException
+        public Writer put( byte[] bytes, int length )
         {
             buffer.put( bytes, 0, length );
             return this;
         }
 
         @Override
-        public Flushable prepareForFlush() throws IOException
+        public Flushable prepareForFlush()
         {
             return NO_OP_FLUSHABLE;
         }

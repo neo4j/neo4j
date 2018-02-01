@@ -39,7 +39,7 @@ public class ProcedureSignatureTest
             .in( "a", Neo4jTypes.NTAny ).build();
 
     @Test
-    public void inputSignatureShouldNotBeModifiable() throws Throwable
+    public void inputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -49,7 +49,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void outputSignatureShouldNotBeModifiable() throws Throwable
+    public void outputSignatureShouldNotBeModifiable()
     {
         // Expect
         exception.expect( UnsupportedOperationException.class );
@@ -70,7 +70,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringShouldMatchCypherSyntax() throws Throwable
+    public void toStringShouldMatchCypherSyntax()
     {
         // When
         String toStr = procedureSignature( "org", "myProcedure" )
@@ -84,7 +84,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringForVoidProcedureShouldMatchCypherSyntax() throws Throwable
+    public void toStringForVoidProcedureShouldMatchCypherSyntax()
     {
         // Given
         ProcedureSignature proc = procedureSignature( "org", "myProcedure" )

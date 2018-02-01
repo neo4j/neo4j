@@ -30,14 +30,14 @@ import static org.junit.Assert.assertThat;
 public class StoreTypeTest
 {
     @Test
-    public void storeTypeOfValidStoreFile() throws Exception
+    public void storeTypeOfValidStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
         assertEquals( StoreType.NODE, StoreType.typeOf( "neostore.nodestore.db" ).get() );
     }
 
     @Test
-    public void storeTypeOfMetaDataStoreFile() throws Exception
+    public void storeTypeOfMetaDataStoreFile()
     {
         //noinspection OptionalGetWithoutIsPresent
         String fileName = MetaDataStore.DEFAULT_NAME;

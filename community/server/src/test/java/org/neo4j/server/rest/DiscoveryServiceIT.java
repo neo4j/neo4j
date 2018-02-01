@@ -78,7 +78,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldRedirectOnHtmlRequest() throws Exception
+    public void shouldRedirectOnHtmlRequest()
     {
         Client nonRedirectingClient = Client.create();
         nonRedirectingClient.setFollowRedirects( false );
@@ -89,7 +89,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
         assertEquals( 303, clientResponse.getStatus() );
     }
 
-    private JaxRsResponse getDiscoveryDocument() throws Exception
+    private JaxRsResponse getDiscoveryDocument()
     {
         return new RestRequest( server().baseUri() ).get();
     }

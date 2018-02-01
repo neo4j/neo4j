@@ -67,7 +67,7 @@ public class RestoreDatabaseCommandIT
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
-    public void forceShouldRespectStoreLock() throws Exception
+    public void forceShouldRespectStoreLock()
     {
         String databaseName = "to";
         Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );

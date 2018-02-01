@@ -239,7 +239,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     // === READER ===
 
     @Test
-    public void shouldReturnZeroCountForEmptyIndex() throws Exception
+    public void shouldReturnZeroCountForEmptyIndex()
     {
         // given
         try ( IndexReader reader = accessor.newReader() )
@@ -725,7 +725,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     }
 
     @Test
-    public void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex() throws Exception
+    public void shouldSeeNoEntriesInAllEntriesReaderOnEmptyIndex()
     {
         // when
         Set<Long> ids = asUniqueSet( accessor.newAllEntriesReader() );

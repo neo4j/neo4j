@@ -46,7 +46,7 @@ import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABL
 public class KernelStatementTest
 {
     @Test( expected = TransactionTerminatedException.class )
-    public void shouldThrowTerminateExceptionWhenTransactionTerminated() throws Exception
+    public void shouldThrowTerminateExceptionWhenTransactionTerminated()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.of( Status.Transaction.Terminated ) );
@@ -60,7 +60,7 @@ public class KernelStatementTest
     }
 
     @Test
-    public void shouldReleaseStorageStatementWhenForceClosed() throws Exception
+    public void shouldReleaseStorageStatementWhenForceClosed()
     {
         // given
         StorageStatement storeStatement = mock( StorageStatement.class );

@@ -104,7 +104,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeNodeReference( long nodeId ) throws IOException
+        public void writeNodeReference( long nodeId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw node reference" );
         }
@@ -123,7 +123,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeRelationshipReference( long relationshipId ) throws IOException
+        public void writeRelationshipReference( long relationshipId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw relationship reference" );
         }
@@ -147,7 +147,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void endMap() throws IOException
+        public void endMap()
         {
             //do nothing
         }
@@ -159,7 +159,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void endList() throws IOException
+        public void endList()
         {
             //do nothing
         }
@@ -294,7 +294,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
+        public void writeDuration( long months, long days, long seconds, int nanos )
         {
             error = new Error( Status.Request.Invalid,
                     "Duration is not yet supported as a return type in Bolt" );
@@ -302,7 +302,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeDate( long epochDay ) throws IOException
+        public void writeDate( long epochDay )
         {
             error = new Error( Status.Request.Invalid,
                     "Date is not yet supported as a return type in Bolt" );
@@ -310,7 +310,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeLocalTime( long nanoOfDay ) throws IOException
+        public void writeLocalTime( long nanoOfDay )
         {
             error = new Error( Status.Request.Invalid,
                     "LocalTime is not yet supported as a return type in Bolt" );
@@ -318,7 +318,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IOException
+        public void writeTime( long nanosOfDayUTC, int offsetSeconds )
         {
             error = new Error( Status.Request.Invalid,
                     "Time is not yet supported as a return type in Bolt" );
@@ -326,7 +326,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeLocalDateTime( long epochSecond, int nano ) throws IOException
+        public void writeLocalDateTime( long epochSecond, int nano )
         {
             error = new Error( Status.Request.Invalid,
                     "LocalDateTime is not yet supported as a return type in Bolt" );
@@ -334,7 +334,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IOException
+        public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
         {
             error = new Error( Status.Request.Invalid,
                     "DateTime is not yet supported as a return type in Bolt" );
@@ -342,7 +342,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IOException
+        public void writeDateTime( long epochSecondUTC, int nano, String zoneId )
         {
             error = new Error( Status.Request.Invalid,
                     "DateTime is not yet supported as a return type in Bolt" );
@@ -430,7 +430,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void endArray() throws IOException
+        public void endArray()
         {
             //Do nothing
         }

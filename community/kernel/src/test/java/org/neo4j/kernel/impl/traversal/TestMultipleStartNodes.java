@@ -32,7 +32,7 @@ import static org.neo4j.graphdb.traversal.Evaluators.atDepth;
 public class TestMultipleStartNodes extends TraversalTestBase
 {
     @Test
-    public void myFriendsAsWellAsYourFriends() throws Exception
+    public void myFriendsAsWellAsYourFriends()
     {
         /*
          * Hey, this looks like a futuristic gun or something

@@ -33,7 +33,7 @@ public class TestJavascriptExecutor
 {
 
     @Test
-    public void shouldExecuteBasicScript() throws Exception
+    public void shouldExecuteBasicScript()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "1337;" );
@@ -47,7 +47,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void shouldAllowContextVariables() throws Exception
+    public void shouldAllowContextVariables()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "myVar;" );
@@ -64,7 +64,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void shouldBeAbleToReuseExecutor() throws Exception
+    public void shouldBeAbleToReuseExecutor()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "1337;" );
@@ -79,7 +79,7 @@ public class TestJavascriptExecutor
     }
 
     @Test
-    public void varsSetInOneExecutionShouldNotBeAvailableInAnother() throws Exception
+    public void varsSetInOneExecutionShouldNotBeAvailableInAnother()
     {
         // Given
         JavascriptExecutor executor = new JavascriptExecutor(

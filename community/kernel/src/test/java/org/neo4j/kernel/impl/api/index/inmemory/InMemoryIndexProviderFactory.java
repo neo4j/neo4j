@@ -55,7 +55,7 @@ public class InMemoryIndexProviderFactory extends KernelExtensionFactory<InMemor
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return singleProvider != null ? singleProvider : new InMemoryIndexProvider();
     }

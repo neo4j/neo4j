@@ -135,7 +135,7 @@ public class PruningSchedulerTest
         RaftLogPruner logPruner = new RaftLogPruner( null, null, Clock.systemUTC() )
         {
             @Override
-            public void prune() throws IOException
+            public void prune()
             {
                 checkPointerLatch.startAndWaitForAllToStart();
                 checkPointerLatch.waitForAllToFinish();

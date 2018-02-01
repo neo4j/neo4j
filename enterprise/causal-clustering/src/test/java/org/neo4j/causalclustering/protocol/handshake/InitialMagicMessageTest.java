@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 public class InitialMagicMessageTest
 {
     @Test
-    public void shouldCreateWithCorrectMagicValue() throws Exception
+    public void shouldCreateWithCorrectMagicValue()
     {
         // given
         InitialMagicMessage magicMessage = new InitialMagicMessage();

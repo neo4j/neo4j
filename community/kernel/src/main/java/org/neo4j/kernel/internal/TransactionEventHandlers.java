@@ -60,25 +60,21 @@ public class TransactionEventHandlers
 
     @Override
     public void init()
-            throws Throwable
     {
     }
 
     @Override
     public void start()
-            throws Throwable
     {
     }
 
     @Override
     public void stop()
-            throws Throwable
     {
     }
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 

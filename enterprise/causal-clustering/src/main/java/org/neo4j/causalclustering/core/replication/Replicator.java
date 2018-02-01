@@ -38,5 +38,5 @@ public interface Replicator
      *
      * @return A future that will receive the result when available. Only valid if trackResult is set.
      */
-    Future<Object> replicate( ReplicatedContent content, boolean trackResult ) throws InterruptedException, NoLeaderFoundException;
+    Future<Object> replicate( ReplicatedContent content, boolean trackResult ) throws InterruptedException;
 }

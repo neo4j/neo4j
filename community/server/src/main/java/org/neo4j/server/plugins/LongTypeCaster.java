@@ -38,7 +38,7 @@ class LongTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    long[] convert( Object[] data ) throws BadInputException
+    long[] convert( Object[] data )
     {
         Long[] incoming = (Long[]) data;
         long[] result = new long[incoming.length];

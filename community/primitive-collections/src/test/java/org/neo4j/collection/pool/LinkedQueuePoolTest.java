@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 public class LinkedQueuePoolTest
 {
     @Test
-    public void shouldTimeoutGracefully() throws InterruptedException
+    public void shouldTimeoutGracefully()
     {
         FakeClock clock = new FakeClock();
 
@@ -305,7 +305,6 @@ public class LinkedQueuePoolTest
     }
 
     private <R> List<FlyweightHolder<R>>  acquireFromPool( final LinkedQueuePool<R> pool, int times )
-            throws InterruptedException
     {
         List<FlyweightHolder<R>> acquirers = new LinkedList<>();
         for ( int i = 0; i < times; i++ )

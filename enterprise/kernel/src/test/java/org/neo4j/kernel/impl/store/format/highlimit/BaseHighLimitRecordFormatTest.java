@@ -120,7 +120,7 @@ public class BaseHighLimitRecordFormatTest
         }
 
         @Override
-        protected void doWriteInternal( MyRecord record, PageCursor cursor ) throws IOException
+        protected void doWriteInternal( MyRecord record, PageCursor cursor )
         {
             int intsPerRecord = getShortsPerRecord();
             for ( int i = 0; i < intsPerRecord; i++ )

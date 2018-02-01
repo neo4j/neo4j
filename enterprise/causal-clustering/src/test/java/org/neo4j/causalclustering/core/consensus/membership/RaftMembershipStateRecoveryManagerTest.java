@@ -30,7 +30,7 @@ public class RaftMembershipStateRecoveryManagerTest
     public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldReturnCorrectLogIndex() throws Exception
+    public void shouldReturnCorrectLogIndex()
     {
     }
 }

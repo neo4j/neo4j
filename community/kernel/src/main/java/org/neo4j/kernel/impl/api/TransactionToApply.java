@@ -180,7 +180,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
             private int count;
 
             @Override
-            public boolean visit( StorageCommand element ) throws IOException
+            public boolean visit( StorageCommand element )
             {
                 count++;
                 return false;

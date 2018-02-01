@@ -39,7 +39,7 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }

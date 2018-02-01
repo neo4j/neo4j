@@ -191,7 +191,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     @Test
-    public void onlineConstraintShouldNotFalselyCollideOnFindNodesByLabelAndProperty() throws Exception
+    public void onlineConstraintShouldNotFalselyCollideOnFindNodesByLabelAndProperty()
     {
         // Given
         givenOnlineConstraint();
@@ -253,7 +253,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     }
 
     @Test( expected = ConstraintViolationException.class )
-    public void onlineConstraintShouldRejectConflictsInTheSameTransaction() throws Exception
+    public void onlineConstraintShouldRejectConflictsInTheSameTransaction()
     {
         // Given
         givenOnlineConstraint();
@@ -943,14 +943,14 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     private final Map<Transaction,KernelTransaction> txMap = new IdentityHashMap<>();
 
-    private void suspend( Transaction tx ) throws Exception
+    private void suspend( Transaction tx )
     {
         ThreadToStatementContextBridge txManager = getTransactionManager();
         txMap.put( tx, txManager.getTopLevelTransactionBoundToThisThread( true ) );
         txManager.unbindTransactionFromCurrentThread();
     }
 
-    private void resume( Transaction tx ) throws Exception
+    private void resume( Transaction tx )
     {
         ThreadToStatementContextBridge txManager = getTransactionManager();
         txManager.bindTransactionToCurrentThread( txMap.remove(tx) );
@@ -996,7 +996,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         private final SchemaIndexProvider indexProvider;
 
         @Override
-        public Lifecycle newInstance( KernelContext context, NoDeps noDeps ) throws Throwable
+        public Lifecycle newInstance( KernelContext context, NoDeps noDeps )
         {
             return indexProvider;
         }

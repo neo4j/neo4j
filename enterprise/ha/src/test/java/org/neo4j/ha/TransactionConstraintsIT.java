@@ -156,7 +156,7 @@ public class TransactionConstraintsIT
     }
 
     @Test
-    public void slaveShouldNotBeAbleToProduceAnInvalidTransaction() throws Exception
+    public void slaveShouldNotBeAbleToProduceAnInvalidTransaction()
     {
         // GIVEN
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
@@ -175,7 +175,7 @@ public class TransactionConstraintsIT
     }
 
     @Test
-    public void masterShouldNotBeAbleToProduceAnInvalidTransaction() throws Exception
+    public void masterShouldNotBeAbleToProduceAnInvalidTransaction()
     {
         // GIVEN
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -194,7 +194,7 @@ public class TransactionConstraintsIT
     }
 
     @Test
-    public void writeOperationOnSlaveHasToBePerformedWithinTransaction() throws Exception
+    public void writeOperationOnSlaveHasToBePerformedWithinTransaction()
     {
         // GIVEN
         HighlyAvailableGraphDatabase aSlave = cluster.getAnySlave();
@@ -212,7 +212,7 @@ public class TransactionConstraintsIT
     }
 
     @Test
-    public void writeOperationOnMasterHasToBePerformedWithinTransaction() throws Exception
+    public void writeOperationOnMasterHasToBePerformedWithinTransaction()
     {
         // GIVEN
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -230,7 +230,7 @@ public class TransactionConstraintsIT
     }
 
     @Test
-    public void slaveShouldNotBeAbleToModifyNodeDeletedOnMaster() throws Exception
+    public void slaveShouldNotBeAbleToModifyNodeDeletedOnMaster()
     {
         // GIVEN
         // -- node created on slave
@@ -453,7 +453,7 @@ public class TransactionConstraintsIT
         }
     }
 
-    private void doABogusTransaction( GraphDatabaseService db ) throws Exception
+    private void doABogusTransaction( GraphDatabaseService db )
     {
         try ( Transaction ignore = db.beginTx() )
         {

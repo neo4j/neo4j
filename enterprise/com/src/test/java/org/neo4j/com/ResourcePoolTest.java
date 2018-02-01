@@ -77,7 +77,7 @@ public class ResourcePoolTest
     }
 
     @Test
-    public void shouldTimeoutGracefully() throws InterruptedException
+    public void shouldTimeoutGracefully()
     {
         FakeClock clock = getFakeClocks();
 

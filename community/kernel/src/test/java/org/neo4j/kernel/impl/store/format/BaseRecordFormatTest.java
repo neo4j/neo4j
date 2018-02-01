@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class BaseRecordFormatTest
 {
     @Test
-    public void shouldRecognizeDesignatedInUseBit() throws Exception
+    public void shouldRecognizeDesignatedInUseBit()
     {
         // GIVEN
         RecordFormat<DynamicRecord> format = new DynamicRecordFormat();

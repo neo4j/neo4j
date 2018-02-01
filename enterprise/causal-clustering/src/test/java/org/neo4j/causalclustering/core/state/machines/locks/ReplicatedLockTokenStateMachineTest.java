@@ -44,7 +44,7 @@ public class ReplicatedLockTokenStateMachineTest
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 
     @Test
-    public void shouldStartWithInvalidTokenId() throws Exception
+    public void shouldStartWithInvalidTokenId()
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine(
@@ -58,7 +58,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldIssueNextLockTokenCandidateId() throws Exception
+    public void shouldIssueNextLockTokenCandidateId()
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine(
@@ -73,7 +73,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldKeepTrackOfCurrentLockTokenId() throws Exception
+    public void shouldKeepTrackOfCurrentLockTokenId()
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine(
@@ -94,7 +94,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldKeepTrackOfLockTokenOwner() throws Exception
+    public void shouldKeepTrackOfLockTokenOwner()
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine(
@@ -115,7 +115,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldAcceptOnlyFirstRequestWithSameId() throws Exception
+    public void shouldAcceptOnlyFirstRequestWithSameId()
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine(
@@ -140,7 +140,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldOnlyAcceptNextImmediateId() throws Exception
+    public void shouldOnlyAcceptNextImmediateId()
     {
         // given
         ReplicatedLockTokenStateMachine stateMachine = new ReplicatedLockTokenStateMachine(
@@ -224,7 +224,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldBeIdempotent() throws Exception
+    public void shouldBeIdempotent()
     {
         // given
         EphemeralFileSystemAbstraction fsa = fileSystemRule.get();
@@ -258,7 +258,7 @@ public class ReplicatedLockTokenStateMachineTest
     }
 
     @Test
-    public void shouldSetInitialPendingRequestToInitialState() throws Exception
+    public void shouldSetInitialPendingRequestToInitialState()
     {
         // Given
         @SuppressWarnings( "unchecked" )

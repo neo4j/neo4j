@@ -284,7 +284,7 @@ public class WriteTransactionCommandOrderingTest
         private boolean deleted;
 
         @Override
-        public boolean visitNodeCommand( NodeCommand command ) throws IOException
+        public boolean visitNodeCommand( NodeCommand command )
         {
             if ( !nodeVisited )
             {

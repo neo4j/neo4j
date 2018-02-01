@@ -35,7 +35,7 @@ import static org.neo4j.test.BatchTransaction.beginBatchTx;
 public class BatchTransactionTest
 {
     @Test
-    public void shouldUseProgressListener() throws Exception
+    public void shouldUseProgressListener()
     {
         // GIVEN
         Transaction transaction = mock( Transaction.class );

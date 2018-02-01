@@ -130,7 +130,7 @@ public class NativeLabelScanWriterTest
         private final Map<Integer,Map<LabelScanKey,LabelScanValue>> data = new HashMap<>();
 
         @Override
-        public void close() throws IOException
+        public void close()
         {   // Nothing to close
         }
 
@@ -142,7 +142,6 @@ public class NativeLabelScanWriterTest
 
         @Override
         public void merge( LabelScanKey key, LabelScanValue value, ValueMerger<LabelScanKey,LabelScanValue> amender )
-                throws IOException
         {
             // Clone since these instances are reused between calls, internally in the writer
             key = clone( key );
@@ -174,7 +173,7 @@ public class NativeLabelScanWriterTest
         }
 
         @Override
-        public LabelScanValue remove( LabelScanKey key ) throws IOException
+        public LabelScanValue remove( LabelScanKey key )
         {
             throw new UnsupportedOperationException( "Should not be called" );
         }

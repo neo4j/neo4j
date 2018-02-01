@@ -101,7 +101,7 @@ public class UsersIT extends ExclusiveServerTestBase
                  "Given that you know the current password, you can ask the server to change a users password. " +
                  "You can choose any\n" +
                  "password you like, as long as it is different from the current password." )
-    public void change_password() throws JsonParseException, IOException
+    public void change_password() throws IOException
     {
         // Given
         startServer( true );

@@ -38,7 +38,7 @@ public class ReplicatedIdAllocationStateMachineTest
     private IdType someOtherType = IdType.RELATIONSHIP;
 
     @Test
-    public void shouldNotHaveAnyIdsInitially() throws IOException
+    public void shouldNotHaveAnyIdsInitially()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -49,7 +49,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void shouldUpdateStateOnlyForTypeRequested() throws Exception
+    public void shouldUpdateStateOnlyForTypeRequested()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -65,7 +65,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void severalDistinctRequestsShouldIncrementallyUpdate() throws IOException
+    public void severalDistinctRequestsShouldIncrementallyUpdate()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -82,7 +82,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void severalEqualRequestsShouldOnlyUpdateOnce() throws IOException
+    public void severalEqualRequestsShouldOnlyUpdateOnce()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -98,7 +98,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void outOfOrderRequestShouldBeIgnored() throws IOException
+    public void outOfOrderRequestShouldBeIgnored()
     {
         // given
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
@@ -114,7 +114,7 @@ public class ReplicatedIdAllocationStateMachineTest
     }
 
     @Test
-    public void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex() throws Exception
+    public void shouldIgnoreNotContiguousRequestAndAlreadySeenIndex()
     {
         ReplicatedIdAllocationStateMachine stateMachine = new ReplicatedIdAllocationStateMachine(
                 new InMemoryStateStorage<>( new IdAllocationState() ) );

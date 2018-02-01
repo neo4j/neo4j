@@ -203,7 +203,7 @@ public class DataIntegrityValidatingStatementOperationsTest
     }
 
     @Test
-    public void shouldDisallowNullOrEmptyPropertyKey() throws Exception
+    public void shouldDisallowNullOrEmptyPropertyKey()
     {
         try
         {

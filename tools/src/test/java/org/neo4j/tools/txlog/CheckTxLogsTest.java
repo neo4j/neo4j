@@ -1012,7 +1012,7 @@ public class CheckTxLogsTest
         }
 
         @Override
-        LogEntryCursor openLogEntryCursor( LogFiles logFiles ) throws IOException
+        LogEntryCursor openLogEntryCursor( LogFiles logFiles )
         {
             return logEntryCursor;
         }

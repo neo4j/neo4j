@@ -239,7 +239,7 @@ public class BackupToolUrisTest
             return new Object[]{host, port};
         }
 
-        BackupTool newBackupTool() throws Exception
+        BackupTool newBackupTool()
         {
             return spy( new BackupTool( backupProtocolService, systemOut ) );
         }

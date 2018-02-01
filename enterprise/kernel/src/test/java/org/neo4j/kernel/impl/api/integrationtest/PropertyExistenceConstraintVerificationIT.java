@@ -158,7 +158,7 @@ public class PropertyExistenceConstraintVerificationIT
         abstract Class<?> getOwner();
 
         @Test
-        public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty() throws Exception
+        public void shouldFailToCreateConstraintIfSomeNodeLacksTheMandatoryProperty()
         {
             // given
             try ( Transaction tx = db.beginTx() )

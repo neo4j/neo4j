@@ -48,7 +48,7 @@ public final class Assert
     }
 
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException,
-            String partOfErrorMessage ) throws Exception
+            String partOfErrorMessage )
     {
         try
         {

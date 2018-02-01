@@ -67,13 +67,13 @@ public class KernelTransactionTimeoutMonitorIT
     }
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         executor = Executors.newSingleThreadExecutor();
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         executor.shutdown();
     }

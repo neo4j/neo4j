@@ -61,7 +61,7 @@ public class RecordFormat
     /**
      * Assume the given cursor is writable and has already been positioned at the record offset.
      */
-    public long incrementCounter( PageCursor cursor, int threadId ) throws IOException
+    public long incrementCounter( PageCursor cursor, int threadId )
     {
         int recordOffset = cursor.getOffset();
         int fieldOffset = recordOffset + (fieldSize * threadId);

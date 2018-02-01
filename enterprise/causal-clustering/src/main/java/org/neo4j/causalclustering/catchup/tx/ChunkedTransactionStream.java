@@ -54,7 +54,7 @@ public class ChunkedTransactionStream implements ChunkedInput<Object>
     }
 
     @Override
-    public boolean isEndOfInput() throws Exception
+    public boolean isEndOfInput()
     {
         return endOfInput;
     }

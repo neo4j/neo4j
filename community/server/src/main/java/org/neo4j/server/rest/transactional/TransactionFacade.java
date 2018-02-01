@@ -69,7 +69,7 @@ public class TransactionFacade
     }
 
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
-            LoginContext loginContext, long customTransactionTimeout ) throws TransactionLifecycleException
+            LoginContext loginContext, long customTransactionTimeout )
     {
         return new TransactionHandle( kernel, engine, queryService, registry, uriScheme, implicitTransaction,
                 loginContext, customTransactionTimeout, logProvider );

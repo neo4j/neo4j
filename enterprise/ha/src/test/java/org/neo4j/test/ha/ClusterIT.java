@@ -118,7 +118,7 @@ public class ClusterIT
     }
 
     @Test
-    public void testInstancesWithConflictingClusterPorts() throws Throwable
+    public void testInstancesWithConflictingClusterPorts()
     {
         HighlyAvailableGraphDatabase first = null;
 
@@ -202,7 +202,7 @@ public class ClusterIT
     }
 
     @Test
-    public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
+    public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance()
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( testDirectory.directory( testName.getMethodName() ) ).

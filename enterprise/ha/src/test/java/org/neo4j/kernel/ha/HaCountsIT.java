@@ -68,7 +68,7 @@ public class HaCountsIT
         clearDatabase();
     }
 
-    private void clearDatabase() throws InterruptedException
+    private void clearDatabase()
     {
         try ( Transaction tx = master.beginTx() )
         {
@@ -95,7 +95,7 @@ public class HaCountsIT
     }
 
     @Test
-    public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster() throws Exception
+    public void shouldUpdateCountsOnSlavesWhenCreatingANodeOnMaster()
     {
         // when creating a node on the master
         createANode( master, LABEL, PROPERTY_VALUE, PROPERTY_NAME );
@@ -110,7 +110,7 @@ public class HaCountsIT
     }
 
     @Test
-    public void shouldUpdateCountsOnMasterAndSlaveWhenCreatingANodeOnSlave() throws Exception
+    public void shouldUpdateCountsOnMasterAndSlaveWhenCreatingANodeOnSlave()
     {
         // when creating a node on the slave
         createANode( slave1, LABEL, PROPERTY_VALUE, PROPERTY_NAME );

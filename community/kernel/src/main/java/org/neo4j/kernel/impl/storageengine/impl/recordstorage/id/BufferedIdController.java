@@ -45,14 +45,14 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         jobHandle = scheduler.scheduleRecurring( JobScheduler.Groups.storageMaintenance, this::maintenance, 1,
                 TimeUnit.SECONDS );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         jobHandle.cancel( false );
     }

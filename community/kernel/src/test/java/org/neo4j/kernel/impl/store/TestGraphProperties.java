@@ -65,14 +65,14 @@ public class TestGraphProperties
     private TestGraphDatabaseFactory factory;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         factory = new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
     }
 
     @Test
-    public void basicProperties() throws Exception
+    public void basicProperties()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -106,7 +106,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void getNonExistentGraphPropertyWithDefaultValue() throws Exception
+    public void getNonExistentGraphPropertyWithDefaultValue()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         PropertyContainer graphProperties = properties( db );
@@ -118,7 +118,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void setManyGraphProperties() throws Exception
+    public void setManyGraphProperties()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
 
@@ -145,7 +145,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void setBigArrayGraphProperty() throws Exception
+    public void setBigArrayGraphProperty()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         long[] array = new long[1000];
@@ -171,7 +171,7 @@ public class TestGraphProperties
     }
 
     @Test
-    public void firstRecordOtherThanZeroIfNotFirst() throws Exception
+    public void firstRecordOtherThanZeroIfNotFirst()
     {
         File storeDir = new File( "/store/dir" ).getAbsoluteFile();
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase( storeDir );
@@ -371,7 +371,7 @@ public class TestGraphProperties
             } );
         }
 
-        Future<Void> setProperty( final String key, final Object value ) throws Exception
+        Future<Void> setProperty( final String key, final Object value )
         {
             return executeDontWait( state ->
             {

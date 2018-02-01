@@ -50,7 +50,7 @@ public class ResampleIndexProcedureTest
             new IndexProcedures( new StubKernelTransaction( operations ), indexingService );
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist() throws ProcedureException
+    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
         when( operations.labelGetForName( "NonExistentLabel" ) ).thenReturn( -1 );
 
@@ -66,7 +66,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist() throws ProcedureException
+    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
         when( operations.propertyKeyGetForName( "nonExistentProperty" ) ).thenReturn( -1 );
 
@@ -83,7 +83,7 @@ public class ResampleIndexProcedureTest
 
     @Test
     public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
-            throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws ProcedureException, SchemaRuleNotFoundException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
@@ -97,7 +97,7 @@ public class ResampleIndexProcedureTest
 
     @Test
     public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
-            throws ProcedureException, SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws ProcedureException, SchemaRuleNotFoundException
     {
         IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 0, 1 );
         when( operations.labelGetForName( anyString() ) ).thenReturn( 123 );
@@ -113,7 +113,7 @@ public class ResampleIndexProcedureTest
 
     @Test
     public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
-            throws SchemaRuleNotFoundException, IndexNotFoundKernelException
+            throws SchemaRuleNotFoundException
 
     {
         when( operations.labelGetForName( anyString() ) ).thenReturn( 0 );

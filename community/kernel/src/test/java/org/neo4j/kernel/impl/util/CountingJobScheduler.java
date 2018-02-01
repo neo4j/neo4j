@@ -107,7 +107,7 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         delegate.stop();
     }

@@ -81,25 +81,25 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
     }

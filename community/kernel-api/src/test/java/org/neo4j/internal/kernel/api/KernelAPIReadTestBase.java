@@ -99,7 +99,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     }
 
     @AfterClass
-    public static void tearDown() throws Exception
+    public static void tearDown()
     {
         if ( testSupport != null )
         {

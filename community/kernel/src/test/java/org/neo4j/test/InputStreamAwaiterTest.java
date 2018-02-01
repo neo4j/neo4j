@@ -142,7 +142,7 @@ public class InputStreamAwaiterTest
         }
 
         @Override
-        public int available() throws IOException
+        public int available()
         {
             ticker.tick();
             if ( chunk >= chunks.length )
@@ -153,7 +153,7 @@ public class InputStreamAwaiterTest
         }
 
         @Override
-        public int read( byte[] target ) throws IOException
+        public int read( byte[] target )
         {
             if ( chunk >= chunks.length )
             {
@@ -165,7 +165,7 @@ public class InputStreamAwaiterTest
         }
 
         @Override
-        public int read() throws IOException
+        public int read()
         {
             throw new UnsupportedOperationException();
         }

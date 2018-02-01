@@ -67,7 +67,6 @@ public class Pwd extends TransactionProvidingApp
     }
 
     private String stringifyPath( List<TypedId> pathIds, Session session )
-        throws ShellException
     {
         if ( pathIds.isEmpty() )
         {

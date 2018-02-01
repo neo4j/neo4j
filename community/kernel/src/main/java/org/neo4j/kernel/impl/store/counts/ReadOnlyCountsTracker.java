@@ -38,7 +38,7 @@ public class ReadOnlyCountsTracker extends CountsTracker
     }
 
     @Override
-    public long rotate( long txId ) throws IOException
+    public long rotate( long txId )
     {
         return -1;
     }

@@ -67,7 +67,7 @@ public class FusionIndexReaderTest
     /* close */
 
     @Test
-    public void closeMustCloseBothNativeAndLucene() throws Exception
+    public void closeMustCloseBothNativeAndLucene()
     {
         // when
         fusionIndexReader.close();
@@ -99,7 +99,7 @@ public class FusionIndexReaderTest
     /* countIndexedNodes */
 
     @Test
-    public void countIndexedNodesMustSelectCorrectReader() throws Exception
+    public void countIndexedNodesMustSelectCorrectReader()
     {
         // given
         Value[] nativeValues = FusionIndexTestHelp.valuesSupportedByNative();

@@ -46,7 +46,6 @@ public abstract class ShellLobby
      * @return a new shell server.
      */
     public static ShellServer newServer( Class<? extends ShellServer> cls )
-        throws ShellException
     {
         try
         {

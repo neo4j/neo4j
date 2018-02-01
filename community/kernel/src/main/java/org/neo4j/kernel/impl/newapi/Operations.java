@@ -456,7 +456,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ktx.explicitIndexTxState().nodeChanges( indexName ).addNode( node, key, value );
@@ -501,14 +501,13 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         throw new UnsupportedOperationException(  );
     }
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.assertOpen();
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key, value );
@@ -516,7 +515,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship, key );
 
@@ -524,7 +523,7 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         ktx.explicitIndexTxState().relationshipChanges( indexName ).remove( relationship );
     }

@@ -124,7 +124,7 @@ public class SchemaStorageTest
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndPropertyComposite() throws Exception
+    public void shouldReturnIndexRuleForLabelAndPropertyComposite()
     {
         String a = "a";
         String b = "b";
@@ -150,7 +150,7 @@ public class SchemaStorageTest
     }
 
     @Test
-    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite() throws Exception
+    public void shouldReturnIndexRuleForLabelAndVeryManyPropertiesComposite()
     {
         String[] props = "abcdefghijklmnopqrstuvwxyzABCDEFGHJILKMNOPQRSTUVWXYZ".split( "\\B" );
         createSchema( db ->

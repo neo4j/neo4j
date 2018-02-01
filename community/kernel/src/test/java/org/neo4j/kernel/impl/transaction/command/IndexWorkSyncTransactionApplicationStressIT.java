@@ -234,7 +234,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         long nodeId;
 
         @Override
-        public boolean visit( StorageCommand element ) throws IOException
+        public boolean visit( StorageCommand element )
         {
             if ( element instanceof NodeCommand )
             {

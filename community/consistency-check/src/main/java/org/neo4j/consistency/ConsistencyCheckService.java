@@ -145,7 +145,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(

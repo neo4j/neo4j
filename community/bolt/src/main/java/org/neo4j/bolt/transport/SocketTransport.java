@@ -61,7 +61,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
         return new ChannelInitializer<SocketChannel>()
         {
             @Override
-            public void initChannel( SocketChannel ch ) throws Exception
+            public void initChannel( SocketChannel ch )
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
 

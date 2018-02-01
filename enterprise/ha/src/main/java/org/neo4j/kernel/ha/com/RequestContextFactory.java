@@ -43,13 +43,13 @@ public class RequestContextFactory extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         this.txIdStore = txIdStoreSupplier.get();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         this.txIdStore = null;
     }

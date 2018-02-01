@@ -36,7 +36,7 @@ public class PruneLogCommand implements RaftLogCommand
     }
 
     @Override
-    public void dispatch( Handler handler ) throws IOException
+    public void dispatch( Handler handler )
     {
         handler.prune( pruneIndex );
     }
@@ -48,7 +48,7 @@ public class PruneLogCommand implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightCache inFlightCache, Log log ) throws IOException
+    public void applyTo( InFlightCache inFlightCache, Log log )
     {
         // only the actual log prunes
     }

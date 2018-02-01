@@ -273,7 +273,7 @@ public class TestIndexDeletion
     }
 
     @Test
-    public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx() throws Exception
+    public void canDeleteIndexEvenIfEntitiesAreFoundToBeAbandonedInTheSameTx()
     {
         // create and index a node
         Index<Node> nodeIndex = graphDb.index().forNodes( "index" );

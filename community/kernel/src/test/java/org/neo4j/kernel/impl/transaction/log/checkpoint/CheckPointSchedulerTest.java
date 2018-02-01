@@ -171,7 +171,7 @@ public class CheckPointSchedulerTest
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
-            public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+            public long checkPointIfNeeded( TriggerInfo triggerInfo )
             {
                 checkPointerLatch.startAndWaitForAllToStart();
                 checkPointerLatch.waitForAllToFinish();
@@ -179,13 +179,13 @@ public class CheckPointSchedulerTest
             }
 
             @Override
-            public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public long tryCheckPoint( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
             }
 
             @Override
-            public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+            public long forceCheckPoint( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
             }
@@ -326,13 +326,13 @@ public class CheckPointSchedulerTest
         }
 
         @Override
-        public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long tryCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long forceCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
         }
@@ -349,7 +349,7 @@ public class CheckPointSchedulerTest
         private volatile boolean limitEnabled;
 
         @Override
-        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable ) throws IOException
+        public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
         {
             return 0;
         }
@@ -386,7 +386,7 @@ public class CheckPointSchedulerTest
         }
 
         @Override
-        public long checkPointIfNeeded( TriggerInfo triggerInfo ) throws IOException
+        public long checkPointIfNeeded( TriggerInfo triggerInfo )
         {
             latch.countDown();
             while ( ioLimiter.isLimitEnabled() )
@@ -398,13 +398,13 @@ public class CheckPointSchedulerTest
         }
 
         @Override
-        public long tryCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long tryCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }
 
         @Override
-        public long forceCheckPoint( TriggerInfo triggerInfo ) throws IOException
+        public long forceCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }

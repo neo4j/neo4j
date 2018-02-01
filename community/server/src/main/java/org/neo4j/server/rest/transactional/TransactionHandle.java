@@ -198,7 +198,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    void forceRollback() throws TransactionFailureException
+    void forceRollback()
     {
         context.resumeSinceTransactionsAreStillThreadBound();
         context.rollback();

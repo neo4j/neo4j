@@ -42,7 +42,7 @@ public class TraversalBranchImplTest
 {
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldExpandOnFirstAccess() throws Exception
+    public void shouldExpandOnFirstAccess()
     {
         // GIVEN
         TraversalBranch parent = mock( TraversalBranch.class );

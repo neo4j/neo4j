@@ -41,7 +41,7 @@ public class UnionIndexCapabilityTest
     private static final IndexOrder[] ORDER_CAPABILITIES_NONE = new IndexOrder[0];
 
     @Test
-    public void shouldCreateUnionOfOrderCapabilities() throws Exception
+    public void shouldCreateUnionOfOrderCapabilities()
     {
         // given
         UnionIndexCapability union;
@@ -76,7 +76,7 @@ public class UnionIndexCapabilityTest
     }
 
     @Test
-    public void shouldCreateUnionOfValueCapability() throws Exception
+    public void shouldCreateUnionOfValueCapability()
     {
         UnionIndexCapability union;
 

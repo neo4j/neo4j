@@ -78,7 +78,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input )
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
         CoreTopology coreTopology = topologyService.coreServers();

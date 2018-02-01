@@ -47,7 +47,7 @@ public class HandshakeServerTest
     private HandshakeServer server = new HandshakeServer( channel, protocolRepository, Protocol.Identifier.RAFT );
 
     @Test
-    public void shouldDeclineUnallowedProtocol() throws Exception
+    public void shouldDeclineUnallowedProtocol()
     {
         // given
         server.handle( new InitialMagicMessage() );
@@ -60,7 +60,7 @@ public class HandshakeServerTest
     }
 
     @Test
-    public void shouldDisconnectOnWrongMagicValue() throws Exception
+    public void shouldDisconnectOnWrongMagicValue()
     {
         // when
         server.handle( new InitialMagicMessage( "PLAIN_VALUE" ) );
@@ -70,7 +70,7 @@ public class HandshakeServerTest
     }
 
     @Test
-    public void shouldAcceptCorrectMagicValue() throws Exception
+    public void shouldAcceptCorrectMagicValue()
     {
         // when
         server.handle( new InitialMagicMessage() );
@@ -80,7 +80,7 @@ public class HandshakeServerTest
     }
 
     @Test
-    public void shouldSendProtocolResponseForGivenProtocol() throws Throwable
+    public void shouldSendProtocolResponseForGivenProtocol()
     {
         // given
         Set<Integer> versions = asSet( 1, 2, 3 );
@@ -94,7 +94,7 @@ public class HandshakeServerTest
     }
 
     @Test
-    public void shouldNotCloseConnectionIfKnownProtocol() throws Throwable
+    public void shouldNotCloseConnectionIfKnownProtocol()
     {
         // given
         Set<Integer> versions = asSet( 1, 2, 3 );
@@ -108,7 +108,7 @@ public class HandshakeServerTest
     }
 
     @Test
-    public void shouldSendNegativeResponseAndCloseForUnknownProtocol() throws Throwable
+    public void shouldSendNegativeResponseAndCloseForUnknownProtocol()
     {
         // given
         Set<Integer> versions = asSet( 1, 2, 3 );
@@ -146,7 +146,7 @@ public class HandshakeServerTest
     }
 
     @Test
-    public void shouldSendFailureOnUnknownProtocolSwitchOver() throws Exception
+    public void shouldSendFailureOnUnknownProtocolSwitchOver()
     {
         // given
         int version = 1;

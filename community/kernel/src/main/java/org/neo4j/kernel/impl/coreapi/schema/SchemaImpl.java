@@ -585,7 +585,6 @@ public class SchemaImpl implements Schema
 
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
-                throws CreateConstraintFailureException, AlreadyConstrainedException
         {
             try ( Statement statement = ctxSupplier.get() )
             {

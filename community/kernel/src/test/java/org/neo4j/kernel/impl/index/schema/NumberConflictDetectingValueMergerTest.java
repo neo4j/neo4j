@@ -34,7 +34,7 @@ public class NumberConflictDetectingValueMergerTest
     private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>();
 
     @Test
-    public void shouldReportConflictOnSameValueAndDifferentEntityIds() throws Exception
+    public void shouldReportConflictOnSameValueAndDifferentEntityIds()
     {
         // given
         Value value = Values.of( 123);
@@ -56,7 +56,7 @@ public class NumberConflictDetectingValueMergerTest
     }
 
     @Test
-    public void shouldNotReportConflictOnSameValueSameEntityId() throws Exception
+    public void shouldNotReportConflictOnSameValueSameEntityId()
     {
         // given
         Value value = Values.of( 123);

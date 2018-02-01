@@ -40,7 +40,7 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
     private static final OutputStream NULL_OUTPUT_STREAM =  new OutputStream()
     {
         @Override
-        public void write( int b ) throws IOException
+        public void write( int b )
         {
             // it's *null* output stream
         }

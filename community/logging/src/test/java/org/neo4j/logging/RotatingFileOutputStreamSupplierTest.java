@@ -568,7 +568,7 @@ public class RotatingFileOutputStreamSupplierTest
         writer.flush();
     }
 
-    private void writeLines( Supplier<OutputStream> outputStreamSupplier, int count ) throws InterruptedException
+    private void writeLines( Supplier<OutputStream> outputStreamSupplier, int count )
     {
         Supplier<PrintWriter> printWriterSupplier = Suppliers.adapted( outputStreamSupplier, OUTPUT_STREAM_CONVERTER );
         for ( ; count >= 0; --count )

@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 public class NodeRecordTest
 {
     @Test
-    public void cloneShouldProduceExactCopy() throws Exception
+    public void cloneShouldProduceExactCopy()
     {
         // Given
         long relId = 1337L;
@@ -67,7 +67,7 @@ public class NodeRecordTest
     }
 
     @Test
-    public void shouldListLabelRecordsInUse() throws Exception
+    public void shouldListLabelRecordsInUse()
     {
         // Given
         NodeRecord node = new NodeRecord( 1, false, -1, -1 );
@@ -88,7 +88,7 @@ public class NodeRecordTest
     }
 
     @Test
-    public void shouldToStringBothUsedAndUnusedDynamicLabelRecords() throws Exception
+    public void shouldToStringBothUsedAndUnusedDynamicLabelRecords()
     {
         // GIVEN
         IdSequence ids = mock( IdSequence.class );

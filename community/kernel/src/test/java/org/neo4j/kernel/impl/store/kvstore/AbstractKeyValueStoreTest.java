@@ -128,7 +128,7 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    public void shouldStartAndStopStore() throws Exception
+    public void shouldStartAndStopStore()
     {
         // given
         resourceManager.managed( new Store() );
@@ -529,7 +529,7 @@ public class AbstractKeyValueStoreTest
             int i;
 
             @Override
-            public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
+            public boolean visit( WritableBuffer key, WritableBuffer value )
             {
                 if ( i < data.length )
                 {
@@ -540,7 +540,7 @@ public class AbstractKeyValueStoreTest
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
         };

@@ -41,7 +41,7 @@ import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 public class AuthTokenValuesWriterTest
 {
     @Test
-    public void shouldFailToWriteNode() throws Exception
+    public void shouldFailToWriteNode()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
 
@@ -58,7 +58,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldFailToWriteRelationship() throws Exception
+    public void shouldFailToWriteRelationship()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
 
@@ -77,7 +77,7 @@ public class AuthTokenValuesWriterTest
     }
 
     @Test
-    public void shouldFailToWritePoint() throws Exception
+    public void shouldFailToWritePoint()
     {
         AuthTokenValuesWriter writer = new AuthTokenValuesWriter();
         PointValue value = pointValue( CoordinateReferenceSystem.WGS84, new double[42] );

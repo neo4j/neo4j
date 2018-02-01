@@ -218,7 +218,7 @@ public class StoreMigrationIT
         }
     }
 
-    private static void createDb( RecordFormats recordFormat, File storeDir ) throws IOException
+    private static void createDb( RecordFormats recordFormat, File storeDir )
     {
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )

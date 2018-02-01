@@ -80,7 +80,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     @Override
     public void init()
-        throws Throwable
     {
         synchronized ( providers )
         {
@@ -111,7 +110,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 
     @Override
     public void stop()
-        throws Throwable
     {
         synchronized ( providers )
         {

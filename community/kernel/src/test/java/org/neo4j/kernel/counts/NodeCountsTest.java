@@ -57,7 +57,7 @@ public class NodeCountsTest
     }
 
     @Test
-    public void shouldReportNumberOfNodesInAnEmptyGraph() throws Exception
+    public void shouldReportNumberOfNodesInAnEmptyGraph()
     {
         // when
         long nodeCount = numberOfNodes();
@@ -67,7 +67,7 @@ public class NodeCountsTest
     }
 
     @Test
-    public void shouldReportNumberOfNodes() throws Exception
+    public void shouldReportNumberOfNodes()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -86,7 +86,7 @@ public class NodeCountsTest
     }
 
     @Test
-    public void shouldReportAccurateNumberOfNodesAfterDeletion() throws Exception
+    public void shouldReportAccurateNumberOfNodesAfterDeletion()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -111,7 +111,7 @@ public class NodeCountsTest
     }
 
     @Test
-    public void shouldIncludeNumberOfNodesAddedInTransaction() throws Exception
+    public void shouldIncludeNumberOfNodesAddedInTransaction()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -136,7 +136,7 @@ public class NodeCountsTest
     }
 
     @Test
-    public void shouldIncludeNumberOfNodesDeletedInTransaction() throws Exception
+    public void shouldIncludeNumberOfNodesDeletedInTransaction()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();

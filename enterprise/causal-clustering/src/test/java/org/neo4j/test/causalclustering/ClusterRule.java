@@ -104,7 +104,7 @@ public class ClusterRule extends ExternalResource
         return cluster;
     }
 
-    public Cluster createCluster() throws Exception
+    public Cluster createCluster()
     {
         if ( cluster == null )
         {

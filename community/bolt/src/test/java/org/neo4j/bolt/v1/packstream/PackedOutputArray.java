@@ -36,7 +36,7 @@ public class PackedOutputArray implements PackOutput
     }
 
     @Override
-    public PackOutput flush() throws IOException
+    public PackOutput flush()
     {
         return this;
     }

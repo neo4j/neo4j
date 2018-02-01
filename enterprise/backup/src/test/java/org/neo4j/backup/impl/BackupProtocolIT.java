@@ -72,7 +72,7 @@ public class BackupProtocolIT
         verify( backup ).fullBackup( any( StoreWriter.class ), eq( false ) );
     }
 
-    private void shouldGatherForensicsInFullBackupRequest( boolean forensics ) throws Exception
+    private void shouldGatherForensicsInFullBackupRequest( boolean forensics )
     {
         // GIVEN
         Response<Void> response = Response.EMPTY;

@@ -40,7 +40,7 @@ public class CacheGroupsStep extends ProcessorStep<RelationshipGroupRecord[]>
     }
 
     @Override
-    protected void process( RelationshipGroupRecord[] batch, BatchSender sender ) throws Throwable
+    protected void process( RelationshipGroupRecord[] batch, BatchSender sender )
     {
         // These records are read page-wise forwards, but should be cached in reverse
         // since the records exists in the store in reverse order.

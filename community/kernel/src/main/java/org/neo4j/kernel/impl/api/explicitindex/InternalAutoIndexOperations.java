@@ -51,14 +51,14 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId, String keyName, Object value )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName, value );
                     }
 
                     @Override
                     public void remove( ExplicitIndexWrite ops, long entityId, String keyName )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         ops.nodeRemoveFromExplicitIndex( InternalAutoIndexing.NODE_AUTO_INDEX, entityId, keyName );
                     }
@@ -71,8 +71,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
                     }
 
                     @Override
-                    public void ensureIndexExists( ExplicitIndexWrite ops ) throws
-                            ExplicitIndexNotFoundKernelException, EntityNotFoundException
+                    public void ensureIndexExists( ExplicitIndexWrite ops )
 
                     {
                         ops.nodeExplicitIndexCreateLazily( InternalAutoIndexing.NODE_AUTO_INDEX, null );
@@ -113,7 +112,6 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
 
                     @Override
                     public void ensureIndexExists( ExplicitIndexWrite ops )
-                            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
                     {
                         ops.relationshipExplicitIndexCreateLazily( InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX, null );
                     }
@@ -131,8 +129,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         public abstract void remove( ExplicitIndexWrite ops, long entityId )
                 throws KernelException;
 
-        public abstract void ensureIndexExists( ExplicitIndexWrite write )
-                throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+        public abstract void ensureIndexExists( ExplicitIndexWrite write );
     }
 
     private AtomicReference<Set<String>> propertyKeysToInclude = new AtomicReference<>( Collections.emptySet() );

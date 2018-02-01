@@ -188,7 +188,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void twoVotesFromSameInstanceForSameRoleShouldBeConsolidated() throws Exception
+    public void twoVotesFromSameInstanceForSameRoleShouldBeConsolidated()
     {
         // Given
         final String coordinatorRole = "coordinator";
@@ -230,7 +230,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void electionBeingForgottenMustIncreaseElectionId() throws Exception
+    public void electionBeingForgottenMustIncreaseElectionId()
     {
         // Given
         final String coordinatorRole = "coordinator";
@@ -254,7 +254,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void voteFromPreviousSuccessfulElectionMustNotBeCounted() throws Exception
+    public void voteFromPreviousSuccessfulElectionMustNotBeCounted()
     {
         // Given
         final String coordinatorRole = "coordinator";
@@ -280,7 +280,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void instanceFailingShouldHaveItsVotesInvalidated() throws Exception
+    public void instanceFailingShouldHaveItsVotesInvalidated()
     {
         // Given
         final String role1 = "coordinator1";
@@ -324,7 +324,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion() throws Throwable
+    public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion()
     {
         // Given
         final String role1 = "coordinator1";
@@ -375,7 +375,7 @@ public class ElectionContextTest
      * expected result is that it will succeed in sending election results.
      */
     @Test
-    public void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough() throws Exception
+    public void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough()
     {
         // Given
         final String role1 = "coordinator1";

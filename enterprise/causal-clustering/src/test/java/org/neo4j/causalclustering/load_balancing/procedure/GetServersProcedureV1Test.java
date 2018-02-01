@@ -121,7 +121,7 @@ public class GetServersProcedureV1Test
     }
 
     @Test
-    public void shouldHaveCorrectSignature() throws Exception
+    public void shouldHaveCorrectSignature()
     {
         // given
         final LegacyGetServersProcedure proc = new LegacyGetServersProcedure( null, null, config, getInstance() );

@@ -70,8 +70,7 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
         flushUpdates( updates );
     }
 
-    protected abstract void flushUpdates( Iterable<IndexEntryUpdate<?>> updates )
-            throws IOException, IndexEntryConflictException;
+    protected abstract void flushUpdates( Iterable<IndexEntryUpdate<?>> updates );
 
     private DiffSets<Long> propertyValueDiffSet( Object value )
     {

@@ -58,7 +58,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class PrimitiveLongMapTest
 {
     @Test
-    public void shouldContainAddedValues() throws Exception
+    public void shouldContainAddedValues()
     {
         // GIVEN
         Map<Long, Integer> expectedEntries = new HashMap<>();
@@ -96,7 +96,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldContainAddedValues_2() throws Exception
+    public void shouldContainAddedValues_2()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -119,7 +119,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldContainAddedValues_3() throws Exception
+    public void shouldContainAddedValues_3()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -169,7 +169,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldHaveCorrectSize() throws Exception
+    public void shouldHaveCorrectSize()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -255,7 +255,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldMoveValuesWhenMovingEntriesAround() throws Exception
+    public void shouldMoveValuesWhenMovingEntriesAround()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();
@@ -281,7 +281,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldReturnCorrectPreviousValue() throws Exception
+    public void shouldReturnCorrectPreviousValue()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -307,7 +307,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues() throws Exception
+    public void shouldOnlyContainAddedValues()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -395,7 +395,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_2() throws Exception
+    public void shouldOnlyContainAddedValues_2()
     {
         // GIVEN
         PrimitiveLongIntMap map = Primitive.longIntMap();
@@ -440,7 +440,7 @@ public class PrimitiveLongMapTest
     }
 
     @Test
-    public void shouldOnlyContainAddedValues_3() throws Exception
+    public void shouldOnlyContainAddedValues_3()
     {
         // GIVEN
         PrimitiveLongObjectMap<Integer> map = Primitive.longObjectMap();

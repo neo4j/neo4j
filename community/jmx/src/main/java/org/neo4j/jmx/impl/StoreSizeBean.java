@@ -88,7 +88,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         private SchemaIndexProviderMap schemaIndexProviderMap;
         private LabelScanStore labelScanStore;
 
-        StoreSizeImpl( ManagementData management, boolean isMXBean ) throws NotCompliantMBeanException
+        StoreSizeImpl( ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
 

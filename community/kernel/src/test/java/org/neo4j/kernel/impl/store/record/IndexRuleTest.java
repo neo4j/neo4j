@@ -51,7 +51,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateUniqueIndex() throws Exception
+    public void shouldCreateUniqueIndex()
     {
         // GIVEN
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -71,7 +71,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRulesAreEqualBasedOnIndexDescriptor() throws Exception
+    public void indexRulesAreEqualBasedOnIndexDescriptor()
     {
         assertEqualityByDescriptor( forLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );

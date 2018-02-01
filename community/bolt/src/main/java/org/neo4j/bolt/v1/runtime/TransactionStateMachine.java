@@ -256,7 +256,7 @@ public class TransactionStateMachine implements StatementProcessor
                      */
                     private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
                             String statement, MapValue params )
-                            throws TransactionFailureException, QueryExecutionKernelException
+                            throws QueryExecutionKernelException
                     {
                         return executeQuery( ctx, spi, statement, params, () -> closeTransaction( ctx, false ) );
                     }
@@ -477,6 +477,6 @@ public class TransactionStateMachine implements StatementProcessor
                 LoginContext loginContext,
                 String statement,
                 MapValue params,
-                ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException;
+                ThrowingAction<KernelException> onFail );
     }
 }

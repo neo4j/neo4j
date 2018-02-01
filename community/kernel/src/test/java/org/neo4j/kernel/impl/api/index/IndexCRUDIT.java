@@ -166,7 +166,7 @@ public class IndexCRUDIT
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
@@ -194,7 +194,7 @@ public class IndexCRUDIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
@@ -216,12 +216,12 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
         {
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return newUpdater( IndexUpdateMode.ONLINE );
         }
@@ -232,7 +232,7 @@ public class IndexCRUDIT
             return new CollectingIndexUpdater()
             {
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                     updatesCommitted.addAll( updates );
                 }

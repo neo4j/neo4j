@@ -69,7 +69,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterAvailableWhenInPending() throws Throwable
+    public void shouldProperlyHandleMasterAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, masterIsAvailable for itself should leave it to PENDING
@@ -88,7 +88,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleSlaveAvailableWhenInPending() throws Throwable
+    public void shouldProperlyHandleSlaveAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, slaveIsAvailable for itself should set it to PENDING
@@ -106,7 +106,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave() throws Throwable
+    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave()
     {
         /*
          * If the instance is in TO_SLAVE and a masterIsAvailable comes that does not refer to the elected master,
@@ -135,7 +135,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingMasterAvailableMessage() throws Throwable
+    public void shouldProperlyHandleConflictingMasterAvailableMessage()
     {
         /*
          * If the instance is currently in TO_MASTER and a masterIsAvailable comes for another instance, then
@@ -163,7 +163,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster() throws Throwable
+    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster()
     {
         /*
          * If the instance is in TO_MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -190,7 +190,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster() throws Throwable
+    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster()
     {
         /*
          * If the instance is in MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -224,7 +224,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState() throws Throwable
+    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState()
     {
         /*
          * If the instance is in MASTER state and a masterIsAvailable is received for another instance, then
@@ -260,7 +260,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState() throws Throwable
+    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState()
     {
         /*
          * If the instance is in SLAVE state and receives masterIsAvailable for an instance different than the

@@ -46,7 +46,7 @@ public class SslPolicyConfigTest
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void shouldFindPolicyDefaults() throws Exception
+    public void shouldFindPolicyDefaults()
     {
         // given
         Map<String,String> params = stringMap();
@@ -92,7 +92,7 @@ public class SslPolicyConfigTest
     }
 
     @Test
-    public void shouldFindPolicyOverrides() throws Exception
+    public void shouldFindPolicyOverrides()
     {
         // given
         Map<String,String> params = stringMap();
@@ -153,7 +153,7 @@ public class SslPolicyConfigTest
     }
 
     @Test
-    public void shouldFailWithIncompletePathOverrides() throws Exception
+    public void shouldFailWithIncompletePathOverrides()
     {
         // given
         Map<String,String> params = stringMap();

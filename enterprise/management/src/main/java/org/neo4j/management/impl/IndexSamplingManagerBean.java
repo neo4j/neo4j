@@ -49,7 +49,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         return new IndexSamplingManagerImpl( management, true );
     }

@@ -259,7 +259,7 @@ public class StoreLockerTest
                 return new DelegatingStoreChannel( super.open( fileName, openMode ) )
                 {
                     @Override
-                    public FileLock tryLock() throws IOException
+                    public FileLock tryLock()
                     {
                         return null; // 'null' implies that the file has been externally locked
                     }
@@ -317,7 +317,7 @@ public class StoreLockerTest
         }
 
         @Override
-        public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
+        public StoreChannel open( File fileName, OpenMode openMode )
         {
             numberOfCallsToOpen++;
             return channel;

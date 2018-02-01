@@ -109,7 +109,7 @@ public class ThreadRepository implements TestRule
         }
 
         @Override
-        public void perform() throws Exception
+        public void perform()
         {
             latch.countDown();
         }

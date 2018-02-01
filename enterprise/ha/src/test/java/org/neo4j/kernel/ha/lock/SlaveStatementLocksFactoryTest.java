@@ -35,7 +35,7 @@ public class SlaveStatementLocksFactoryTest
 {
 
     @Test
-    public void createSlaveStatementLocks() throws Exception
+    public void createSlaveStatementLocks()
     {
         StatementLocksFactory delegate = mock( StatementLocksFactory.class );
         Locks locks = mock( Locks.class );

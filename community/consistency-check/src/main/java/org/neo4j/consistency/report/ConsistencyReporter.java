@@ -247,7 +247,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
          * @param args array of the items referenced from this record with which it is inconsistent.
          */
         @Override
-        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
+        public Object invoke( Object proxy, Method method, Object[] args )
         {
             String message;
             Documented annotation = method.getAnnotation( Documented.class );

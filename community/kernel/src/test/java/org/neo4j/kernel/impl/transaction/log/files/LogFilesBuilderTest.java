@@ -58,7 +58,7 @@ public class LogFilesBuilderTest
     private DefaultFileSystemAbstraction fileSystem;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         storeDirectory = testDirectory.directory();
         fileSystem = fileSystemRule.get();

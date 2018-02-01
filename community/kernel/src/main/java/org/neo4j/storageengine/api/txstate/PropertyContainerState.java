@@ -100,7 +100,7 @@ public interface PropertyContainerState
         }
 
         @Override
-        public void accept( Visitor visitor ) throws ConstraintValidationException
+        public void accept( Visitor visitor )
         {
         }
 

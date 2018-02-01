@@ -118,7 +118,7 @@ public class IndexTxStateUpdaterTest
     // LABELS
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( unIndexedLabelId, node, propertyCursor, ADDED_LABEL );
@@ -129,7 +129,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId1, node, propertyCursor, ADDED_LABEL );
@@ -141,7 +141,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( labelId2, node, propertyCursor, REMOVED_LABEL );
@@ -152,7 +152,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
@@ -164,7 +164,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( node, propertyCursor, newPropId, Values.of( "newHi" ) );
@@ -176,7 +176,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyRemove( node, propertyCursor, propId2, Values.of( "hi2" ) );
@@ -188,7 +188,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyChange( node, propertyCursor, propId2, Values.of( "hi2" ), Values.of( "new2" ) );

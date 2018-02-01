@@ -88,7 +88,7 @@ public class CoreMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         monitors.addMonitorListener( raftLogCommitIndexMetric );
         monitors.addMonitorListener( raftLogAppendIndexMetric );
@@ -121,7 +121,7 @@ public class CoreMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         registry.remove( COMMIT_INDEX );
         registry.remove( APPEND_INDEX );

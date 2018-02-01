@@ -51,12 +51,12 @@ public class MonitorGc implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         monitorGc = new MeasureDoNothing( "neo4j.PauseMonitor", loggingMonitor( log ),
                 config.get( Configuration.gc_monitor_wait_time ).toMillis(),
@@ -65,14 +65,14 @@ public class MonitorGc implements Lifecycle
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         monitorGc.stopMeasuring();
         monitorGc = null;
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

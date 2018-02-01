@@ -40,7 +40,7 @@ public class NumberArrayFactoryTest
     private static final long KILO = 1024;
 
     @Test
-    public void shouldPickFirstAvailableCandidateLongArray() throws Exception
+    public void shouldPickFirstAvailableCandidateLongArray()
     {
         // GIVEN
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
@@ -55,7 +55,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldPickFirstAvailableCandidateLongArrayWhenSomeDontHaveEnoughMemory() throws Exception
+    public void shouldPickFirstAvailableCandidateLongArrayWhenSomeDontHaveEnoughMemory()
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
@@ -73,7 +73,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldThrowOomOnNotEnoughMemory() throws Exception
+    public void shouldThrowOomOnNotEnoughMemory()
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
@@ -93,7 +93,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldPickFirstAvailableCandidateIntArray() throws Exception
+    public void shouldPickFirstAvailableCandidateIntArray()
     {
         // GIVEN
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
@@ -108,7 +108,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldPickFirstAvailableCandidateIntArrayWhenSomeDontHaveEnoughMemory() throws Exception
+    public void shouldPickFirstAvailableCandidateIntArrayWhenSomeDontHaveEnoughMemory()
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
@@ -126,7 +126,7 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void shouldEvenCatchOtherExceptionsAndTryNext() throws Exception
+    public void shouldEvenCatchOtherExceptionsAndTryNext()
     {
         // GIVEN
         NumberArrayFactory throwingMemoryFactory = mock( NumberArrayFactory.class );
@@ -145,14 +145,14 @@ public class NumberArrayFactoryTest
     }
 
     @Test
-    public void heapArrayShouldAllowVeryLargeBases() throws Exception
+    public void heapArrayShouldAllowVeryLargeBases()
     {
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
         verifyVeryLargeBaseSupport( factory );
     }
 
     @Test
-    public void offHeapArrayShouldAllowVeryLargeBases() throws Exception
+    public void offHeapArrayShouldAllowVeryLargeBases()
     {
         NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.OFF_HEAP );
         verifyVeryLargeBaseSupport( factory );

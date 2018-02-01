@@ -35,13 +35,13 @@ public class OpenEndRangeMapTest
     private OpenEndRangeMap<Integer,String> ranges = new OpenEndRangeMap<>();
 
     @Test
-    public void shouldFindNothingInEmptyMap() throws Exception
+    public void shouldFindNothingInEmptyMap()
     {
         assertRange( -100, 100, new ValueRange<>( null, null ) );
     }
 
     @Test
-    public void shouldFindSingleRange() throws Exception
+    public void shouldFindSingleRange()
     {
         // when
         ranges.replaceFrom( 0, "A" );
@@ -52,7 +52,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldHandleMultipleRanges() throws Exception
+    public void shouldHandleMultipleRanges()
     {
         // when
         ranges.replaceFrom(  0, "A" );
@@ -67,7 +67,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldTruncateAtPreviousEntry() throws Exception
+    public void shouldTruncateAtPreviousEntry()
     {
         // given
         ranges.replaceFrom(  0, "A" );
@@ -85,7 +85,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldTruncateBeforePreviousEntry() throws Exception
+    public void shouldTruncateBeforePreviousEntry()
     {
         // given
         ranges.replaceFrom(  0, "A" );
@@ -103,7 +103,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldTruncateSeveralEntries() throws Exception
+    public void shouldTruncateSeveralEntries()
     {
         // given
         ranges.replaceFrom(  0, "A" );
@@ -124,7 +124,7 @@ public class OpenEndRangeMapTest
     }
 
     @Test
-    public void shouldOnlyPruneWholeEntries() throws Exception
+    public void shouldOnlyPruneWholeEntries()
     {
         // given
         ranges.replaceFrom(  0, "A" );

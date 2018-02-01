@@ -41,7 +41,7 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     }
 
     @Override
-    public void start() throws BootstrapException
+    public void start()
     {
         coreTopologyService.addCoreTopologyListener( this );
     }

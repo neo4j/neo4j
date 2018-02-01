@@ -50,7 +50,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateUniquenessConstraintWithOwnedIndex() throws Exception
+    public void shouldCreateUniquenessConstraintWithOwnedIndex()
     {
         // GIVEN
         UniquenessConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -76,7 +76,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateNodeKeyConstraintWithOwnedIndex() throws Exception
+    public void shouldCreateNodeKeyConstraintWithOwnedIndex()
     {
         // GIVEN
         NodeKeyConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -102,7 +102,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRulesAreEqualBasedOnConstraintDescriptor() throws Exception
+    public void indexRulesAreEqualBasedOnConstraintDescriptor()
     {
         assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );

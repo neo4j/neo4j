@@ -279,7 +279,7 @@ public class DatabaseIndexIntegrationTest
         }
 
         @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException
+        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
         {
         }
 

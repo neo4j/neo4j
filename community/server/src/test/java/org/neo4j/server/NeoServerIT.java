@@ -35,13 +35,13 @@ import static org.junit.Assert.assertThat;
 public class NeoServerIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void whenServerIsStartedItshouldStartASingleDatabase() throws Exception
+    public void whenServerIsStartedItshouldStartASingleDatabase()
     {
         assertNotNull( server().getDatabase() );
     }
 
     @Test
-    public void shouldRedirectRootToBrowser() throws Exception
+    public void shouldRedirectRootToBrowser()
     {
         assertFalse( server().baseUri()
                 .toString()

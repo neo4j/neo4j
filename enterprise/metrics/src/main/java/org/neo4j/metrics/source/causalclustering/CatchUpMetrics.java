@@ -49,14 +49,14 @@ public class CatchUpMetrics extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         monitors.addMonitorListener( txPullRequestsMetric );
         registry.register( TX_PULL_REQUESTS_RECEIVED, (Gauge<Long>) txPullRequestsMetric::txPullRequestsReceived );
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         registry.remove( TX_PULL_REQUESTS_RECEIVED );
         monitors.removeMonitorListener( txPullRequestsMetric );

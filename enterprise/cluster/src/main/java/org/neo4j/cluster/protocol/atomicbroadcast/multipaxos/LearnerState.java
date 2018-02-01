@@ -42,7 +42,6 @@ public enum LearnerState
                                             Message<LearnerMessage> message,
                                             MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == LearnerMessage.join )
                     {

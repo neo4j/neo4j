@@ -60,7 +60,7 @@ public abstract class PrototypeState<Key> extends WritableState<Key>
     }
 
     @Override
-    public final void close() throws IOException
+    public final void close()
     {
         throw new UnsupportedOperationException( "should never be invoked" );
     }

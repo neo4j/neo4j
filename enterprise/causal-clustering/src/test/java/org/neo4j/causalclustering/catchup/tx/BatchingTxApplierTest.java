@@ -59,20 +59,20 @@ public class BatchingTxApplierTest
             NullLogProvider.getInstance() );
 
     @Before
-    public void before() throws Throwable
+    public void before()
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( startTxId );
         txApplier.start();
     }
 
     @After
-    public void after() throws Throwable
+    public void after()
     {
         txApplier.stop();
     }
 
     @Test
-    public void shouldHaveCorrectDefaults() throws Throwable
+    public void shouldHaveCorrectDefaults()
     {
         assertEquals( startTxId, txApplier.lastQueuedTxId() );
     }

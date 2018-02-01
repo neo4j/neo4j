@@ -574,7 +574,7 @@ public class Cluster
      */
     public static void dataOnMemberEventuallyLooksLike( CoreClusterMember memberThatChanges,
             CoreClusterMember memberToLookLike )
-            throws TimeoutException, InterruptedException
+            throws TimeoutException
     {
         await( () ->
                 {
@@ -614,7 +614,7 @@ public class Cluster
      * @param targets The databases expected to match the contents of <code>member</code>
      */
     public static <T extends ClusterMember> void dataMatchesEventually( DbRepresentation source, Collection<T> targets )
-            throws TimeoutException, InterruptedException
+            throws TimeoutException
     {
         for ( ClusterMember targetDB : targets )
         {

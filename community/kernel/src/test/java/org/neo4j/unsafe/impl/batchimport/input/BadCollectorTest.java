@@ -146,7 +146,7 @@ public class BadCollectorTest
     }
 
     @Test
-    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo() throws Exception
+    public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
     {
         // GIVEN
         try ( BadCollector collector = new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL ) )

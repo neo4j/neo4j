@@ -2265,7 +2265,7 @@ public class FullCheckIntegrationTest
         } );
     }
 
-    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2281,7 +2281,7 @@ public class FullCheckIntegrationTest
         writeToSchemaStore( schemaStore, uniqueRule );
     }
 
-    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws Exception
+    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds )
     {
         SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
 

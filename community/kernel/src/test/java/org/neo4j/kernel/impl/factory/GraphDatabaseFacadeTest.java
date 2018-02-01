@@ -81,7 +81,7 @@ public class GraphDatabaseFacadeTest
     }
 
     @Test
-    public void beginTransactionWithCustomTimeout() throws Exception
+    public void beginTransactionWithCustomTimeout()
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 

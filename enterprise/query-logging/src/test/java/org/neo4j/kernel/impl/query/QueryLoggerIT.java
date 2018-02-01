@@ -289,7 +289,7 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void disabledQueryLogging() throws IOException
+    public void disabledQueryLogging()
     {
         GraphDatabaseService database = databaseBuilder.setConfig( log_queries, Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
@@ -327,7 +327,7 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void queryLogRotation() throws Exception
+    public void queryLogRotation()
     {
         final File logsDirectory = new File( testDirectory.graphDbDir(), "logs" );
         databaseBuilder.setConfig( log_queries, Settings.TRUE )
@@ -438,7 +438,7 @@ public class QueryLoggerIT
     }
 
     @Test
-    public void logQueriesWithSystemTimeZoneIsConfigured() throws IOException
+    public void logQueriesWithSystemTimeZoneIsConfigured()
     {
         TimeZone defaultTimeZone = TimeZone.getDefault();
         try

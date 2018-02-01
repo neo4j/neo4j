@@ -51,7 +51,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
-            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
+            String versionToMigrateFrom, String versionToMigrateTo )
     {
         RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
         RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );

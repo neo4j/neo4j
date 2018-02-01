@@ -226,7 +226,7 @@ public class HeartbeatContextTest
         assertFalse( toTest.isFailed( instanceC ) );
     }
     @Test
-    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers() throws Exception
+    public void shouldConsultSuspicionsOnlyFromCurrentClusterMembers()
     {
         // Given
         InstanceId notInCluster = new InstanceId( -1 ); // backup, for example

@@ -174,7 +174,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return file;
     }
 
-    protected void ensureDirectoryExists( File dir ) throws IOException
+    protected void ensureDirectoryExists( File dir )
     {
         fs.mkdir( dir );
     }
@@ -329,7 +329,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
                                            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier );
 
-        public abstract void tearDownPageCache( T pageCache ) throws IOException;
+        public abstract void tearDownPageCache( T pageCache );
 
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String,File> fileConstructor = File::new;

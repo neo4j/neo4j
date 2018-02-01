@@ -38,7 +38,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldNotAllowReadsInNoneMode() throws Throwable
+    public void shouldNotAllowReadsInNoneMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.none() );
@@ -77,7 +77,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
     }
 
     @Test
-    public void shouldAllowReadsInReadMode() throws Throwable
+    public void shouldAllowReadsInReadMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.read() );
@@ -116,7 +116,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
     }
 
     @Test
-    public void shouldNotAllowReadAccessInWriteOnlyMode() throws Throwable
+    public void shouldNotAllowReadAccessInWriteOnlyMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.writeOnly() );
@@ -155,7 +155,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
     }
 
     @Test
-    public void shouldAllowReadsInWriteMode() throws Throwable
+    public void shouldAllowReadsInWriteMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.write() );
@@ -194,7 +194,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
     }
 
     @Test
-    public void shouldAllowReadsInFullMode() throws Throwable
+    public void shouldAllowReadsInFullMode()
     {
         // Given
         KernelTransactionImplementation tx = newTransaction( AUTH_DISABLED );

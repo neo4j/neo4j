@@ -107,7 +107,7 @@ public class AuthenticationIT
     }
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         this.client = cf.newInstance();
         this.address = server.lookupDefaultConnector();

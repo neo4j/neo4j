@@ -28,13 +28,13 @@ public interface IOCursor<T> extends RawCursor<T,IOException>
         return new IOCursor<M>()
         {
             @Override
-            public boolean next() throws IOException
+            public boolean next()
             {
                 return false;
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 

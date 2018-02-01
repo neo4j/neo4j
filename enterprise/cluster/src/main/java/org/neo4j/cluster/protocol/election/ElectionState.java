@@ -49,7 +49,6 @@ public enum ElectionState
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == ElectionMessage.created )
                     {
@@ -72,7 +71,6 @@ public enum ElectionState
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     Log log = context.getLog( ElectionState.class );
                     switch ( message.getMessageType() )

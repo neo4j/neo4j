@@ -158,7 +158,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws Exception
+        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
             // Heartbeat Response does not have any data attached to it.
             return null;
@@ -173,25 +173,25 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.Timeout.Election election ) throws Exception
+        public Void handle( RaftMessages.Timeout.Election election )
         {
             return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
             return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws Exception
+        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
             return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.PruneRequest pruneRequest ) throws Exception
+        public Void handle( RaftMessages.PruneRequest pruneRequest )
         {
             return null; // Not network
         }

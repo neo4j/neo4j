@@ -135,7 +135,7 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public long closeTransaction() throws TransactionFailureException
+    public long closeTransaction()
     {
         return 0;
     }

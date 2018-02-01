@@ -96,7 +96,6 @@ public class StoreUtil
     }
 
     public static void moveAwayDbWithPageCache( File from, File to, PageCache pageCache, FileFilter filter )
-            throws IOException
     {
         final Stream<FileHandle> fileHandleStream;
         try

@@ -51,7 +51,6 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
 
     @Test
     public void canCreateRelationshipBetweenTwoNodesWithLoopsThenDeleteOneOfTheNodesAndItsRelationships()
-            throws Exception
     {
         Node source = getGraphDb().createNode();
         Node target = getGraphDb().createNode();
@@ -69,7 +68,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void canDeleteNodeAfterDeletingItsRelationshipsIfThoseRelationshipsIncludeLoops() throws Exception
+    public void canDeleteNodeAfterDeletingItsRelationshipsIfThoseRelationshipsIncludeLoops()
     {
         Node node = getGraphDb().createNode();
 
@@ -179,7 +178,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void getSingleRelationshipOnNodeWithOneLoopOnly() throws Exception
+    public void getSingleRelationshipOnNodeWithOneLoopOnly()
     {
         Node node = getGraphDb().createNode();
         Relationship singleRelationship = node.createRelationshipTo( node, TEST );
@@ -196,7 +195,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void cannotDeleteNodeWithLoopStillAttached() throws Exception
+    public void cannotDeleteNodeWithLoopStillAttached()
     {
         // Given
         GraphDatabaseService db = getGraphDb();
@@ -223,7 +222,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void getOtherNodeFunctionsCorrectly() throws Exception
+    public void getOtherNodeFunctionsCorrectly()
     {
         Node node = getGraphDb().createNode();
         Relationship relationship = node.createRelationshipTo( node, TEST );
@@ -247,7 +246,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     }
 
     @Test
-    public void getNewlyCreatedLoopRelationshipFromCache() throws Exception
+    public void getNewlyCreatedLoopRelationshipFromCache()
     {
         Node node = getGraphDb().createNode();
         node.createRelationshipTo( getGraphDb().createNode(), TEST );

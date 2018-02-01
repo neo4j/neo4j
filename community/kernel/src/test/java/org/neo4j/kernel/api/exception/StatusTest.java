@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNotEquals;
 public class StatusTest
 {
     @Test
-    public void eachStatusCodeHasAUniqueCode() throws Exception
+    public void eachStatusCodeHasAUniqueCode()
     {
         // given
         Set<Object> codes = new HashSet<>();

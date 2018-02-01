@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.containsString;
 public class VisibleMigrationProgressMonitorTest
 {
     @Test
-    public void shouldReportAllPercentageSteps() throws Exception
+    public void shouldReportAllPercentageSteps()
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();

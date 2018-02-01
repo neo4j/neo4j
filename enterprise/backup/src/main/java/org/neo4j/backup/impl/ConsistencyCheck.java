@@ -46,7 +46,6 @@ public interface ConsistencyCheck
                         ProgressMonitorFactory progressFactory, LogProvider logProvider,
                         FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
                         ConsistencyFlags consistencyFlags )
-                        throws ConsistencyCheckFailedException
                 {
                     return true;
                 }

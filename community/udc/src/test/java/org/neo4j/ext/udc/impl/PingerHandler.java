@@ -37,7 +37,7 @@ public class PingerHandler implements HttpRequestHandler
 
     @Override
     public void handle( HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext )
-            throws HttpException, IOException
+            throws IOException
     {
         final String requestUri = httpRequest.getRequestLine().getUri();
         final int offset = requestUri.indexOf( '?' );

@@ -39,7 +39,7 @@ public class TimerTest
     public LifeRule lifeRule = new LifeRule( true );
 
     @Test
-    public void shouldHandleConcurrentResetAndInvocationOfHandler() throws Exception
+    public void shouldHandleConcurrentResetAndInvocationOfHandler()
     {
         // given
         Neo4jJobScheduler scheduler = lifeRule.add( new Neo4jJobScheduler() );

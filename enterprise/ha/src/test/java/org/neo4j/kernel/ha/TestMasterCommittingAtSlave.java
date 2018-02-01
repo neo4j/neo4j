@@ -212,7 +212,7 @@ public class TestMasterCommittingAtSlave
     }
 
     private TransactionPropagator newPropagator( int slaveCount, int replication, SlavePriority slavePriority,
-                                                 boolean... failingSlaves ) throws Exception
+                                                 boolean... failingSlaves )
     {
         slaves = instantiateSlaves( slaveCount, failingSlaves );
 

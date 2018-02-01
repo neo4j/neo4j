@@ -52,7 +52,7 @@ public class UpdatePullerScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         if ( pullIntervalMillis > 0 )
         {
@@ -71,7 +71,7 @@ public class UpdatePullerScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         if ( intervalJobHandle != null )
         {

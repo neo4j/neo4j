@@ -866,7 +866,7 @@ public abstract class ProcedureInteractionTestBase<S>
             }
 
             @Override
-            public void close() throws Exception
+            public void close()
             {
                 ClassWithProcedures.testLatch.set( null );
             }

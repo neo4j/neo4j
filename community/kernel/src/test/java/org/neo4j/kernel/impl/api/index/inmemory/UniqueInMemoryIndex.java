@@ -53,7 +53,6 @@ class UniqueInMemoryIndex extends InMemoryIndex
         {
             @Override
             protected void flushUpdates( Iterable<IndexEntryUpdate<?>> updates )
-                    throws IOException, IndexEntryConflictException
             {
                 for ( IndexEntryUpdate<?> update : updates )
                 {
@@ -89,7 +88,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
 
     @Override
     public void verifyDeferredConstraints( final PropertyAccessor accessor )
-            throws IndexEntryConflictException, IOException
+            throws IndexEntryConflictException
     {
         try
         {

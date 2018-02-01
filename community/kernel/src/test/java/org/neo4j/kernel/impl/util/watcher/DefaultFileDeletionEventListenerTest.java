@@ -29,7 +29,7 @@ import org.neo4j.logging.NullLogProvider;
 public class DefaultFileDeletionEventListenerTest
 {
     @Test
-    public void notificationInLogAboutFileDeletion() throws Exception
+    public void notificationInLogAboutFileDeletion()
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );

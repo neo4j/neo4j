@@ -180,7 +180,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
-    public void closingOfPageCacheMustBeConsideredSuccessfulEvenIfPageSwapperFactoryCloseThrows() throws Exception
+    public void closingOfPageCacheMustBeConsideredSuccessfulEvenIfPageSwapperFactoryCloseThrows()
     {
         AtomicInteger closed = new AtomicInteger();
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory()

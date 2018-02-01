@@ -120,7 +120,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         /*
          * We will start hazelcast in its own thread. Hazelcast blocks until the minimum cluster size is available

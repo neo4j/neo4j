@@ -36,7 +36,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 public class UnknownAddressMonitorTest
 {
     @Test
-    public void shouldLogFirstFailure() throws Exception
+    public void shouldLogFirstFailure()
     {
         // given
         Log log = mock( Log.class );
@@ -56,7 +56,7 @@ public class UnknownAddressMonitorTest
     }
 
     @Test
-    public void shouldThrottleLogging() throws Exception
+    public void shouldThrottleLogging()
     {
         // given
         Log log = mock( Log.class );
@@ -75,7 +75,7 @@ public class UnknownAddressMonitorTest
     }
 
     @Test
-    public void shouldResumeLoggingAfterQuietPeriod() throws Exception
+    public void shouldResumeLoggingAfterQuietPeriod()
     {
         // given
         Log log = mock( Log.class );

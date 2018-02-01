@@ -59,7 +59,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
 {
 
     @Override
-    public void setUp() throws Throwable
+    public void setUp()
     {
         // tests are required to setup database with specific configs
     }

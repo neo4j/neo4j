@@ -475,7 +475,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return version;
     }
 
-    private void incrementVersion( PageCursor cursor ) throws IOException
+    private void incrementVersion( PageCursor cursor )
     {
         if ( !cursor.isWriteLocked() )
         {
@@ -632,7 +632,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         updateRecord( record );
     }
 
-    private void setRecord( PageCursor cursor, Position position, long value ) throws IOException
+    private void setRecord( PageCursor cursor, Position position, long value )
     {
         if ( !cursor.isWriteLocked() )
         {

@@ -51,13 +51,13 @@ public class ManualAcquireLockTest
     private Worker worker;
 
     @Before
-    public void doBefore() throws Exception
+    public void doBefore()
     {
         worker = new Worker();
     }
 
     @After
-    public void doAfter() throws Exception
+    public void doAfter()
     {
         worker.close();
     }
@@ -94,7 +94,7 @@ public class ManualAcquireLockTest
     }
 
     @Test
-    public void canOnlyReleaseOnce() throws Exception
+    public void canOnlyReleaseOnce()
     {
         Node node = getGraphDb().createNode();
 

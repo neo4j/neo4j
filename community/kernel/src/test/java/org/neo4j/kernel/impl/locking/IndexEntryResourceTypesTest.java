@@ -72,13 +72,13 @@ public class IndexEntryResourceTypesTest
     }
 
     @Test
-    public void mustBeAbleToHashAllTypesWith220HashFunction() throws Exception
+    public void mustBeAbleToHashAllTypesWith220HashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_2_2_0 );
     }
 
     @Test
-    public void mustBeAbleToHashAllTypesWith4xHashFunction() throws Exception
+    public void mustBeAbleToHashAllTypesWith4xHashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_4_x );
     }

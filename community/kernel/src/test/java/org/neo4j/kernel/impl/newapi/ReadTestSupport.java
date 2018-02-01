@@ -45,7 +45,7 @@ class ReadTestSupport implements KernelAPIReadTestSupport
     }
 
     @Override
-    public void setup( File storeDir, Consumer<GraphDatabaseService> create ) throws IOException
+    public void setup( File storeDir, Consumer<GraphDatabaseService> create )
     {
         GraphDatabaseBuilder graphDatabaseBuilder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir );
         settings.forEach( graphDatabaseBuilder::setConfig );

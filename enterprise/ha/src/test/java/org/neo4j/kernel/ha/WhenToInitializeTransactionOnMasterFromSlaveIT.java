@@ -74,7 +74,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
     }
 
     @Test
-    public void shouldNotInitializeTxOnReadOnlyOpsOnNeoXaDS() throws Exception
+    public void shouldNotInitializeTxOnReadOnlyOpsOnNeoXaDS()
     {
         long nodeId = 0L;
 

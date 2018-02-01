@@ -90,7 +90,7 @@ public class ResponsePackerIT
             ((TransactionObligationResponse) response).accept( new Response.Handler()
             {
                 @Override
-                public void obligation( long txId ) throws IOException
+                public void obligation( long txId )
                 {
                     assertEquals( expectedTxId, txId );
                 }

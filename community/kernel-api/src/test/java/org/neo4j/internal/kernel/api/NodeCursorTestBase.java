@@ -74,7 +74,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     }
 
     @Test
-    public void shouldScanNodes() throws Exception
+    public void shouldScanNodes()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -93,7 +93,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     }
 
     @Test
-    public void shouldAccessNodesByReference() throws Exception
+    public void shouldAccessNodesByReference()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
@@ -112,7 +112,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     }
 
     @Test
-    public void shouldNotFindDeletedNode() throws Exception
+    public void shouldNotFindDeletedNode()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
@@ -126,7 +126,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     }
 
     @Test
-    public void shouldReadLabels() throws Exception
+    public void shouldReadLabels()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )

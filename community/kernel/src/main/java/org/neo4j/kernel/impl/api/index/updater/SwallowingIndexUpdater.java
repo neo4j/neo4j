@@ -36,7 +36,7 @@ public final class SwallowingIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close()
     {
         // nothing to close
     }

@@ -205,7 +205,7 @@ public class ConfigLoaderTest
     }
 
     @Test
-    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist() throws IOException
+    public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist()
     {
         // Given
         File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );

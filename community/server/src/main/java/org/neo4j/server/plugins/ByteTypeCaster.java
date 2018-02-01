@@ -38,7 +38,7 @@ class ByteTypeCaster extends TypeCaster
 
     @Override
     @SuppressWarnings( "boxing" )
-    byte[] convert( Object[] data ) throws BadInputException
+    byte[] convert( Object[] data )
     {
         Byte[] incoming = (Byte[]) data;
         byte[] result = new byte[incoming.length];

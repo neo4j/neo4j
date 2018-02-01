@@ -88,7 +88,7 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
 
     @Override
     public final void visitAdded( Long relationshipId )
-            throws ConstraintValidationException, CreateConstraintFailureException
+            throws ConstraintValidationException
     {
         visitAddedRelationship( relationshipId );
     }

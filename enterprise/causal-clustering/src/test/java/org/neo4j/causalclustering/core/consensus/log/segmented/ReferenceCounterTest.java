@@ -31,14 +31,14 @@ public class ReferenceCounterTest
     private ReferenceCounter refCount = new ReferenceCounter();
 
     @Test
-    public void shouldHaveValidInitialBehaviour() throws Exception
+    public void shouldHaveValidInitialBehaviour()
     {
         assertEquals( 0, refCount.get() );
         assertTrue( refCount.tryDispose() );
     }
 
     @Test
-    public void shouldNotBeAbleToDisposeWhenActive() throws Exception
+    public void shouldNotBeAbleToDisposeWhenActive()
     {
         // when
         refCount.increase();
@@ -48,7 +48,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldBeAbleToDisposeInactive() throws Exception
+    public void shouldBeAbleToDisposeInactive()
     {
         // given
         refCount.increase();
@@ -64,7 +64,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldNotGiveReferenceWhenDisposed() throws Exception
+    public void shouldNotGiveReferenceWhenDisposed()
     {
         // given
         refCount.tryDispose();
@@ -74,7 +74,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldAdjustCounterWithReferences() throws Exception
+    public void shouldAdjustCounterWithReferences()
     {
         // when / then
         refCount.increase();
@@ -94,7 +94,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldThrowIllegalStateExceptionWhenDecreasingPastZero() throws Exception
+    public void shouldThrowIllegalStateExceptionWhenDecreasingPastZero()
     {
         // given
         refCount.increase();
@@ -113,7 +113,7 @@ public class ReferenceCounterTest
     }
 
     @Test
-    public void shouldThrowIllegalStateExceptionWhenDecreasingOnDisposed() throws Exception
+    public void shouldThrowIllegalStateExceptionWhenDecreasingOnDisposed()
     {
         // given
         refCount.tryDispose();

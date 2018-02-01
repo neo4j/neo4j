@@ -38,13 +38,13 @@ public class UtilTest
     public final TestDirectory directory = TestDirectory.testDirectory();
 
     @Test
-    public void canonicalPath() throws Exception
+    public void canonicalPath()
     {
         assertNotNull( Util.canonicalPath( "foo" ).getParent() );
     }
 
     @Test
-    public void returnsAVersion() throws Exception
+    public void returnsAVersion()
     {
         assertNotNull( "A version should be returned", neo4jVersion() );
     }

@@ -78,7 +78,7 @@ public class GraphiteOutput implements Lifecycle, EventReporter
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {
         graphiteReporter.close();
     }

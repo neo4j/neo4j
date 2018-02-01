@@ -77,12 +77,12 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         log.info( "Starting..." );
         this.graph = dbFactory.newGraphDatabase( config, dependencies );
@@ -97,7 +97,7 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         if ( graph != null )
         {
@@ -110,7 +110,7 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
     }
 

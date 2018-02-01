@@ -36,7 +36,7 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 public class LocalDateTimeValueTest
 {
     @Test
-    public void shouldParseDate() throws Exception
+    public void shouldParseDate()
     {
         assertEquals(
                 localDateTime( date( 2017, 12, 17 ), localTime( 17, 14, 35, 123456789 ) ),
@@ -44,7 +44,7 @@ public class LocalDateTimeValueTest
     }
 
     @Test
-    public void shouldWriteDateTime() throws Exception
+    public void shouldWriteDateTime()
     {
         // given
         for ( LocalDateTimeValue value : new LocalDateTimeValue[] {

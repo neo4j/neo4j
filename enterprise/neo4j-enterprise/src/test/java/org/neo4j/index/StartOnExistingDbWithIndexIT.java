@@ -40,7 +40,7 @@ public class StartOnExistingDbWithIndexIT
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void startStopDatabaseWithIndex() throws Exception
+    public void startStopDatabaseWithIndex()
     {
         Label label = Label.label( "string" );
         String property = "property";

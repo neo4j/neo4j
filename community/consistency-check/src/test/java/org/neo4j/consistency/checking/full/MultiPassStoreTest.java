@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 public abstract class MultiPassStoreTest
 {
     @Test
-    public void shouldSkipOtherKindsOfRecords() throws Exception
+    public void shouldSkipOtherKindsOfRecords()
     {
         // given
         RecordAccess recordAccess = mock( RecordAccess.class );

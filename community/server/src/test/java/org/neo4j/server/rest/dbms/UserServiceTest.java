@@ -85,7 +85,7 @@ public class UserServiceTest
     }
 
     @After
-    public void tearDown() throws InvalidArgumentsException, IOException
+    public void tearDown() throws IOException
     {
         userRepository.delete( NEO4J_USER );
     }

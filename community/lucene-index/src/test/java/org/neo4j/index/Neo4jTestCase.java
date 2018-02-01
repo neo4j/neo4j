@@ -44,13 +44,13 @@ public abstract class Neo4jTestCase
     private Transaction tx;
 
     @BeforeClass
-    public static void setUpDb() throws Exception
+    public static void setUpDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
     @AfterClass
-    public static void tearDownDb() throws Exception
+    public static void tearDownDb()
     {
         graphDb.shutdown();
     }

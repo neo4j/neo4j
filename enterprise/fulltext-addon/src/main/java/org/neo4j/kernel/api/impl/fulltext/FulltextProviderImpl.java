@@ -102,7 +102,7 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void registerTransactionEventHandler() throws IOException
+    public void registerTransactionEventHandler()
     {
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }

@@ -77,7 +77,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIIT extends Exclus
      * Create an auto index for nodes with specific configuration.
      */
     @Test
-    public void shouldCreateANodeAutoIndexWithGivenFullTextConfiguration() throws Exception
+    public void shouldCreateANodeAutoIndexWithGivenFullTextConfiguration()
     {
         String responseBody = gen.get()
                 .expectedStatus( 201 )
@@ -92,7 +92,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIIT extends Exclus
      * Create an auto index for relationships with specific configuration.
      */
     @Test
-    public void shouldCreateARelationshipAutoIndexWithGivenFullTextConfiguration() throws Exception
+    public void shouldCreateARelationshipAutoIndexWithGivenFullTextConfiguration()
     {
         String responseBody = gen.get()
                 .expectedStatus( 201 )

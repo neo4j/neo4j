@@ -1405,7 +1405,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             getService().remove( waitOnSearchInterceptor.getName() );
         }
@@ -1443,7 +1443,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             getService().remove( failOnSearchInterceptor.getName() );
         }
@@ -1513,7 +1513,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             resetProperty( KEY_STORE, keyStore );
             resetProperty( KEY_STORE_PASSWORD, keyStorePassword );

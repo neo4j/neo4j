@@ -85,7 +85,7 @@ public class StandardBranchCollisionDetectorTest
         }
 
         @Override
-        public Object answer( InvocationOnMock invocation ) throws Throwable
+        public Object answer( InvocationOnMock invocation )
         {
             return Arrays.asList( endNode ).iterator();
         }

@@ -192,7 +192,7 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldGetAndSetRandomItems() throws Exception
+    public void shouldGetAndSetRandomItems()
     {
         // GIVEN
         Map<Integer,Object> key = new HashMap<>();

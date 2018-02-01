@@ -208,7 +208,7 @@ public class CommandApplicationProcess
         applierState.lastApplied = lastFlushed = coreSnapshot.prevIndex();
     }
 
-    synchronized long lastFlushed() throws IOException
+    synchronized long lastFlushed()
     {
         return lastFlushed;
     }
@@ -291,7 +291,7 @@ public class CommandApplicationProcess
         resumeApplier( "startup" );
     }
 
-    public synchronized void stop() throws InterruptedException, IOException
+    public synchronized void stop() throws IOException
     {
         pauseApplier( "shutdown" );
         coreState.flush( applierState.lastApplied );

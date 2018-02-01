@@ -101,7 +101,7 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void panicOnExceptionDuringCommandsApply() throws Exception
+    public void panicOnExceptionDuringCommandsApply()
     {
         IllegalStateException failure = new IllegalStateException( "Too many open files" );
         RecordStorageEngine engine = storageEngineRule
@@ -162,7 +162,7 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void mustFlushStoresWithGivenIOLimiter() throws Exception
+    public void mustFlushStoresWithGivenIOLimiter()
     {
         IOLimiter limiter = ( stamp, completedIOs, swapper ) -> 0;
         FileSystemAbstraction fs = fsRule.get();
@@ -199,7 +199,7 @@ public class RecordStorageEngineTest
         assertEquals( expectedStoreTypes, actualStoreTypes );
     }
 
-    private RecordStorageEngine buildRecordStorageEngine() throws Throwable
+    private RecordStorageEngine buildRecordStorageEngine()
     {
         return storageEngineRule
                 .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ) )

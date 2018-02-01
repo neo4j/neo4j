@@ -140,7 +140,7 @@ public class ValueMapperTest
     }
 
     @Test
-    public void shouldMapToJavaObject() throws Exception
+    public void shouldMapToJavaObject()
     {
         // given
         ValueMapper<Object> mapper = new Mapper();

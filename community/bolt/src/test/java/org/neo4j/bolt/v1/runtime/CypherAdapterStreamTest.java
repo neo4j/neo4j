@@ -256,7 +256,7 @@ public class CypherAdapterStreamTest
         stream.accept( new BoltResult.Visitor()
         {
             @Override
-            public void visit( QueryResult.Record record ) throws Exception
+            public void visit( QueryResult.Record record )
             {
 
             }

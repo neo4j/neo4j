@@ -29,7 +29,7 @@ import static org.junit.Assert.fail;
 public class SocketAddressParserTest
 {
     @Test
-    public void shouldCreateAdvertisedSocketAddressWithLeadingWhitespace() throws Exception
+    public void shouldCreateAdvertisedSocketAddressWithLeadingWhitespace()
     {
         // given
         String addressString = whitespace( 1 ) + "localhost:9999";
@@ -43,7 +43,7 @@ public class SocketAddressParserTest
     }
 
     @Test
-    public void shouldCreateAdvertisedSocketAddressWithTrailingWhitespace() throws Exception
+    public void shouldCreateAdvertisedSocketAddressWithTrailingWhitespace()
     {
         // given
         String addressString = "localhost:9999" + whitespace( 2 );

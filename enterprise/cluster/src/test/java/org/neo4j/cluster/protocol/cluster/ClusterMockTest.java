@@ -124,7 +124,7 @@ public class ClusterMockTest
 
     protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock,
                                 ClusterTestScript script )
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws URISyntaxException
     {
         this.script = script;
 

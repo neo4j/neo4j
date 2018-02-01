@@ -86,7 +86,6 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                throws ConstraintValidationException
         {
         }
 
@@ -97,14 +96,13 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodePropertyChanges( long id, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed, Iterator<Integer> removed ) throws ConstraintValidationException
+                Iterator<StorageProperty> changed, Iterator<Integer> removed )
         {
         }
 
         @Override
         public void visitRelPropertyChanges( long id, Iterator<StorageProperty> added,
                 Iterator<StorageProperty> changed, Iterator<Integer> removed )
-                        throws RelationshipPropertyExistenceException
         {
         }
 
@@ -116,7 +114,6 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitNodeLabelChanges( long id, Set<Integer> added, Set<Integer> removed )
-                throws ConstraintValidationException
         {
         }
 

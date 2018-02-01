@@ -44,7 +44,7 @@ public class RelationshipCountsProcessorTest
     private final CountsAccessor.Updater countsUpdater = mock( CountsAccessor.Updater.class );
 
     @Test
-    public void shouldHandleBigNumberOfLabelsAndRelationshipTypes() throws Exception
+    public void shouldHandleBigNumberOfLabelsAndRelationshipTypes()
     {
         /*
          * This test ensures that the RelationshipCountsProcessor does not attempt to allocate a negative amount

@@ -50,13 +50,13 @@ public class WritableIndexReferenceTest
     }
 
     @Test
-    public void useProvidedWriterAsIndexWriter() throws Exception
+    public void useProvidedWriterAsIndexWriter()
     {
         assertSame( indexWriter, indexReference.getWriter() );
     }
 
     @Test
-    public void stalingWritableIndex() throws Exception
+    public void stalingWritableIndex()
     {
         assertFalse( "Index is not stale by default.", indexReference.checkAndClearStale() );
         indexReference.setStale();

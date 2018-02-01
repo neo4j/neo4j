@@ -48,7 +48,7 @@ public class ClusterBindingHandlerTest
     private ClusterBindingHandler handler = new ClusterBindingHandler( delegate , NullLogProvider.getInstance() );
 
     @Test
-    public void shouldDropMessagesIfHasNotBeenStarted() throws Throwable
+    public void shouldDropMessagesIfHasNotBeenStarted()
     {
         // when
         handler.handle( heartbeat );

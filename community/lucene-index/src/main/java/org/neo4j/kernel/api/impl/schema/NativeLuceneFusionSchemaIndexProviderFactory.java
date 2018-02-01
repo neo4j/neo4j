@@ -64,7 +64,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     }
 
     @Override
-    public FusionSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public FusionSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
         File storeDir = context.storeDir();

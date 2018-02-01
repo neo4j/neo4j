@@ -57,7 +57,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodeNotInUse() throws Exception
+    public void shouldNotReportAnythingForNodeNotInUse()
     {
         // given
         NodeRecord node = notInUse( new NodeRecord( 42, false, 0, 0 ) );
@@ -70,7 +70,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodeThatDoesNotReferenceOtherRecords() throws Exception
+    public void shouldNotReportAnythingForNodeThatDoesNotReferenceOtherRecords()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -83,7 +83,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForNodeWithConsistentReferences() throws Exception
+    public void shouldNotReportAnythingForNodeWithConsistentReferences()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
@@ -98,7 +98,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipNotInUse() throws Exception
+    public void shouldReportRelationshipNotInUse()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, 11 ) );
@@ -114,7 +114,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotInUse() throws Exception
+    public void shouldReportPropertyNotInUse()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, 11 ) );
@@ -129,7 +129,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotFirstInChain() throws Exception
+    public void shouldReportPropertyNotFirstInChain()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, 11 ) );
@@ -145,7 +145,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipForOtherNodes() throws Exception
+    public void shouldReportRelationshipForOtherNodes()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -160,7 +160,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipNotFirstInSourceChain() throws Exception
+    public void shouldReportRelationshipNotFirstInSourceChain()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -179,7 +179,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportRelationshipNotFirstInTargetChain() throws Exception
+    public void shouldReportRelationshipNotFirstInTargetChain()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -198,7 +198,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportLoopRelationshipNotFirstInTargetAndSourceChains() throws Exception
+    public void shouldReportLoopRelationshipNotFirstInTargetAndSourceChains()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, 7, NONE ) );
@@ -218,7 +218,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportLabelNotInUse() throws Exception
+    public void shouldReportLabelNotInUse()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -236,7 +236,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportDynamicLabelsNotInUse() throws Exception
+    public void shouldReportDynamicLabelsNotInUse()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -268,7 +268,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportDuplicateLabels() throws Exception
+    public void shouldReportDuplicateLabels()
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -288,7 +288,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportDuplicateDynamicLabels() throws Exception
+    public void shouldReportDuplicateDynamicLabels()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -317,7 +317,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportOutOfOrderLabels() throws Exception
+    public void shouldReportOutOfOrderLabels()
     {
         // given
         final NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -348,7 +348,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldProperlyReportOutOfOrderLabelsThatAreFarAway() throws Exception
+    public void shouldProperlyReportOutOfOrderLabelsThatAreFarAway()
     {
         // given
         final NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
@@ -388,7 +388,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldReportOutOfOrderDynamicLabels() throws Exception
+    public void shouldReportOutOfOrderDynamicLabels()
     {
         // given
         long[] labelIds = createLabels( 100 );
@@ -419,7 +419,7 @@ public class NodeRecordCheckTest
     }
 
     @Test
-    public void shouldDynamicLabelRecordsNotInUse() throws Exception
+    public void shouldDynamicLabelRecordsNotInUse()
     {
         // given
         long[] labelIds = createLabels( 100 );

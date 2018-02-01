@@ -46,7 +46,7 @@ public class InMemoryRaftLog implements RaftLog
         return newAppendIndex;
     }
 
-    private synchronized long appendSingle( RaftLogEntry logEntry ) throws IOException
+    private synchronized long appendSingle( RaftLogEntry logEntry )
     {
         Objects.requireNonNull( logEntry );
         if ( logEntry.term() >= term )
@@ -142,7 +142,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public synchronized RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
+    public synchronized RaftLogCursor getEntryCursor( long fromIndex )
     {
         return new RaftLogCursor()
         {
@@ -150,7 +150,7 @@ public class InMemoryRaftLog implements RaftLog
             RaftLogEntry current;
 
             @Override
-            public boolean next() throws IOException
+            public boolean next()
             {
                 currentIndex++;
                 boolean hasNext;
@@ -175,7 +175,7 @@ public class InMemoryRaftLog implements RaftLog
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 

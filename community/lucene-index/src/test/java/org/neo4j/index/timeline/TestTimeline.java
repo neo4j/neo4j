@@ -48,7 +48,7 @@ public class TestTimeline
     private GraphDatabaseService db;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
@@ -144,7 +144,7 @@ public class TestTimeline
     // ======== one for nodes and one for relationships
 
     private void makeSureFirstAndLastAreReturnedCorrectly( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline, 223456, 12345, 432234 );
         try ( Transaction tx = db.beginTx() )
@@ -156,7 +156,7 @@ public class TestTimeline
     }
 
     private void makeSureRangesAreReturnedInCorrectOrder( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 400000, 100000, 500000, 600000, 900000, 800000 );
@@ -169,7 +169,7 @@ public class TestTimeline
     }
 
     private void makeSureRangesAreReturnedInCorrectReversedOrder( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 200000, 199999, 400000, 100000, 500000, 600000, 900000, 800000 );
@@ -182,7 +182,7 @@ public class TestTimeline
     }
 
     private void makeSureWeCanQueryLowerDefaultThan1970( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer,Long>> timestamps = createTimestamps( creator, timeline, -10000, 0, 10000 );
         try ( Transaction tx = db.beginTx() )
@@ -194,7 +194,7 @@ public class TestTimeline
     }
 
     private void makeSureUncommittedChangesAreSortedCorrectly( EntityCreator<PropertyContainer> creator,
-            TimelineIndex<PropertyContainer> timeline ) throws Exception
+            TimelineIndex<PropertyContainer> timeline )
     {
         LinkedList<Pair<PropertyContainer, Long>> timestamps = createTimestamps( creator, timeline,
                 300000, 100000, 500000, 900000, 800000 );

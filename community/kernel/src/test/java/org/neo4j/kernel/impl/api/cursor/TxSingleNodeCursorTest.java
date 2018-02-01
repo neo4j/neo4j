@@ -38,7 +38,7 @@ public class TxSingleNodeCursorTest
     } );
 
     @Test
-    public void shouldNotLoopForeverWhenNodesAreAddedToTheTxState() throws Exception
+    public void shouldNotLoopForeverWhenNodesAreAddedToTheTxState()
     {
         // given
         int nodeId = 42;

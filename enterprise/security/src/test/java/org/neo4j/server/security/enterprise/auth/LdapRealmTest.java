@@ -412,7 +412,7 @@ public class LdapRealmTest
     }
 
     @Test
-    public void shouldLogSuccessfulAuthorizationQueries() throws Exception
+    public void shouldLogSuccessfulAuthorizationQueries()
     {
         // Given
         when( config.get( SecuritySettings.ldap_use_starttls ) ).thenReturn( true );
