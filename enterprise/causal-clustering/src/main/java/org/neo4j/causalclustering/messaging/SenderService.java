@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.messaging;
 
 import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -62,7 +61,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     @Override
     public void send( AdvertisedSocketAddress to, Message message, boolean block )
     {
-        AtomicReference<CompletableFuture<Void>> future = new AtomicReference<>( new CompletableFuture<>() );
+        CompletableFuture<Void> future;
         serviceLock.readLock().lock();
         try
         {
@@ -73,7 +72,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
             Channel channel = channel( to );
 
-            future.set( channel.writeAndFlush( message ) );
+            future = channel.writeAndFlush( message );
         }
         finally
         {
@@ -82,7 +81,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( block )
         {
-            future.get().join();
+            future.join();
         }
     }
 
