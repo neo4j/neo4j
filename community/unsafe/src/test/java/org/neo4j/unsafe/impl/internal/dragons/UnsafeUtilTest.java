@@ -276,7 +276,7 @@ public class UnsafeUtilTest
     public void mustSupportReadingAndWritingOfPrimitivesToMemory()
     {
         int sizeInBytes = 8;
-        long address = allocateMemory( sizeInBytes, GlobalMemoryTracker.INSTANCE );
+        long address = allocateMemory( sizeInBytes );
         try
         {
             putByte( address, (byte) 1 );
@@ -483,7 +483,7 @@ public class UnsafeUtilTest
     public void directByteBufferCreationAndInitialisation() throws Exception
     {
         int sizeInBytes = 313;
-        long address = allocateMemory( sizeInBytes, GlobalMemoryTracker.INSTANCE );
+        long address = allocateMemory( sizeInBytes );
         try
         {
             setMemory( address, sizeInBytes, (byte) 0 );
@@ -504,7 +504,7 @@ public class UnsafeUtilTest
             a.limit( 202 );
 
             int sizeInBytes2 = 424;
-            long address2 = allocateMemory( sizeInBytes2, GlobalMemoryTracker.INSTANCE );
+            long address2 = allocateMemory( sizeInBytes2 );
             try
             {
                 setMemory( address2, sizeInBytes2, (byte) 0 );

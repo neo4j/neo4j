@@ -119,10 +119,10 @@ public class MemoryAllocatorTest
     }
 
     @Test
-    public void trackMemoryAllocations()
+    public void trackMemoryAllocations() throws Throwable
     {
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
-        MemoryAllocator allocator = MemoryAllocator.createAllocator( "2m", memoryTracker );
+        GrabAllocator allocator = (GrabAllocator) MemoryAllocator.createAllocator( "2m", memoryTracker );
 
         assertEquals( 0, memoryTracker.usedDirectMemory() );
 
@@ -130,7 +130,8 @@ public class MemoryAllocatorTest
 
         assertEquals( ByteUnit.mebiBytes( 1 ), memoryTracker.usedDirectMemory() );
 
-        allocator.close();
+        //noinspection FinalizeCalledExplicitly
+        allocator.finalize();
         assertEquals( 0, memoryTracker.usedDirectMemory() );
     }
 }

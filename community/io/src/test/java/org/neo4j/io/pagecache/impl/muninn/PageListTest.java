@@ -51,7 +51,6 @@ import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.memory.GlobalMemoryTracker;
-import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -89,7 +88,7 @@ public class PageListTest
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = MemoryAllocator.createAllocator( "1 MiB", new LocalMemoryTracker() );
+        mman = MemoryAllocator.createAllocator( "1 MiB", GlobalMemoryTracker.INSTANCE );
     }
 
     @AfterClass

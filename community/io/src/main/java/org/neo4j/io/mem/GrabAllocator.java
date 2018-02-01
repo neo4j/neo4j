@@ -166,13 +166,8 @@ public final class GrabAllocator implements MemoryAllocator
     protected synchronized void finalize() throws Throwable
     {
         super.finalize();
-        close();
-    }
-
-    @Override
-    public void close()
-    {
         Grab current = grabs;
+
         while ( current != null )
         {
             current.free();

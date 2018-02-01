@@ -59,7 +59,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             allocatedBytes = dataSize;
-            this.allocatedAddress = this.address = allocateMemory( allocatedBytes );
+            this.allocatedAddress = this.address = UnsafeUtil.allocateMemory( allocatedBytes, this.allocationTracker );
         }
         else
         {
@@ -75,7 +75,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
             }
 
             allocatedBytes = dataSize + Integer.BYTES - 1;
-            this.allocatedAddress = allocateMemory( allocatedBytes );
+            this.allocatedAddress = UnsafeUtil.allocateMemory( allocatedBytes, this.allocationTracker );
             this.address = UnsafeUtil.alignedMemory( allocatedAddress, Integer.BYTES );
         }
 
@@ -196,7 +196,7 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
     @Override
     public void close()
     {
-        deallocateMemory();
+        UnsafeUtil.free( allocatedAddress, allocatedBytes, allocationTracker );
     }
 
     protected static void alignmentSafePutLongAsTwoInts( long address, long value )
@@ -226,13 +226,4 @@ public abstract class UnsafeTable<VALUE> extends PowerOfTwoQuantizedTable<VALUE>
         return lsb | (msb << Integer.SIZE);
     }
 
-    private long allocateMemory( long bytesToAllocate )
-    {
-        return UnsafeUtil.allocateMemory( bytesToAllocate, allocationTracker );
-    }
-
-    private void deallocateMemory()
-    {
-        UnsafeUtil.free( allocatedAddress, allocatedBytes, allocationTracker );
-    }
 }

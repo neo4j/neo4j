@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -57,7 +56,7 @@ public class SequenceLockStressIT
     @Before
     public void allocateLock()
     {
-        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES, GlobalMemoryTracker.INSTANCE );
+        lockAddr = UnsafeUtil.allocateMemory( Long.BYTES );
         UnsafeUtil.putLong( lockAddr, 0 );
     }
 

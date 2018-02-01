@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
 import static java.lang.String.format;
@@ -344,6 +345,11 @@ public final class UnsafeUtil
         {
             return new String( chars );
         }
+    }
+
+    public static long allocateMemory( long sizeInBytes )
+    {
+        return allocateMemory( sizeInBytes, GlobalMemoryTracker.INSTANCE );
     }
 
     /**

@@ -36,6 +36,7 @@ import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
@@ -83,6 +84,11 @@ public class Primitive
                 VALUE_MARKER, NO_MONITOR );
     }
 
+    public static PrimitiveLongSet offHeapLongSet()
+    {
+        return offHeapLongSet( GlobalMemoryTracker.INSTANCE );
+    }
+
     public static PrimitiveLongSet offHeapLongSet( MemoryAllocationTracker allocationTracker )
     {
         return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
@@ -114,6 +120,11 @@ public class Primitive
         return new PrimitiveLongLongHashMap( new LongKeyLongValueTable( initialCapacity ), NO_MONITOR );
     }
 
+    public static PrimitiveLongLongMap offHeapLongLongMap()
+    {
+        return offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
+    }
+
     public static PrimitiveLongLongMap offHeapLongLongMap( MemoryAllocationTracker allocationTracker )
     {
         return offHeapLongLongMap( DEFAULT_OFFHEAP_CAPACITY, allocationTracker );
@@ -143,6 +154,11 @@ public class Primitive
     {
         return new PrimitiveIntHashSet( new IntKeyTable<>( initialCapacity, VALUE_MARKER ),
                 VALUE_MARKER, NO_MONITOR );
+    }
+
+    public static PrimitiveIntSet offHeapIntSet()
+    {
+        return offHeapIntSet( GlobalMemoryTracker.INSTANCE );
     }
 
     public static PrimitiveIntSet offHeapIntSet( MemoryAllocationTracker allocationTracker )
