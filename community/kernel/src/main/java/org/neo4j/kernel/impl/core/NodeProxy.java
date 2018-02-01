@@ -246,7 +246,7 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
 
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
         }
@@ -577,7 +577,7 @@ public class NodeProxy implements Node
     public void addLabel( Label label )
     {
         KernelTransaction transaction = spi.kernelTransaction();
-        try
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             transaction.dataWrite().nodeAddLabel( getId(),
                     transaction.tokenWrite().labelGetOrCreateForName( label.name() ) );
