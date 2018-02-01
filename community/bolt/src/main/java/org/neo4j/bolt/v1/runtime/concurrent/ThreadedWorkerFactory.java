@@ -58,7 +58,7 @@ public class ThreadedWorkerFactory extends LifecycleAdapter implements WorkerFac
         this.connector = connector;
         this.logging = logging;
         this.clock = clock;
-        this.threadPool = new ThreadPoolExecutor( 200, 1000, 20, TimeUnit.MINUTES,
+        this.threadPool = new ThreadPoolExecutor( 200, Integer.MAX_VALUE, 20, TimeUnit.MINUTES,
                 new SynchronousQueue<>(), new BoltNamedThreadFactory( "neo4j.Session" ) );
     }
 
