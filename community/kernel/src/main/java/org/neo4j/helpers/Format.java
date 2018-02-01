@@ -134,6 +134,13 @@ public class Format
             }
         }
 
+        if ( builder.length() == 0 )
+        {
+            // The value is too low to extract any meaningful numbers with the given unit brackets.
+            // So we append a zero of the lowest unit.
+            builder.append( "0" ).append( shortName( lowestGranularity ) );
+        }
+
         return builder.toString();
     }
 
