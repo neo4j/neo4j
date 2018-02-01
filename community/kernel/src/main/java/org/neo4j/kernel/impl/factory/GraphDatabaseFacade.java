@@ -476,7 +476,11 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 {
                     if ( cursor.next() )
                     {
-                        return newRelationshipProxy( cursor.relationshipReference() );
+                        return newRelationshipProxy(
+                                cursor.relationshipReference(),
+                                cursor.sourceNodeReference(),
+                                cursor.label(),
+                                cursor.targetNodeReference() );
                     }
                     else
                     {
