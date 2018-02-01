@@ -35,7 +35,6 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.{IndexQuery, Read, TokenRead}
 import org.neo4j.internal.kernel.api.{Read, TokenRead}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator

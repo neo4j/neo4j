@@ -128,8 +128,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Long], relVar, invoke(generator.load(cursor),
                                                    method[RelationshipSelectionCursor, Long]("relationshipReference")))
   }
-
-  private def relExtractor(relVar: String) = s"${relVar}Extractor"
   private def relCursor(relVar: String) = s"${relVar}Iter"
 
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
@@ -167,26 +165,17 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def lookupRelationshipTypeIdE(typeName: String) =
     invoke(tokenRead, relationshipTypeGetForName, constant(typeName))
 
-  override def hasNextNode(iterVar: String) =
-    invoke(generator.load(iterVar), hasNextLong)
-
   override def advanceNodeCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
 
   override def advanceNodeLabelIndexCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeLabelIndexCursor, Boolean]("next"))
 
-<<<<<<< HEAD
   override def advanceRelationshipSelectionCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[RelationshipSelectionCursor, Boolean]("next"))
 
-=======
   override def advanceNodeValueIndexCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeValueIndexCursor, Boolean]("next"))
-
-  override def hasNextRelationship(iterVar: String) =
-    invoke(generator.load(iterVar), hasMoreRelationship)
->>>>>>> Use Kernel API for index seek in compiled runtime
 
   override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) =
     using(generator.whileLoop(test)) { body =>
