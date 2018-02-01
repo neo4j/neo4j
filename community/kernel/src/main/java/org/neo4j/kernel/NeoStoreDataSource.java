@@ -681,6 +681,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         final NeoStoreFileListing fileListing = new NeoStoreFileListing( storeDir, logFiles, labelScanStore,
                 indexingService, explicitIndexProviderLookup, storageEngine );
+        dependencies.satisfyDependency( fileListing );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }

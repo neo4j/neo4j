@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,6 @@ import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
-import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class NeoStoreFileListing
@@ -52,10 +52,11 @@ public class NeoStoreFileListing
     private final IndexingService indexingService;
     private final ExplicitIndexProviderLookup explicitIndexProviders;
     private final StorageEngine storageEngine;
-    private final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
+    private static final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
-    private final Function<File, StoreFileMetadata> logFileMapper =
+    private static final Function<File, StoreFileMetadata> logFileMapper =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE, true );
+    private final Collection<StoreFileProvider> additionalProviders;
 
     public NeoStoreFileListing( File storeDir, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
@@ -67,6 +68,7 @@ public class NeoStoreFileListing
         this.indexingService = indexingService;
         this.explicitIndexProviders = explicitIndexProviders;
         this.storageEngine = storageEngine;
+        this.additionalProviders = new CopyOnWriteArrayList<>();
     }
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
@@ -74,14 +76,33 @@ public class NeoStoreFileListing
         List<StoreFileMetadata> files = new ArrayList<>();
         gatherNonRecordStores( files, includeLogs );
         gatherNeoStoreFiles( files );
-        Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-        Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
-        Resource explicitIndexSnapshots = gatherExplicitIndexFiles( files );
+        List<Resource> additionalResources = new ArrayList<>();
+        additionalResources.add( gatherLabelScanStoreFiles( files ) );
+        additionalResources.add( gatherSchemaIndexFiles( files ) );
+        additionalResources.add( gatherExplicitIndexFiles( files ) );
+        for ( StoreFileProvider additionalProvider : additionalProviders )
+        {
+            additionalResources.add( additionalProvider.addFilesTo( files ) );
+        }
 
         placeMetaDataStoreLast( files );
 
-        return resourceIterator( files.iterator(),
-                new MultiResource( asList( labelScanStoreSnapshot, schemaIndexSnapshots, explicitIndexSnapshots ) ) );
+        return resourceIterator( files.iterator(), new MultiResource( additionalResources ) );
+    }
+
+    public void registerStoreFileProvider( StoreFileProvider provider )
+    {
+        additionalProviders.add( provider );
+    }
+
+    public interface StoreFileProvider
+    {
+        /**
+         * @param fileMetadataCollection the collection to add the files to
+         * @return A {@link Resource} that should be closed when we are done working with the files added to the collection
+         * @throws IOException if the provider is unable to prepare the file listing
+         */
+        Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection ) throws IOException;
     }
 
     private void placeMetaDataStoreLast( List<StoreFileMetadata> files )
@@ -155,7 +176,7 @@ public class NeoStoreFileListing
         return snapshot;
     }
 
-    private List<StoreFileMetadata> getSnapshotFilesMetadata( ResourceIterator<File> snapshot )
+    public static List<StoreFileMetadata> getSnapshotFilesMetadata( ResourceIterator<File> snapshot )
     {
         return snapshot.stream().map( toNotAStoreTypeFile ).collect( Collectors.toList() );
     }
@@ -165,11 +186,11 @@ public class NeoStoreFileListing
         targetFiles.addAll( storageEngine.listStorageFiles() );
     }
 
-    private static final class MultiResource implements Resource
+    public static final class MultiResource implements Resource
     {
         private final Collection<? extends Resource> snapshots;
 
-        private MultiResource( Collection<? extends Resource> resources )
+        public MultiResource( Collection<? extends Resource> resources )
         {
             this.snapshots = resources;
         }
