@@ -101,7 +101,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         String spatialFailure = null;
         try
         {
-            spatialFailure = spatialProvider.getPopulationFailure( indexId );
+            spatialFailure = spatialProvider.getPopulationFailure( indexId, descriptor );
         }
         catch ( IllegalStateException e )
         {   // Just catch

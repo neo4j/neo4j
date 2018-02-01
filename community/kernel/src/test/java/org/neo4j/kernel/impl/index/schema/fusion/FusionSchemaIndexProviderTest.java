@@ -163,7 +163,7 @@ public class FusionSchemaIndexProviderTest
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
-        when( spatialProvider.getPopulationFailure( anyLong() ) ).thenThrow( spatialThrow );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
         try
@@ -187,7 +187,7 @@ public class FusionSchemaIndexProviderTest
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
-        when( spatialProvider.getPopulationFailure( anyLong() ) ).thenThrow( spatialThrow );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
         assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( nativeFailure ) );
@@ -203,11 +203,11 @@ public class FusionSchemaIndexProviderTest
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
         String spatialFailure = "spatial failure";
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
-        when( spatialProvider.getPopulationFailure( anyLong() ) ).thenReturn( spatialFailure );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( spatialFailure );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( luceneThrow );
         // then
-        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( spatialFailure ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( spatialFailure ) );
     }
 
     @Test
@@ -221,7 +221,7 @@ public class FusionSchemaIndexProviderTest
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
         String luceneFailure = "lucene failure";
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( nativeThrow );
-        when( spatialProvider.getPopulationFailure( anyLong() ) ).thenThrow( spatialThrow );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
         assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) ), containsString( luceneFailure ) );
@@ -237,11 +237,11 @@ public class FusionSchemaIndexProviderTest
         String nativeFailure = "native failure";
         IllegalStateException spatialThrow = new IllegalStateException( "no spatial failure" );
         String luceneFailure = "lucene failure";
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
-        when( spatialProvider.getPopulationFailure( anyLong() ) ).thenThrow( spatialThrow );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
+        when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenThrow( spatialThrow );
+        when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
-        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0 );
+        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );
         assertThat( populationFailure, containsString( nativeFailure ) );
         assertThat( populationFailure, containsString( luceneFailure ) );
     }
@@ -257,7 +257,7 @@ public class FusionSchemaIndexProviderTest
         String spatialFailure = "native failure";
         String luceneFailure = "lucene failure";
         when( nativeProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( nativeFailure );
-        when( spatialProvider.getPopulationFailure( anyLong() ) ).thenReturn( spatialFailure );
+        when( spatialProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( spatialFailure );
         when( luceneProvider.getPopulationFailure( anyLong(), any( IndexDescriptor.class ) ) ).thenReturn( luceneFailure );
         // then
         String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, forLabel( 0, 0 ) );

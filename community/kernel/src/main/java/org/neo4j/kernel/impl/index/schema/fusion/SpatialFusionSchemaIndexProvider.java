@@ -98,7 +98,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         try
         {
@@ -106,7 +106,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
             // We find the first failed index failure message
             for ( SpatialKnownIndex index : indexesFor( indexId ).values() )
             {
-                String indexFailure = index.readPopulationFailure();
+                String indexFailure = index.readPopulationFailure( descriptor );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -136,7 +136,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
             {
                 try
                 {
-                    switch ( index.readState() )
+                    switch ( index.readState( descriptor ) )
                     {
                     case FAILED:
                         return InternalIndexState.FAILED;
@@ -223,18 +223,6 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
                     }
                 }
             }
-        }
-    }
-
-    public static class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
-    {
-        @Override
-        public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
-        {
-            return (layoutIdentifier == SpatialLayoutUnique.IDENTIFIER && majorVersion == SpatialLayoutUnique.MAJOR_VERSION &&
-                    minorVersion == SpatialLayoutUnique.MINOR_VERSION) ||
-                    (layoutIdentifier == SpatialLayoutNonUnique.IDENTIFIER && majorVersion == SpatialLayoutNonUnique.MAJOR_VERSION &&
-                            minorVersion == SpatialLayoutNonUnique.MINOR_VERSION);
         }
     }
 }

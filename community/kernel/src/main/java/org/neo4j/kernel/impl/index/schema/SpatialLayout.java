@@ -67,13 +67,13 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchem
     }
 
     @Override
-    public int keySize()
+    public int keySize( SpatialSchemaKey key )
     {
         return SpatialSchemaKey.SIZE;
     }
 
     @Override
-    public int valueSize()
+    public int valueSize( NativeSchemaValue value )
     {
         return NativeSchemaValue.SIZE;
     }
@@ -91,14 +91,20 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchem
     }
 
     @Override
-    public void readKey( PageCursor cursor, SpatialSchemaKey into )
+    public void readKey( PageCursor cursor, SpatialSchemaKey into, int keySize )
     {
         into.rawValueBits = cursor.getLong();
         into.setEntityId( cursor.getLong() );
     }
 
     @Override
-    public void readValue( PageCursor cursor, NativeSchemaValue into )
+    public void readValue( PageCursor cursor, NativeSchemaValue into, int valueSize )
     {
+    }
+
+    @Override
+    public boolean fixedSize()
+    {
+        return true;
     }
 }

@@ -53,6 +53,7 @@ public class SpatialFusionSchemaIndexProviderTest
 
     private Map<CoordinateReferenceSystem, SpatialKnownIndex> indexMap;
     private SpatialFusionSchemaIndexProvider provider;
+    private IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
     @Before
     public void setup()
@@ -72,8 +73,6 @@ public class SpatialFusionSchemaIndexProviderTest
     @Test
     public void shouldReportPopulatingIfAnyIsPopulating() throws Exception
     {
-        IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
-
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
         {
             // when
@@ -86,7 +85,7 @@ public class SpatialFusionSchemaIndexProviderTest
             {
                 setInitialState( index, InternalIndexState.POPULATING );
                 // then
-                assertEquals( InternalIndexState.POPULATING, provider.getInitialState( 0, indexDescriptor ) );
+                assertEquals( InternalIndexState.POPULATING, provider.getInitialState( 0, descriptor ) );
                 setInitialState( index, state );
             }
         }
@@ -99,12 +98,12 @@ public class SpatialFusionSchemaIndexProviderTest
         // ... no failure
         for ( SpatialKnownIndex index : indexMap.values() )
         {
-            when( index.readPopulationFailure() ).thenReturn( null );
+            when( index.readPopulationFailure( descriptor ) ).thenReturn( null );
         }
         // then
         try
         {
-            provider.getPopulationFailure( 0 );
+            provider.getPopulationFailure( 0, descriptor );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -129,6 +128,6 @@ public class SpatialFusionSchemaIndexProviderTest
     private void setInitialState( SpatialKnownIndex mockedIndex, InternalIndexState state ) throws IOException
     {
         when( mockedIndex.indexExists() ).thenReturn( true );
-        when( mockedIndex.readState() ).thenReturn( state );
+        when( mockedIndex.readState( descriptor ) ).thenReturn( state );
     }
 }

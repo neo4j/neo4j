@@ -237,7 +237,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState().indexUpdatesForRangeSeekByString(
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByString(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
@@ -251,7 +251,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState().indexUpdatesForRangeSeekByNumber(
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByNumber(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
@@ -263,10 +263,12 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         if ( read.hasTxStateWithChanges() )
         {
-            changes = read.txState().indexUpdatesForRangeSeekByGeometry(
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByGeometry(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
         }
     }
 
@@ -276,7 +278,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState().indexUpdatesForScan( descriptor );
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
             added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }

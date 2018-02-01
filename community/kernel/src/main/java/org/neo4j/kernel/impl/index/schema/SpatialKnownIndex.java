@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.index.schema.fusion.SpatialFusionSchemaIndexProvider;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
@@ -121,17 +120,17 @@ public class SpatialKnownIndex
         return fs.fileExists( indexFile );
     }
 
-    public String readPopulationFailure() throws IOException
+    public String readPopulationFailure( IndexDescriptor descriptor ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, new SpatialFusionSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
+        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
         return headerReader.failureMessage;
     }
 
-    public InternalIndexState readState() throws IOException
+    public InternalIndexState readState( IndexDescriptor descriptor ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, new SpatialFusionSchemaIndexProvider.ReadOnlyMetaNumberLayout(), headerReader );
+        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
         switch ( headerReader.state )
         {
         case BYTE_FAILED:
@@ -143,6 +142,23 @@ public class SpatialKnownIndex
         default:
             throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
         }
+    }
+
+    private SpatialLayout layout( IndexDescriptor descriptor )
+    {
+        SpatialLayout layout;
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            layout = new SpatialLayoutNonUnique( crs, curve );
+            break;
+        case UNIQUE:
+            layout = new SpatialLayoutUnique( crs, curve );
+            break;
+        default:
+            throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
+        }
+        return layout;
     }
 
     private NativeSchemaIndexPopulator makeIndexPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
@@ -186,19 +202,8 @@ public class SpatialKnownIndex
 
     private SpatialSchemaIndexAccessor makeOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SpatialLayout layout;
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            layout = new SpatialLayoutNonUnique( crs, curve );
-            break;
-        case UNIQUE:
-            layout = new SpatialLayoutUnique( crs, curve );
-            break;
-        default:
-            throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
-        }
-        return new SpatialSchemaIndexAccessor<>( pageCache, fs, indexFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
+        return new SpatialSchemaIndexAccessor<>( pageCache, fs, indexFile, layout( descriptor ),
+                recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
     }
 
     public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
