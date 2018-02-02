@@ -43,11 +43,11 @@ public class RaftMessageMonitoringHandlerTest
     private Monitors monitors = new Monitors();
     private RaftMessageProcessingMonitor monitor = mock( RaftMessageProcessingMonitor.class );
     @SuppressWarnings( "unchecked" )
-    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> downstream = mock( LifecycleMessageHandler.class );
+    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> downstream = mock( LifecycleMessageHandler.class );
 
     private Duration messageQueueDelay = Duration.ofMillis( 5 );
     private Duration messageProcessingDelay = Duration.ofMillis( 7 );
-    private RaftMessages.ReceivedInstantClusterIdAwareMessage message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
+    private RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = RaftMessages.ReceivedInstantClusterIdAwareMessage.of(
             now.minus( messageQueueDelay ), new ClusterId( UUID.randomUUID() ), new RaftMessages.Heartbeat( new MemberId( UUID.randomUUID() ), 0, 0, 0 )
     );
     private Clock clock = Clocks.tickOnAccessClock( now, messageProcessingDelay );

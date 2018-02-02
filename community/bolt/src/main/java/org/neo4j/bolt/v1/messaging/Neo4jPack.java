@@ -35,34 +35,34 @@ public interface Neo4jPack
 {
     interface Packer
     {
-        void pack( String value );
+        void pack( String value ) throws IOException;
 
         void pack( AnyValue value ) throws IOException;
 
-        void packStructHeader( int size, byte signature );
+        void packStructHeader( int size, byte signature ) throws IOException;
 
-        void packMapHeader( int size );
+        void packMapHeader( int size ) throws IOException;
 
-        void packListHeader( int size );
+        void packListHeader( int size ) throws IOException;
 
         IOException consumeError();
 
-        void flush();
+        void flush() throws IOException;
     }
 
     interface Unpacker
     {
         AnyValue unpack() throws IOException;
 
-        String unpackString();
+        String unpackString() throws IOException;
 
         MapValue unpackMap() throws IOException;
 
-        long unpackStructHeader();
+        long unpackStructHeader() throws IOException;
 
-        char unpackStructSignature();
+        char unpackStructSignature() throws IOException;
 
-        long unpackListHeader();
+        long unpackListHeader() throws IOException;
 
         Neo4jError consumeError();
     }

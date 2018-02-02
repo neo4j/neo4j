@@ -82,28 +82,4 @@ public interface IndexImplementation extends Lifecycle
      * @throws IOException depends on the implementation
      */
     ResourceIterator<File> listStoreFiles() throws IOException;
-
-    /**
-     * Makes available index resource for recovery.
-     */
-    @Override
-    void init();
-
-    /**
-     * Makes available index resource for online transaction processing.
-     */
-    @Override
-    void start() throws Throwable;
-
-    /**
-     * Makes unavailable index resource from online transaction processing.
-     */
-    @Override
-    void stop() throws Throwable;
-
-    /**
-     * Makes unavailable the index resource as a whole.
-     */
-    @Override
-    void shutdown() throws Throwable;
 }

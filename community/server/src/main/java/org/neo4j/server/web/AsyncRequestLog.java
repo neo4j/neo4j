@@ -80,8 +80,8 @@ public class AsyncRequestLog
                 swallowExceptions( request, HttpServletRequest::getQueryString );
         int statusCode = response.getStatus();
         long length = response.getContentLength();
-        String referer = swallowExceptions( request, ( HttpServletRequest r ) -> r.getHeader( "Referer" ) );
-        String userAgent = swallowExceptions( request, ( HttpServletRequest r ) -> r.getHeader( "User-Agent" ) );
+        String referer = swallowExceptions( request, r -> r.getHeader( "Referer" ) );
+        String userAgent = swallowExceptions( request, r -> r.getHeader( "User-Agent" ) );
         long requestTimeStamp = request != null ? request.getTimeStamp() : -1;
         long now = System.currentTimeMillis();
         long serviceTime = requestTimeStamp < 0 ? -1 : now - requestTimeStamp;

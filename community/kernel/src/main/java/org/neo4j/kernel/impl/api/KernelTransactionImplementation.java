@@ -59,7 +59,6 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -160,7 +159,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private Type type;
     private long transactionId;
     private long commitTime;
-    private volatile int reuseCount;
+    private volatile int reuseCount; // TODO: why volatile?
     private volatile Map<String,Object> userMetaData;
     private final Operations operations;
 
@@ -395,16 +394,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
-                try
-                {
-                    // TODO logically, which statement should this operation be performed on?
-                    constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
-                }
-                catch ( DropIndexFailureException e )
-                {
-                    throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                            "possible to drop during rollback of that transaction.", e );
-                }
+                // TODO logically, which statement should this operation be performed on?
+                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
             }
         }
     }

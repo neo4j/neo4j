@@ -20,13 +20,11 @@
 package org.neo4j.server.modules;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.PluginManager;
@@ -53,7 +51,6 @@ public class RESTApiModule implements ServerModule
     private final WebServer webServer;
     private DependencyResolver dependencyResolver;
     private final LogProvider logProvider;
-    private final Log log;
 
     private PluginManager plugins;
 
@@ -64,24 +61,16 @@ public class RESTApiModule implements ServerModule
         this.config = config;
         this.dependencyResolver = dependencyResolver;
         this.logProvider = logProvider;
-        this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void start()
     {
-        try
-        {
-            URI restApiUri = restApiUri( );
+        URI restApiUri = restApiUri( );
 
-            webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
-            webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
-            loadPlugins();
-        }
-        catch ( URISyntaxException e )
-        {
-            log.warn( "Unable to mount REST API", e );
-        }
+        webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
+        webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
+        loadPlugins();
     }
 
     /**
@@ -111,15 +100,8 @@ public class RESTApiModule implements ServerModule
     @Override
     public void stop()
     {
-        try
-        {
-            webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
-            unloadPlugins();
-        }
-        catch ( URISyntaxException e )
-        {
-            log.warn( "Unable to unmount REST API", e );
-        }
+        webServer.removeJAXRSClasses( getClassNames(), restApiUri().toString() );
+        unloadPlugins();
     }
 
     private URI restApiUri()

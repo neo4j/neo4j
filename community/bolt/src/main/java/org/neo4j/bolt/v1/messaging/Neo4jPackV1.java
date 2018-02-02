@@ -444,7 +444,6 @@ public class Neo4jPackV1 implements Neo4jPack
 
     private static class Unpacker extends PackStream.Unpacker implements Neo4jPack.Unpacker
     {
-
         private List<Neo4jError> errors = new ArrayList<>( 2 );
 
         Unpacker( PackInput input )

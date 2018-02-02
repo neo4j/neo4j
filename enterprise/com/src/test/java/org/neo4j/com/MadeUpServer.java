@@ -21,8 +21,6 @@ package org.neo4j.com;
 
 import org.jboss.netty.channel.Channel;
 
-import java.io.IOException;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -133,20 +131,9 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
 
         SEND_DATA_STREAM( ( master, context, input, target ) ->
         {
-            BlockLogReader reader = new BlockLogReader( input );
-            try
+            try ( BlockLogReader reader = new BlockLogReader( input ) )
             {
                 return master.sendDataStream( reader );
-            }
-            finally
-            {
-                try
-                {
-                    reader.close();
-                }
-                catch ( IOException ignored )
-                {
-                }
             }
         }, Protocol.VOID_SERIALIZER )
         {

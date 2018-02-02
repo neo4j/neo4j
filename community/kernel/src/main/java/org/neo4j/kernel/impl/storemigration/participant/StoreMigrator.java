@@ -614,8 +614,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        return ( InputEntityVisitor entity, RECORD record ) ->
-        {
+        return ( entity, record ) -> {
             cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
             while ( cursor.next() )
             {

@@ -38,12 +38,12 @@ public class ClusterBindingHandlerTest
 {
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
 
-    private RaftMessages.ReceivedInstantClusterIdAwareMessage heartbeat =
+    private RaftMessages.ReceivedInstantClusterIdAwareMessage<?> heartbeat =
             RaftMessages.ReceivedInstantClusterIdAwareMessage.of( Instant.now(), clusterId,
                     new RaftMessages.Heartbeat( new MemberId( UUID.randomUUID() ), 0L, 0, 0 ) );
 
     @SuppressWarnings( "unchecked" )
-    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate = Mockito.mock( LifecycleMessageHandler.class );
+    private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegate = Mockito.mock( LifecycleMessageHandler.class );
 
     private ClusterBindingHandler handler = new ClusterBindingHandler( delegate , NullLogProvider.getInstance() );
 

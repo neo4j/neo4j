@@ -80,22 +80,15 @@ public class TransactionalService
     public Response executeStatementsInNewTransaction( final InputStream input, @Context final UriInfo uriInfo,
                                                        @Context final HttpServletRequest request )
     {
-        try
-        {
-            usage.get( features ).flag( http_tx_endpoint );
-            LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
-            long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-            TransactionHandle transactionHandle =
-                    facade.newTransactionHandle( uriScheme, false, loginContext, customTransactionTimeout );
-            return createdResponse(
-                    transactionHandle,
-                    executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request )
-                );
-        }
-        catch ( TransactionLifecycleException e )
-        {
-            return invalidTransaction( e, uriInfo.getBaseUri() );
-        }
+        usage.get( features ).flag( http_tx_endpoint );
+        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+        long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+        TransactionHandle transactionHandle =
+                facade.newTransactionHandle( uriScheme, false, loginContext, customTransactionTimeout );
+        return createdResponse(
+                transactionHandle,
+                executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request )
+            );
     }
 
     @POST
@@ -145,16 +138,9 @@ public class TransactionalService
                                           @Context final HttpServletRequest request )
     {
         final TransactionHandle transactionHandle;
-        try
-        {
-            LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
-            long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-            transactionHandle = facade.newTransactionHandle( uriScheme, true, loginContext, customTransactionTimeout );
-        }
-        catch ( TransactionLifecycleException e )
-        {
-            return invalidTransaction( e, uriInfo.getBaseUri() );
-        }
+        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+        long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+        transactionHandle = facade.newTransactionHandle( uriScheme, true, loginContext, customTransactionTimeout );
         final StreamingOutput streamingResults =
                 executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), request );
         return okResponse( streamingResults );
