@@ -33,7 +33,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.test.Race;
 import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -142,7 +141,6 @@ public class PreElectionIT
     {
         // given
         clusterRule
-                .withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() )
                 .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
                 .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
         Cluster cluster = clusterRule.startCluster();

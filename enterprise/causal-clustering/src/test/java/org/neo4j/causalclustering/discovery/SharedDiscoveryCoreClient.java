@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.state.RefuseToBeLeaderStrategy;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -39,6 +40,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     private final CoreServerInfo coreServerInfo;
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
+    private final boolean refusesToBeLeader;
 
     private CoreTopology coreTopology;
     private ReadReplicaTopology readReplicaTopology;
@@ -49,6 +51,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         this.member = member;
         this.coreServerInfo = extractCoreServerInfo( config );
         this.log = logProvider.getLog( getClass() );
+        this.refusesToBeLeader = RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config );
     }
 
     @Override
@@ -124,5 +127,10 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
 
         return new CoreServerInfo( raftAddress, transactionSource, clientConnectorAddresses );
+    }
+
+    public boolean refusesToBeLeader()
+    {
+        return refusesToBeLeader;
     }
 }
