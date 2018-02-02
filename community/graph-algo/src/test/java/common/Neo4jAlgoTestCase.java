@@ -124,7 +124,7 @@ public abstract class Neo4jAlgoTestCase
 
     protected <E> void assertContains( Iterable<E> actual, E... expected )
     {
-        Set<E> expectation = new HashSet<E>( Arrays.asList( expected ) );
+        Set<E> expectation = new HashSet<>( Arrays.asList( expected ) );
         for ( E element : actual )
         {
             if ( !expectation.remove( element ) )
@@ -155,7 +155,7 @@ public abstract class Neo4jAlgoTestCase
 
     public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
-        List<String> unexpectedDefs = new ArrayList<String>();
+        List<String> unexpectedDefs = new ArrayList<>();
         try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
         {
             while ( iterator.hasNext() )
@@ -181,7 +181,7 @@ public abstract class Neo4jAlgoTestCase
 
     public void assertPaths( Iterable<? extends Path> paths, String... pathDefinitions )
     {
-        assertPaths( paths, new ArrayList<String>( Arrays.asList( pathDefinitions ) ) );
+        assertPaths( paths, new ArrayList<>( Arrays.asList( pathDefinitions ) ) );
     }
 
     public void assertPathsWithPaths( Iterable<? extends Path> actualPaths, Path... expectedPaths )

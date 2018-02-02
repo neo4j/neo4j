@@ -30,7 +30,6 @@ import org.junit.runners.Parameterized;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -144,12 +143,12 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ),
                         equalTo( asList( "a", "a_squared" ) ) ), hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
 
@@ -169,9 +168,9 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(
-                        CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
+                        CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
                                 hasKey( "result_available_after" ) ) ),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
 
@@ -219,7 +218,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
                 msgSuccess() ) );
@@ -231,7 +230,7 @@ public class TransportSessionIT
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
                 msgSuccess()
@@ -253,7 +252,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
                         hasKey( "result_available_after" ) ) ) ) );
 
         //
@@ -284,7 +283,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
                         hasKey( "result_available_after" ) ) ) ) );
 
         //
@@ -328,7 +327,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
 
@@ -374,7 +373,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
+                msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
                         hasKey( "result_available_after" ) ) ),
                 msgRecord( eqRecord( equalTo( NO_VALUE ) ) ),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );

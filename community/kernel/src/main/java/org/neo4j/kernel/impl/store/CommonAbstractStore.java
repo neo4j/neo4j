@@ -698,7 +698,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     void openIdGenerator()
     {
-        idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), () -> scanForHighId(), recordFormat.getMaxId() );
+        idGenerator = idGeneratorFactory.open( getIdFileName(), getIdType(), this::scanForHighId, recordFormat.getMaxId() );
     }
 
     /**

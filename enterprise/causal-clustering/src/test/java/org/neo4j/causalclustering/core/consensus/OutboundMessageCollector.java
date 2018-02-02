@@ -26,14 +26,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.causalclustering.messaging.Message;
+import org.neo4j.causalclustering.messaging.Outbound;
 
 public class OutboundMessageCollector implements Outbound<MemberId, RaftMessages.RaftMessage>
 {
-    Map<MemberId, List<RaftMessages.RaftMessage>> sentMessages = new HashMap<>();
+    private Map<MemberId, List<RaftMessages.RaftMessage>> sentMessages = new HashMap<>();
 
     public void clear()
     {
@@ -48,13 +48,7 @@ public class OutboundMessageCollector implements Outbound<MemberId, RaftMessages
 
     private List<RaftMessages.RaftMessage> raftMessages( MemberId to )
     {
-        List<RaftMessages.RaftMessage> messagesToMember = sentMessages.get( to );
-        if ( messagesToMember == null )
-        {
-            messagesToMember = new ArrayList<>();
-            sentMessages.put( to, messagesToMember );
-        }
-        return messagesToMember;
+        return sentMessages.computeIfAbsent( to, k -> new ArrayList<>() );
     }
 
     public List<RaftMessages.RaftMessage> sentTo( MemberId member )

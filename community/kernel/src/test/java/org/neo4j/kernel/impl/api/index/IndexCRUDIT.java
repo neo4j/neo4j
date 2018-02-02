@@ -268,12 +268,7 @@ public class IndexCRUDIT
 
         private void addValueToSample( long nodeId, Object propertyValue )
         {
-            Set<Long> nodeIds = indexSamples.get( propertyValue );
-            if ( nodeIds == null )
-            {
-                nodeIds = new HashSet<>();
-                indexSamples.put( propertyValue, nodeIds );
-            }
+            Set<Long> nodeIds = indexSamples.computeIfAbsent( propertyValue, k -> new HashSet<>() );
             nodeIds.add( nodeId );
         }
     }

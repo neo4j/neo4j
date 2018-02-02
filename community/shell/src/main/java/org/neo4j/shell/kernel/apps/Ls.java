@@ -21,7 +21,7 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -164,12 +164,12 @@ public class Ls extends TransactionProvidingApp
 
     private Iterable<String> sortKeys( Iterable<String> source )
     {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         for ( String item : source )
         {
             list.add( item );
         }
-        Collections.sort( list, ( item1, item2 ) -> item1.toLowerCase().compareTo( item2.toLowerCase() ) );
+        list.sort( Comparator.comparing( String::toLowerCase ) );
         return list;
     }
 
@@ -215,7 +215,7 @@ public class Ls extends TransactionProvidingApp
     private void displayLabels( NodeOrRelationship thing, Output out, Map<String, Object> filterMap,
             boolean caseInsensitiveFilters, boolean looseFilters, boolean brief ) throws RemoteException
     {
-        List<String> labelNames = new ArrayList<String>();
+        List<String> labelNames = new ArrayList<>();
         for ( Label label : thing.asNode().getLabels() )
         {
             labelNames.add( label.name() );
@@ -317,7 +317,7 @@ public class Ls extends TransactionProvidingApp
     private static class LimitPerTypeFilter implements Predicate<Relationship>
     {
         private final int maxRelsPerType;
-        private final Map<String, AtomicInteger> encounteredRelationships = new HashMap<String, AtomicInteger>();
+        private final Map<String, AtomicInteger> encounteredRelationships = new HashMap<>();
         private int typesMaxedOut;
         private final AtomicBoolean iterationHalted;
 

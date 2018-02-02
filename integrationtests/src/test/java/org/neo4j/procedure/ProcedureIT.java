@@ -1810,12 +1810,7 @@ public class ProcedureIT
         public Stream<Output> onCloseProcedure( @Name( "index" ) long index )
         {
             onCloseCalled[(int) index] = false;
-            return Stream.of( 1L, 2L ).map( Output::new )
-                    .onClose( () ->
-                    {
-                        onCloseCalled[(int) index] = true;
-                    } );
-
+            return Stream.of( 1L, 2L ).map( Output::new ).onClose( () -> onCloseCalled[(int) index] = true );
         }
     }
 

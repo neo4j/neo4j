@@ -32,7 +32,7 @@ import org.neo4j.kernel.configuration.Config;
 public abstract class KernelData
 {
     public static final Setting<String> forced_id = GraphDatabaseSettings.forced_kernel_id;
-    private static final Map<String, KernelData> instances = new ConcurrentHashMap<String, KernelData>();
+    private static final Map<String, KernelData> instances = new ConcurrentHashMap<>();
 
     private static synchronized String newInstance( KernelData instance )
     {

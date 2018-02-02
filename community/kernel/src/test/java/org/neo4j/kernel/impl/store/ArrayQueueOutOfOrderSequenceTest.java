@@ -142,19 +142,14 @@ public class ArrayQueueOutOfOrderSequenceTest
         Thread[] threads = new Thread[1];
         for ( int i = 0; i < threads.length; i++ )
         {
-            threads[i] = new Thread()
-            {
-                @Override
-                public void run()
+            threads[i] = new Thread( () -> {
+                await( startSignal );
+                while ( !end.get() )
                 {
-                    await( startSignal );
-                    while ( !end.get() )
-                    {
-                        long number = numberSource.incrementAndGet();
-                        offer( sequence, number, new long[]{number + 2} );
-                    }
+                    long number = numberSource.incrementAndGet();
+                    offer( sequence, number, new long[]{number + 2} );
                 }
-            };
+            } );
         }
 
         // WHEN

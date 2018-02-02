@@ -132,11 +132,8 @@ public class SchemaStorageTest
         String d = "d";
         String e = "e";
         String f = "f";
-        createSchema( db ->
-        {
-            db.schema().indexFor( Label.label( LABEL1 ) )
-              .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create();
-        } );
+        createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
+          .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
         IndexRule rule = storage.indexGetForSchema( IndexDescriptorFactory.forLabel(
                 labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );

@@ -129,26 +129,21 @@ public class CsvOutput implements BatchImporter
             for ( int i = 0; i < threads; i++ )
             {
                 int id = i;
-                executor.submit( new Callable<Void>()
-                {
-                    @Override
-                    public Void call() throws Exception
+                executor.submit( (Callable<Void>) () -> {
+                    StringDeserialization deserialization = new StringDeserialization( config );
+                    try ( PrintStream out = file( name + "-" + id + ".csv" );
+                          InputChunk chunk = entities.newChunk() )
                     {
-                        StringDeserialization deserialization = new StringDeserialization( config );
-                        try ( PrintStream out = file( name + "-" + id + ".csv" );
-                              InputChunk chunk = entities.newChunk() )
+                        InputEntity entity = new InputEntity();
+                        while ( entities.next( chunk ) )
                         {
-                            InputEntity entity = new InputEntity();
-                            while ( entities.next( chunk ) )
+                            while ( chunk.next( entity ) )
                             {
-                                while ( chunk.next( entity ) )
-                                {
-                                    out.println( deserializer.apply( entity, deserialization, header ) );
-                                }
+                                out.println( deserializer.apply( entity, deserialization, header ) );
                             }
                         }
-                        return null;
                     }
+                    return null;
                 } );
             }
             executor.shutdown();

@@ -176,20 +176,13 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 throws IOException
         {
             long version = initializer.initialVersion();
-            ActiveState<Key> creation = stateFactory.open( ReadableState.empty( keyFormat(), version ), null );
-            try
+            try ( ActiveState<Key> creation = stateFactory.open( ReadableState.empty( keyFormat(), version ), null ) )
             {
-                try ( EntryUpdater<Key> updater = creation.resetter( new ReentrantLock(), () ->
-                {
-                } ) )
+                try ( EntryUpdater<Key> updater = creation.resetter( new ReentrantLock(), () -> {} ) )
                 {
                     initializer.initialize( updater );
                 }
                 return rotation.create( keyFormat().filter( creation.dataProvider() ), initializer.initialVersion() );
-            }
-            finally
-            {
-                creation.close();
             }
         }
 

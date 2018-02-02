@@ -58,7 +58,7 @@ public class Plugin extends ServerPlugin
     @PluginTarget( Node.class )
     public Iterable<Node> getAllConnectedNodes( @Source Node start )
     {
-        ArrayList<Node> nodes = new ArrayList<Node>();
+        ArrayList<Node> nodes = new ArrayList<>();
 
         for ( Relationship rel : start.getRelationships() )
         {

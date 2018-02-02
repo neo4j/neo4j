@@ -137,12 +137,7 @@ public class LockManagerImpl
         assertValidArguments( resource, tx );
         synchronized ( resourceLockMap )
         {
-            RWLock lock = resourceLockMap.get( resource );
-            if ( lock == null )
-            {
-                lock = createLock( resource );
-                resourceLockMap.put( resource, lock );
-            }
+            RWLock lock = resourceLockMap.computeIfAbsent( resource, k -> createLock( resource ) );
             lock.mark();
             return lock;
         }

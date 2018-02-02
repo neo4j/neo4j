@@ -79,12 +79,7 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
         {
             synchronized ( tokens )
             {
-                id = tokens.get( name );
-                if ( id == null )
-                {
-                    id = highId++;
-                    tokens.put( name, id );
-                }
+                id = tokens.computeIfAbsent( name, k -> highId++ );
             }
         }
         return id;

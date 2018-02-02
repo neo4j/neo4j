@@ -34,7 +34,7 @@ public class TraversalDescriptionBuilderTest
     {
         // Given
         TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
-        Collection<Map<String,Object>> rels = new ArrayList<Map<String, Object>>();
+        Collection<Map<String,Object>> rels = new ArrayList<>();
         rels.add( map( "type", "blah" ) );
 
         // When
@@ -48,7 +48,7 @@ public class TraversalDescriptionBuilderTest
     {
         // Given
         TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
-        Collection<Map<String,Object>> rels = new ArrayList<Map<String, Object>>();
+        Collection<Map<String,Object>> rels = new ArrayList<>();
         rels.add( map( "type", "blah" ) );
 
         // When

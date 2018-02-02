@@ -165,7 +165,7 @@ public class CypherOrderabilityTest
             return "null";
         }
 
-        Class clazz = o.getClass();
+        Class<?> clazz = o.getClass();
         if ( clazz.equals( Object[].class ) )
         {
             return Arrays.toString( (Object[]) o );
@@ -226,6 +226,6 @@ public class CypherOrderabilityTest
 
     private int sign( int value )
     {
-        return value == 0 ? 0 : (value < 0 ? -1 : +1);
+        return Integer.compare( value, 0 );
     }
 }

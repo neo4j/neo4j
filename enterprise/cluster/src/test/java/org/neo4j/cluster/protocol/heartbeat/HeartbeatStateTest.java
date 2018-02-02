@@ -216,7 +216,7 @@ public class HeartbeatStateTest
                 mock( MessageSender.class ),
                 timeouts,
                 mock( DelayedDirectExecutor.class ),
-                command -> command.run(),
+                Runnable::run,
                 instanceId );
         stateMachines.addStateMachine(
                 new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,

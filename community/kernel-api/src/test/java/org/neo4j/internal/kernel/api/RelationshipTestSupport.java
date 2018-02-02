@@ -244,7 +244,7 @@ public class RelationshipTestSupport
 
     static String computeKey( String type, Direction direction )
     {
-        return type + "-" + direction.toString();
+        return type + "-" + direction;
     }
 
     private static Function<Node,StartRelationship>[] sparseDenseRels = Iterators.array(

@@ -40,7 +40,6 @@ import org.neo4j.index.lucene.LuceneTimeline;
 import org.neo4j.index.lucene.TimelineIndex;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.Collections.sort;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
@@ -130,11 +129,10 @@ public class TestTimeline
 
     private List<PropertyContainer> sortedEntities( LinkedList<Pair<PropertyContainer, Long>> timestamps, final boolean reversed )
     {
-        List<Pair<PropertyContainer, Long>> sorted = new ArrayList<Pair<PropertyContainer,Long>>( timestamps );
-        sort( sorted,
-                ( o1, o2 ) -> !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() ) );
+        List<Pair<PropertyContainer, Long>> sorted = new ArrayList<>( timestamps );
+        sorted.sort( ( o1, o2 ) -> !reversed ? o1.other().compareTo( o2.other() ) : o2.other().compareTo( o1.other() ) );
 
-        List<PropertyContainer> result = new ArrayList<PropertyContainer>();
+        List<PropertyContainer> result = new ArrayList<>();
         for ( Pair<PropertyContainer, Long> timestamp : sorted )
         {
             result.add( timestamp.first() );

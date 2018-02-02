@@ -64,7 +64,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
     {
         data.get();
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", "tobias" );
         gen.get().payload( JsonHelper.createJsonFrom( map ) )
                 .expectedStatus( 204 )
@@ -77,7 +77,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     @Test
     public void shouldReturn400WhenSendinIncompatibleJsonProperties() throws JsonParseException
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "jim", new HashMap<String, Object>() );
         JaxRsResponse response = updatePropertiesOnServer(map);
         assertEquals( 400, response.getStatus() );
@@ -95,7 +95,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     @Test
     public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException
     {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put("jim", "tobias");
 
         JaxRsResponse response = RestRequest.req().put(badUri.toString(), JsonHelper.createJsonFrom(map));

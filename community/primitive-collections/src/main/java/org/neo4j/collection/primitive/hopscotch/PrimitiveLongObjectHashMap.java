@@ -103,7 +103,7 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
         if ( typeAndSizeEqual( other ) )
         {
             PrimitiveLongObjectHashMap<?> that = (PrimitiveLongObjectHashMap<?>) other;
-            LongObjEquality<VALUE> equality = new LongObjEquality<VALUE>( that );
+            LongObjEquality<VALUE> equality = new LongObjEquality<>( that );
             visitEntries( equality );
             return equality.isEqual();
         }
@@ -137,7 +137,7 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
     @Override
     public int hashCode()
     {
-        HashCodeComputer<VALUE> hash = new HashCodeComputer<VALUE>();
+        HashCodeComputer<VALUE> hash = new HashCodeComputer<>();
         visitEntries( hash );
         return hash.hashCode();
     }

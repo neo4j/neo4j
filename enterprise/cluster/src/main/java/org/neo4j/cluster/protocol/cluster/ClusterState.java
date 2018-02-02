@@ -155,7 +155,7 @@ public enum ClusterState
                                         ", got " + state.getClusterName() + "." );
                             }
 
-                            HashMap<InstanceId, URI> memberList = new HashMap<InstanceId, URI>( state.getMembers() );
+                            HashMap<InstanceId, URI> memberList = new HashMap<>( state.getMembers() );
                             context.discoveredLastReceivedInstanceId( state.getLatestReceivedInstanceId().getId() );
 
                             context.acquiredConfiguration( memberList, state.getRoles() );
@@ -531,7 +531,7 @@ public enum ClusterState
 
                         case leave:
                         {
-                            List<URI> nodeList = new ArrayList<URI>( context.getConfiguration().getMemberURIs() );
+                            List<URI> nodeList = new ArrayList<>( context.getConfiguration().getMemberURIs() );
                             if ( nodeList.size() == 1 )
                             {
                                 context.getLog( ClusterState.class ).info( format( "Shutting down cluster: %s",

@@ -243,7 +243,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             try
             {
                 startSignal.await();
-                java.util.Stack<Object> lockStack = new java.util.Stack<Object>();
+                java.util.Stack<Object> lockStack = new java.util.Stack<>();
                 for ( int i = 0; i < numberOfIterations; i++ )
                 {
                     try

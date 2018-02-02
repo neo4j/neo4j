@@ -25,7 +25,7 @@ import java.util.Comparator;
 public class NodeLabelUpdate
 {
     public static final Comparator<? super NodeLabelUpdate> SORT_BY_NODE_ID =
-            (Comparator<NodeLabelUpdate>) ( o1, o2 ) -> Long.compare( o1.getNodeId(), o2.getNodeId() );
+            Comparator.comparingLong( NodeLabelUpdate::getNodeId );
 
     private final long nodeId;
     private final long[] labelsBefore;

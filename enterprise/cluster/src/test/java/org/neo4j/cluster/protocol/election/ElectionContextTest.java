@@ -56,7 +56,7 @@ public class ElectionContextTest
     @Test
     public void testElectionOkNoFailed()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
 
         baseTestForElectionOk( failed, false );
     }
@@ -64,7 +64,7 @@ public class ElectionContextTest
     @Test
     public void testElectionOkLessThanQuorumFailed()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 1 ) );
 
         baseTestForElectionOk( failed, false );
@@ -73,7 +73,7 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkMoreThanQuorumFailed()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 1 ) );
         failed.add( new InstanceId( 2 ) );
 
@@ -83,10 +83,10 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkQuorumFailedTwoInstances()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
 
@@ -116,11 +116,11 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkQuorumFailedFourInstances()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
         failed.add( new InstanceId( 3 ) );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -152,12 +152,12 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkQuorumFailedFiveInstances()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
         failed.add( new InstanceId( 3 ) );
         failed.add( new InstanceId( 4 ) );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -195,7 +195,7 @@ public class ElectionContextTest
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
         when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -293,15 +293,14 @@ public class ElectionContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
-        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        List<InstanceId> clusterMemberIds = new LinkedList<>();
         clusterMemberIds.add( failingInstance );
         clusterMemberIds.add( otherInstance );
         clusterMemberIds.add( me );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
         MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration,
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration, Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -337,15 +336,14 @@ public class ElectionContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
-        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        List<InstanceId> clusterMemberIds = new LinkedList<>();
         clusterMemberIds.add( failingInstance );
         clusterMemberIds.add( me );
         clusterMemberIds.add( forQuorum );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
         MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( role1 ) ), clusterConfiguration,
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( role1 ) ), clusterConfiguration, Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -389,15 +387,14 @@ public class ElectionContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
-        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        List<InstanceId> clusterMemberIds = new LinkedList<>();
         clusterMemberIds.add( leavingInstance );
         clusterMemberIds.add( me );
         clusterMemberIds.add( forQuorum );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
         MultiPaxosContext context = new MultiPaxosContext( me,
-                Iterables.iterable( new ElectionRole( role1 ) ), clusterConfiguration,
-                command -> command.run(),
+                Iterables.iterable( new ElectionRole( role1 ) ), clusterConfiguration, Runnable::run,
                 NullLogProvider.getInstance(), mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -426,7 +423,7 @@ public class ElectionContextTest
 
     private void baseTestForElectionOk( Set<InstanceId> failed, boolean moreThanQuorum )
     {
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );

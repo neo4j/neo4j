@@ -83,7 +83,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     public static Future<LegacyDatabase> start( String classpath, File storeDir, Map<String, String> config )
             throws Exception
     {
-        List<String> args = new ArrayList<String>();
+        List<String> args = new ArrayList<>();
         args.add( storeDir.getAbsolutePath() );
         int rmiPort = 7000 + parseInt( config.get( "ha.server_id" ) );
         args.add( "" + rmiPort );

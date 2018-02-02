@@ -42,10 +42,8 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
 {
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
-        return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2, MyRelTypes.R3 );
+        return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1, MyRelTypes.R2, MyRelTypes.R3 );
     }
 
     protected void assertCentrality(
@@ -60,8 +58,8 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
     public void testBox()
     {
         graph.makeEdgeChain( "a,b,c,d,a" );
-        BetweennessCentrality<Double> betweennessCentrality = new BetweennessCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        BetweennessCentrality<Double> betweennessCentrality =
+                new BetweennessCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         betweennessCentrality.calculate();
         assertCentrality( betweennessCentrality, "a", 0.5 );
         assertCentrality( betweennessCentrality, "b", 0.5 );
@@ -75,8 +73,8 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c" );
         graph.setCurrentRelType( MyRelTypes.R3 );
         graph.makeEdgeChain( "d,b,e" );
-        BetweennessCentrality<Double> betweennessCentrality = new BetweennessCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        BetweennessCentrality<Double> betweennessCentrality =
+                new BetweennessCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         betweennessCentrality.calculate();
         assertCentrality( betweennessCentrality, "a", 0.0 );
         assertCentrality( betweennessCentrality, "b", 6.0 );
@@ -89,8 +87,8 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
     public void testChain()
     {
         graph.makeEdgeChain( "a,b,c,d,e" );
-        BetweennessCentrality<Double> betweennessCentrality = new BetweennessCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        BetweennessCentrality<Double> betweennessCentrality =
+                new BetweennessCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         betweennessCentrality.calculate();
         assertCentrality( betweennessCentrality, "a", 0.0 );
         assertCentrality( betweennessCentrality, "b", 3.0 );
@@ -108,8 +106,8 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "c,d,c");
         graph.makeEdgeChain( "d,e,d");
         graph.makeEdgeChain( "d,f,d");
-        BetweennessCentrality<Double> betweennessCentrality = new BetweennessCentrality<Double>(
-            getSingleSourceShortestPath(), graph.getAllNodes() );
+        BetweennessCentrality<Double> betweennessCentrality =
+                new BetweennessCentrality<>( getSingleSourceShortestPath(), graph.getAllNodes() );
         betweennessCentrality.calculate();
         assertCentrality( betweennessCentrality, "a", 0.0 );
         assertCentrality( betweennessCentrality, "b", 0.0 );
@@ -150,8 +148,7 @@ public class BetweennessCentralityTest extends Neo4jAlgoTestCase
                 .reversedPredecessors( predecessors );
             PathCounter counter = new Util.PathCounter( predecessors );
             // Recursively update the node dependencies
-            getAndUpdateNodeDependency( startNode, true, successors, counter,
-                new HashMap<Node,Double>() );
+            getAndUpdateNodeDependency( startNode, true, successors, counter, new HashMap<>() );
             Double adjustment = 0.5; // since direction is BOTH
             assertCentrality( this, "a", 0.0 * adjustment );
             assertCentrality( this, "b", 2.5 * adjustment );

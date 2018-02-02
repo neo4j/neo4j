@@ -33,7 +33,7 @@ public class TestArrayMap
     @Test
     public void testArrayMap()
     {
-        ArrayMap<String,Integer> map = new ArrayMap<String,Integer>();
+        ArrayMap<String,Integer> map = new ArrayMap<>();
 
         assertTrue( map.get( "key1" ) == null );
         map.put( "key1", 0 );
@@ -91,31 +91,27 @@ public class TestArrayMap
     @Test
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkable() throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( (byte)3, false,
-                false ), false );
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<>( (byte) 3, false, false ), false );
     }
 
     @Test
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkable() throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( (byte)3, false,
-                true ), true );
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<>( (byte) 3, false, true ), true );
     }
 
     @Test
     public void arraymapIsClearedWhenExpandingToHashMapIfNonShrinkableAndSynchronized()
             throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<String, Integer>( (byte)3, true,
-                false ), false );
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<>( (byte) 3, true, false ), false );
     }
 
     @Test
     public void arraymapIsClearedWhenExpandingToHashMapIfShrinkableAndSynchronized()
             throws Exception
     {
-        assertDataRepresentationSwitchesWhenAboveThreshold(
-                new ArrayMap<String, Integer>( (byte)3, true, true ), true );
+        assertDataRepresentationSwitchesWhenAboveThreshold( new ArrayMap<>( (byte) 3, true, true ), true );
     }
 
     @SuppressWarnings( "rawtypes" )
@@ -159,7 +155,7 @@ public class TestArrayMap
     @Test
     public void canOverwriteThenRemoveElementAcrossDeflation() throws Exception
     {
-        ArrayMap<String, Integer> map = new ArrayMap<String, Integer>( (byte)3, false, true );
+        ArrayMap<String, Integer> map = new ArrayMap<>( (byte) 3, false, true );
 
         map.put( "key1", 1 );
         map.put( "key2", 2 );

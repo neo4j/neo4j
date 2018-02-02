@@ -660,12 +660,12 @@ public final class Iterables
      */
     public static <T> Collection<T> asCollection( Iterable<T> iterable )
     {
-        return addToCollection( iterable, new ArrayList<T>() );
+        return addToCollection( iterable, new ArrayList<>() );
     }
 
     public static <T> List<T> asList( Iterable<T> iterator )
     {
-        return addToCollection( iterator, new ArrayList<T>() );
+        return addToCollection( iterator, new ArrayList<>() );
     }
 
     public static <T, U> Map<T, U> asMap( Iterable<Pair<T, U>> pairs )
@@ -687,7 +687,7 @@ public final class Iterables
      */
     public static <T> Set<T> asSet( Iterable<T> iterable )
     {
-        return addToCollection( iterable, new HashSet<T>() );
+        return addToCollection( iterable, new HashSet<>() );
     }
 
     /**
@@ -897,11 +897,10 @@ public final class Iterables
         return () -> Iterators.iterator( item );
     }
 
-    @SuppressWarnings( "rawtypes" )
-    public static <T, S extends Comparable> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
+    public static <T, S extends Comparable<? super S>> Iterable<T> sort( Iterable<T> iterable, final Function<T, S> compareFunction )
     {
         List<T> list = asList( iterable );
-        Collections.sort( list, Comparator.comparing( compareFunction::apply ) );
+        list.sort( Comparator.comparing( compareFunction ) );
         return list;
     }
 

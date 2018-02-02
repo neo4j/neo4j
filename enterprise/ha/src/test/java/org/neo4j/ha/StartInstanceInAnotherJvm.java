@@ -46,8 +46,7 @@ public class StartInstanceInAnotherJvm
 
     public static Process start( String dir, Map<String, String> config ) throws Exception
     {
-        List<String> args = new ArrayList<String>();
-        args.addAll( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ),
+        List<String> args = new ArrayList<>( Arrays.asList( "java", "-cp", System.getProperty( "java.class.path" ),
                 StartInstanceInAnotherJvm.class.getName(), dir ) );
         for ( Map.Entry<String,String> property : config.entrySet() )
         {

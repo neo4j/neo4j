@@ -163,11 +163,7 @@ public class MultiPaxosServer
                 {
                     System.out.println( broadcastSerializer.receive( value ) );
                 }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
-                catch ( ClassNotFoundException e )
+                catch ( IOException | ClassNotFoundException e )
                 {
                     e.printStackTrace();
                 }
@@ -189,15 +185,7 @@ public class MultiPaxosServer
                     {
                         method.invoke( this, (Object[]) realArgs );
                     }
-                    catch ( IllegalAccessException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( IllegalArgumentException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    catch ( InvocationTargetException e )
+                    catch ( IllegalAccessException | IllegalArgumentException | InvocationTargetException e )
                     {
                         e.printStackTrace();
                     }

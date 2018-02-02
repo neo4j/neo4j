@@ -123,7 +123,7 @@ public class TestProtocolServer
 
     public class TestMessageSender implements MessageSender
     {
-        List<Message> messages = new ArrayList<Message>();
+        List<Message> messages = new ArrayList<>();
 
         @Override
         public void process( List<Message<? extends MessageType>> messages )

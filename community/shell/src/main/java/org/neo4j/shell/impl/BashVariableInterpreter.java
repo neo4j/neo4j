@@ -37,7 +37,7 @@ import org.neo4j.shell.ShellServer;
  */
 public class BashVariableInterpreter
 {
-    private static final Map<String, Replacer> STATIC_REPLACERS = new HashMap<String, Replacer>();
+    private static final Map<String, Replacer> STATIC_REPLACERS = new HashMap<>();
 
     static
     {
@@ -54,7 +54,7 @@ public class BashVariableInterpreter
         STATIC_REPLACERS.put( "V", new StaticReplacer( Version.getKernelVersion() ) );
     }
 
-    private final Map<String, Replacer> localReplacers = new HashMap<String, Replacer>();
+    private final Map<String, Replacer> localReplacers = new HashMap<>();
 
     /**
      * Adds a customized replacer for a certain variable.

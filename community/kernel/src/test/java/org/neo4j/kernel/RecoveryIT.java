@@ -375,7 +375,6 @@ public class RecoveryIT
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         produceRandomGraphUpdates( db, 100 );
         checkPoint( db );
-        EphemeralFileSystemAbstraction checkPointFs = fs.snapshot();
 
         // when
         produceRandomGraphUpdates( db, 100 );
@@ -450,7 +449,7 @@ public class RecoveryIT
         // then
         fs.close();
 
-        try
+        try ( EphemeralFileSystemAbstraction checkPointFs = fs.snapshot() )
         {
             // Here we verify that the neostore contents, record by record are exactly the same when comparing
             // the store as it was right after the checkpoint with the store as it was right after reverse recovery completed.
@@ -458,7 +457,6 @@ public class RecoveryIT
         }
         finally
         {
-            checkPointFs.close();
             reversedFs.get().close();
         }
     }
@@ -599,7 +597,7 @@ public class RecoveryIT
                         }
                         else if ( operation < 0.9 )
                         {   // delete relationship
-                            onRandomRelationship( nodes, relationship -> relationship.delete() );
+                            onRandomRelationship( nodes, Relationship::delete );
                         }
                         else
                         {   // delete node

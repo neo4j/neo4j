@@ -81,8 +81,7 @@ public class Set extends TransactionProvidingApp
         }
     }
 
-    private static final Map<String, ValueType> NAME_TO_VALUE_TYPE =
-        new HashMap<String, ValueType>();
+    private static final Map<String, ValueType> NAME_TO_VALUE_TYPE = new HashMap<>();
     static
     {
         mapNameToValueType( new ValueTypeContext( boolean.class,
@@ -105,8 +104,7 @@ public class Set extends TransactionProvidingApp
             String.class, String.class, String[].class, String[].class ) );
     }
 
-    private static final Map<Class<?>, String> VALUE_TYPE_TO_NAME =
-        new HashMap<Class<?>, String>();
+    private static final Map<Class<?>, String> VALUE_TYPE_TO_NAME = new HashMap<>();
     static
     {
         for ( Map.Entry<String, ValueType> entry :

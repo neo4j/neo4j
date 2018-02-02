@@ -292,14 +292,7 @@ public class StartClient
     {
         String configFile = args.get( ARG_CONFIG, null );
         final GraphDatabaseShellServer server = getGraphDatabaseShellServer( path, readOnly, configFile );
-        Runtime.getRuntime().addShutdownHook( new Thread()
-        {
-            @Override
-            public void run()
-            {
-                shutdownIfNecessary( server );
-            }
-        } );
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> shutdownIfNecessary( server ) ) );
 
         if ( !isCommandLine( args ) )
         {

@@ -123,7 +123,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
         if ( get )
         {
             String commandToRun = parser.options().get( "c" );
-            Collection<String> commandsToRun = new ArrayList<String>();
+            Collection<String> commandsToRun = new ArrayList<>();
             boolean specialCommand = false;
             if ( doCd || doLs )
             {
@@ -147,18 +147,13 @@ public class IndexProviderShellApp extends TransactionProvidingApp
                 return Continuation.INPUT_COMPLETE;
             }
 
-            IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out );
-            try
+            try ( IndexHits<PropertyContainer> result = query ? query( parser, out ) : get( parser, out ) )
             {
                 for ( PropertyContainer hit : result )
                 {
-                    printAndInterpretTemplateLines( commandsToRun, false, !specialCommand, NodeOrRelationship.wrap( hit ),
-                            getServer(), session, out );
+                    printAndInterpretTemplateLines( commandsToRun, !specialCommand,
+                            NodeOrRelationship.wrap( hit ), getServer(), session, out );
                 }
-            }
-            finally
-            {
-                result.close();
             }
         }
         else if ( index )

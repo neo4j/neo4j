@@ -376,10 +376,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Relationship rel1 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         Relationship rel2 = node2.createRelationshipTo( node1, MyRelTypes.TEST );
 
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         // add property
         rel1.setProperty( key1, int1 );
@@ -403,10 +403,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelationshipRemoveProperty()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -470,10 +470,10 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelationshipChangeProperty()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -510,12 +510,12 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelationshipChangeProperty2()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string1 = new String( "1" );
-        String string2 = new String( "2" );
-        Boolean bool1 = new Boolean( true );
-        Boolean bool2 = new Boolean( false );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string1 = "1";
+        String string2 = "2";
+        Boolean bool1 = Boolean.TRUE;
+        Boolean bool2 = Boolean.FALSE;
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -541,9 +541,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
     @Test
     public void testRelGetProperties()
     {
-        Integer int1 = new Integer( 1 );
-        Integer int2 = new Integer( 2 );
-        String string = new String( "3" );
+        Integer int1 = 1;
+        Integer int2 = 2;
+        String string = "3";
 
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
@@ -716,7 +716,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertTrue( rel.isType( MyRelTypes.TEST ) );
-        assertTrue( rel.isType( () -> MyRelTypes.TEST.name() ) );
+        assertTrue( rel.isType( MyRelTypes.TEST::name ) );
         assertFalse( rel.isType( MyRelTypes.TEST_TRAVERSAL ) );
         rel.delete();
         node1.delete();

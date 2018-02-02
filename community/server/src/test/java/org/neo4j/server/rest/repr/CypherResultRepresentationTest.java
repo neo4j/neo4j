@@ -70,7 +70,7 @@ public class CypherResultRepresentationTest
 
         Result result = mock( Result.class );
         when( result.hasNext() ).thenReturn( false );
-        when( result.columns() ).thenReturn( new ArrayList<String>() );
+        when( result.columns() ).thenReturn( new ArrayList<>() );
         when( result.getExecutionPlanDescription() ).thenReturn( plan );
 
         // When
@@ -97,7 +97,7 @@ public class CypherResultRepresentationTest
         // Given
         Result result = mock( Result.class );
         when( result.hasNext() ).thenReturn( false );
-        when( result.columns() ).thenReturn( new ArrayList<String>() );
+        when( result.columns() ).thenReturn( new ArrayList<>() );
 
         // When
         Map<String, Object> serialized = serializeToStringThenParseAsToMap( new CypherResultRepresentation( result,

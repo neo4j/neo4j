@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.repr;
 
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.PropertyContainer;
 
@@ -34,7 +34,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 
 public class PropertiesRepresentationTest
@@ -42,7 +41,7 @@ public class PropertiesRepresentationTest
     @Test
     public void shouldContainAddedPropertiesWhenCreatedFromPropertyContainer()
     {
-        Map<String, Object> values = new HashMap<String, Object>();
+        Map<String, Object> values = new HashMap<>();
         values.put( "foo", "bar" );
         Map<String, Object> serialized = serialize( new PropertiesRepresentation( container( values ) ) );
         assertEquals( "bar", serialized.get( "foo" ) );
@@ -51,7 +50,7 @@ public class PropertiesRepresentationTest
     @Test
     public void shouldSerializeToMapWithSamePropertiesWhenCreatedFromPropertyContainer()
     {
-        Map<String, Object> values = new HashMap<String, Object>();
+        Map<String, Object> values = new HashMap<>();
         values.put( "foo", "bar" );
         PropertiesRepresentation properties = new PropertiesRepresentation( container( values ) );
         Map<String, Object> map = serialize( properties );
@@ -61,7 +60,7 @@ public class PropertiesRepresentationTest
     @Test
     public void shouldSerializeToMap()
     {
-        Map<String, Object> values = new HashMap<String, Object>();
+        Map<String, Object> values = new HashMap<>();
         values.put( "string", "value" );
         values.put( "int", 5 );
         values.put( "long", 17L );
@@ -87,8 +86,8 @@ public class PropertiesRepresentationTest
     @Test
     public void shouldBeAbleToSignalEmptiness()
     {
-        PropertiesRepresentation properties = new PropertiesRepresentation( container( new HashMap<String, Object>() ) );
-        Map<String, Object> values = new HashMap<String, Object>();
+        PropertiesRepresentation properties = new PropertiesRepresentation( container( new HashMap<>() ) );
+        Map<String, Object> values = new HashMap<>();
         values.put( "key", "value" );
         assertTrue( properties.isEmpty() );
         properties = new PropertiesRepresentation( container( values ) );

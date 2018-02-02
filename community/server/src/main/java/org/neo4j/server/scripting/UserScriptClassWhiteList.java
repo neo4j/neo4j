@@ -56,7 +56,7 @@ public class UserScriptClassWhiteList
 
     public static Set<String> getWhiteList()
     {
-        HashSet<String> safe = new HashSet<String>();
+        HashSet<String> safe = new HashSet<>();
 
         // Core API concepts
 

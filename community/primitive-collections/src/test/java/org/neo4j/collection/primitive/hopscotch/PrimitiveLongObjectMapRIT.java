@@ -101,7 +101,7 @@ public class PrimitiveLongObjectMapRIT
 
     private TargetFactory<Maps> mapFactory()
     {
-        return () -> new Maps();
+        return Maps::new;
     }
 
     protected Action<Maps,String> generateAction( Random random, Maps from )

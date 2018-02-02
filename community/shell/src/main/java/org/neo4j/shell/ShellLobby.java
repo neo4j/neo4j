@@ -24,10 +24,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.RemoteClient;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.shell.impl.SameJvmClient;
+import org.neo4j.shell.impl.SimpleAppServer;
 import org.neo4j.shell.impl.SystemOutput;
 
 /**
@@ -68,7 +68,7 @@ public abstract class ShellLobby
      */
     public static ShellClient newClient( ShellServer server, CtrlCHandler signalHandler ) throws ShellException
     {
-        return newClient( server, new HashMap<String, Serializable>(), signalHandler );
+        return newClient( server, new HashMap<>(), signalHandler );
     }
 
     /**
@@ -80,7 +80,7 @@ public abstract class ShellLobby
      */
     public static ShellClient newClient( ShellServer server ) throws ShellException
     {
-        return newClient( server, new HashMap<String, Serializable>(), InterruptSignalHandler.getHandler() );
+        return newClient( server, new HashMap<>(), InterruptSignalHandler.getHandler() );
     }
 
     /**
@@ -185,7 +185,7 @@ public abstract class ShellLobby
     public static ShellClient newClient( RmiLocation serverLocation, CtrlCHandler ctrlcHandler )
         throws ShellException
     {
-        return newClient( serverLocation, new HashMap<String, Serializable>(), ctrlcHandler );
+        return newClient( serverLocation, new HashMap<>(), ctrlcHandler );
     }
 
     /**

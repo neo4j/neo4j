@@ -39,10 +39,8 @@ public class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
 {
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
-        return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
     protected void assertCentrality(
@@ -60,26 +58,24 @@ public class ParallellCentralityCalculationTest extends Neo4jAlgoTestCase
         graph.makeEdgeChain( "a,b,c" );
         graph.makeEdgeChain( "d,b,e" );
         SingleSourceShortestPath<Double> singleSourceShortestPath = getSingleSourceShortestPath();
-        ParallellCentralityCalculation<Double> pcc = new ParallellCentralityCalculation<Double>(
-            singleSourceShortestPath, graph.getAllNodes() );
-        BetweennessCentrality<Double> betweennessCentrality = new BetweennessCentrality<Double>(
-            singleSourceShortestPath, graph.getAllNodes() );
-        StressCentrality<Double> stressCentrality = new StressCentrality<Double>(
-            singleSourceShortestPath, graph.getAllNodes() );
-        ClosenessCentrality<Double> closenessCentrality = new ClosenessCentrality<Double>(
-            singleSourceShortestPath, new DoubleAdder(), 0.0, graph
-                .getAllNodes(), new CostDivider<Double>()
-            {
-                public Double divideByCost( Double d, Double c )
+        ParallellCentralityCalculation<Double> pcc =
+                new ParallellCentralityCalculation<>( singleSourceShortestPath, graph.getAllNodes() );
+        BetweennessCentrality<Double> betweennessCentrality =
+                new BetweennessCentrality<>( singleSourceShortestPath, graph.getAllNodes() );
+        StressCentrality<Double> stressCentrality = new StressCentrality<>( singleSourceShortestPath, graph.getAllNodes() );
+        ClosenessCentrality<Double> closenessCentrality =
+                new ClosenessCentrality<>( singleSourceShortestPath, new DoubleAdder(), 0.0, graph.getAllNodes(), new CostDivider<Double>()
                 {
-                    return d / c;
-                }
+                    public Double divideByCost( Double d, Double c )
+                    {
+                        return d / c;
+                    }
 
-                public Double divideCost( Double c, Double d )
-                {
-                    return c / d;
-                }
-            } );
+                    public Double divideCost( Double c, Double d )
+                    {
+                        return c / d;
+                    }
+                } );
         pcc.addCalculation( betweennessCentrality );
         pcc.addCalculation( stressCentrality );
         pcc.addCalculation( closenessCentrality );

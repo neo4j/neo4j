@@ -60,7 +60,7 @@ public class TestCommonIterators
     public void testCachingIterator()
     {
         Iterator<Integer> source = new RangeIterator( 8 );
-        CachingIterator<Integer> caching = new CachingIterator<Integer>( source );
+        CachingIterator<Integer> caching = new CachingIterator<>( source );
 
         try
         {
@@ -161,7 +161,7 @@ public class TestCommonIterators
     public void testPagingIterator()
     {
         Iterator<Integer> source = new RangeIterator( 24 );
-        PagingIterator<Integer> pager = new PagingIterator<Integer>( source, 10 );
+        PagingIterator<Integer> pager = new PagingIterator<>( source, 10 );
         assertEquals( 0, pager.page() );
         assertTrue( pager.hasNext() );
         assertPage( pager.nextPage(), 10, 0 );

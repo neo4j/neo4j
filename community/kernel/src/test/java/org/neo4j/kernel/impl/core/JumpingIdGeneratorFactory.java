@@ -62,13 +62,7 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
         if ( idType == IdType.NODE || idType == IdType.RELATIONSHIP || idType == IdType.PROPERTY ||
                 idType == IdType.STRING_BLOCK || idType == IdType.ARRAY_BLOCK )
         {
-            IdGenerator generator = generators.get( idType );
-            if ( generator == null )
-            {
-                generator = new JumpingIdGenerator();
-                generators.put( idType, generator );
-            }
-            return generator;
+            return generators.computeIfAbsent( idType, k -> new JumpingIdGenerator() );
         }
         return forTheRest;
     }

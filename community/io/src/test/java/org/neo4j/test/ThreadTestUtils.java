@@ -42,7 +42,7 @@ public class ThreadTestUtils
 
     public static <T> Future<T> forkFuture( Callable<T> callable )
     {
-        FutureTask<T> task = new FutureTask<T>( callable );
+        FutureTask<T> task = new FutureTask<>( callable );
         fork( task );
         return task;
     }

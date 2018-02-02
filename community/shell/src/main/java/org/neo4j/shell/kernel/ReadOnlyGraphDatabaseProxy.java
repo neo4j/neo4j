@@ -59,8 +59,8 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceIterableWrapper;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -788,19 +788,19 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         @Override
         public IndexHits<T> get( String key, Object value )
         {
-            return new ReadOnlyIndexHitsProxy<T>( this, actual.get( key, value ) );
+            return new ReadOnlyIndexHitsProxy<>( this, actual.get( key, value ) );
         }
 
         @Override
         public IndexHits<T> query( String key, Object queryOrQueryObject )
         {
-            return new ReadOnlyIndexHitsProxy<T>( this, actual.query( key, queryOrQueryObject ) );
+            return new ReadOnlyIndexHitsProxy<>( this, actual.query( key, queryOrQueryObject ) );
         }
 
         @Override
         public IndexHits<T> query( Object queryOrQueryObject )
         {
-            return new ReadOnlyIndexHitsProxy<T>( this, actual.query( queryOrQueryObject ) );
+            return new ReadOnlyIndexHitsProxy<>( this, actual.query( queryOrQueryObject ) );
         }
 
         @Override

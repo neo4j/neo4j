@@ -234,7 +234,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Relationship> relationships()
     {
-        LinkedList<Relationship> relationships = new LinkedList<Relationship>();
+        LinkedList<Relationship> relationships = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {
@@ -269,7 +269,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterable<Node> nodes()
     {
-        LinkedList<Node> nodes = new LinkedList<Node>();
+        LinkedList<Node> nodes = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {
@@ -305,7 +305,7 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public Iterator<PropertyContainer> iterator()
     {
-        LinkedList<PropertyContainer> entities = new LinkedList<PropertyContainer>();
+        LinkedList<PropertyContainer> entities = new LinkedList<>();
         TraversalBranch branch = this;
         while ( branch.length() > 0 )
         {

@@ -157,8 +157,8 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                 functionalTestHelper.getRelationshipIdFromUri( relationshipLocation2 ), key, value );
         String indexLocation2 = indexedRelationshipResponse.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
         Map<String, String> uriToName = new HashMap<>();
-        uriToName.put( indexLocation1.toString(), relationshipName1 );
-        uriToName.put( indexLocation2.toString(), relationshipName2 );
+        uriToName.put( indexLocation1, relationshipName1 );
+        uriToName.put( indexLocation2, relationshipName2 );
         JaxRsResponse response = RestRequest.req().get(
                 functionalTestHelper.indexRelationshipUri( indexName, key, value ) );
         assertEquals( 200, response.getStatus() );

@@ -21,6 +21,7 @@ package org.neo4j.shell.apps.extra;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -130,10 +131,7 @@ public abstract class ScriptExecutor
     {
         if ( pathString != null && pathString.trim().length() > 0 )
         {
-            for ( String path : pathString.split( ":" ) )
-            {
-                paths.add( path );
-            }
+            Collections.addAll( paths, pathString.split( ":" ) );
         }
     }
 

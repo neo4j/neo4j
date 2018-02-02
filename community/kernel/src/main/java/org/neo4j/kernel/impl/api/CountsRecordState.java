@@ -228,13 +228,8 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
 
     private DoubleLongRegister counts( CountsKey key )
     {
-        DoubleLongRegister count = counts.get( key );
-        if ( count == null )
-        {
-            count = Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE );
-            counts.put( key, count );
-        }
-        return count;
+        return counts.computeIfAbsent( key,
+                k -> Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE ) );
     }
 
     private static class CommandCollector extends CountsVisitor.Adapter

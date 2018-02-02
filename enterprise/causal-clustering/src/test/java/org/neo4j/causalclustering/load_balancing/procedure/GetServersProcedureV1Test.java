@@ -418,8 +418,7 @@ public class GetServersProcedureV1Test
         {
             List<AdvertisedSocketAddress> list =
                     Stream.of( addresses ).map( address -> parse( (String) address ) ).collect( toList() );
-            Set<AdvertisedSocketAddress> set = new HashSet<>();
-            set.addAll( list );
+            Set<AdvertisedSocketAddress> set = new HashSet<>( list );
             assertEquals( list.size(), set.size() );
             return set;
         }
@@ -455,12 +454,7 @@ public class GetServersProcedureV1Test
 
             private void addAddress( Role role, AdvertisedSocketAddress address )
             {
-                Set<AdvertisedSocketAddress> advertisedSocketAddresses = view.get( role );
-                if ( advertisedSocketAddresses == null )
-                {
-                    advertisedSocketAddresses = new HashSet<>();
-                    view.put( role, advertisedSocketAddresses );
-                }
+                Set<AdvertisedSocketAddress> advertisedSocketAddresses = view.computeIfAbsent( role, k -> new HashSet<>() );
                 advertisedSocketAddresses.add( address );
             }
 

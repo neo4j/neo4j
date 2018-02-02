@@ -309,7 +309,7 @@ public class ElectionContextImpl
         private Election( WinnerStrategy winnerStrategy )
         {
             this.winnerStrategy = winnerStrategy;
-            this.votes = new HashMap<InstanceId,Vote>();
+            this.votes = new HashMap<>();
         }
 
         private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId,Vote> votes )

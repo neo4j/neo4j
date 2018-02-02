@@ -37,10 +37,8 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
  * which elements need to actually be added and removed at minimum from some
  * target collection such that the result is equivalent to just
  * executing the sequence of additions and removals in order.
- *
- * @param <T> type of augmented elements iterator
  */
-public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements PrimitiveLongReadableDiffSets
+public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
 {
     private PrimitiveLongSet addedElements;
     private PrimitiveLongSet removedElements;
@@ -116,7 +114,7 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
     @Override
     public PrimitiveLongIterator augment( PrimitiveLongIterator source )
     {
-        return (T) new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
+        return new DiffApplyingPrimitiveLongIterator( source, addedElements, removedElements );
     }
 
     @Override
@@ -160,7 +158,7 @@ public class PrimitiveLongDiffSets<T extends PrimitiveLongIterator> implements P
         {
             return false;
         }
-        PrimitiveLongDiffSets<?> diffSets = (PrimitiveLongDiffSets<?>) o;
+        PrimitiveLongDiffSets diffSets = (PrimitiveLongDiffSets) o;
         return Objects.equals( addedElements, diffSets.addedElements ) &&
                 Objects.equals( removedElements, diffSets.removedElements );
     }

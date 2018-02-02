@@ -53,7 +53,7 @@ public enum TraverserReturnType
         @Override
         public MappingRepresentation toRepresentation( Path position )
         {
-            return new org.neo4j.server.rest.repr.PathRepresentation<Path>( position );
+            return new org.neo4j.server.rest.repr.PathRepresentation<>( position );
         }
     },
     fullpath( RepresentationType.FULL_PATH )

@@ -51,7 +51,7 @@ public class Utils
 
     public static String assembleClassPathFromPackage( File directory )
     {
-        List<File> jarFiles = new ArrayList<File>();
+        List<File> jarFiles = new ArrayList<>();
         FileFilter jarFilter = file -> file.isFile() && file.getName().endsWith( ".jar" );
         gatherFiles( jarFiles, directory, jarFilter );
 
@@ -104,7 +104,7 @@ public class Utils
 
     public static List<File> unzip( File zipFile, File targetDir ) throws IOException
     {
-        List<File> files = new ArrayList<File>();
+        List<File> files = new ArrayList<>();
         ZipFile zip = new ZipFile( zipFile );
         try
         {
@@ -151,7 +151,7 @@ public class Utils
 
     public static Process execJava( String classPath, String mainClass, String... args ) throws Exception
     {
-        List<String> allArgs = new ArrayList<String>( asList( "java", "-cp", classPath, mainClass ) );
+        List<String> allArgs = new ArrayList<>( asList( "java", "-cp", classPath, mainClass ) );
         allArgs.addAll( asList( args ) );
         return getRuntime().exec( allArgs.toArray( new String[0] ) );
     }

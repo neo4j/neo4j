@@ -50,6 +50,6 @@ public class LimitingResourceIterable<T> implements ResourceIterable<T>
     @Override
     public ResourceIterator<T> iterator()
     {
-        return new LimitingResourceIterator<T>( Iterators.asResourceIterator( source.iterator() ), limit );
+        return new LimitingResourceIterator<>( Iterators.asResourceIterator( source.iterator() ), limit );
     }
 }

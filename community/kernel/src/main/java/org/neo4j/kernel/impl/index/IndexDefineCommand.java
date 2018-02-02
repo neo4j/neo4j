@@ -58,8 +58,8 @@ public class IndexDefineCommand extends Command
 
     public IndexDefineCommand()
     {
-        setIndexNameIdRange( new HashMap<String,Integer>() );
-        setKeyIdRange( new HashMap<String,Integer>() );
+        setIndexNameIdRange( new HashMap<>() );
+        setKeyIdRange( new HashMap<>() );
         idToIndexName = intObjectMap( 16 );
         idToKey = intObjectMap( 16 );
     }

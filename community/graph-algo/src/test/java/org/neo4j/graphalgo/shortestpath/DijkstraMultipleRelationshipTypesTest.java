@@ -32,11 +32,10 @@ import static org.junit.Assert.assertTrue;
 
 public class DijkstraMultipleRelationshipTypesTest extends Neo4jAlgoTestCase
 {
-    protected Dijkstra<Double> getDijkstra( String startNode, String endNode,
-            RelationshipType... relTypes )
+    protected Dijkstra<Double> getDijkstra( String startNode, String endNode, RelationshipType... relTypes )
     {
-        return new Dijkstra<Double>( 0.0, graph.getNode( startNode ),
-                graph.getNode( endNode ), ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
+        return new Dijkstra<>( 0.0, graph.getNode( startNode ), graph.getNode( endNode ),
+                ( relationship, direction ) -> 1.0, new DoubleAdder(), new DoubleComparator(), Direction.BOTH,
                 relTypes );
     }
 

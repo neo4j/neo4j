@@ -24,7 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedList;
-
 import javax.management.MBeanServerConnection;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
@@ -45,7 +44,7 @@ abstract class BeanProxy
 
     public static <T> Collection<T> loadAll( MBeanServerConnection mbs, Class<T> beanInterface, ObjectName query )
     {
-        Collection<T> beans = new LinkedList<T>();
+        Collection<T> beans = new LinkedList<>();
         try
         {
             for ( ObjectName name : mbs.queryNames( query, null ) )
@@ -75,11 +74,7 @@ abstract class BeanProxy
         {
             proxyMaker = new Java6ProxyMaker();
         }
-        catch ( Exception t )
-        {
-            proxyMaker = null;
-        }
-        catch ( LinkageError t )
+        catch ( Exception | LinkageError t )
         {
             proxyMaker = null;
         }
@@ -89,11 +84,7 @@ abstract class BeanProxy
             {
                 proxyMaker = new Java5ProxyMaker();
             }
-            catch ( Exception t )
-            {
-                proxyMaker = null;
-            }
-            catch ( LinkageError t )
+            catch ( Exception | LinkageError t )
             {
                 proxyMaker = null;
             }

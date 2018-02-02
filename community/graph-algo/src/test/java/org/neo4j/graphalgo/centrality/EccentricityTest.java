@@ -34,16 +34,13 @@ public class EccentricityTest extends Neo4jAlgoTestCase
 {
     protected SingleSourceShortestPath<Double> getSingleSourceShortestPath()
     {
-        return new SingleSourceShortestPathDijkstra<Double>( 0.0, null,
-                ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
-            new org.neo4j.graphalgo.impl.util.DoubleComparator(),
-            Direction.BOTH, MyRelTypes.R1 );
+        return new SingleSourceShortestPathDijkstra<>( 0.0, null, ( relationship, direction ) -> 1.0, new org.neo4j.graphalgo.impl.util.DoubleAdder(),
+                new org.neo4j.graphalgo.impl.util.DoubleComparator(), Direction.BOTH, MyRelTypes.R1 );
     }
 
     Eccentricity<Double> getCentralityAlgorithm()
     {
-        return new Eccentricity<Double>( getSingleSourceShortestPath(), 0.0,
-            graph.getAllNodes(), new DoubleComparator() );
+        return new Eccentricity<>( getSingleSourceShortestPath(), 0.0, graph.getAllNodes(), new DoubleComparator() );
     }
 
     protected void assertCentrality( Eccentricity<Double> centrality,

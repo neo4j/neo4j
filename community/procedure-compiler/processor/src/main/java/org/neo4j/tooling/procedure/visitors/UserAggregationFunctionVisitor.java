@@ -59,7 +59,7 @@ public class UserAggregationFunctionVisitor extends SimpleElementVisitor8<Stream
     @Override
     public Stream<CompilationMessage> visitExecutable( ExecutableElement aggregationFunction, Void ignored )
     {
-        return Stream.<Stream<CompilationMessage>>of( functionVisitor.validateEnclosingClass( aggregationFunction ),
+        return Stream.of( functionVisitor.validateEnclosingClass( aggregationFunction ),
                 validateParameters( aggregationFunction, UserAggregationFunction.class ),
                 functionVisitor.validateName( aggregationFunction ), validateAggregationType( aggregationFunction ) )
                 .flatMap( Function.identity() );

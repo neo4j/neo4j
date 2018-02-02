@@ -52,7 +52,7 @@ public class AtomicBroadcastStateTest
         when( context.getLog( AtomicBroadcastState.class ) ).thenReturn( NullLog.getInstance() );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
 
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
@@ -70,7 +70,7 @@ public class AtomicBroadcastStateTest
         when( context.getLog( AtomicBroadcastState.class ) ).thenReturn( NullLog.getInstance() );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
 
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
@@ -90,7 +90,7 @@ public class AtomicBroadcastStateTest
         when( context.getUriForId( coordinator ) ).thenReturn( uri( 1 ) );
 
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
 
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
@@ -107,7 +107,7 @@ public class AtomicBroadcastStateTest
         when( context.hasQuorum() ).thenReturn( true );
         when( context.getCoordinator() ).thenReturn( null );
         final List<Message<?>> messages = new ArrayList<>( 1 );
-        MessageHolder outgoing = message -> messages.add( message );
+        MessageHolder outgoing = messages::add;
         // WHEN
         broadcasting.handle( context, message( 1 ), outgoing );
         // THEN

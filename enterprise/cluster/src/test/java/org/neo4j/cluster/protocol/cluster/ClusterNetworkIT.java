@@ -142,7 +142,7 @@ public class ClusterNetworkIT
     @ClassRule
     public static LoggerRule logger = new LoggerRule( Level.OFF );
 
-    private List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<AtomicReference<ClusterConfiguration>>();
+    private List<AtomicReference<ClusterConfiguration>> configurations = new ArrayList<>();
 
     private ClusterTestScript script;
 

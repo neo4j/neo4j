@@ -573,14 +573,7 @@ public class EncodingIdMapperTest
 
     private LongFunction<Object> values( Object... values )
     {
-        return new LongFunction<Object>()
-        {
-            @Override
-            public Object apply( long value )
-            {
-                return values[toIntExact( value )];
-            }
-        };
+        return value -> values[toIntExact( value )];
     }
 
     private IdMapper mapper( Encoder encoder, Factory<Radix> radix, Monitor monitor )

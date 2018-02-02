@@ -75,7 +75,7 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
         }
         else
         {
-            T head = (T) heap.peek();
+            T head = heap.peek();
             if ( comparator.compare( head, e ) > 0 )
             {
                 heap.poll();

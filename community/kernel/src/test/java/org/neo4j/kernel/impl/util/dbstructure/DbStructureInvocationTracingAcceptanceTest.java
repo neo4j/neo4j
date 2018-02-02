@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.security.SecureClassLoader;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,8 +161,7 @@ public class DbStructureInvocationTracingAcceptanceTest
     private Visitable<DbStructureVisitor> compileVisitable( final String className, String inputSource )
     {
         return compile( className, inputSource,
-                ( success, manager, diagnostics ) ->
-                {
+                ( success, manager, diagnostics ) -> {
                     assertSuccessfullyCompiled( success, diagnostics, className );
                     Object instance;
                     try
@@ -203,8 +202,8 @@ public class DbStructureInvocationTracingAcceptanceTest
     {
         JavaCompiler systemCompiler = ToolProvider.getSystemJavaCompiler();
         JavaFileManager manager = new InMemFileManager();
-        DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<JavaFileObject>();
-        Iterable<? extends JavaFileObject> sources = Arrays.asList( new InMemSource( className, source ) );
+        DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
+        Iterable<? extends JavaFileObject> sources = Collections.singletonList( new InMemSource( className, source ) );
         CompilationTask task = systemCompiler.getTask( null, manager, diagnosticsCollector, null, null, sources );
         Boolean success = task.call();
         return listener.compiled( success, manager, diagnosticsCollector.getDiagnostics() );

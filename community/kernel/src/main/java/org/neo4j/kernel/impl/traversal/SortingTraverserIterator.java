@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.traversal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -105,7 +104,7 @@ class SortingTraverserIterator extends PrefetchingResourceIterator<Path> impleme
         {
             result.add( source.next() );
         }
-        Collections.sort( result, sortingStrategy );
+        result.sort( sortingStrategy );
         return result.iterator();
     }
 

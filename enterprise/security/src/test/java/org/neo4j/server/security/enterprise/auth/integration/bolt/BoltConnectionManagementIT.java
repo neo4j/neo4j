@@ -365,7 +365,7 @@ public class BoltConnectionManagementIT
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
+                msgSuccess( CoreMatchers.allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
                         hasKey( "result_available_after" ) ) )
         ) );
 

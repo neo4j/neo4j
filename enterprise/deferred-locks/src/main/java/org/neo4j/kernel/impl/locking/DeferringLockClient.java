@@ -206,12 +206,7 @@ public class DeferringLockClient implements Locks.Client
     private void addLock( ResourceType resourceType, long resourceId, boolean exclusive )
     {
         LockUnit lockUnit = new LockUnit( resourceType, resourceId, exclusive );
-        MutableInt lockCount = locks.get( lockUnit );
-        if ( lockCount == null )
-        {
-            lockCount = new MutableInt();
-            locks.put( lockUnit, lockCount );
-        }
+        MutableInt lockCount = locks.computeIfAbsent( lockUnit, k -> new MutableInt() );
         lockCount.increment();
     }
 

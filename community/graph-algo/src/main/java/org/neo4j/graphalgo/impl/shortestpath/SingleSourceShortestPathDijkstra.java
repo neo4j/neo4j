@@ -63,16 +63,16 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         reset();
     }
 
-    protected HashMap<Node,CostType> distances = new HashMap<Node,CostType>();
+    protected HashMap<Node,CostType> distances = new HashMap<>();
 
     @Override
     public void reset()
     {
         super.reset();
-        distances = new HashMap<Node,CostType>();
-        HashMap<Node,CostType> seen1 = new HashMap<Node,CostType>();
-        HashMap<Node,CostType> seen2 = new HashMap<Node,CostType>();
-        HashMap<Node,CostType> dists2 = new HashMap<Node,CostType>();
+        distances = new HashMap<>();
+        HashMap<Node,CostType> seen1 = new HashMap<>();
+        HashMap<Node,CostType> seen2 = new HashMap<>();
+        HashMap<Node,CostType> dists2 = new HashMap<>();
         dijstraIterator = new DijstraIterator( startNode, predecessors1, seen1,
             seen2, distances, dists2, false );
     }
@@ -145,8 +145,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         {
             return null;
         }
-        return new LinkedList<List<PropertyContainer>>( Util
-            .constructAllPathsToNode( targetNode, predecessors1, true, false ) );
+        return new LinkedList<>( Util.constructAllPathsToNode( targetNode, predecessors1, true, false ) );
     }
 
     @Override
@@ -161,8 +160,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         {
             return null;
         }
-        return new LinkedList<List<Node>>( Util.constructAllPathsToNodeAsNodes(
-            targetNode, predecessors1, true, false ) );
+        return new LinkedList<>( Util.constructAllPathsToNodeAsNodes( targetNode, predecessors1, true, false ) );
     }
 
     @Override
@@ -177,9 +175,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
         {
             return null;
         }
-        return new LinkedList<List<Relationship>>( Util
-            .constructAllPathsToNodeAsRelationships( targetNode, predecessors1,
-                false ) );
+        return new LinkedList<>( Util.constructAllPathsToNodeAsRelationships( targetNode, predecessors1, false ) );
     }
 
     @Override
@@ -279,7 +275,7 @@ public class SingleSourceShortestPathDijkstra<CostType> extends
     @Override
     public List<Node> getPredecessorNodes( Node node )
     {
-        List<Node> result = new LinkedList<Node>();
+        List<Node> result = new LinkedList<>();
         List<Relationship> predecessorRelationShips = predecessors1.get( node );
         if ( predecessorRelationShips == null
             || predecessorRelationShips.size() == 0 )

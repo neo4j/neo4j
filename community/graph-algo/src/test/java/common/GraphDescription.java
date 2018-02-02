@@ -85,7 +85,7 @@ public class GraphDescription implements GraphDefinition
 
     public GraphDescription( String... description )
     {
-        List<RelationshipDescription> lines = new ArrayList<RelationshipDescription>();
+        List<RelationshipDescription> lines = new ArrayList<>();
         for ( String part : description )
         {
             for ( String line : part.split( "\n" ) )
@@ -99,7 +99,7 @@ public class GraphDescription implements GraphDefinition
     @Override
     public Node create( GraphDatabaseService graphdb )
     {
-        Map<String, Node> nodes = new HashMap<String, Node>();
+        Map<String, Node> nodes = new HashMap<>();
         Node node = null;
         try ( Transaction tx = graphdb.beginTx() )
         {

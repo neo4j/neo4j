@@ -52,7 +52,7 @@ public class TestJavascriptExecutor
         // Given
         JavascriptExecutor executor = new JavascriptExecutor( "myVar;" );
 
-        Map<String, Object> ctx = new HashMap<String, Object>();
+        Map<String, Object> ctx = new HashMap<>();
         ctx.put( "myVar", 1338 );
 
         // When
@@ -89,7 +89,7 @@ public class TestJavascriptExecutor
                 "  this['theVar']; " +
                 "}" );
 
-        Map<String, Object> ctx = new HashMap<String, Object>();
+        Map<String, Object> ctx = new HashMap<>();
 
         // When
         ctx.put( "firstRun", true );

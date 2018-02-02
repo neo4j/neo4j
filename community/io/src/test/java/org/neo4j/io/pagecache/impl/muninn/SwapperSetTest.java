@@ -152,10 +152,7 @@ public class SwapperSetTest
             set.allocate( swapper );
         }
         PrimitiveIntSet vacuumedIds = Primitive.intSet();
-        set.vacuum( swapperIds ->
-        {
-            vacuumedIds.addAll( ((PrimitiveIntSet) swapperIds).iterator() );
-        } );
+        set.vacuum( swapperIds -> vacuumedIds.addAll( ((PrimitiveIntSet) swapperIds).iterator() ) );
         if ( !vacuumedIds.isEmpty() )
         {
             throw new AssertionError( "Vacuum found id " + vacuumedIds + " when it should have found nothing" );

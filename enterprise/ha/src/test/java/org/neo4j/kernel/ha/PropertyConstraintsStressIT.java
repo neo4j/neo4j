@@ -369,21 +369,20 @@ public class PropertyConstraintsStressIT
                     }
                 }
             }
-            catch ( TransactionFailureException | TransientTransactionFailureException e )
+            catch ( TransactionFailureException | TransientTransactionFailureException | ComException | ConstraintViolationException e )
             {
-                // Swallowed on purpose, we except it to fail sometimes due to either
-                //  - constraint violation on master
-                //  - concurrent schema operation on master
-            }
-            catch ( ConstraintViolationException e )
-            {
-                // Constraint violation detected on slave while building transaction
-            }
-            catch ( ComException e )
-            {
-                // Happens sometimes, cause:
-                // - The lock session requested to start is already in use.
-                //   Please retry your request in a few seconds.
+                // TransactionFailureException and TransientTransactionFailureException
+                //   Swallowed on purpose, we except it to fail sometimes due to either
+                //    - constraint violation on master
+                //    - concurrent schema operation on master
+
+                // ConstraintViolationException
+                //   Constraint violation detected on slave while building transaction
+
+                // ComException
+                //   Happens sometimes, cause:
+                //   - The lock session requested to start is already in use.
+                //     Please retry your request in a few seconds.
             }
             return i;
         };

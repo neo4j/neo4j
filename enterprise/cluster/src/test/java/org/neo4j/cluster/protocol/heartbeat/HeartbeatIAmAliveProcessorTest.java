@@ -163,7 +163,7 @@ public class HeartbeatIAmAliveProcessorTest
     @Test
     public void shouldCorrectlySetTheInstanceIdHeaderInTheGeneratedHeartbeat() throws Exception
     {
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
 
         // Given
         MessageHolder holder = mock( MessageHolder.class );
@@ -206,7 +206,7 @@ public class HeartbeatIAmAliveProcessorTest
     @Test
     public void shouldRevertToInverseUriLookupIfNoInstanceIdHeader() throws Exception
     {
-        final List<Message> sentOut = new LinkedList<Message>();
+        final List<Message> sentOut = new LinkedList<>();
         String instance2UriString = "ha://2";
 
         // Given

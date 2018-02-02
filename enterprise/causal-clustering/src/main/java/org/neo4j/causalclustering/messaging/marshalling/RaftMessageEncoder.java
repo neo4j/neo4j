@@ -77,7 +77,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( voteRequest.lastLogIndex() );
             channel.putLong( voteRequest.lastLogTerm() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -86,7 +86,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( voteResponse.term() );
             channel.put( (byte) (voteResponse.voteGranted() ? 1 : 0) );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -97,7 +97,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( preVoteRequest.lastLogIndex() );
             channel.putLong( preVoteRequest.lastLogTerm() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -106,7 +106,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( preVoteResponse.term() );
             channel.put( (byte) (preVoteResponse.voteGranted() ? 1 : 0) );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -125,7 +125,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
                 marshal.marshal( raftLogEntry.content(), channel );
             }
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -136,7 +136,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( appendResponse.matchIndex() );
             channel.putLong( appendResponse.appendIndex() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -144,7 +144,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         {
             marshal.marshal( newEntryRequest.content(), channel );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -154,14 +154,14 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
             channel.putLong( heartbeat.commitIndexTerm() );
             channel.putLong( heartbeat.commitIndex() );
 
-            return (Void)null;
+            return null;
         }
 
         @Override
         public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws Exception
         {
             // Heartbeat Response does not have any data attached to it.
-            return (Void)null;
+            return null;
         }
 
         @Override
@@ -169,35 +169,31 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         {
             channel.putLong( logCompactionInfo.leaderTerm() );
             channel.putLong( logCompactionInfo.prevIndex() );
-            return (Void)null;
+            return null;
         }
 
         @Override
         public Void handle( RaftMessages.Timeout.Election election ) throws Exception
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
 
         @Override
         public Void handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws Exception
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
 
         @Override
         public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws Exception
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
 
         @Override
         public Void handle( RaftMessages.PruneRequest pruneRequest ) throws Exception
         {
-            // Not network
-            return (Void)null;
+            return null; // Not network
         }
     }
 }

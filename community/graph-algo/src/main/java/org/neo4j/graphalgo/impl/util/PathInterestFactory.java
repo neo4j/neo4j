@@ -129,7 +129,7 @@ public class PathInterestFactory
         }
     };
 
-    public static <P extends Comparable> PathInterest<P> numberOfShortest( final int numberOfWantedPaths )
+    public static <P extends Comparable<? super P>> PathInterest<P> numberOfShortest( final int numberOfWantedPaths )
     {
         if ( numberOfWantedPaths < 1 )
         {
@@ -138,7 +138,7 @@ public class PathInterestFactory
 
         return new VisitCountBasedPathInterest<P>()
         {
-            private Comparator<P> comparator = ( o1, o2 ) -> o1.compareTo( o2 );
+            private Comparator<P> comparator = Comparable::compareTo;
 
             @Override
             int numberOfWantedPaths()

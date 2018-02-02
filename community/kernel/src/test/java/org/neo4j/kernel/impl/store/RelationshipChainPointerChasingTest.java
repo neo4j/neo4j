@@ -166,18 +166,13 @@ public class RelationshipChainPointerChasingTest
 
     private void executeTransactionInSeparateThread( final Runnable actionInsideTransaction ) throws InterruptedException
     {
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    actionInsideTransaction.run();
-                    tx.success();
-                }
+                actionInsideTransaction.run();
+                tx.success();
             }
-        };
+        } );
         thread.start();
         thread.join();
     }

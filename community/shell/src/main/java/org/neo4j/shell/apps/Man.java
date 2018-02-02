@@ -21,6 +21,7 @@ package org.neo4j.shell.apps;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.neo4j.helpers.Service;
@@ -189,10 +190,7 @@ public class Man extends AbstractApp
         {
             Collection<String> list = new ArrayList<>();
             // TODO Shouldn't trust the server to be an AbstractAppServer
-            for ( String name : ((AbstractAppServer) server).getAllAvailableCommands() )
-            {
-                list.add( name );
-            }
+            list.addAll( Arrays.asList( ((AbstractAppServer) server).getAllAvailableCommands() ) );
             availableCommands = list;
         }
         return availableCommands;

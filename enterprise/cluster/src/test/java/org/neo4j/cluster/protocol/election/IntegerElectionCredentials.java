@@ -32,6 +32,6 @@ public class IntegerElectionCredentials implements ElectionCredentials
     public int compareTo( ElectionCredentials o )
     {
         return o instanceof IntegerElectionCredentials
-               ? Integer.valueOf(credential).compareTo( ((IntegerElectionCredentials) o).credential ) : 0;
+               ? Integer.compare( credential, ((IntegerElectionCredentials) o).credential ) : 0;
     }
 }

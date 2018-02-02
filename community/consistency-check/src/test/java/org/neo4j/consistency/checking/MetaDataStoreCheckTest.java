@@ -33,8 +33,7 @@ public class MetaDataStoreCheckTest
 {
     public MetaDataStoreCheckTest()
     {
-        super( new NeoStoreCheck( new PropertyChain<NeoStoreRecord,ConsistencyReport.NeoStoreConsistencyReport>(
-                        from -> null ) ),
+        super( new NeoStoreCheck( new PropertyChain<>( from -> null ) ),
                 ConsistencyReport.NeoStoreConsistencyReport.class, new int[0] );
     }
 

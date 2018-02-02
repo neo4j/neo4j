@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
-
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -165,6 +164,6 @@ public class ValueComparisonTest
 
     private int sign( int value )
     {
-        return value == 0 ? 0 : (value < 0 ? -1 : +1);
+        return Integer.compare( value, 0 );
     }
 }

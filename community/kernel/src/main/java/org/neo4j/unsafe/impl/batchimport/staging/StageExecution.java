@@ -21,7 +21,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -120,13 +119,10 @@ public class StageExecution implements StageControl, AutoCloseable
     public Iterable<Pair<Step<?>,Float>> stepsOrderedBy( final Key stat, final boolean trueForAscending )
     {
         final List<Step<?>> steps = new ArrayList<>( pipeline );
-        Collections.sort( steps, ( o1, o2 ) ->
-        {
+        steps.sort( ( o1, o2 ) -> {
             Long stat1 = o1.stats().stat( stat ).asLong();
             Long stat2 = o2.stats().stat( stat ).asLong();
-            return trueForAscending
-                    ? stat1.compareTo( stat2 )
-                    : stat2.compareTo( stat1 );
+            return trueForAscending ? stat1.compareTo( stat2 ) : stat2.compareTo( stat1 );
         } );
 
         return () -> new PrefetchingIterator<Pair<Step<?>,Float>>()

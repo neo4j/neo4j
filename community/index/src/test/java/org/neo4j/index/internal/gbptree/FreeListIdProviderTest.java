@@ -237,10 +237,7 @@ public class FreeListIdProviderTest
         assertTrue( expected.size() > 0 );
 
         // WHEN/THEN
-        freelist.visitFreelistPageIds( id ->
-        {
-            assertTrue( expected.remove( id ) );
-        } );
+        freelist.visitFreelistPageIds( id -> assertTrue( expected.remove( id ) ) );
         assertTrue( expected.isEmpty() );
     }
 

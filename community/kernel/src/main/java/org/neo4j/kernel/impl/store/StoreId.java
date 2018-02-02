@@ -39,7 +39,7 @@ public final class StoreId implements Externalizable
     private long upgradeTime;
     private long upgradeId;
 
-    private StoreId()
+    public StoreId()
     {
         //For the readExternal method.
     }

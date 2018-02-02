@@ -258,10 +258,7 @@ public class TransactionStateMachine implements StatementProcessor
                             String statement, MapValue params )
                             throws TransactionFailureException, QueryExecutionKernelException
                     {
-                        return executeQuery( ctx, spi, statement, params, () ->
-                        {
-                           closeTransaction( ctx, false );
-                        } );
+                        return executeQuery( ctx, spi, statement, params, () -> closeTransaction( ctx, false ) );
                     }
 
                     @Override

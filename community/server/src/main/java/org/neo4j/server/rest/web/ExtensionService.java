@@ -183,17 +183,13 @@ public class ExtensionService
         {
             return output.ok( this.invokeNodeExtension( nodeId, name, method, input.readParameterList( data ) ) );
         }
-        catch ( NodeNotFoundException e )
+        catch ( NodeNotFoundException | PluginLookupException e )
         {
             return output.notFound( e );
         }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
-        }
-        catch ( PluginLookupException e )
-        {
-            return output.notFound( e );
         }
         catch ( BadPluginInvocationException e )
         {
@@ -238,17 +234,13 @@ public class ExtensionService
             return output.ok( this.invokeRelationshipExtension( relationshipId, name, method,
                     input.readParameterList( data ) ) );
         }
-        catch ( RelationshipNotFoundException e )
+        catch ( RelationshipNotFoundException | PluginLookupException e )
         {
             return output.notFound( e );
         }
         catch ( BadInputException e )
         {
             return output.badRequest( e );
-        }
-        catch ( PluginLookupException e )
-        {
-            return output.notFound( e );
         }
         catch ( BadPluginInvocationException e )
         {

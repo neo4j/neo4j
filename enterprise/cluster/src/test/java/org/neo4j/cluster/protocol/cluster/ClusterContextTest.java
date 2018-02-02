@@ -60,8 +60,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -103,8 +102,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ),
@@ -139,8 +137,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config
@@ -181,8 +178,7 @@ public class ClusterContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         MultiPaxosContext multiPaxosContext = new MultiPaxosContext( me, Iterables.iterable(
-                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ),
-                command -> command.run(), NullLogProvider.getInstance(),
+                new ElectionRole( coordinatorRole ) ), mock( ClusterConfiguration.class ), Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
                 mock( ElectionCredentialsProvider.class ), config

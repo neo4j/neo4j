@@ -32,7 +32,7 @@ public class TestCopyOnWriteHashMap
     @Test
     public void keySetUnaffectedByChanges() throws Exception
     {
-        Map<Integer, String> map = new CopyOnWriteHashMap<Integer, String>();
+        Map<Integer, String> map = new CopyOnWriteHashMap<>();
         map.put( 0, "0" );
         map.put( 1, "1" );
         map.put( 2, "2" );
@@ -47,7 +47,7 @@ public class TestCopyOnWriteHashMap
     @Test
     public void entrySetUnaffectedByChanges() throws Exception
     {
-        Map<Integer, String> map = new CopyOnWriteHashMap<Integer, String>();
+        Map<Integer, String> map = new CopyOnWriteHashMap<>();
         map.put( 0, "0" );
         map.put( 1, "1" );
         map.put( 2, "2" );

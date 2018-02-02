@@ -91,7 +91,7 @@ public class HtmlFormat extends RepresentationFormat
             @Override
             String render( Map<String, Object> serialized )
             {
-                Map<Object, Object> map = new LinkedHashMap<Object, Object>();
+                Map<Object, Object> map = new LinkedHashMap<>();
                 transfer( serialized, map, "type", "data", "start", "end" );
                 return HtmlHelper.from( map, HtmlHelper.ObjectType.RELATIONSHIP );
             }
@@ -158,7 +158,7 @@ public class HtmlFormat extends RepresentationFormat
             this.key = key;
         }
 
-        static final Map<String, MappingTemplate> TEMPLATES = new HashMap<String, MappingTemplate>();
+        static final Map<String, MappingTemplate> TEMPLATES = new HashMap<>();
         static
         {
             for ( MappingTemplate template : values() )
@@ -187,7 +187,7 @@ public class HtmlFormat extends RepresentationFormat
                 {
                     for ( Map<?, ?> serialized : (List<Map<?, ?>>) (List<?>) data )
                     {
-                        Map<Object, Object> map = new LinkedHashMap<Object, Object>();
+                        Map<Object, Object> map = new LinkedHashMap<>();
                         transfer( serialized, map, "self", "data" );
                         HtmlHelper.append( builder, map, HtmlHelper.ObjectType.NODE );
                     }
@@ -208,10 +208,10 @@ public class HtmlFormat extends RepresentationFormat
                 }
                 else
                 {
-                    Collection<Object> list = new ArrayList<Object>();
+                    Collection<Object> list = new ArrayList<>();
                     for ( Map<?, ?> serialized : (List<Map<?, ?>>) (List<?>) data )
                     {
-                        Map<Object, Object> map = new LinkedHashMap<Object, Object>();
+                        Map<Object, Object> map = new LinkedHashMap<>();
                         transfer( serialized, map, "self", "type", "data", "start", "end" );
                         list.add( map );
                     }
@@ -286,7 +286,7 @@ public class HtmlFormat extends RepresentationFormat
 
         HtmlMap( MappingTemplate template )
         {
-            super( new HashMap<String, Object>(), true );
+            super( new HashMap<>(), true );
             this.template = template;
         }
 
@@ -302,7 +302,7 @@ public class HtmlFormat extends RepresentationFormat
 
         HtmlList( ListTemplate template )
         {
-            super( new ArrayList<Object>(), true );
+            super( new ArrayList<>(), true );
             this.template = template;
         }
 

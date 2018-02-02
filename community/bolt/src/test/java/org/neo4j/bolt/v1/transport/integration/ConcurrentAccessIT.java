@@ -28,7 +28,6 @@ import org.junit.runners.Parameterized;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -159,20 +158,20 @@ public class ConcurrentAccessIT
             {
                 client.send( createAndRollback );
                 assertThat( client, eventuallyReceives(
-                        msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
+                        msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
                                 hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
-                        msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
+                        msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
                                 hasKey( "result_available_after" ) ) ),
                         msgSuccess(),
-                        msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
+                        msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( emptyList() ) ),
                                 hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 
                 // Verify no visible data
                 client.send( matchAll );
                 assertThat( client, eventuallyReceives(
-                        msgSuccess(CoreMatchers.<Map<? extends String,?>>allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
+                        msgSuccess(CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
                                 hasKey( "result_available_after" ) ) ),
                         msgSuccess() ) );
 

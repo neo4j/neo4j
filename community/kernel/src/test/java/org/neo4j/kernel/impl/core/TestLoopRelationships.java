@@ -351,7 +351,7 @@ public class TestLoopRelationships extends AbstractNeo4jTestCase
     {
         for ( Direction dir : Direction.values() )
         {
-            Set<Relationship> expected = new HashSet<Relationship>();
+            Set<Relationship> expected = new HashSet<>();
             for ( int i = 0; i < relationships.length; i++ )
             {
                 if ( relationships[i] != null

@@ -202,24 +202,19 @@ public class TransactionIT
         BinaryLatch latch = new BinaryLatch();
 
         long dbVersion = env.lastClosedTxId();
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
             {
-                try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
-                {
-                    machine.init( USER_AGENT, emptyMap(), null );
-                    latch.await();
-                    machine.run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP, nullResponseHandler() );
-                    machine.pullAll( nullResponseHandler() );
-                }
-                catch ( BoltConnectionFatality connectionFatality )
-                {
-                    throw new RuntimeException( connectionFatality );
-                }
+                machine.init( USER_AGENT, emptyMap(), null );
+                latch.await();
+                machine.run( "MATCH (n:A) SET n.prop = 'two'", EMPTY_MAP, nullResponseHandler() );
+                machine.pullAll( nullResponseHandler() );
             }
-        };
+            catch ( BoltConnectionFatality connectionFatality )
+            {
+                throw new RuntimeException( connectionFatality );
+            }
+        } );
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
@@ -266,37 +261,32 @@ public class TransactionIT
 
         final BoltStateMachine[] machine = {null};
 
-        Thread thread = new Thread()
-        {
-            @Override
-            public void run()
+        Thread thread = new Thread( () -> {
+            try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
             {
-                try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
+                machine[0] = stateMachine;
+                stateMachine.init( USER_AGENT, emptyMap(), null );
+                String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
+                                       "CREATE (n:A {id: line[0], square: line[1]}) " +
+                                       "WITH count(*) as number " +
+                                       "CREATE (n:ShouldNotExist)",
+                                       localPort );
+                try
                 {
-                    machine[0] = stateMachine;
-                    stateMachine.init( USER_AGENT, emptyMap(), null );
-                    String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
-                                           "CREATE (n:A {id: line[0], square: line[1]}) " +
-                                           "WITH count(*) as number " +
-                                           "CREATE (n:ShouldNotExist)",
-                                           localPort );
-                    try
-                    {
-                        latch.start();
-                        stateMachine.run( query, EMPTY_MAP, nullResponseHandler() );
-                        stateMachine.pullAll( nullResponseHandler() );
-                    }
-                    finally
-                    {
-                        latch.finish();
-                    }
+                    latch.start();
+                    stateMachine.run( query, EMPTY_MAP, nullResponseHandler() );
+                    stateMachine.pullAll( nullResponseHandler() );
                 }
-                catch ( BoltConnectionFatality connectionFatality )
+                finally
                 {
-                    throw new RuntimeException( connectionFatality );
+                    latch.finish();
                 }
             }
-        };
+            catch ( BoltConnectionFatality connectionFatality )
+            {
+                throw new RuntimeException( connectionFatality );
+            }
+        } );
         thread.setName( "query runner" );
         thread.start();
 

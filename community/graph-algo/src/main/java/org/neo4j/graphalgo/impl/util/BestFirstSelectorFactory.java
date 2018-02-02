@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Converter;
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.BranchOrderingPolicy;
 import org.neo4j.graphdb.traversal.BranchSelector;
@@ -73,7 +74,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         private TraversalBranch current;
         private P currentAggregatedValue;
         private final PathExpander expander;
-        private final Map<Long, Visit<P>> visits = new HashMap<Long, Visit<P>>();
+        private final Map<Long, Visit<P>> visits = new HashMap<>();
 
         public BestFirstSelector( TraversalBranch source, P startData, PathExpander expander )
         {
@@ -144,6 +145,5 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
 
     protected abstract D calculateValue( TraversalBranch next );
 
-    public static final Converter<Node, TraversalBranch> CONVERTER =
-            source -> source.endNode();
+    public static final Converter<Node, TraversalBranch> CONVERTER = Path::endNode;
 }

@@ -47,7 +47,7 @@ public class LongCollisionValues implements CollisionValues
     @Override
     public Object get( long offset )
     {
-        return (long) cache.get( offset );
+        return cache.get( offset );
     }
 
     @Override

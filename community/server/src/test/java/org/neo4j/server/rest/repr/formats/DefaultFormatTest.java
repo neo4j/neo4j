@@ -45,7 +45,7 @@ public class DefaultFormatTest
     public void setUp() throws Exception
     {
         JsonFormat inner = new JsonFormat();
-        ArrayList<MediaType> supported = new ArrayList<MediaType>();
+        ArrayList<MediaType> supported = new ArrayList<>();
         MediaType requested = MediaType.APPLICATION_JSON_TYPE;
         input = new DefaultFormat( inner, supported, requested );
     }

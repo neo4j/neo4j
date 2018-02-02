@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import org.neo4j.collection.RawIterator;
@@ -98,9 +98,9 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             ArrayList<Node> nodes = (ArrayList<Node>) next[0];
             assertTrue( nodes.size() == 1 );
             assertThat( nodes.get( 0 ).getLabels(), contains( equalTo( Label.label( "Person" ) ) ) );
-            assertEquals( new String( "Person" ), nodes.get( 0 ).getAllProperties().get( "name" ) );
-            assertEquals( Arrays.asList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
-            assertEquals( Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
+            assertEquals( "Person", nodes.get( 0 ).getAllProperties().get( "name" ) );
+            assertEquals( Collections.singletonList( "name" ), nodes.get( 0 ).getAllProperties().get( "indexes" ) );
+            assertEquals( Collections.singletonList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
                     nodes.get( 0 ).getAllProperties().get( "constraints" ) );
         }
         commit();

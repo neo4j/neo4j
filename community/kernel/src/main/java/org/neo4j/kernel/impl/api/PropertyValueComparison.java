@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Comparator;
-
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.Strings;
 
@@ -106,8 +104,6 @@ public class PropertyValueComparison
 
             return OTHER;
         }
-
-        public static Comparator<SuperType> TYPE_ID_COMPARATOR = ( left, right ) -> left.typeId - right.typeId;
     }
 
     public static final class Limit<T>

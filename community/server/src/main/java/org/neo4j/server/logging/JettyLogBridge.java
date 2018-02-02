@@ -21,17 +21,18 @@ package org.neo4j.server.logging;
 
 import org.eclipse.jetty.util.log.AbstractLogger;
 import org.eclipse.jetty.util.log.Logger;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
+
 public class JettyLogBridge extends AbstractLogger
 {
     private static final Pattern packagePattern = Pattern.compile( "(\\w)\\w+\\." );
-    private static final AtomicReference<LogProvider> logProvider = new AtomicReference<LogProvider>( NullLogProvider.getInstance() );
+    private static final AtomicReference<LogProvider> logProvider = new AtomicReference<>( NullLogProvider.getInstance() );
     private final String fullname;
     private final Log log;
 

@@ -69,12 +69,7 @@ public class ShellTabCompleter implements Completer
                 return getAppNameCompleter().complete( buffer, cursor, candidates );
             }
         }
-        catch ( RemoteException e )
-        {
-            // TODO Throw something?
-            e.printStackTrace();
-        }
-        catch ( ShellException e )
+        catch ( RemoteException | ShellException e )
         {
             // TODO Throw something?
             e.printStackTrace();

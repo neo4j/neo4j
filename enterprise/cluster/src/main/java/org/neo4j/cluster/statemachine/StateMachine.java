@@ -39,7 +39,7 @@ public class StateMachine
     private State<?, ?> state;
     private LogProvider logProvider;
 
-    private List<StateTransitionListener> listeners = new ArrayList<StateTransitionListener>();
+    private List<StateTransitionListener> listeners = new ArrayList<>();
 
     public StateMachine( Object context, Class<? extends MessageType> messageEnumType, State<?, ?> state,
                          LogProvider logProvider )
@@ -67,14 +67,14 @@ public class StateMachine
 
     public void addStateTransitionListener( StateTransitionListener listener )
     {
-        List<StateTransitionListener> newlisteners = new ArrayList<StateTransitionListener>( listeners );
+        List<StateTransitionListener> newlisteners = new ArrayList<>( listeners );
         newlisteners.add( listener );
         listeners = newlisteners;
     }
 
     public void removeStateTransitionListener( StateTransitionListener listener )
     {
-        List<StateTransitionListener> newlisteners = new ArrayList<StateTransitionListener>( listeners );
+        List<StateTransitionListener> newlisteners = new ArrayList<>( listeners );
         newlisteners.remove( listener );
         listeners = newlisteners;
     }

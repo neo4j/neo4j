@@ -39,13 +39,13 @@ public class TestClockCache
     {
         try
         {
-            new ClockCache<Object, Object>( "TestCache", 0 );
+            new ClockCache<>( "TestCache", 0 );
             fail( "Illegal maxSize should throw exception" );
         }
         catch ( IllegalArgumentException e )
         { // good
         }
-        ClockCache<Object, Object> cache = new ClockCache<Object, Object>( "TestCache", 70 );
+        ClockCache<Object, Object> cache = new ClockCache<>( "TestCache", 70 );
         try
         {
             cache.put( null, new Object() );
@@ -135,8 +135,8 @@ public class TestClockCache
         valueToKey.put( s5, key5 );
         keyToValue.put( key5, s5 );
 
-        List<Integer> cleanedElements = new LinkedList<Integer>();
-        List<Integer> existingElements = new LinkedList<Integer>();
+        List<Integer> cleanedElements = new LinkedList<>();
+        List<Integer> existingElements = new LinkedList<>();
 
         cache.put( key1, s1 );
         cache.put( key2, s2 );
@@ -182,7 +182,7 @@ public class TestClockCache
     @Test
     public void shouldUpdateSizeWhenRemoving() throws Exception
     {
-        ClockCache<String, Integer> cache = new ClockCache<String, Integer>( "foo", 3 );
+        ClockCache<String, Integer> cache = new ClockCache<>( "foo", 3 );
         cache.put( "bar", 42 );
         cache.put( "baz", 87 );
 

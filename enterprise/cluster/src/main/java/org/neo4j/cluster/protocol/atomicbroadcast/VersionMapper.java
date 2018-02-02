@@ -24,7 +24,7 @@ import java.util.Map;
 
 public class VersionMapper
 {
-    private static final Map<String, Long> classNameToSerialVersionUID = new HashMap<String, Long>();
+    private static final Map<String, Long> classNameToSerialVersionUID = new HashMap<>();
 
     public long mappingFor( String className )
     {

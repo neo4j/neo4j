@@ -90,7 +90,7 @@ public class HighlyAvailableKernelData extends KernelData implements Lifecycle
 
     public ClusterMemberInfo[] getClusterInfo()
     {
-        List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<ClusterMemberInfo>(  );
+        List<ClusterMemberInfo> clusterMemberInfos = new ArrayList<>();
         Function<Object,String> nullSafeToString = from -> from == null ? "" : from.toString();
         for ( ClusterMember clusterMember : memberInfo.getMembers() )
         {

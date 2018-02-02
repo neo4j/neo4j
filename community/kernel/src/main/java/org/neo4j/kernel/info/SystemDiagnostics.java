@@ -50,7 +50,6 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.logging.Logger;
 
 import static java.net.NetworkInterface.getNetworkInterfaces;
-
 import static org.neo4j.helpers.Format.bytes;
 
 enum SystemDiagnostics implements DiagnosticsProvider
@@ -151,7 +150,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
 
         private Collection<String> buildClassPath( ClassLoader loader, String[] pathKeys, String... classPaths )
         {
-            Map<String, String> paths = new HashMap<String, String>();
+            Map<String, String> paths = new HashMap<>();
             assert pathKeys.length == classPaths.length;
             for ( int i = 0; i < classPaths.length; i++ )
             {
@@ -183,7 +182,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
                 }
                 loader = loader.getParent();
             }
-            List<String> result = new ArrayList<String>( paths.size() );
+            List<String> result = new ArrayList<>( paths.size() );
             for ( Map.Entry<String, String> path : paths.entrySet() )
             {
                 result.add( " [" + path.getValue() + "] " + path.getKey() );
@@ -250,7 +249,7 @@ enum SystemDiagnostics implements DiagnosticsProvider
         @Override
         void dump( Logger logger )
         {
-            for ( File subdir : SYS_BLOCK.listFiles( path -> path.isDirectory() ) )
+            for ( File subdir : SYS_BLOCK.listFiles( File::isDirectory ) )
             {
                 File scheduler = new File( subdir, "queue/scheduler" );
                 if ( scheduler.isFile() )

@@ -219,18 +219,13 @@ public abstract class ServerBootstrapper implements Bootstrapper
 
     private void addShutdownHook()
     {
-        shutdownHook = new Thread()
-        {
-            @Override
-            public void run()
+        shutdownHook = new Thread( () -> {
+            log.info( "Neo4j Server shutdown initiated by request" );
+            if ( server != null )
             {
-                log.info( "Neo4j Server shutdown initiated by request" );
-                if ( server != null )
-                {
-                    server.stop();
-                }
+                server.stop();
             }
-        };
+        } );
         Runtime.getRuntime().addShutdownHook( shutdownHook );
     }
 
