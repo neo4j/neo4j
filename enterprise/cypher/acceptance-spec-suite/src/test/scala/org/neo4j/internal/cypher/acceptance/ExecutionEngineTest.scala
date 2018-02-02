@@ -960,10 +960,6 @@ order by a.COL1""".format(a, b))
     result.asScala should have size 2
   }
 
-  override protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
-  }
-
   override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
     GraphDatabaseSettings.cypher_compiler_tracing -> "true"

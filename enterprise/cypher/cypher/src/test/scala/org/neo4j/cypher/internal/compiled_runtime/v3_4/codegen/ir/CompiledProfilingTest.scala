@@ -99,8 +99,8 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     try {
       val graphDb = new GraphDatabaseCypherService(database)
       val tx = graphDb.beginTransaction(Type.explicit, AnonymousContext.write())
-      graphDb.createNode()
-      graphDb.createNode()
+      database.createNode()
+      database.createNode()
       tx.success()
       tx.close()
 

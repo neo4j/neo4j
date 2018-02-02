@@ -21,18 +21,9 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-
-import scala.collection.JavaConverters._
 
 class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-
-  override protected def createGraphDatabase(config: collection.Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 
