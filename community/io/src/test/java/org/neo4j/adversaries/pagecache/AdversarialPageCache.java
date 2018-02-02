@@ -19,17 +19,18 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.io.pagecache.FileHandle;
@@ -81,6 +82,18 @@ public class AdversarialPageCache implements PageCache
             return Optional.of( new AdversarialPagedFile( optional.get(), adversary ) );
         }
         return optional;
+    }
+
+    @Override
+    public List<PagedFile> listExistingMappings() throws IOException
+    {
+        adversary.injectFailure( IOException.class, SecurityException.class );
+        List<PagedFile> list = delegate.listExistingMappings();
+        for ( int i = 0; i < list.size(); i++ )
+        {
+            list.set( i, new AdversarialPagedFile( list.get( i ), adversary ) );
+        }
+        return list;
     }
 
     @Override

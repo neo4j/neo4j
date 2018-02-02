@@ -192,6 +192,8 @@ public interface JobScheduler extends Lifecycle
          * Kernel transaction timeout monitor.
          */
         public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor", POOLED );
+
+        public static Group pageCacheIOHelper = new Group( "PageCacheIOHelper", POOLED );
     }
 
     interface JobHandle

@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -77,6 +78,19 @@ public interface PageCache extends AutoCloseable
      * @throws IOException if page cache has been closed or page eviction problems occur.
      */
     Optional<PagedFile> getExistingMapping( File file ) throws IOException;
+
+
+    /**
+     * List a snapshot of the current file mappings.
+     * <p>
+     * The mappings can change as soon as this method returns. However, the returned {@link PagedFile}s will remain
+     * valid even if they are closed elsewhere.
+     * <p>
+     * <strong>NOTE:</strong> The calling code is responsible for closing <em>all</em> the returned paged files.
+     *
+     * @throws IOException if page cache has been closed or page eviction problems occur.
+     */
+    List<PagedFile> listExistingMappings() throws IOException;
 
     /** Flush all dirty pages */
     void flushAndForce() throws IOException;

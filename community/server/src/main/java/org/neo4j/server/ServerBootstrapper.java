@@ -22,8 +22,10 @@ package org.neo4j.server;
 import java.io.File;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.annotation.Nonnull;
 
 import sun.misc.Signal;
@@ -186,6 +188,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
     // Exit gracefully if possible
     private void installSignalHandler()
     {
+        final AtomicBoolean sigTermRunning = new AtomicBoolean( false );
         try
         {
             /*
@@ -197,8 +200,13 @@ public abstract class ServerBootstrapper implements Bootstrapper
             // SIGTERM is invoked when system service is stopped
             Signal.handle( new Signal( SIGTERM ), ( signal ) ->
             {
-                t.interrupt();
-                System.exit( 0 );
+                if ( sigTermRunning.compareAndSet( false, true ) )
+                {
+                    sigTermRunning.set( true );
+                    System.out.println("SIGTERM handler running");
+                    t.interrupt();
+                    System.exit( 0 );
+                }
             } );
         }
         catch ( Throwable e )

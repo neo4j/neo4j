@@ -17,35 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.readreplica;
+package org.neo4j.kernel.impl.enterprise;
 
 import org.junit.Test;
 
 import java.util.function.Predicate;
 
-import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
+import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class EnterpriseReadReplicaEditionModuleTest
+public class EnterpriseEditionModuleTest
 {
     @Test
     public void fileWatcherFileNameFilter()
     {
-        Predicate<String> filter = EnterpriseReadReplicaEditionModule.fileWatcherFileNameFilter();
+        Predicate<String> filter = EnterpriseEditionModule.enterpriseNonClusterFileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
         assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
-        assertTrue( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
+        assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
         assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
-        assertTrue( filter.test( StoreUtil.BRANCH_SUBDIRECTORY ) );
-        assertTrue( filter.test( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
         assertTrue( filter.test( MetaDataStore.DEFAULT_NAME + PageCacheWarmer.SUFFIX_CACHEPROF ) );
         assertTrue( filter.test( MetaDataStore.DEFAULT_NAME + PageCacheWarmer.SUFFIX_CACHEPROF_TMP ) );
     }

@@ -71,7 +71,7 @@ public class CommunityEditionModuleIntegrationTest
     @Test
     public void fileWatcherFileNameFilter()
     {
-        Predicate<String> filter = CommunityEditionModule.fileWatcherFileNameFilter();
+        Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
         assertFalse( filter.test( MetaDataStore.DEFAULT_NAME ) );
         assertFalse( filter.test( StoreFile.NODE_STORE.fileName( StoreFileType.STORE ) ) );
         assertTrue( filter.test( PhysicalLogFile.DEFAULT_NAME + ".1" ) );
