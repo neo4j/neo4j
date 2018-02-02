@@ -421,7 +421,7 @@ public final class Values
     public static ArrayValue durationArray( TemporalAmount[] values )
     {
         DurationValue[] durations = new DurationValue[values.length];
-        for(int i = 0; i < values.length; i++)
+        for ( int i = 0; i < values.length; i++ )
         {
             durations[i] = durationValue( values[i] );
         }
