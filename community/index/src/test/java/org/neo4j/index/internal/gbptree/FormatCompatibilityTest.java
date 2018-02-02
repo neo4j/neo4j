@@ -70,7 +70,6 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 public class FormatCompatibilityTest
 {
     private static final String STORE = "store";
-    private static final String TREE_CLASS_NAME = GBPTree.class.getSimpleName();
     private static final int KEY_COUNT = 10_000;
     private static final String CURRENT_FIXED_SIZE_FORMAT_ZIP = "current-format.zip";
     private static final String CURRENT_DYNAMIC_SIZE_FORMAT_ZIP = "current-dynamic-format.zip";
@@ -136,10 +135,8 @@ public class FormatCompatibilityTest
             catch ( Throwable t )
             {
                 throw new AssertionError( format(
-                        "If this is the single failing test for %s this failure is a strong indication that format " +
-                                "has changed without also incrementing %s.FORMAT_VERSION. " +
-                                "Please go ahead and increment the format version",
-                        TREE_CLASS_NAME, TREE_CLASS_NAME ), t );
+                        "If this is the single failing test in this component then this failure is a strong indication that format " +
+                                "has changed without also incrementing TreeNode version(s). Please make necessary format version changes." ), t );
             }
         }
         catch ( MetadataMismatchException e )
