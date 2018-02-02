@@ -919,7 +919,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
     }
 
-    private static abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
+    private abstract static class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
     {
         private final Statement statement;
         private final NodeFactory nodeFactory;
