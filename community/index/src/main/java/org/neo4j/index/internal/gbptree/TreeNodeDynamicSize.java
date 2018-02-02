@@ -40,6 +40,7 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.stripTombstone;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
+import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
@@ -1055,26 +1056,22 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private void setAllocOffset( PageCursor cursor, int allocOffset )
     {
-        cursor.setOffset( BYTE_POS_ALLOCOFFSET );
-        putKeyOffset( cursor, allocOffset );
+        PageCursorUtil.putUnsignedShort( cursor, BYTE_POS_ALLOCOFFSET, allocOffset );
     }
 
     int getAllocOffset( PageCursor cursor )
     {
-        cursor.setOffset( BYTE_POS_ALLOCOFFSET );
-        return readKeyOffset( cursor );
+        return PageCursorUtil.getUnsignedShort( cursor, BYTE_POS_ALLOCOFFSET );
     }
 
     private void setDeadSpace( PageCursor cursor, int deadSpace )
     {
-        cursor.setOffset( BYTE_POS_DEADSPACE );
-        putKeySize( cursor, deadSpace );
+        putUnsignedShort( cursor, BYTE_POS_DEADSPACE, deadSpace );
     }
 
     private int getDeadSpace( PageCursor cursor )
     {
-        cursor.setOffset( BYTE_POS_DEADSPACE );
-        int deadSpace = readKeySize( cursor );
+        int deadSpace = PageCursorUtil.getUnsignedShort( cursor, BYTE_POS_DEADSPACE );
         assert !hasTombstone( deadSpace ) : "Did not expect tombstone in dead space";
         return deadSpace;
     }
