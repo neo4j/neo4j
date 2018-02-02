@@ -149,7 +149,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     private final DynamicStringStore stringStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
     private final DynamicArrayStore arrayStore;
-    private final boolean allowStorePoints;
+
+    // In 3.4 we introduced capabilities to store points and temporal data types
+    // this variable here can be removed once the support for older store versions (that do not have these two
+    // capabilities) has ceased, the variable can be removed.
+    private final boolean allowStorePointsAndTemporal;
 
     public PropertyStore(
             File fileName,
@@ -168,7 +172,8 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         this.stringStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
-        allowStorePoints = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
+        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES )
+                && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override
@@ -307,11 +312,11 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     public void encodeValue( PropertyBlock block, int keyId, Value value )
     {
-        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePoints );
+        encodeValue( block, keyId, value, stringStore, arrayStore, allowStorePointsAndTemporal );
     }
 
     public static void encodeValue( PropertyBlock block, int keyId, Value value, DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator,
-            boolean allowStorePoints )
+            boolean allowStorePointsAndTemporal )
     {
         if ( value instanceof ArrayValue )
         {
@@ -325,7 +330,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
             // Fall back to dynamic array store
             List<DynamicRecord> arrayRecords = new ArrayList<>();
-            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePoints );
+            allocateArrayRecords( arrayRecords, asObject, arrayAllocator, allowStorePointsAndTemporal );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, Iterables.first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -335,7 +340,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         }
         else
         {
-            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePoints ) );
+            value.writeTo( new PropertyBlockValueWriter( block, keyId, stringAllocator, allowStorePointsAndTemporal ) );
         }
     }
 
@@ -409,14 +414,14 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         private final PropertyBlock block;
         private final int keyId;
         private final DynamicRecordAllocator stringAllocator;
-        private final boolean allowStorePoints;
+        private final boolean allowStorePointsAndTemporal;
 
-        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePoints )
+        PropertyBlockValueWriter( PropertyBlock block, int keyId, DynamicRecordAllocator stringAllocator, boolean allowStorePointsAndTemporal )
         {
             this.block = block;
             this.keyId = keyId;
             this.stringAllocator = stringAllocator;
-            this.allowStorePoints = allowStorePoints;
+            this.allowStorePointsAndTemporal = allowStorePointsAndTemporal;
         }
 
         @Override
@@ -528,7 +533,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IllegalArgumentException
         {
-            if ( allowStorePoints )
+            if ( allowStorePointsAndTemporal )
             {
                 block.setValueBlocks( GeometryType.encodePoint( keyId, crs, coordinate ) );
             }
@@ -541,50 +546,92 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         @Override
         public void writeDuration( long months, long days, long seconds, int nanos ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeDuration( keyId, months, days, seconds, nanos) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeDuration( keyId, months, days, seconds, nanos) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
 
         @Override
         public void writeDate( long epochDay ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeDate( keyId, epochDay ) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeDate( keyId, epochDay ) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
 
         @Override
         public void writeLocalTime( long nanoOfDay ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeLocalTime( keyId, nanoOfDay ) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeLocalTime( keyId, nanoOfDay ) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
 
         @Override
         public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayUTC, offsetSeconds ) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeTime( keyId, nanosOfDayUTC, offsetSeconds ) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
 
         @Override
         public void writeLocalDateTime( long epochSecond, int nano ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeLocalDateTime( keyId, epochSecond, nano ) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeLocalDateTime( keyId, epochSecond, nano ) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, offsetSeconds ) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, offsetSeconds ) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
 
         @Override
         public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws IllegalArgumentException
         {
-            // TODO check capabilities
-            block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, zoneId ) );
+            if ( allowStorePointsAndTemporal )
+            {
+                block.setValueBlocks( TemporalType.encodeDateTime( keyId, epochSecondUTC, nano, zoneId ) );
+            }
+            else
+            {
+                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+            }
         }
     }
 
@@ -677,9 +724,9 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return new PropertyRecord( -1 );
     }
 
-    public boolean allowStorePoints()
+    public boolean allowStorePointsAndTemporal()
     {
-        return allowStorePoints;
+        return allowStorePointsAndTemporal;
     }
 
     /**
