@@ -88,6 +88,8 @@ public class Operations implements Write, ExplicitIndexWrite
     private DefaultRelationshipScanCursor relationshipCursor;
     private final DefaultCursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
+    private NodeValueIndexCursor nodeValueIndexCursor;
+    private NodeLabelIndexCursor nodeLabelIndexCursor;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -111,9 +113,16 @@ public class Operations implements Write, ExplicitIndexWrite
 
     public void initialize()
     {
+        if ( (nodeCursor != null) || (propertyCursor != null) || (relationshipCursor != null) || (nodeValueIndexCursor != null) ||
+                (nodeLabelIndexCursor != null) )
+        {
+            throw new RuntimeException( "What?" );
+        }
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
+        this.nodeValueIndexCursor = cursors.allocateNodeValueIndexCursor();
+        this.nodeLabelIndexCursor = cursors.allocateNodeLabelIndexCursor();
     }
 
     @Override
@@ -234,8 +243,6 @@ public class Operations implements Write, ExplicitIndexWrite
         //node is there and doesn't already have the label, let's add
         ktx.txState().nodeDoAddLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, ADDED_LABEL );
-        nodeCursor.close();
-        propertyCursor.close();
         return true;
     }
 
@@ -274,7 +281,6 @@ public class Operations implements Write, ExplicitIndexWrite
                 nMatched++;
             }
         }
-        propertyCursor.close();
 
         //This is true if we are adding a property
         if ( changedPropertyKeyId != NO_SUCH_PROPERTY_KEY )
@@ -357,8 +363,6 @@ public class Operations implements Write, ExplicitIndexWrite
 
         ktx.txState().nodeDoRemoveLabel( nodeLabel, node );
         updater.onLabelChange( nodeLabel, nodeCursor, propertyCursor, REMOVED_LABEL );
-        nodeCursor.close();
-        propertyCursor.close();
         return true;
     }
 
@@ -401,8 +405,6 @@ public class Operations implements Write, ExplicitIndexWrite
             autoIndexing.nodes().propertyAdded( this, node, propertyKey, value );
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
             updater.onPropertyAdd( nodeCursor, propertyCursor, propertyKey, value );
-            nodeCursor.close();
-            propertyCursor.close();
             return NO_VALUE;
         }
         else
@@ -414,8 +416,6 @@ public class Operations implements Write, ExplicitIndexWrite
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
                 updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
             }
-            nodeCursor.close();
-            propertyCursor.close();
             return existingValue;
         }
     }
@@ -435,8 +435,6 @@ public class Operations implements Write, ExplicitIndexWrite
             autoIndexing.nodes().propertyRemoved( this, node, propertyKey);
             ktx.txState().nodeDoRemoveProperty( node, propertyKey, existingValue);
             updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
-            nodeCursor.close();
-            propertyCursor.close();
         }
 
         return existingValue;
@@ -572,7 +570,6 @@ public class Operations implements Write, ExplicitIndexWrite
                 break;
             }
         }
-        propertyCursor.close();
         return existingValue;
     }
 
@@ -581,23 +578,32 @@ public class Operations implements Write, ExplicitIndexWrite
         return cursors;
     }
 
-    public void release()
+    public void closeHelperCursors()
     {
         if ( nodeCursor != null )
         {
-            if ( !nodeCursor.isClosed() )
-            {
-                nodeCursor.close();
-                nodeCursor = null;
-            }
+            nodeCursor.close();
+            nodeCursor = null;
         }
         if ( propertyCursor != null )
         {
-            if ( !propertyCursor.isClosed() )
-            {
-                propertyCursor.close();
-                propertyCursor = null;
-            }
+            propertyCursor.close();
+            propertyCursor = null;
+        }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+            relationshipCursor = null;
+        }
+        if ( nodeValueIndexCursor != null )
+        {
+            nodeValueIndexCursor.close();
+            nodeValueIndexCursor = null;
+        }
+        if ( nodeLabelIndexCursor != null )
+        {
+            nodeLabelIndexCursor.close();
+            nodeLabelIndexCursor = null;
         }
     }
 
@@ -686,5 +692,15 @@ public class Operations implements Write, ExplicitIndexWrite
     public DefaultPropertyCursor propertyCursor()
     {
         return propertyCursor;
+    }
+
+    public NodeValueIndexCursor nodeValueIndexCursor()
+    {
+        return nodeValueIndexCursor;
+    }
+
+    public NodeLabelIndexCursor nodeLabelIndexCursor()
+    {
+        return nodeLabelIndexCursor;
     }
 }

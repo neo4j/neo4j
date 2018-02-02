@@ -23,10 +23,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.collection.LruCache;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -52,7 +55,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -91,23 +93,24 @@ abstract class Read implements TxStateHolder,
 
     private long cursorsInUse;
 
-    private static final boolean TRACK_CURSORS = flag( Read.class, "trackCursors", false );
-    private static final boolean RECORD_CURSORS_TRACES = flag( Read.class, "recordCursorTraces", false );
+    private static final boolean TRACK_CURSORS = flag( Read.class, "trackCursors", true );
+    private static final boolean RECORD_CURSORS_TRACES = flag( Read.class, "recordCursorTraces", true );
     private static final int CURSORS_TRACK_HISTORY_MAX_SIZE = 100;
-    private static final LruCache<Cursor, StackTraceElement[]>  EMPTY_CURSOR_HISTORY = new LruCache<>( "EmptyLru", 1 );
-    private final LruCache<Cursor, StackTraceElement[]> cursorsOpenCloseCalls;
+    private final Map<Cursor, StackTraceElement[]> cursorsOpenCloseCalls;
+
+    private static AtomicInteger counter = new AtomicInteger( 0 );
 
     Read( DefaultCursors cursors, KernelTransactionImplementation ktx )
     {
         this.cursors = cursors;
         this.ktx = ktx;
-        this.cursorsOpenCloseCalls = RECORD_CURSORS_TRACES ?
-                                     new LruCache<>( "LruCursors", CURSORS_TRACK_HISTORY_MAX_SIZE ) : EMPTY_CURSOR_HISTORY;
+        this.cursorsOpenCloseCalls = RECORD_CURSORS_TRACES ? new ConcurrentHashMap<>( CURSORS_TRACK_HISTORY_MAX_SIZE ) : Collections.emptyMap();
     }
 
     @Override
     public void acquireCursor( Cursor cursor )
     {
+        //System.out.println("ACQ "+ cursor + "@" + System.identityHashCode( cursor ));
         if ( RECORD_CURSORS_TRACES )
         {
             StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
@@ -119,6 +122,7 @@ abstract class Read implements TxStateHolder,
     @Override
     public void releaseCursor( Cursor cursor )
     {
+        //System.out.println("REL "+ cursor + "@" + System.identityHashCode( cursor ));
         if ( cursorsInUse > 0 )
         {
             if ( RECORD_CURSORS_TRACES )
@@ -514,8 +518,13 @@ abstract class Read implements TxStateHolder,
 
     public final void assertCursorsAreClosed()
     {
+        //System.out.println("AssertCursorsAreClosed with " + cursorsInUse + " open cursors");
         if ( cursorsInUse > 0 )
         {
+//            System.out.println( "Leaked cursors:" );
+//            for(Cursor c : cursorsOpenCloseCalls.keySet()){
+//                System.out.println(c + "@" + System.identityHashCode( c ));
+//            }
             long leakedCursors = cursorsInUse;
             cursorsInUse = 0;
             if ( TRACK_CURSORS )
@@ -635,13 +644,13 @@ abstract class Read implements TxStateHolder,
     static class CursorNotClosedException extends IllegalStateException
     {
 
-        CursorNotClosedException( String s, LruCache<Cursor, StackTraceElement[]> openCloseTraces )
+        CursorNotClosedException( String s, Map<Cursor, StackTraceElement[]> openCloseTraces )
         {
             super( s );
             this.addSuppressed( new Read.CursorNotClosedException.CursorTraceException( buildMessage( openCloseTraces ) ) );
         }
 
-        private static String buildMessage( LruCache<Cursor, StackTraceElement[]> openCloseTraces )
+        private static String buildMessage( Map<Cursor, StackTraceElement[]> openCloseTraces )
         {
             if ( openCloseTraces.size() == 0 )
             {
@@ -657,22 +666,25 @@ abstract class Read implements TxStateHolder,
             int element = 0;
 
             // getting all the values
-            ArrayList<StackTraceElement[]> values = new ArrayList<>();
-            for ( Cursor c : openCloseTraces.keySet() )
-            {
-                values.add( openCloseTraces.get( c ) );
-            }
+            Collection<StackTraceElement[]> values = openCloseTraces.values();
 
             for ( StackTraceElement[] traceElements : values )
             {
                 printStream.println( StringUtils.center( "*StackTrace " + element + "*", separatorLength, paddingString ) );
-                for ( StackTraceElement traceElement : traceElements )
+                if ( traceElements == null )
                 {
-                    printStream.println( "\tat " + traceElement );
+                    printStream.println( StringUtils.center( "StackTrace not available", separatorLength, paddingString ) );
                 }
-                printStream.println( StringUtils.center( "", separatorLength, paddingString ) );
-                printStream.println();
-                element++;
+                else
+                {
+                    for ( StackTraceElement traceElement : traceElements )
+                    {
+                        printStream.println( "\tat " + traceElement );
+                    }
+                    printStream.println( StringUtils.center( "", separatorLength, paddingString ) );
+                    printStream.println();
+                    element++;
+                }
             }
             printStream.println( "All cursor open/close stack traces printed." );
             return out.toString();

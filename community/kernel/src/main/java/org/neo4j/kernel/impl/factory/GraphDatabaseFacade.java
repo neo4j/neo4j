@@ -427,7 +427,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return () ->
         {
             Statement statement = ktx.acquireStatement();
-            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
+            NodeCursor cursor = ktx.nodeCursor();
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
             {
@@ -680,7 +680,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             return ResourceIterator.empty();
         }
 
-        NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor cursor = ktx.nodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
         return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
     }

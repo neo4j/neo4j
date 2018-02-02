@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.util.v3_4
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 class TaskCloser {
 
-  private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
+  private val _tasks: ArrayBuffer[Boolean => Unit] = ArrayBuffer.empty
   private var closed = false
 
   /**
@@ -37,7 +37,7 @@ class TaskCloser {
     if (!closed) {
       closed = true
       var foundException: Option[Throwable] = None
-      _tasks foreach {
+      _tasks.reverse foreach { // tasks should be closed in reverse order to allow inner tasks to use outer tasks while closing
         f =>
           try {
             f(success)

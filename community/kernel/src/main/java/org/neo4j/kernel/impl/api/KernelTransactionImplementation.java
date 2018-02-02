@@ -39,6 +39,8 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -448,6 +450,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void closeRead()
     {
+        operations.closeHelperCursors();
         operations.getCursorTracker().assertCursorsAreClosed();
     }
 
@@ -850,7 +853,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             userMetaData = Collections.emptyMap();
             userTransactionId = 0;
             statistics.reset();
-            operations.release();
             pool.release( this );
         }
         finally
@@ -1079,6 +1081,18 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public PropertyCursor propertyCursor()
     {
         return operations.propertyCursor();
+    }
+
+    @Override
+    public NodeValueIndexCursor nodeValueIndexCursor()
+    {
+        return operations.nodeValueIndexCursor();
+    }
+
+    @Override
+    public NodeLabelIndexCursor nodeLabelIndexCursor()
+    {
+        return operations.nodeLabelIndexCursor();
     }
 
     /**
