@@ -367,7 +367,6 @@ public class NeoStores implements AutoCloseable
         return (TimeZoneTokenStore) getStore( StoreType.TIME_ZONE_TOKEN );
     }
 
-
     // TODO many unused methods below
     private DynamicStringStore getLabelTokenNamesStore()
     {

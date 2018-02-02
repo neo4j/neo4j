@@ -43,7 +43,7 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder,
             LabelTokenHolder labelTokenHolder,
-            TimeZoneTokenHolder timeZoneTokenHolder)
+            TimeZoneTokenHolder timeZoneTokenHolder )
     {
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
