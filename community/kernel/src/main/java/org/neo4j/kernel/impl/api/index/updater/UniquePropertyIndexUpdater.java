@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.util.diffsets.DiffSets;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 
 /**
  * This IndexUpdater ensures that updated properties abide by uniqueness constraints. Updates are grouped up in
@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.util.diffsets.DiffSets;
  */
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
-    private final Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
+    private final Map<Object,PrimitiveLongDiffSets> referenceCount = new HashMap<>();
     private final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
     @Override
@@ -70,8 +70,8 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 
     protected abstract void flushUpdates( Iterable<IndexEntryUpdate<?>> updates );
 
-    private DiffSets<Long> propertyValueDiffSet( Object value )
+    private PrimitiveLongDiffSets propertyValueDiffSet( Object value )
     {
-        return referenceCount.computeIfAbsent( value, k -> new DiffSets<>() );
+        return referenceCount.computeIfAbsent( value, k -> new PrimitiveLongDiffSets() );
     }
 }

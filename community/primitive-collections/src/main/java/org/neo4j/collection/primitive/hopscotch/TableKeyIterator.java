@@ -23,20 +23,16 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBase
 
 public class TableKeyIterator<VALUE> extends PrimitiveLongBaseIterator
 {
-    protected final Table<VALUE> stable;
-    protected final AbstractHopScotchCollection<VALUE> collection;
-    protected final long nullKey;
-    protected final int version;
+    private final Table<VALUE> stable;
+    private final long nullKey;
     private final int max;
     private int i;
 
-    TableKeyIterator( Table<VALUE> table, AbstractHopScotchCollection<VALUE> collection )
+    public TableKeyIterator( Table<VALUE> table )
     {
         this.stable = table;
-        this.collection = collection;
         this.nullKey = stable.nullKey();
         this.max = stable.capacity();
-        this.version = stable.version();
     }
 
     protected boolean isVisible( int index, long key )

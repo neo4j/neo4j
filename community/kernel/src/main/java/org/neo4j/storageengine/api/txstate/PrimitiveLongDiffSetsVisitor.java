@@ -20,14 +20,13 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 
 /**
  * Visits added and removed elements of a {@link PrimitiveLongReadableDiffSets}.
  */
 public interface PrimitiveLongDiffSetsVisitor
 {
-    void visitAdded( long element );
+    void visitAdded( long element ) throws ConstraintValidationException;
 
-    void visitRemoved( long element );
+    void visitRemoved( long element ) throws ConstraintValidationException;
 }

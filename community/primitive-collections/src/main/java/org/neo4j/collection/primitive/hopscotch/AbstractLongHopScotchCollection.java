@@ -34,7 +34,7 @@ public abstract class AbstractLongHopScotchCollection<VALUE> extends AbstractHop
     @Override
     public PrimitiveLongIterator iterator()
     {
-        return new TableKeyIterator<>( table, this );
+        return new TableKeyIterator<>( table );
     }
 
     @Override

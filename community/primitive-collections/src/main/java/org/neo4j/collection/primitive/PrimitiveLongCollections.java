@@ -344,6 +344,16 @@ public class PrimitiveLongCollections
         return out;
     }
 
+    public static PrimitiveLongList asPrimitiveList( PrimitiveLongIterator iterator )
+    {
+        PrimitiveLongList longList = Primitive.longList();
+        while ( iterator.hasNext() )
+        {
+            longList.add( iterator.next() );
+        }
+        return longList;
+    }
+
     public static Iterator<Long> toIterator( final PrimitiveLongIterator primIterator )
     {
         return new Iterator<Long>()

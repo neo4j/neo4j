@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Map;
 
+import org.neo4j.collection.primitive.versioned.VersionedPrimitiveLongObjectMap;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.kernel.impl.util.diffsets.EmptyPrimitiveLongReadableDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
@@ -31,13 +32,13 @@ import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
  */
 public class PropertyChanges
 {
-    private VersionedHashMap<Integer, Map<Object,PrimitiveLongDiffSets>> changes;
+    private VersionedPrimitiveLongObjectMap<Map<Object, PrimitiveLongDiffSets>> changes;
 
-    public PrimitiveLongReadableDiffSets changesForProperty( int propertyKeyId, Object value )
+    PrimitiveLongReadableDiffSets changesForProperty( int propertyKeyId, Object value )
     {
         if ( changes != null )
         {
-            Map<Object,PrimitiveLongDiffSets> keyChanges = changes.get( propertyKeyId );
+            Map<Object, PrimitiveLongDiffSets> keyChanges = changes.currentView().get( propertyKeyId );
             if ( keyChanges != null )
             {
                 PrimitiveLongDiffSets valueChanges = keyChanges.get( value );
@@ -50,14 +51,14 @@ public class PropertyChanges
         return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
     }
 
-    public void changeProperty( long entityId, int propertyKeyId, Object oldValue, Object newValue )
+    void changeProperty( long entityId, int propertyKeyId, Object oldValue, Object newValue )
     {
         Map<Object, PrimitiveLongDiffSets> keyChanges = keyChanges( propertyKeyId );
         valueChanges( newValue, keyChanges ).add( entityId );
         valueChanges( oldValue, keyChanges ).remove( entityId );
     }
 
-    public void addProperty( long entityId, int propertyKeyId, Object value )
+    void addProperty( long entityId, int propertyKeyId, Object value )
     {
         valueChanges( value, keyChanges( propertyKeyId ) ).add( entityId );
     }
@@ -71,10 +72,10 @@ public class PropertyChanges
     {
         if ( changes == null )
         {
-            changes = new VersionedHashMap<>();
+            changes = new VersionedPrimitiveLongObjectMap<>();
         }
 
-        return changes.computeIfAbsent( propertyKeyId, k -> new VersionedHashMap<>() );
+        return changes.currentView().computeIfAbsent( propertyKeyId, k -> new VersionedHashMap<>() );
     }
 
     private PrimitiveLongDiffSets valueChanges( Object newValue, Map<Object, PrimitiveLongDiffSets> keyChanges )

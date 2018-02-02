@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.storageengine.api.txstate.DiffSetsVisitor;
+import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitorAdapter;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Objects.requireNonNull;
@@ -46,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  * required it is recommended to use one of the other constructors, and override
  * {@link #visitRemovedRelationship(long)} if any action is to be taken for removed relationships.
  */
-public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisitor<Long>
+public abstract class RelationshipChangeVisitorAdapter extends PrimitiveLongDiffSetsVisitorAdapter
 {
     private final DetailVisitor added;
     private final DetailVisitor removed;
@@ -86,14 +86,14 @@ public abstract class RelationshipChangeVisitorAdapter implements DiffSetsVisito
     }
 
     @Override
-    public final void visitAdded( Long relationshipId )
+    public final void visitAdded( long relationshipId )
             throws ConstraintValidationException
     {
         visitAddedRelationship( relationshipId );
     }
 
     @Override
-    public final void visitRemoved( Long relationshipId ) throws ConstraintValidationException
+    public final void visitRemoved( long relationshipId ) throws ConstraintValidationException
     {
         visitRemovedRelationship( relationshipId );
     }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.diffsets;
 
-import java.util.Set;
-
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
@@ -29,13 +28,13 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator;
  * Applies a diffset to the given source {@link RelationshipIterator}.
  * If the given source is a {@link Resource}, then so is this {@link DiffApplyingRelationshipIterator}.
  */
-public class DiffApplyingRelationshipIterator extends DiffApplyingLongIterator implements RelationshipIterator
+public class DiffApplyingRelationshipIterator extends DiffApplyingPrimitiveLongIterator implements RelationshipIterator
 {
     private final RelationshipVisitor.Home sourceHome;
     private final RelationshipVisitor.Home addedHome;
 
     public DiffApplyingRelationshipIterator( RelationshipIterator source,
-                                             Set<?> addedElements, Set<?> removedElements,
+                                             PrimitiveLongSet addedElements, PrimitiveLongSet removedElements,
                                              RelationshipVisitor.Home addedHome )
     {
         super( source, addedElements, removedElements );
@@ -44,15 +43,18 @@ public class DiffApplyingRelationshipIterator extends DiffApplyingLongIterator i
     }
 
     @Override
-    public <EXCEPTION extends Exception> boolean relationshipVisit( long relId,
-            RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
+    public <EXCEPTION extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
+            throws EXCEPTION
     {
         assert relId == next;
         switch ( phase )
         {
-        case FILTERED_SOURCE: return sourceHome.relationshipVisit( next, visitor );
-        case ADDED_ELEMENTS: return addedHome.relationshipVisit( next, visitor );
-        default: throw new IllegalStateException( "Shouldn't have come here in phase " + phase );
+        case FILTERED_SOURCE:
+            return sourceHome.relationshipVisit( next, visitor );
+        case ADDED_ELEMENTS:
+            return addedHome.relationshipVisit( next, visitor );
+        default:
+            throw new IllegalStateException( "Shouldn't have come here in phase " + phase );
         }
     }
 }

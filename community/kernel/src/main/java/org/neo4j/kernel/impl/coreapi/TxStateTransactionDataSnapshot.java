@@ -26,7 +26,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,7 +37,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -51,12 +55,12 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.txstate.NodeState;
-import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 
 /**
@@ -97,25 +101,25 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     @Override
     public Iterable<Node> createdNodes()
     {
-        return map2Nodes( state.addedAndRemovedNodes().getAdded() );
+        return mapNodes( state.addedAndRemovedNodes().getAdded() );
     }
 
     @Override
     public Iterable<Node> deletedNodes()
     {
-        return map2Nodes( state.addedAndRemovedNodes().getRemoved() );
+        return mapNodes( state.addedAndRemovedNodes().getRemoved() );
     }
 
     @Override
     public Iterable<Relationship> createdRelationships()
     {
-        return map2Rels( state.addedAndRemovedRelationships().getAdded() );
+        return mapRelationships( state.addedAndRemovedRelationships().getAdded() );
     }
 
     @Override
     public Iterable<Relationship> deletedRelationships()
     {
-        return map2Rels( state.addedAndRemovedRelationships().getRemoved() );
+        return mapRelationships( state.addedAndRemovedRelationships().getRemoved() );
     }
 
     @Override
@@ -201,34 +205,39 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     {
         try
         {
-            for ( long nodeId : state.addedAndRemovedNodes().getRemoved() )
+            PrimitiveLongIterator removedNodes = state.addedAndRemovedNodes().getRemoved().iterator();
+            while ( removedNodes.hasNext() )
             {
-                try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
+                long nodeId = removedNodes.next();
                 {
-                    if ( node.next() )
+                    try ( Cursor<NodeItem> node = storeStatement.acquireSingleNodeCursor( nodeId ) )
                     {
-                        Lock lock = node.get().lock();
-                        try ( Cursor<PropertyItem> properties = storeStatement
-                                .acquirePropertyCursor( node.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
+                        if ( node.next() )
                         {
-                            while ( properties.next() )
+                            Lock lock = node.get().lock();
+                            try ( Cursor<PropertyItem> properties = storeStatement
+                                    .acquirePropertyCursor( node.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
                             {
-                                removedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                                        store.propertyKeyGetName( properties.get().propertyKeyId() ), null,
-                                        properties.get().value() ) );
+                                while ( properties.next() )
+                                {
+                                    removedNodeProperties.add( new NodePropertyEntryView( nodeId,
+                                            store.propertyKeyGetName( properties.get().propertyKeyId() ), null,
+                                            properties.get().value() ) );
+                                }
                             }
-                        }
 
-                        node.get().labels().visitKeys( labelId ->
-                        {
-                            removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
-                            return false;
-                        } );
+                            node.get().labels().visitKeys( labelId -> {
+                                removedLabels.add( new LabelEntryView( nodeId, store.labelGetName( labelId ) ) );
+                                return false;
+                            } );
+                        }
                     }
                 }
             }
-            for ( long relId : state.addedAndRemovedRelationships().getRemoved() )
+            PrimitiveLongIterator removedRelationships = state.addedAndRemovedRelationships().getRemoved().iterator();
+            while ( removedRelationships.hasNext() )
             {
+                long relId = removedRelationships.next();
                 Relationship relationshipProxy = relationship( relId );
                 try ( Cursor<RelationshipItem> relationship = storeStatement.acquireSingleRelationshipCursor( relId ) )
                 {
@@ -259,22 +268,25 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( nodeState, property.propertyKeyId() ) ) );
                 }
-                Iterator<Integer> removed = nodeState.removedProperties();
+                PrimitiveLongIterator removed = nodeState.removedProperties();
                 while ( removed.hasNext() )
                 {
-                    Integer property = removed.next();
+                    int property = toIntExact( removed.next() );
                     removedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
                             store.propertyKeyGetName( property ), null,
                             committedValue( nodeState, property ) ) );
                 }
-                ReadableDiffSets<Integer> labels = nodeState.labelDiffSets();
-                for ( Integer label : labels.getAdded() )
+                PrimitiveLongDiffSets labels = nodeState.labelDiffSets();
+                PrimitiveLongIterator addedLabels = labels.getAdded().iterator();
+                while ( addedLabels.hasNext() )
                 {
-                    assignedLabels.add( new LabelEntryView( nodeState.getId(), store.labelGetName( label ) ) );
+                    String labelName = getLabelNameById( addedLabels.next() );
+                    assignedLabels.add( new LabelEntryView( nodeState.getId(), labelName ) );
                 }
-                for ( Integer label : labels.getRemoved() )
+                PrimitiveLongIterator removedLabelsIterator = labels.getRemoved().iterator();
+                while ( removedLabelsIterator.hasNext() )
                 {
-                    removedLabels.add( new LabelEntryView( nodeState.getId(), store.labelGetName( label ) ) );
+                    removedLabels.add( new LabelEntryView( nodeState.getId(), getLabelNameById( removedLabelsIterator.next() ) ) );
                 }
             }
             for ( RelationshipState relState : state.modifiedRelationships() )
@@ -288,10 +300,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                             store.propertyKeyGetName( property.propertyKeyId() ), property.value(),
                             committedValue( relState, property.propertyKeyId() ) ) );
                 }
-                Iterator<Integer> removed = relState.removedProperties();
+                PrimitiveLongIterator removed = relState.removedProperties();
                 while ( removed.hasNext() )
                 {
-                    Integer property = removed.next();
+                    int property = toIntExact( removed.next() );
                     removedRelationshipProperties.add( new RelationshipPropertyEntryView( relationship,
                             store.propertyKeyGetName( property ), null,
                             committedValue( relState, property ) ) );
@@ -302,6 +314,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         {
             throw new IllegalStateException( "An entity that does not exist was modified.", e );
         }
+    }
+
+    private String getLabelNameById( long id ) throws LabelNotFoundKernelException
+    {
+        return store.labelGetName( toIntExact( id ) );
     }
 
     private Relationship relationship( long relId )
@@ -329,28 +346,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return relationship;
     }
 
-    private Iterable<Node> map2Nodes( Iterable<Long> added )
+    private Iterable<Node> mapNodes( PrimitiveLongSet nodeSet )
     {
-        return new IterableWrapper<Node, Long>( added )
-        {
-            @Override
-            protected Node underlyingObjectToObject( Long id )
-            {
-                return new NodeProxy( proxySpi, id );
-            }
-        };
+        return Iterators.asIterable( PrimitiveLongCollections.map( id -> new NodeProxy( proxySpi, id ), nodeSet.iterator() ) );
     }
 
-    private Iterable<Relationship> map2Rels( Iterable<Long> ids )
+    private Iterable<Relationship> mapRelationships( PrimitiveLongSet relationshipSet )
     {
-        return new IterableWrapper<Relationship, Long>( ids )
-        {
-            @Override
-            protected Relationship underlyingObjectToObject( Long id )
-            {
-                return relationship( id );
-            }
-        };
+        return Iterators.asIterable( PrimitiveLongCollections.map( this::relationship, relationshipSet.iterator() ) );
     }
 
     private Value committedValue( NodeState nodeState, int property )

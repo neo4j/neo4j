@@ -36,8 +36,8 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asSet;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptySet;
+import static org.neo4j.collection.primitive.PrimitiveLongResourceCollections.emptyIterator;
 import static org.neo4j.kernel.impl.api.StateHandlingStatementOperations.assertOnlyExactPredicates;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 

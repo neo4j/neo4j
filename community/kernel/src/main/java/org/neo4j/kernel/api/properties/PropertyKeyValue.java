@@ -73,7 +73,7 @@ public class PropertyKeyValue implements StorageProperty
     @Override
     public int hashCode()
     {
-        int result = propertyKeyId;
+        int result = (int) propertyKeyId;
         result = 31 * result + value.hashCode();
         return result;
     }

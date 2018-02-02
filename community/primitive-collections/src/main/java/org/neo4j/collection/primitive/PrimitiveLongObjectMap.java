@@ -19,6 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.Objects;
 import java.util.function.LongFunction;
 
 public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
@@ -34,16 +35,18 @@ public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
     /**
      * Visit the entries of this map, until all have been visited or the visitor returns 'true'.
      */
-    <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE, E> visitor ) throws E;
+    <E extends Exception> void visitEntries( PrimitiveLongObjectVisitor<VALUE,E> visitor ) throws E;
 
     /**
      * {@link Iterable} with all map values
+     *
      * @return iterable with all map values
      */
     Iterable<VALUE> values();
 
     default VALUE computeIfAbsent( long key, LongFunction<VALUE> function )
     {
+        Objects.requireNonNull( function );
         VALUE value = get( key );
         if ( value == null )
         {
