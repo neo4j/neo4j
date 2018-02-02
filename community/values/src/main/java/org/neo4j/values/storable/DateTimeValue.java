@@ -350,6 +350,12 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         }
     }
 
+    public int compareTo( DateTimeValue other )
+    {
+
+        return value.compareTo( other.value );
+    }
+
     @Override
     public String prettyPrint()
     {
