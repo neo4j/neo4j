@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
@@ -44,6 +46,8 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
+    private final Consumer<DefaultRelationshipGroupCursor> pool;
+
     private BufferedGroup bufferedGroup;
     private PageCursor page;
     private PageCursor edgePage;
@@ -51,9 +55,10 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private final PrimitiveIntSet txTypes = Primitive.intSet();
     private PrimitiveIntIterator txTypeIterator;
 
-    DefaultRelationshipGroupCursor()
+    DefaultRelationshipGroupCursor( Consumer<DefaultRelationshipGroupCursor> pool )
     {
         super( NO_ID );
+        this.pool = pool;
     }
 
     void buffer( long nodeReference, long relationshipReference, Read read )
@@ -238,21 +243,27 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public void close()
     {
-        if ( page != null )
-        {
-            page.close();
-            page = null;
-        }
+        bufferedGroup = null;
+        read = null;
+        setId( NO_ID );
+        clear();
 
         if ( edgePage != null )
         {
             edgePage.close();
             edgePage = null;
         }
-        bufferedGroup = null;
-        read = null;
-        setId( NO_ID );
-        clear();
+
+        if ( page != null )
+        {
+            page.close();
+            page = null;
+
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
+        }
     }
 
     @Override

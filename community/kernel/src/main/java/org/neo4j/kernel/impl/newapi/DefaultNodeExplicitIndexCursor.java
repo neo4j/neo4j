@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.function.Consumer;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.ExplicitClient;
 
@@ -32,8 +34,11 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
     private long node;
     private float score;
 
-    DefaultNodeExplicitIndexCursor()
+    private final Consumer<DefaultNodeExplicitIndexCursor> pool;
+
+    DefaultNodeExplicitIndexCursor( Consumer<DefaultNodeExplicitIndexCursor> pool )
     {
+        this.pool = pool;
         node = NO_ID;
     }
 
@@ -90,11 +95,19 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
     @Override
     public void close()
     {
-        super.close();
-        node = NO_ID;
-        score = 0;
-        expectedSize = 0;
-        read = null;
+        if ( !isClosed() )
+        {
+            super.close();
+            node = NO_ID;
+            score = 0;
+            expectedSize = 0;
+            read = null;
+
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
+        }
     }
 
     @Override

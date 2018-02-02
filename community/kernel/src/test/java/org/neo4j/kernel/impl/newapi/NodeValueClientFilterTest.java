@@ -135,7 +135,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, new DefaultNodeCursor(), new DefaultPropertyCursor(), store, filters );
+                this, new DefaultNodeCursor( null ), new DefaultPropertyCursor( null ), store, filters );
         filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }
