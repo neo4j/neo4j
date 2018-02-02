@@ -64,3 +64,36 @@ Feature: AggregationAcceptance
       | 'The Autograph Man' | 1        | 1                 |
       | 'White teeth'       | 1        | 1                 |
     And no side effects
+
+  Scenario: Distinct should work with multiple equal grouping keys and only one different
+    And having executed:
+      """
+      UNWIND range(1,9) as i
+      CREATE ({prop1:'prop1',prop2:'prop2',prop3:'prop3',prop4:'prop4',prop5:'prop5',prop6:toString(i),prop7:'prop7',prop8:'prop8',prop9:'prop9'})
+      """
+    When executing query:
+      """
+      MATCH (node)
+      RETURN DISTINCT
+        node.prop1 as p1,
+        node.prop2 as p2,
+        node.prop3 as p3,
+        node.prop4 as p4,
+        node.prop5 as p5,
+        node.prop6 as p6,
+        node.prop7 as p7,
+        node.prop8 as p8,
+        node.prop9 as p9
+      """
+    Then the result should be:
+      | p1      | p2      | p3      | p4      | p5      | p6  | p7      | p8      | p9      |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '1' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '2' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '3' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '4' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '5' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '6' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '7' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '8' | 'prop7' | 'prop8' | 'prop9' |
+      | 'prop1' | 'prop2' | 'prop3' | 'prop4' | 'prop5' | '9' | 'prop7' | 'prop8' | 'prop9' |
+    And no side effects
