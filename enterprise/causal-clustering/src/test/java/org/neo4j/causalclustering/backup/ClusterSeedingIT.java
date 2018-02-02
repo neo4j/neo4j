@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntFunction;
@@ -50,7 +49,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.BackupUtil.restoreFromBackup;
 
@@ -63,22 +62,21 @@ public class ClusterSeedingIT
     private FileCopyDetector fileCopyDetector;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Iterable<BackupStore> data() throws Exception
+    public static Object[][] data() throws Exception
     {
-        return stores();
-    }
-
-    private static Iterable<BackupStore> stores()
-    {
-        return Arrays.asList(
-                new NoStore(),
-                new EmptyBackupStore(),
-                new BackupStoreWithSomeData(),
-                new BackupStoreWithSomeDataButNoTransactionLogs() );
+        return new Object[][]{
+                {new NoStore(), true },
+                {new EmptyBackupStore(), false },
+                {new BackupStoreWithSomeData(), false },
+                {new BackupStoreWithSomeDataButNoTransactionLogs(), false }
+        };
     }
 
     @Parameterized.Parameter()
     public BackupStore initialStore;
+
+    @Parameterized.Parameter( 1 )
+    public boolean shouldStoreCopy;
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
@@ -143,11 +141,11 @@ public class ClusterSeedingIT
         // when
         cluster.start();
 
-        //then
+        // then
         if ( backup.isPresent() )
         {
             dataMatchesEventually( DbRepresentation.of( backup.get() ), cluster.coreMembers() );
         }
-        assertFalse( fileCopyDetector.hasDetectedAnyFileCopied() );
+        assertEquals( shouldStoreCopy, fileCopyDetector.hasDetectedAnyFileCopied() );
     }
 }

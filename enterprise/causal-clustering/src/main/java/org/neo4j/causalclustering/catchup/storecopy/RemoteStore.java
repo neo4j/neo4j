@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchupResult;
@@ -28,7 +29,6 @@ import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -38,12 +38,12 @@ import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
@@ -54,6 +54,7 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
 public class RemoteStore
 {
     private final Log log;
+    private final LocalDatabase localDatabase;
     private final Monitors monitors;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -62,11 +63,8 @@ public class RemoteStore
     private final TxPullClient txPullClient;
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
-    public RemoteStore( LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache,
-            StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-            TransactionLogCatchUpFactory transactionLogFactory,
-            Monitors monitors )
+    public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient, TxPullClient txPullClient,
+            TransactionLogCatchUpFactory transactionLogFactory, Monitors monitors, LocalDatabase localDatabase )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -76,6 +74,58 @@ public class RemoteStore
         this.transactionLogFactory = transactionLogFactory;
         this.monitors = monitors;
         this.log = logProvider.getLog( getClass() );
+        this.localDatabase = localDatabase;
+    }
+
+    private CommitState getStoreState() throws IOException
+    {
+        ReadOnlyTransactionIdStore metaDataStore = new ReadOnlyTransactionIdStore( pageCache, localDatabase.storeDir() );
+        long metaDataStoreTxId = metaDataStore.getLastCommittedTransactionId();
+
+        Optional<Long> latestTransactionLogIndex = getLatestTransactionLogIndex( metaDataStoreTxId );
+
+        //noinspection OptionalIsPresent
+        if ( latestTransactionLogIndex.isPresent() )
+        {
+            return new CommitState( metaDataStoreTxId, latestTransactionLogIndex.get() );
+        }
+        else
+        {
+            return new CommitState( metaDataStoreTxId );
+        }
+    }
+
+    private Optional<Long> getLatestTransactionLogIndex( long startTxId ) throws IOException
+    {
+        if ( !localDatabase.hasTxLogs() )
+        {
+            return Optional.empty();
+        }
+
+        // this is not really a read-only store, because it will create an empty transaction log if there is none
+        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, localDatabase.storeDir(), new Monitors() );
+
+        long lastTxId = BASE_TX_ID;
+        try ( Lifespan ignored = new Lifespan( txStore ) )
+        {
+            TransactionCursor cursor;
+            try
+            {
+                cursor = txStore.getTransactions( startTxId );
+            }
+            catch ( NoSuchTransactionException e )
+            {
+                return Optional.empty();
+            }
+
+            while ( cursor.next() )
+            {
+                CommittedTransactionRepresentation tx = cursor.get();
+                lastTxId = tx.getCommitEntry().getTxId();
+            }
+
+            return Optional.of( lastTxId );
+        }
     }
 
     /**
@@ -90,53 +140,32 @@ public class RemoteStore
      * they end and pull from there, excluding the last one so that we do not
      * get duplicate entries.
      */
-    private long getPullIndex( File storeDir ) throws IOException
+    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId ) throws StoreCopyFailedException, IOException
     {
-        /* this is the metadata store */
-        ReadOnlyTransactionIdStore txIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDir );
+        CommitState commitState = getStoreState();
+        log.info( "Store commit state: " + commitState );
 
-        /* Clean as in clean shutdown. Without transaction logs this should be the truth,
-        * but otherwise it can be used as a starting point for scanning the logs. */
-        long lastCleanTxId = txIdStore.getLastCommittedTransactionId();
-        log.info( "Last Clean Tx Id: %d", lastCleanTxId );
-
-        /* these are the transaction logs */
-        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
-
-        long lastTxId = BASE_TX_ID;
-        try ( Lifespan ignored = new Lifespan( txStore ) )
+        if ( commitState.transactionLogIndex().isPresent() )
         {
-            TransactionCursor cursor;
-            try
-            {
-                cursor = txStore.getTransactions( lastCleanTxId );
-            }
-            catch ( NoSuchTransactionException e )
-            {
-                log.info( "No transaction logs found. Will use metadata store as base for pull request." );
-                return Math.max( TransactionIdStore.BASE_TX_ID + 1, lastCleanTxId );
-            }
-
-            while ( cursor.next() )
-            {
-                CommittedTransactionRepresentation tx = cursor.get();
-                lastTxId = tx.getCommitEntry().getTxId();
-            }
-
-            if ( lastTxId < lastCleanTxId )
-            {
-                throw new IllegalStateException( "Metadata index was higher than transaction log index." );
-            }
-
-            // we don't want to pull a transaction we already have in the log, hence +1
-            return lastTxId + 1;
+            return pullTransactions( from, expectedStoreId, localDatabase.storeDir(), commitState.transactionLogIndex().get() + 1, false );
         }
-    }
-
-    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
-    {
-        long pullIndex = getPullIndex( storeDir );
-        return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
+        else
+        {
+            CatchupResult catchupResult;
+            if ( commitState.metaDataStoreIndex() == BASE_TX_ID )
+            {
+                return pullTransactions( from, expectedStoreId, localDatabase.storeDir(), commitState.metaDataStoreIndex() + 1, false );
+            }
+            else
+            {
+                catchupResult = pullTransactions( from, expectedStoreId, localDatabase.storeDir(), commitState.metaDataStoreIndex(), false );
+                if ( catchupResult == E_TRANSACTION_PRUNED )
+                {
+                    return pullTransactions( from, expectedStoreId, localDatabase.storeDir(), commitState.metaDataStoreIndex() + 1, false );
+                }
+            }
+            return catchupResult;
+        }
     }
 
     public void copy( AdvertisedSocketAddress from, StoreId expectedStoreId, File destDir )

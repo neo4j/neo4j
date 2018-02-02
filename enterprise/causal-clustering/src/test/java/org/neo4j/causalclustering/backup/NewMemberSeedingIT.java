@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2017 "Neo Technology,"
+ * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -91,8 +91,7 @@ public class NewMemberSeedingIT
 
     private static Iterable<BackupStore> stores()
     {
-        return Arrays
-                .asList( new EmptyBackupStore(), new BackupStoreWithSomeData(),
+        return Arrays.asList( new EmptyBackupStore(), new BackupStoreWithSomeData(),
                         new BackupStoreWithSomeDataButNoTransactionLogs() );
     }
 
@@ -151,6 +150,7 @@ public class NewMemberSeedingIT
         {
             restoreFromBackup( backup.get(), fsa, newCoreClusterMember );
         }
+
         // we want the new instance to seed from backup and not delete and re-download the store
         newCoreClusterMember.monitors().addMonitorListener( fileCopyDetector );
         newCoreClusterMember.start();
