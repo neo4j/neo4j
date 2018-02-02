@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -51,9 +52,11 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private PrimitiveLongIterator added = emptyIterator();
     private PrimitiveLongSet removed = emptySet();
     private boolean needsValues;
+    private final Consumer<DefaultNodeValueIndexCursor> pool;
 
-    DefaultNodeValueIndexCursor()
+    DefaultNodeValueIndexCursor( Consumer<DefaultNodeValueIndexCursor> pool )
     {
+        this.pool = pool;
         node = NO_ID;
     }
 
@@ -181,13 +184,21 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public void close()
     {
-        super.close();
-        this.node = NO_ID;
-        this.query = null;
-        this.values = null;
-        this.read = null;
-        this.added = emptyIterator();
-        this.removed = PrimitiveLongCollections.emptySet();
+        if ( !isClosed() )
+        {
+            super.close();
+            this.node = NO_ID;
+            this.query = null;
+            this.values = null;
+            this.read = null;
+            this.added = emptyIterator();
+            this.removed = PrimitiveLongCollections.emptySet();
+
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
+        }
     }
 
     @Override

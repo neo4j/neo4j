@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -47,9 +48,12 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     private HasChanges hasChanges = HasChanges.MAYBE;
     private Set<Long> addedNodes;
 
-    DefaultNodeCursor()
+    private final Consumer<DefaultNodeCursor> pool;
+
+    DefaultNodeCursor( Consumer<DefaultNodeCursor> pool )
     {
         super( NO_ID );
+        this.pool = pool;
     }
 
     void scan( Read read )
@@ -242,21 +246,27 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     @Override
     public void close()
     {
-        if ( pageCursor != null )
-        {
-            pageCursor.close();
-            pageCursor = null;
-        }
         read = null;
+        hasChanges = HasChanges.MAYBE;
+        addedNodes = emptySet();
+        reset();
 
         if ( labelCursor != null )
         {
             labelCursor.close();
             labelCursor = null;
         }
-        hasChanges = HasChanges.MAYBE;
-        addedNodes = emptySet();
-        reset();
+
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
+
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
+        }
     }
 
     @Override
