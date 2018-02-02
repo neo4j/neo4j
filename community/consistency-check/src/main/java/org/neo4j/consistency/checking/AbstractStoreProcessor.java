@@ -28,6 +28,7 @@ import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistenc
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.TimeZoneTokenConsistencyReport;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
@@ -53,8 +55,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     private final RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> propertyKeyTokenChecker;
     private final RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> relationshipTypeTokenChecker;
     private final RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> labelTokenChecker;
+    private final RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> timeZoneTokenChecker;
     private final RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> relationshipGroupChecker;
 
+    // TODO unused
     public AbstractStoreProcessor()
     {
         this( CheckDecorator.NONE );
@@ -70,6 +74,7 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
         this.relationshipTypeTokenChecker =
                 decorator.decorateRelationshipTypeTokenChecker( new RelationshipTypeTokenRecordCheck() );
         this.labelTokenChecker = decorator.decorateLabelTokenChecker( new LabelTokenRecordCheck() );
+        this.timeZoneTokenChecker = decorator.decorateTimeZoneTokenChecker( new TimeZoneTokenRecordCheck() );
         this.relationshipGroupChecker = decorator.decorateRelationshipGroupChecker( new RelationshipGroupRecordCheck() );
     }
 
@@ -111,6 +116,11 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordStore<LabelTokenRecord> store,
             LabelTokenRecord record,
             RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
+
+    protected abstract void checkTimeZoneToken(
+            RecordStore<TimeZoneTokenRecord> store,
+            TimeZoneTokenRecord record,
+            RecordCheck<TimeZoneTokenRecord, TimeZoneTokenConsistencyReport> checker );
 
     protected abstract void checkPropertyKeyToken(
             RecordStore<PropertyKeyTokenRecord> store, PropertyKeyTokenRecord record,
@@ -184,6 +194,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             type = RecordType.LABEL_NAME;
             dereference = DynamicStore.LABEL;
             break;
+        case TIME_ZONE_TOKEN_NAME:
+            type = RecordType.TIME_ZONE_NAME;
+            dereference = DynamicStore.TIME_ZONE;
+            break;
         default:
             throw new IllegalArgumentException( format( "The id type [%s] is not valid for String records.", idType ) );
         }
@@ -221,6 +235,12 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
     public void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record )
     {
         checkLabelToken( store, record, labelTokenChecker );
+    }
+
+    @Override
+    public void processTimeZoneToken( RecordStore<TimeZoneTokenRecord> store, TimeZoneTokenRecord record ) throws RuntimeException
+    {
+        checkTimeZoneToken( store, record, timeZoneTokenChecker );
     }
 
     @Override

@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -131,6 +132,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
+    private final TimeZoneTokenHolder timeZoneTokenHolder;
     private final DatabaseHealth databaseHealth;
     private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
@@ -163,6 +165,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LogProvider logProvider,
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             LabelTokenHolder labelTokens,
+            TimeZoneTokenHolder timeZoneTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             SchemaState schemaState,
             ConstraintSemantics constraintSemantics,
@@ -184,6 +187,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;
+        this.timeZoneTokenHolder = timeZoneTokens;
         this.schemaState = schemaState;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
@@ -217,11 +221,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState,
-                    propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
+                    propertyKeyTokenHolder, relationshipTypeTokens, labelTokens, timeZoneTokens );
 
             storeStatementSupplier = storeStatementSupplier( neoStores );
             storeLayer = new StorageLayer(
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    propertyKeyTokenHolder, labelTokens, timeZoneTokens, relationshipTypeTokens,
                     schemaStorage, neoStores, indexingService,
                     storeStatementSupplier, schemaCache );
 
@@ -416,6 +420,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 neoStores.getRelationshipTypeTokenStore().getTokens( Integer.MAX_VALUE ) );
         labelTokenHolder.setInitialTokens(
                 neoStores.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
+        timeZoneTokenHolder.setInitialTokens(
+                neoStores.getTimeZoneTokenStore().getTokens( Integer.MAX_VALUE ) );
 
         neoStores.rebuildCountStoreIfNeeded(); // TODO: move this to counts store lifecycle
         loadSchemaCache();

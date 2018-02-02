@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -103,6 +104,12 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     public RecordFormat<LabelTokenRecord> labelToken()
     {
         return withForcedSecondaryUnit( actual.labelToken() );
+    }
+
+    @Override
+    public RecordFormat<TimeZoneTokenRecord> timeZoneToken()
+    {
+        return withForcedSecondaryUnit( actual.timeZoneToken() );
     }
 
     @Override

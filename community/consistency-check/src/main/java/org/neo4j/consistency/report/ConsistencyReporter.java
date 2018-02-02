@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.Exceptions.stringify;
@@ -66,6 +67,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.RelationshipTypeConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.LabelTokenConsistencyReport> LABEL_KEY_REPORT =
             ProxyFactory.create( ConsistencyReport.LabelTokenConsistencyReport.class );
+    private static final ProxyFactory<ConsistencyReport.TimeZoneTokenConsistencyReport> TIME_ZONE_KEY_REPORT =
+            ProxyFactory.create( ConsistencyReport.TimeZoneTokenConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.PropertyKeyTokenConsistencyReport> PROPERTY_KEY_REPORT =
             ProxyFactory.create( ConsistencyReport.PropertyKeyTokenConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.DynamicConsistencyReport> DYNAMIC_REPORT =
@@ -411,6 +414,12 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                               RecordCheck<LabelTokenRecord, ConsistencyReport.LabelTokenConsistencyReport> checker )
     {
         dispatch( RecordType.LABEL, LABEL_KEY_REPORT, label, checker );
+    }
+
+    @Override
+    public void forTimeZoneName( TimeZoneTokenRecord record, RecordCheck<TimeZoneTokenRecord,ConsistencyReport.TimeZoneTokenConsistencyReport> checker )
+    {
+        dispatch( RecordType.TIME_ZONE, TIME_ZONE_KEY_REPORT, record, checker );
     }
 
     @Override

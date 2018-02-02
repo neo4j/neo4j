@@ -101,6 +101,18 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
+    public int timeZoneGetOrCreateForName( Statement state, String timeZoneName ) throws IllegalTokenNameException
+    {
+        return keyWriteDelegate.timeZoneGetOrCreateForName( state, checkValidTokenName( timeZoneName ) );
+    }
+
+    @Override
+    public void timeZoneCreateForName( KernelStatement state, String timeZoneName, int id ) throws IllegalTokenNameException
+    {
+        keyWriteDelegate.timeZoneCreateForName( state, timeZoneName, id );
+    }
+
+    @Override
     public void propertyKeyCreateForName( KernelStatement state, String propertyKeyName, int id ) throws IllegalTokenNameException
     {
         keyWriteDelegate.propertyKeyCreateForName( state, propertyKeyName, id );

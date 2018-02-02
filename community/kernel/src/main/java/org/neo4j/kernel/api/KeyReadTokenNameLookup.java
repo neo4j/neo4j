@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
@@ -50,6 +51,19 @@ public final class KeyReadTokenNameLookup implements TokenNameLookup
         catch ( LabelNotFoundKernelException e )
         {
             return "[" + labelId + "]";
+        }
+    }
+
+    @Override
+    public String timeZoneGetName( int timeZoneId )
+    {
+        try
+        {
+            return read.timeZoneGetName( null, timeZoneId );
+        }
+        catch ( TimeZoneNotFoundKernelException e )
+        {
+            return "[" + timeZoneId + "]";
         }
     }
 

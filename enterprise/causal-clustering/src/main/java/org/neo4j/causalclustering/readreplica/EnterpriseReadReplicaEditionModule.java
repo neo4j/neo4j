@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTimeZoneTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
@@ -159,6 +160,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
         labelTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        timeZoneTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingTimeZoneTokenHolder( new ReadOnlyTokenCreator() ) ) );
         relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
 
         life.add( dependencies.satisfyDependency( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );

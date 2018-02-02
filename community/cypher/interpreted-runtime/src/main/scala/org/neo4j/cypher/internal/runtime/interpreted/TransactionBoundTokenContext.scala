@@ -56,6 +56,8 @@ abstract class TransactionBoundTokenContext(statement: => Statement) extends Tok
 
   def getLabelName(labelId: Int): String = statement.readOperations().labelGetName(labelId)
 
+  override def getTimeZoneName(id: Int) = statement.readOperations().timeZoneGetName(id)
+
   def getOptRelTypeId(relType: String): Option[Int] = {
     val relTypeId: Int = statement.readOperations().relationshipTypeGetForName(relType)
     if (relTypeId == KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE) None

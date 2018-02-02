@@ -106,6 +106,7 @@ import org.neo4j.kernel.ha.cluster.modeswitch.LockManagerSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.PropertyKeyCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.RelationshipTypeCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.StatementLocksFactorySwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.TimeZoneTokenCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.UpdatePullerSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -132,6 +133,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTimeZoneTokenHolder;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
@@ -422,7 +424,7 @@ public class HighlyAvailableEditionModule
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
-                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, this.idGeneratorFactory,
+                        labelTokenHolder, timeZoneTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, this.idGeneratorFactory,
                         platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
                         platformModule.dependencies.resolveDependency( CheckPointer.class ),
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
@@ -500,6 +502,9 @@ public class HighlyAvailableEditionModule
                 createPropertyKeyCreator( config, componentSwitcherContainer,
                         masterDelegateInvocationHandler, requestContextFactory, kernelProvider ) ) );
         labelTokenHolder = dependencies.satisfyDependency( new DelegatingLabelTokenHolder( createLabelIdCreator( config,
+                componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory,
+                kernelProvider ) ) );
+        timeZoneTokenHolder = dependencies.satisfyDependency( new DelegatingTimeZoneTokenHolder( createTimeZoneIdCreator( config,
                 componentSwitcherContainer, masterDelegateInvocationHandler, requestContextFactory,
                 kernelProvider ) ) );
         relationshipTypeTokenHolder = dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder(
@@ -764,6 +769,28 @@ public class HighlyAvailableEditionModule
 
         componentSwitcherContainer.add( modeSwitcher );
         return labelIdCreator;
+    }
+
+    private TokenCreator createTimeZoneIdCreator( Config config, ComponentSwitcherContainer componentSwitcherContainer,
+            DelegateInvocationHandler<Master> masterDelegateInvocationHandler,
+            RequestContextFactory requestContextFactory, Supplier<InwardKernel> kernelProvider )
+    {
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+
+        DelegateInvocationHandler<TokenCreator> timeZoneIdCreatorDelegate = new DelegateInvocationHandler<>(
+                TokenCreator.class );
+        TokenCreator timeZoneIdCreator = (TokenCreator) newProxyInstance( TokenCreator.class.getClassLoader(),
+                new Class[]{TokenCreator.class}, timeZoneIdCreatorDelegate );
+
+        TimeZoneTokenCreatorSwitcher modeSwitcher = new TimeZoneTokenCreatorSwitcher(
+                timeZoneIdCreatorDelegate, masterDelegateInvocationHandler, requestContextFactory, kernelProvider,
+                idGeneratorFactory );
+
+        componentSwitcherContainer.add( modeSwitcher );
+        return timeZoneIdCreator;
     }
 
     private KernelData createKernelData( Config config, GraphDatabaseAPI graphDb, ClusterMembers members,

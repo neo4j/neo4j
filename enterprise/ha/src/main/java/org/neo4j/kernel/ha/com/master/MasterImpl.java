@@ -90,6 +90,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         int getOrCreateLabel( String name );
 
+        int getOrCreateTimeZone( String name );
+
         int getOrCreateProperty( String name );
 
     }
@@ -224,6 +226,13 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         assertCorrectEpoch( context );
         return spi.packTransactionObligationResponse( context, spi.getOrCreateLabel( name ) );
+    }
+
+    @Override
+    public Response<Integer> createTimeZone( RequestContext context, String name )
+    {
+        assertCorrectEpoch( context );
+        return spi.packTransactionObligationResponse( context, spi.getOrCreateTimeZone( name ) );
     }
 
     @Override

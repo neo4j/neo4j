@@ -103,6 +103,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -1192,6 +1193,35 @@ public class FullCheckIntegrationTest
     }
 
     @Test
+    public void shouldReportTimeZoneNameInconsistencies() throws Exception
+    {
+        // given
+        final Reference<Integer> inconsistentName = new Reference<>();
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                inconsistentName.set( next.timeZone() );
+                tx.timeZone( inconsistentName.get(), "FOO" );
+            }
+        } );
+        StoreAccess access = fixture.directStoreAccess().nativeStores();
+        DynamicRecord record = access.getTimeZoneNameStore().getRecord( inconsistentName.get(),
+                access.getTimeZoneNameStore().newRecord(), FORCE );
+        record.setNextBlock( record.getId() );
+        access.getTimeZoneNameStore().updateRecord( record );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.TIME_ZONE_NAME, 1 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
     public void shouldReportPropertyKeyNameInconsistencies() throws Exception
     {
         // given
@@ -1257,6 +1287,25 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.LABEL, 1 )
+                   .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldReportTimeZoneInconsistencies() throws Exception
+    {
+        // given
+        StoreAccess access = fixture.directStoreAccess().nativeStores();
+        TimeZoneTokenRecord record = access.getTimeZoneTokenStore().getRecord( 1,
+                access.getTimeZoneTokenStore().newRecord(), FORCE );
+        record.setNameId( 20 );
+        record.setInUse( true );
+        access.getTimeZoneTokenStore().updateRecord( record );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on( stats ).verify( RecordType.TIME_ZONE, 1 )
                    .andThatsAllFolks();
     }
 

@@ -61,6 +61,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getLabelName(id: Int): String =
     translateException(inner.getLabelName(id))
 
+  override def getTimeZoneName(id: Int) =
+    translateException(inner.getTimeZoneName(id))
+
   override def getOptLabelId(labelName: String): Option[Int] =
     translateException(inner.getOptLabelId(labelName))
 

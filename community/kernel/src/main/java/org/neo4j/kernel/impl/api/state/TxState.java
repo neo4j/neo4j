@@ -104,6 +104,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
     private PrimitiveIntObjectMap<String> createdLabelTokens;
+    private PrimitiveIntObjectMap<String> createdTimeZoneTokens;
     private PrimitiveIntObjectMap<String> createdPropertyKeyTokens;
     private PrimitiveIntObjectMap<String> createdRelationshipTypeTokens;
 
@@ -227,6 +228,11 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( createdLabelTokens != null )
         {
             createdLabelTokens.visitEntries( new LabelTokenStateVisitor( visitor ) );
+        }
+
+        if ( createdTimeZoneTokens != null )
+        {
+            createdTimeZoneTokens.visitEntries( new TimeZoneTokenStateVisitor( visitor ) );
         }
 
         if ( createdPropertyKeyTokens != null )
@@ -597,6 +603,17 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             createdLabelTokens = Primitive.intObjectMap();
         }
         createdLabelTokens.put( id, labelName );
+        changed();
+    }
+
+    @Override
+    public void timeZoneDoCreateForName( String timeZoneName, int id )
+    {
+        if ( createdTimeZoneTokens == null )
+        {
+            createdTimeZoneTokens = Primitive.intObjectMap();
+        }
+        createdTimeZoneTokens.put( id, timeZoneName );
         changed();
     }
 
@@ -1272,6 +1289,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         public boolean visited( int key, String value )
         {
             visitor.visitCreatedLabelToken( value, key );
+            return false;
+        }
+    }
+
+    private static class TimeZoneTokenStateVisitor implements PrimitiveIntObjectVisitor<String,RuntimeException>
+    {
+        private final TxStateVisitor visitor;
+
+        TimeZoneTokenStateVisitor( TxStateVisitor visitor )
+        {
+            this.visitor = visitor;
+        }
+
+        @Override
+        public boolean visited( int key, String value )
+        {
+            visitor.visitCreatedTimeZoneToken( value, key );
             return false;
         }
     }

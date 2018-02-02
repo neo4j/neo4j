@@ -44,4 +44,6 @@ public interface NeoCommandType
 
     byte UPDATE_RELATIONSHIP_COUNTS_COMMAND = (byte) 16;
     byte UPDATE_NODE_COUNTS_COMMAND = (byte) 17;
+
+    byte TIME_ZONE_KEY_COMMAND = (byte) 18;
 }

@@ -132,6 +132,23 @@ public enum StoreType
                     return neoStores.createLabelTokenStore( getStoreName() );
                 }
             },
+    TIME_ZONE_TOKEN_NAME( StoreFile.TIME_ZONE_TOKEN_NAMES_STORE, true, true )
+            {
+                @Override
+                public CommonAbstractStore open( NeoStores neoStores )
+                {
+                    return neoStores.createDynamicStringStore( getStoreName(), IdType.TIME_ZONE_TOKEN_NAME,
+                            TokenStore.NAME_STORE_BLOCK_SIZE );
+                }
+            },
+    TIME_ZONE_TOKEN( StoreFile.TIME_ZONE_TOKEN_STORE, true, true )
+            {
+                @Override
+                public CommonAbstractStore open( NeoStores neoStores )
+                {
+                    return neoStores.createTimeZoneTokenStore( getStoreName() );
+                }
+            },
     SCHEMA( StoreFile.SCHEMA_STORE, true, true )
             {
                 @Override

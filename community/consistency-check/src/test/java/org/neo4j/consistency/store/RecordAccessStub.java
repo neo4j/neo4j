@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.ArgumentMatchers.any;
@@ -183,10 +184,12 @@ public class RecordAccessStub implements RecordAccess
     private final Map<Long, Delta<DynamicRecord>> arrays = new HashMap<>();
     private final Map<Long, Delta<RelationshipTypeTokenRecord>> relationshipTypeTokens = new HashMap<>();
     private final Map<Long, Delta<LabelTokenRecord>> labelTokens = new HashMap<>();
+    private final Map<Long, Delta<TimeZoneTokenRecord>> timeZoneTokens = new HashMap<>();
     private final Map<Long, Delta<PropertyKeyTokenRecord>> propertyKeyTokens = new HashMap<>();
     private final Map<Long, Delta<DynamicRecord>> relationshipTypeNames = new HashMap<>();
     private final Map<Long, Delta<DynamicRecord>> nodeDynamicLabels = new HashMap<>();
     private final Map<Long, Delta<DynamicRecord>> labelNames = new HashMap<>();
+    private final Map<Long, Delta<DynamicRecord>> timeZoneNames = new HashMap<>();
     private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<>();
     private final Map<Long, Delta<RelationshipGroupRecord>> relationshipGroups = new HashMap<>();
     private Delta<NeoStoreRecord> graph;
@@ -541,6 +544,18 @@ public class RecordAccessStub implements RecordAccess
     public RecordReference<DynamicRecord> labelName( int id )
     {
         return reference( labelNames, id, Version.LATEST );
+    }
+
+    @Override
+    public RecordReference<TimeZoneTokenRecord> timeZone( int id )
+    {
+        return reference( timeZoneTokens, id, Version.LATEST );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> timeZoneName( int id )
+    {
+        return reference( timeZoneNames, id, Version.LATEST );
     }
 
     @Override

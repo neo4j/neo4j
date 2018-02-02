@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyRecordChange;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -631,6 +632,38 @@ public abstract class Command implements StorageCommand
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
             byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
             channel.put( inUse ).putInt( record.getNameId() );
+            writeDynamicRecords( channel, record.getNameRecords() );
+        }
+    }
+
+    public static class TimeZoneTokenCommand extends TokenCommand<TimeZoneTokenRecord>
+    {
+        public TimeZoneTokenCommand( TimeZoneTokenRecord before, TimeZoneTokenRecord after )
+        {
+            super( before, after );
+        }
+
+        @Override
+        public boolean handle( CommandVisitor handler ) throws IOException
+        {
+            return handler.visitTimeZoneTokenCommand( this );
+        }
+
+        @Override
+        public void serialize( WritableChannel channel ) throws IOException
+        {
+            channel.put( NeoCommandType.TIME_ZONE_KEY_COMMAND );
+            channel.putInt( after.getIntId() );
+            writeTimeZoneTokenRecord( channel, before );
+            writeTimeZoneTokenRecord( channel, after );
+        }
+
+        private void writeTimeZoneTokenRecord( WritableChannel channel, TimeZoneTokenRecord record ) throws IOException
+        {
+            // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
+            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            channel.put( inUse ).putInt( record.getNameId() );
+            // TODO not sure whether to check record.isLight() here
             writeDynamicRecords( channel, record.getNameRecords() );
         }
     }

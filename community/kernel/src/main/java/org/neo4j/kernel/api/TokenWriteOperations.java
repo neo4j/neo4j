@@ -40,6 +40,8 @@ public interface TokenWriteOperations
 
     void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException;
 
+    void timeZoneCreateForName( String timeZoneName, int id ) throws IllegalTokenNameException;
+
     void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException;
 
     void relationshipTypeCreateForName( String relationshipTypeName, int id ) throws IllegalTokenNameException;

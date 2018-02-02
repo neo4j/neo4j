@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.TimeZoneTokenStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
@@ -66,9 +67,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.TimeZoneTokenCommand;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Arrays.asList;
@@ -102,6 +105,7 @@ public class NeoStoreTransactionApplierTest
     private final RelationshipGroupStore relationshipGroupStore = mock( RelationshipGroupStore.class );
     private final RelationshipTypeTokenStore relationshipTypeTokenStore = mock( RelationshipTypeTokenStore.class );
     private final LabelTokenStore labelTokenStore = mock( LabelTokenStore.class );
+    private final TimeZoneTokenStore timeZoneTokenStore = mock( TimeZoneTokenStore.class );
     private final PropertyKeyTokenStore propertyKeyTokenStore = mock( PropertyKeyTokenStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final DynamicArrayStore dynamicLabelStore = mock( DynamicArrayStore.class );
@@ -504,6 +508,53 @@ public class NeoStoreTransactionApplierTest
         verify( labelTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
         verify( labelTokenStore, times( 1 ) ).updateRecord( after );
         verify( cacheAccess, times( 1 ) ).addLabelToken( token );
+    }
+
+    // TIME ZONE TOKEN COMMAND
+
+    @Test
+    public void shouldApplyTimeZoneTokenCommandToTheStore() throws Exception
+    {
+        // given
+        final BatchTransactionApplier applier = newApplier( false );
+        final TimeZoneTokenRecord before = new TimeZoneTokenRecord( 42 );
+        final TimeZoneTokenRecord after = new TimeZoneTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final Command command = new TimeZoneTokenCommand( before, after );
+
+        // when
+        boolean result = apply( applier, command::handle, transactionToApply );
+
+        // then
+        assertFalse( result );
+
+        verify( timeZoneTokenStore, times( 1 ) ).updateRecord( after );
+    }
+
+    @Test
+    public void shouldApplyTimeZoneTokenCommandToTheStoreInRecovery() throws Exception
+    {
+        // given
+        final BatchTransactionApplier applier = newApplier( true );
+        final TimeZoneTokenRecord before = new TimeZoneTokenRecord( 42 );
+        final TimeZoneTokenRecord after = new TimeZoneTokenRecord( 42 );
+        after.setInUse( true );
+        after.setNameId( 323 );
+        final TimeZoneTokenCommand command =
+                new TimeZoneTokenCommand( before, after );
+        final Token token = new Token( "token", 21 );
+        when( timeZoneTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
+
+        // when
+        boolean result = apply( applier, command::handle, transactionToApply );
+
+        // then
+        assertFalse( result );
+
+        verify( timeZoneTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
+        verify( timeZoneTokenStore, times( 1 ) ).updateRecord( after );
+        verify( cacheAccess, times( 1 ) ).addTimeZoneToken( token );
     }
 
     // PROPERTY KEY TOKEN COMMAND

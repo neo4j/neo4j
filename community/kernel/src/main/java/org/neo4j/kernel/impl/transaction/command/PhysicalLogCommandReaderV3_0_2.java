@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -82,6 +83,9 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
             return visitRelationshipTypeTokenCommand( channel );
         case NeoCommandType.LABEL_KEY_COMMAND:
             return visitLabelTokenCommand( channel );
+            // TODO do older physical logs need to support time zone tokens?
+        case NeoCommandType.TIME_ZONE_KEY_COMMAND:
+            return visitTimeZoneTokenCommand( channel );
         case NeoCommandType.NEOSTORE_COMMAND:
             return visitNeoStoreCommand( channel );
         case NeoCommandType.SCHEMA_RULE_COMMAND:
@@ -308,6 +312,53 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
             throw new IOException( "Illegal in use flag: " + inUseFlag );
         }
         LabelTokenRecord record = new LabelTokenRecord( id );
+        record.setInUse( inUse );
+        record.setNameId( channel.getInt() );
+        int nrTypeRecords = channel.getInt();
+        for ( int i = 0; i < nrTypeRecords; i++ )
+        {
+            DynamicRecord dr = readDynamicRecord( channel );
+            if ( dr == null )
+            {
+                return null;
+            }
+            record.addNameRecord( dr );
+        }
+        return record;
+    }
+
+    private Command visitTimeZoneTokenCommand( ReadableChannel channel ) throws IOException
+    {
+        int id = channel.getInt();
+        TimeZoneTokenRecord before = readTimeZoneTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        TimeZoneTokenRecord after = readTimeZoneTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        return new Command.TimeZoneTokenCommand( before, after );
+    }
+
+    private TimeZoneTokenRecord readTimeZoneTokenRecord( int id, ReadableChannel channel ) throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
+        byte inUseFlag = channel.get();
+        boolean inUse = false;
+        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
+        {
+            inUse = true;
+        }
+        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+        {
+            throw new IOException( "Illegal in use flag: " + inUseFlag );
+        }
+        TimeZoneTokenRecord record = new TimeZoneTokenRecord( id );
         record.setInUse( inUse );
         record.setNameId( channel.getInt() );
         int nrTypeRecords = channel.getInt();

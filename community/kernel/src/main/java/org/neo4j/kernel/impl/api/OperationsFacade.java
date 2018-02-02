@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -666,10 +667,24 @@ public class OperationsFacade
     }
 
     @Override
+    public int timeZoneGetForName( String timeZoneName )
+    {
+        statement.assertOpen();
+        return tokenRead().timeZoneGetForName( statement, timeZoneName );
+    }
+
+    @Override
     public String labelGetName( int labelId ) throws LabelNotFoundKernelException
     {
         statement.assertOpen();
         return tokenRead().labelGetName( statement, labelId );
+    }
+
+    @Override
+    public String timeZoneGetName( int timeZoneId ) throws TimeZoneNotFoundKernelException
+    {
+        statement.assertOpen();
+        return tokenRead().timeZoneGetName( statement, timeZoneId );
     }
 
     @Override
@@ -698,6 +713,13 @@ public class OperationsFacade
     {
         statement.assertOpen();
         return tokenRead().labelsGetAllTokens( statement );
+    }
+
+    @Override
+    public Iterator<Token> timeZonesGetAllTokens()
+    {
+        statement.assertOpen();
+        return tokenRead().timeZonesGetAllTokens( statement );
     }
 
     @Override
@@ -789,6 +811,13 @@ public class OperationsFacade
     {
         statement.assertOpen();
         tokenWrite().labelCreateForName( statement, labelName, id );
+    }
+
+    @Override
+    public void timeZoneCreateForName( String timeZoneName, int id ) throws IllegalTokenNameException
+    {
+        statement.assertOpen();
+        tokenWrite().timeZoneCreateForName( statement, timeZoneName, id );
     }
 
     @Override

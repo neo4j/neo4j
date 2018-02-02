@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -36,17 +37,20 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
+    private final TimeZoneTokenHolder timeZoneTokenHolder;
 
     public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState,
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-            LabelTokenHolder labelTokenHolder )
+            LabelTokenHolder labelTokenHolder,
+            TimeZoneTokenHolder timeZoneTokenHolder)
     {
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
+        this.timeZoneTokenHolder = timeZoneTokenHolder;
     }
 
     @Override
@@ -72,6 +76,12 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     public void addLabelToken( Token label )
     {
         labelTokenHolder.addToken( label );
+    }
+
+    @Override
+    public void addTimeZoneToken( Token timeZoneId )
+    {
+        timeZoneTokenHolder.addToken( timeZoneId);
     }
 
     @Override

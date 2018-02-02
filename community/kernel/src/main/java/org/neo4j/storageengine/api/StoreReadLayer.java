@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -205,6 +206,19 @@ public interface StoreReadLayer
     String labelGetName( int labelId ) throws LabelNotFoundKernelException;
 
     /**
+     * @param timeZoneName name of timeZone.
+     * @return token id of timeZone.
+     */
+    int timeZoneGetForName( String timeZoneName );
+
+    /**
+     * @param timeZoneId timeZone id to get name for.
+     * @return timeZone name for given timeZone id.
+     * @throws TimeZoneNotFoundKernelException if no timeZone by {@code timeZoneId} was found.
+     */
+    String timeZoneGetName( int timeZoneId ) throws TimeZoneNotFoundKernelException;
+
+    /**
      * @param propertyKeyName name of property key.
      * @return token id of property key.
      */
@@ -235,6 +249,11 @@ public interface StoreReadLayer
      * @return all stored label tokens.
      */
     Iterator<Token> labelsGetAllTokens();
+
+    /**
+     * @return all stored timeZone tokens.
+     */
+    Iterator<Token> timeZonesGetAllTokens();
 
     /**
      * @return all stored relationship type tokens.

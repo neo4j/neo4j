@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.logging.NullLogProvider;
 
 /**
@@ -51,6 +52,7 @@ public class StoreAccess
     private RecordStore<RelationshipRecord> relStore;
     private RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
     private RecordStore<LabelTokenRecord> labelTokenStore;
+    private RecordStore<TimeZoneTokenRecord> timeZoneTokenStore;
     private RecordStore<DynamicRecord> nodeDynamicLabelStore;
     private RecordStore<PropertyRecord> propStore;
     // Transitive stores
@@ -59,6 +61,7 @@ public class StoreAccess
     private RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore;
     private RecordStore<DynamicRecord> relationshipTypeNameStore;
     private RecordStore<DynamicRecord> labelNameStore;
+    private RecordStore<DynamicRecord> timeZoneNameStore;
     private RecordStore<DynamicRecord> propertyKeyNameStore;
     private RecordStore<RelationshipGroupRecord> relGroupStore;
     private final CountsAccessor counts;
@@ -97,10 +100,12 @@ public class StoreAccess
         this.arrayStore = wrapStore( neoStores.getPropertyStore().getArrayStore() );
         this.relationshipTypeTokenStore = wrapStore( neoStores.getRelationshipTypeTokenStore() );
         this.labelTokenStore = wrapStore( neoStores.getLabelTokenStore() );
+        this.timeZoneTokenStore = wrapStore( neoStores.getTimeZoneTokenStore() );
         this.nodeDynamicLabelStore = wrapStore( wrapNodeDynamicLabelStore( neoStores.getNodeStore().getDynamicLabelStore() ) );
         this.propertyKeyTokenStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore() );
         this.relationshipTypeNameStore = wrapStore( neoStores.getRelationshipTypeTokenStore().getNameStore() );
         this.labelNameStore = wrapStore( neoStores.getLabelTokenStore().getNameStore() );
+        this.timeZoneNameStore = wrapStore( neoStores.getTimeZoneTokenStore().getNameStore() );
         this.propertyKeyNameStore = wrapStore( neoStores.getPropertyStore().getPropertyKeyTokenStore().getNameStore() );
         this.relGroupStore = wrapStore( neoStores.getRelationshipGroupStore() );
         return this;
@@ -156,6 +161,11 @@ public class StoreAccess
         return labelTokenStore;
     }
 
+    public RecordStore<TimeZoneTokenRecord> getTimeZoneTokenStore()
+    {
+        return timeZoneTokenStore;
+    }
+
     public RecordStore<DynamicRecord> getNodeDynamicLabelStore()
     {
         return nodeDynamicLabelStore;
@@ -176,6 +186,11 @@ public class StoreAccess
         return labelNameStore;
     }
 
+    public RecordStore<DynamicRecord> getTimeZoneNameStore()
+    {
+        return timeZoneNameStore;
+    }
+
     public RecordStore<DynamicRecord> getPropertyKeyNameStore()
     {
         return propertyKeyNameStore;
@@ -186,6 +201,7 @@ public class StoreAccess
         return counts;
     }
 
+    // TODO never used???
     protected RecordStore<?>[] allStores()
     {
         if ( propStore == null )
@@ -194,13 +210,13 @@ public class StoreAccess
             return new RecordStore<?>[]{ // no property stores
                     nodeStore, relStore,
                     relationshipTypeTokenStore, relationshipTypeNameStore,
-                    labelTokenStore, labelNameStore, nodeDynamicLabelStore
+                    labelTokenStore, labelNameStore, timeZoneTokenStore, timeZoneNameStore, nodeDynamicLabelStore
             };
         }
         return new RecordStore<?>[]{
                 schemaStore, nodeStore, relStore, propStore, stringStore, arrayStore,
                 relationshipTypeTokenStore, propertyKeyTokenStore, labelTokenStore,
-                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore,
+                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore, timeZoneTokenStore, timeZoneNameStore,
                 nodeDynamicLabelStore
         };
     }

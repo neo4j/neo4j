@@ -357,6 +357,18 @@ public class NeoStores implements AutoCloseable
         return (LabelTokenStore) getStore( StoreType.LABEL_TOKEN );
     }
 
+    /**
+     * Returns the time zone store.
+     *
+     * @return The time zone store
+     */
+    public TimeZoneTokenStore getTimeZoneTokenStore()
+    {
+        return (TimeZoneTokenStore) getStore( StoreType.TIME_ZONE_TOKEN );
+    }
+
+
+    // TODO many unused methods below
     private DynamicStringStore getLabelTokenNamesStore()
     {
         return (DynamicStringStore) getStore( StoreType.LABEL_TOKEN_NAME );
@@ -594,6 +606,14 @@ public class NeoStores implements AutoCloseable
         File fileName = getStoreFile( storeName );
         return initialize( new LabelTokenStore( fileName, config, idGeneratorFactory, pageCache,
                 logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ), recordFormats,
+                openOptions ) );
+    }
+
+    CommonAbstractStore createTimeZoneTokenStore( String storeName )
+    {
+        File fileName = getStoreFile( storeName );
+        return initialize( new TimeZoneTokenStore( fileName, config, idGeneratorFactory, pageCache,
+                logProvider, (DynamicStringStore) getOrCreateStore( StoreType.TIME_ZONE_TOKEN_NAME ), recordFormats,
                 openOptions ) );
     }
 

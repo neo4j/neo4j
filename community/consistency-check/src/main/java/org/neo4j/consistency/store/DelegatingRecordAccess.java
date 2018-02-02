@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 public class DelegatingRecordAccess implements RecordAccess
 {
@@ -118,6 +119,18 @@ public class DelegatingRecordAccess implements RecordAccess
     public RecordReference<DynamicRecord> labelName( int id )
     {
         return delegate.labelName( id );
+    }
+
+    @Override
+    public RecordReference<TimeZoneTokenRecord> timeZone( int id )
+    {
+        return delegate.timeZone( id );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> timeZoneName( int id )
+    {
+        return delegate.timeZoneName( id );
     }
 
     @Override

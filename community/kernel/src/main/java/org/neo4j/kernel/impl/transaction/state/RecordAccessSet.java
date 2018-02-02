@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface RecordAccessSet
@@ -45,6 +46,8 @@ public interface RecordAccessSet
     RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges();
 
     RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges();
+
+    RecordAccess<TimeZoneTokenRecord, Void> getTimeZoneTokenChanges();
 
     RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges();
 

@@ -67,6 +67,8 @@ import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.SCHEMA_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.TIME_ZONE_TOKEN_NAMES_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.TIME_ZONE_TOKEN_STORE_NAME;
 import static org.neo4j.kernel.impl.store.id.IdType.ARRAY_BLOCK;
 import static org.neo4j.kernel.impl.store.id.IdType.LABEL_TOKEN;
 import static org.neo4j.kernel.impl.store.id.IdType.LABEL_TOKEN_NAME;
@@ -82,6 +84,8 @@ import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
 import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN_NAME;
 import static org.neo4j.kernel.impl.store.id.IdType.SCHEMA;
 import static org.neo4j.kernel.impl.store.id.IdType.STRING_BLOCK;
+import static org.neo4j.kernel.impl.store.id.IdType.TIME_ZONE_TOKEN;
+import static org.neo4j.kernel.impl.store.id.IdType.TIME_ZONE_TOKEN_NAME;
 
 public class CoreBootstrapper
 {
@@ -165,6 +169,8 @@ public class CoreBootstrapper
                 getHighId( dbDir, factory, RELATIONSHIP_TYPE_TOKEN_NAME, RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
                 getHighId( dbDir, factory, LABEL_TOKEN, LABEL_TOKEN_STORE_NAME ),
                 getHighId( dbDir, factory, LABEL_TOKEN_NAME, LABEL_TOKEN_NAMES_STORE_NAME ),
+                getHighId( dbDir, factory, TIME_ZONE_TOKEN, TIME_ZONE_TOKEN_STORE_NAME ),
+                getHighId( dbDir, factory, TIME_ZONE_TOKEN_NAME, TIME_ZONE_TOKEN_NAMES_STORE_NAME ),
                 getHighId( dbDir, factory, NEOSTORE_BLOCK, "" ),
                 getHighId( dbDir, factory, SCHEMA, SCHEMA_STORE_NAME ),
                 getHighId( dbDir, factory, NODE_LABELS, NODE_LABELS_STORE_NAME ),

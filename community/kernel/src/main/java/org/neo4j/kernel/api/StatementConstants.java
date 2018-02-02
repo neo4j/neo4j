@@ -23,6 +23,7 @@ public final class StatementConstants
 {
     public static final int NO_SUCH_RELATIONSHIP_TYPE = -1;
     public static final int NO_SUCH_LABEL = -1;
+    public static final int NO_SUCH_TIME_ZONE = -1;
     public static final int NO_SUCH_PROPERTY_KEY = -1;
     public static final long NO_SUCH_NODE = -1;
     public static final long NO_SUCH_RELATIONSHIP = -1;

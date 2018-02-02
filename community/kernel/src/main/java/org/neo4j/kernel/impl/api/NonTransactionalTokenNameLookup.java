@@ -23,6 +23,7 @@ import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.storageengine.api.Token;
 
@@ -35,14 +36,17 @@ import static java.lang.String.format;
 public class NonTransactionalTokenNameLookup implements TokenNameLookup
 {
     private final LabelTokenHolder labelTokenHolder;
+    private final TimeZoneTokenHolder timeZoneTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
 
     public NonTransactionalTokenNameLookup( LabelTokenHolder labelTokenHolder,
+            TimeZoneTokenHolder timeZoneTokenHolder,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder,
             PropertyKeyTokenHolder propertyKeyTokenHolder )
     {
         this.labelTokenHolder = labelTokenHolder;
+        this.timeZoneTokenHolder = timeZoneTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
     }
@@ -51,6 +55,12 @@ public class NonTransactionalTokenNameLookup implements TokenNameLookup
     public String labelGetName( int labelId )
     {
         return tokenById( labelTokenHolder, labelId, "label" );
+    }
+
+    @Override
+    public String timeZoneGetName( int timeZoneId )
+    {
+        return tokenById( timeZoneTokenHolder, timeZoneId, "timeZone" );
     }
 
     @Override

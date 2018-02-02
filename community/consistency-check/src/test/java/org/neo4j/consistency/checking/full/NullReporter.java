@@ -40,7 +40,9 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
+// TODO unused class???
 public class NullReporter implements ConsistencyReport.Reporter
 {
     @Override
@@ -116,6 +118,11 @@ public class NullReporter implements ConsistencyReport.Reporter
     @Override
     public void forCounts( CountsEntry countsEntry,
                            RecordCheck<CountsEntry,ConsistencyReport.CountsConsistencyReport> checker )
+    {
+    }
+
+    @Override
+    public void forTimeZoneName( TimeZoneTokenRecord label, RecordCheck<TimeZoneTokenRecord,ConsistencyReport.TimeZoneTokenConsistencyReport> checker )
     {
     }
 }

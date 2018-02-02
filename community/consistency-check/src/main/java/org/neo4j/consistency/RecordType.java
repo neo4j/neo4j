@@ -39,6 +39,9 @@ public enum RecordType
     LABEL,
     LABEL_NAME,
 
+    TIME_ZONE,
+    TIME_ZONE_NAME,
+
     NODE_DYNAMIC_LABEL,
 
     // Below are non-native records

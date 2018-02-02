@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.impl.core.IteratingPropertyReceiver;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
@@ -101,6 +103,7 @@ public class StorageLayer implements StoreReadLayer
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
+    private final TimeZoneTokenHolder timeZoneTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTokenHolder;
     private final IndexingService indexService;
     private final NodeStore nodeStore;
@@ -112,7 +115,7 @@ public class StorageLayer implements StoreReadLayer
     private final Supplier<StorageStatement> statementProvider;
     private final SchemaCache schemaCache;
 
-    public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+    public StorageLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder, TimeZoneTokenHolder timeZoneTokenHolder,
             RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage, NeoStores neoStores,
             IndexingService indexService, Supplier<StorageStatement> storeStatementSupplier, SchemaCache schemaCache )
     {
@@ -121,6 +124,7 @@ public class StorageLayer implements StoreReadLayer
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
+        this.timeZoneTokenHolder = timeZoneTokenHolder;
         this.statementProvider = storeStatementSupplier;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
@@ -174,6 +178,25 @@ public class StorageLayer implements StoreReadLayer
         catch ( TokenNotFoundException e )
         {
             throw new LabelNotFoundKernelException( "Label by id " + labelId, e );
+        }
+    }
+
+    @Override
+    public int timeZoneGetForName( String timeZoneName )
+    {
+        return timeZoneTokenHolder.getIdByName( timeZoneName );
+    }
+
+    @Override
+    public String timeZoneGetName( int timeZoneId ) throws TimeZoneNotFoundKernelException
+    {
+        try
+        {
+            return timeZoneTokenHolder.getTokenById( timeZoneId ).name();
+        }
+        catch ( TokenNotFoundException e )
+        {
+            throw new TimeZoneNotFoundKernelException( "Time zone by id " + timeZoneId, e );
         }
     }
 
@@ -357,6 +380,12 @@ public class StorageLayer implements StoreReadLayer
     public Iterator<Token> labelsGetAllTokens()
     {
         return labelTokenHolder.getAllTokens().iterator();
+    }
+
+    @Override
+    public Iterator<Token> timeZonesGetAllTokens()
+    {
+        return timeZoneTokenHolder.getAllTokens().iterator();
     }
 
     @SuppressWarnings( "unchecked" )

@@ -32,6 +32,12 @@ public interface TokenNameLookup
     String labelGetName( int labelId );
 
     /**
+     * @param timeZoneId id of time zone to get name for.
+     * @return name of time zone token with given id.
+     */
+    String timeZoneGetName( int timeZoneId );
+
+    /**
      * @param relationshipTypeId id of relationship type to get name for.
      * @return name of relationship type token with given id.
      */

@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -64,6 +65,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     private final TransactionChecksumLookup txChecksumLookup;
     private final FileSystemAbstraction fileSystem;
     private final LabelTokenHolder labels;
+    private final TimeZoneTokenHolder timeZones;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -80,7 +82,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public DefaultMasterImplSPI( final GraphDatabaseAPI graphDb,
                                  FileSystemAbstraction fileSystemAbstraction,
                                  Monitors monitors,
-                                 LabelTokenHolder labels, PropertyKeyTokenHolder propertyKeyTokenHolder,
+                                 LabelTokenHolder labels, TimeZoneTokenHolder timeZones, PropertyKeyTokenHolder propertyKeyTokenHolder,
                                  RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                                  IdGeneratorFactory idGeneratorFactory,
                                  TransactionCommitProcess transactionCommitProcess,
@@ -95,6 +97,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.graphDb = graphDb;
         this.fileSystem = fileSystemAbstraction;
         this.labels = labels;
+        this.timeZones = timeZones;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -122,6 +125,12 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
     public int getOrCreateLabel( String name )
     {
         return labels.getOrCreateId( name );
+    }
+
+    @Override
+    public int getOrCreateTimeZone( String name )
+    {
+        return timeZones.getOrCreateId( name );
     }
 
     @Override

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
@@ -138,6 +139,16 @@ public class FilteringRecordAccess extends DelegatingRecordAccess
         if ( shouldCheck( id, MultiPassStore.LABELS ) )
         {
             return super.label( id );
+        }
+        return skipReference();
+    }
+
+    @Override
+    public RecordReference<TimeZoneTokenRecord> timeZone( int id )
+    {
+        if ( shouldCheck( id, MultiPassStore.TIME_ZONES ) )
+        {
+            return super.timeZone( id );
         }
         return skipReference();
     }

@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -241,6 +242,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final TokenNameLookup tokenNameLookup;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokens;
+    private final TimeZoneTokenHolder timeZoneTokens;
     private final RelationshipTypeTokenHolder relationshipTypeTokens;
     private final StatementLocksFactory statementLocksFactory;
     private final SchemaWriteGuard schemaWriteGuard;
@@ -284,7 +286,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     public NeoStoreDataSource( File storeDir, Config config, IdGeneratorFactory idGeneratorFactory,
             LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
             DependencyResolver dependencyResolver, PropertyKeyTokenHolder propertyKeyTokens,
-            LabelTokenHolder labelTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
+            LabelTokenHolder labelTokens,  TimeZoneTokenHolder timeZoneTokens, RelationshipTypeTokenHolder relationshipTypeTokens,
             StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
             TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor,
             FileSystemAbstraction fs, TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
@@ -309,6 +311,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.logProvider = logService.getInternalLogProvider();
         this.propertyKeyTokenHolder = propertyKeyTokens;
         this.labelTokens = labelTokens;
+        this.timeZoneTokens = timeZoneTokens;
         this.relationshipTypeTokens = relationshipTypeTokens;
         this.statementLocksFactory = statementLocksFactory;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -425,7 +428,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = buildStorageEngine(
-                    propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, explicitIndexProviderLookup,
+                    propertyKeyTokenHolder, labelTokens, timeZoneTokens, relationshipTypeTokens, explicitIndexProviderLookup,
                     indexConfigStore, databaseSchemaState, explicitIndexTransactionOrdering, operationalMode );
             life.add( logFiles );
 
@@ -553,14 +556,14 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     private StorageEngine buildStorageEngine(
-            PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
+            PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens, TimeZoneTokenHolder timeZoneTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             ExplicitIndexProviderLookup explicitIndexProviderLookup, IndexConfigStore indexConfigStore,
             SchemaState schemaState, SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering, OperationalMode operationalMode )
     {
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                        labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
+                        labelTokens, timeZoneTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProviderMap, indexingServiceMonitor, databaseHealth,
                         explicitIndexProviderLookup, indexConfigStore,
                         explicitIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector,

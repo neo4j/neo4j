@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 public interface RecordAccess
 {
@@ -58,6 +59,10 @@ public interface RecordAccess
     RecordReference<LabelTokenRecord> label( int id );
 
     RecordReference<DynamicRecord> labelName( int id );
+
+    RecordReference<TimeZoneTokenRecord> timeZone( int id );
+
+    RecordReference<DynamicRecord> timeZoneName( int id );
 
     RecordReference<DynamicRecord> propertyKeyName( int id );
 

@@ -43,6 +43,7 @@ import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedLabelTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
+import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTimeZoneTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedTokenStateMachine;
 import org.neo4j.causalclustering.core.state.machines.token.TokenRegistry;
 import org.neo4j.causalclustering.core.state.machines.tx.RecoverConsensusLogIndex;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
@@ -100,6 +102,7 @@ public class CoreStateMachinesModule
     public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
     public final LabelTokenHolder labelTokenHolder;
+    public final TimeZoneTokenHolder timeZoneTokenHolder;
     public final PropertyKeyTokenHolder propertyKeyTokenHolder;
     public final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     public final Locks lockManager;
@@ -166,6 +169,13 @@ public class CoreStateMachinesModule
         ReplicatedTokenStateMachine<Token> labelTokenStateMachine =
                 new ReplicatedTokenStateMachine<>( labelTokenRegistry, new Token.Factory(), logProvider );
 
+        TokenRegistry<Token> timeZoneTokenRegistry = new TokenRegistry<>( "TimeZone" );
+        ReplicatedTimeZoneTokenHolder timeZoneTokenHolder =
+                new ReplicatedTimeZoneTokenHolder( timeZoneTokenRegistry, replicator, this.idGeneratorFactory, dependencies );
+
+        ReplicatedTokenStateMachine<Token> timeZoneTokenStateMachine =
+                new ReplicatedTokenStateMachine<>( timeZoneTokenRegistry, new Token.Factory(), logProvider );
+
         ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine =
                 new ReplicatedTokenStateMachine<>( propertyKeyTokenRegistry, new Token.Factory(), logProvider );
 
@@ -185,7 +195,7 @@ public class CoreStateMachinesModule
 
         RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( dependencies, logProvider );
 
-        coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
+        coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine, timeZoneTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
                 idAllocationStateMachine, new DummyMachine(), localDatabase, consensusLogIndexRecovery );
 
@@ -198,6 +208,7 @@ public class CoreStateMachinesModule
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
+        this.timeZoneTokenHolder = timeZoneTokenHolder;
     }
 
     private Map<IdType,Integer> getIdTypeAllocationSizeFromConfig( Config config )

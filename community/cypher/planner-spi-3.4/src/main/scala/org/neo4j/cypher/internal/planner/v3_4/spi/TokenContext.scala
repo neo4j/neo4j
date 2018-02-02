@@ -29,4 +29,5 @@ trait TokenContext {
   def getRelTypeName(id: Int): String
   def getOptRelTypeId(relType: String): Option[Int]
   def getRelTypeId(relType: String): Int
+  def getTimeZoneName(id: Int): String
 }

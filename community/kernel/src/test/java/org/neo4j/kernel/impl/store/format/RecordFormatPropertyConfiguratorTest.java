@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
@@ -140,6 +141,12 @@ public class RecordFormatPropertyConfiguratorTest
 
         @Override
         public RecordFormat<LabelTokenRecord> labelToken()
+        {
+            return null;
+        }
+
+        @Override
+        public RecordFormat<TimeZoneTokenRecord> timeZoneToken()
         {
             return null;
         }

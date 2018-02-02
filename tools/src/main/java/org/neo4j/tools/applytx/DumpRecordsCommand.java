@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.TimeZoneTokenStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -73,7 +74,7 @@ public class DumpRecordsCommand implements Command
                 .withCommands( DumpRelationshipPropertyChain.class, Help.class )
                 .withDefaultCommand( Help.class );
         builder.withGroup( "tokens" )
-                .withCommands( DumpRelationshipTypes.class, DumpLabels.class, DumpPropertyKeys.class, Help.class )
+                .withCommands( DumpRelationshipTypes.class, DumpLabels.class, DumpTimeZones.class, DumpPropertyKeys.class, Help.class )
                 .withDefaultCommand( Help.class );
         this.cli = builder.build();
     }
@@ -212,6 +213,20 @@ public class DumpRecordsCommand implements Command
         {
             for ( Token token : ((LabelTokenStore)
                     store.getLabelTokenStore()).getTokens( Integer.MAX_VALUE ) )
+            {
+                out.println( token );
+            }
+        }
+    }
+
+    @io.airlift.airline.Command( name = "timezone", description = "Dump timezone tokens" )
+    public static class DumpTimeZones implements Action
+    {
+        @Override
+        public void run( StoreAccess store, PrintStream out )
+        {
+            for ( Token token : ((TimeZoneTokenStore)
+                    store.getTimeZoneTokenStore()).getTokens( Integer.MAX_VALUE ) )
             {
                 out.println( token );
             }

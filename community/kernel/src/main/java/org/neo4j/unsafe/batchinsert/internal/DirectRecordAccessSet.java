@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
@@ -46,6 +47,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
     private final DirectRecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
     private final DirectRecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
     private final DirectRecordAccess<LabelTokenRecord, Void> labelTokenRecords;
+    private final DirectRecordAccess<TimeZoneTokenRecord, Void> timeZoneTokenRecords;
     private final DirectRecordAccess[] all;
 
     public DirectRecordAccessSet( NeoStores neoStores )
@@ -58,6 +60,7 @@ public class DirectRecordAccessSet implements RecordAccessSet
                 neoStores.getPropertyKeyTokenStore(),
                 neoStores.getRelationshipTypeTokenStore(),
                 neoStores.getLabelTokenStore(),
+                neoStores.getTimeZoneTokenStore(),
                 neoStores.getSchemaStore() );
     }
 
@@ -69,10 +72,11 @@ public class DirectRecordAccessSet implements RecordAccessSet
             RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore,
             RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
             RecordStore<LabelTokenRecord> labelTokenStore,
+            RecordStore<TimeZoneTokenRecord> timeZoneTokenStore,
             SchemaStore schemaStore )
     {
         Loaders loaders = new Loaders( nodeStore, propertyStore, relationshipStore, relationshipGroupStore,
-                propertyKeyTokenStore, relationshipTypeTokenStore, labelTokenStore, schemaStore );
+                propertyKeyTokenStore, relationshipTypeTokenStore, labelTokenStore, timeZoneTokenStore, schemaStore );
         nodeRecords = new DirectRecordAccess<>( nodeStore, loaders.nodeLoader() );
         propertyRecords = new DirectRecordAccess<>( propertyStore, loaders.propertyLoader() );
         relationshipRecords = new DirectRecordAccess<>( relationshipStore, loaders.relationshipLoader() );
@@ -82,9 +86,11 @@ public class DirectRecordAccessSet implements RecordAccessSet
         relationshipTypeTokenRecords = new DirectRecordAccess<>(
                 relationshipTypeTokenStore, loaders.relationshipTypeTokenLoader() );
         labelTokenRecords = new DirectRecordAccess<>( labelTokenStore, loaders.labelTokenLoader() );
+        timeZoneTokenRecords = new DirectRecordAccess<>( timeZoneTokenStore, loaders.timeZoneTokenLoader() );
         all = new DirectRecordAccess[] {
                 nodeRecords, propertyRecords, relationshipRecords, relationshipGroupRecords,
-                propertyKeyTokenRecords, relationshipTypeTokenRecords, labelTokenRecords
+                propertyKeyTokenRecords, relationshipTypeTokenRecords, labelTokenRecords,
+                timeZoneTokenRecords
         };
     }
 
@@ -128,6 +134,12 @@ public class DirectRecordAccessSet implements RecordAccessSet
     public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenRecords;
+    }
+
+    @Override
+    public RecordAccess<TimeZoneTokenRecord,Void> getTimeZoneTokenChanges()
+    {
+        return timeZoneTokenRecords;
     }
 
     @Override

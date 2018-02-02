@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -186,6 +187,12 @@ public class RelationshipCreatorTest
         public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
         {
             return delegate.getLabelTokenChanges();
+        }
+
+        @Override
+        public RecordAccess<TimeZoneTokenRecord,Void> getTimeZoneTokenChanges()
+        {
+            return delegate.getTimeZoneTokenChanges();
         }
 
         @Override

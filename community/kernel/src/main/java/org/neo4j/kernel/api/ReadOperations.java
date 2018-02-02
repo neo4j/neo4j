@@ -34,6 +34,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -83,6 +84,16 @@ public interface ReadOperations
 
     /** Returns the labels currently stored in the database * */
     Iterator<Token> labelsGetAllTokens(); // TODO: Token is a store level concern, should not make it this far up the stack
+
+    /** Returns a timeZone id for a timeZone name. If the timeZone doesn't exist, {@link KeyReadOperations#NO_SUCH_TIME_ZONE}
+     * will be returned. */
+    int timeZoneGetForName( String timeZoneName );
+
+    /** Returns the timeZone name for the given timeZone id. */
+    String timeZoneGetName( int timeZoneId ) throws TimeZoneNotFoundKernelException;
+
+    /** Returns the timeZones currently stored in the database * */
+    Iterator<Token> timeZonesGetAllTokens();
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,

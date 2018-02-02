@@ -74,6 +74,14 @@ public enum DynamicStore
             return records.labelName( (int) block );
         }
     },
+    TIME_ZONE( RecordType.TIME_ZONE_NAME )
+    {
+        @Override
+        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
+        {
+            return records.timeZoneName( (int) block );
+        }
+    },
     NODE_LABEL( RecordType.NODE_DYNAMIC_LABEL )
     {
         @Override

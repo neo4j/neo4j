@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsComma
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.TimeZoneTokenCommand;
 
 /**
  * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
@@ -58,6 +59,8 @@ public interface CommandVisitor
     boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException;
 
     boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException;
+
+    boolean visitTimeZoneTokenCommand( TimeZoneTokenCommand command ) throws IOException;
 
     boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException;
 
@@ -122,6 +125,12 @@ public interface CommandVisitor
 
         @Override
         public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+        {
+            return false;
+        }
+
+        @Override
+        public boolean visitTimeZoneTokenCommand( TimeZoneTokenCommand command ) throws IOException
         {
             return false;
         }
@@ -240,6 +249,12 @@ public interface CommandVisitor
         public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
         {
             return delegate.visitLabelTokenCommand( command );
+        }
+
+        @Override
+        public boolean visitTimeZoneTokenCommand( TimeZoneTokenCommand command ) throws IOException
+        {
+            return delegate.visitTimeZoneTokenCommand( command );
         }
 
         @Override

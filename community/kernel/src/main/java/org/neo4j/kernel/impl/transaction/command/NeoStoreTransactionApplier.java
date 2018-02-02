@@ -127,6 +127,13 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
+    public boolean visitTimeZoneTokenCommand( Command.TimeZoneTokenCommand command ) throws IOException
+    {
+        updateStore( neoStores.getTimeZoneTokenStore(), command );
+        return false;
+    }
+
+    @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
         updateStore( neoStores.getPropertyKeyTokenStore(), command );

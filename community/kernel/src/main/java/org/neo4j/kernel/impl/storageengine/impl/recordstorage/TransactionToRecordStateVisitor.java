@@ -273,6 +273,12 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
+    public void visitCreatedTimeZoneToken( String name, int id )
+    {
+        recordState.createTimeZoneToken( name, id );
+    }
+
+    @Override
     public void visitCreatedPropertyKeyToken( String name, int id )
     {
         recordState.createPropertyKeyToken( name, id );

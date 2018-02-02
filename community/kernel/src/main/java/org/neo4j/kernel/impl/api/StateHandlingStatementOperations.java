@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -1345,6 +1346,24 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public int timeZoneGetForName( Statement state, String timeZoneName )
+    {
+        return storeLayer.timeZoneGetForName( timeZoneName );
+    }
+
+    @Override
+    public String timeZoneGetName( Statement state, int timeZoneId ) throws TimeZoneNotFoundKernelException
+    {
+        return storeLayer.timeZoneGetName( timeZoneId );
+    }
+
+    @Override
+    public int timeZoneGetOrCreateForName( Statement state, String timeZoneName ) throws IllegalTokenNameException
+    {
+        return 0;
+    }
+
+    @Override
     public int propertyKeyGetForName( Statement state, String propertyKeyName )
     {
         return storeLayer.propertyKeyGetForName( propertyKeyName );
@@ -1366,6 +1385,12 @@ public class StateHandlingStatementOperations implements
     public Iterator<Token> labelsGetAllTokens( Statement state )
     {
         return storeLayer.labelsGetAllTokens();
+    }
+
+    @Override
+    public Iterator<Token> timeZonesGetAllTokens( Statement state )
+    {
+        return storeLayer.timeZonesGetAllTokens();
     }
 
     @Override
@@ -1412,6 +1437,12 @@ public class StateHandlingStatementOperations implements
             int id ) throws IllegalTokenNameException, TooManyLabelsException
     {
         state.txState().labelDoCreateForName( labelName, id );
+    }
+
+    @Override
+    public void timeZoneCreateForName( KernelStatement state, String timeZoneName, int id ) throws IllegalTokenNameException
+    {
+        state.txState().timeZoneDoCreateForName( timeZoneName, id );
     }
 
     @Override

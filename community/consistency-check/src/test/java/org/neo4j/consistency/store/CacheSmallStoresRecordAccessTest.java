@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -41,7 +42,7 @@ public class CacheSmallStoresRecordAccessTest
     {
         // given
         RecordAccess delegate = mock( RecordAccess.class );
-        CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess( delegate, null, null, null );
+        CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess( delegate, null, null, null, null );
 
         // when
         recordAccess.node( 42 );
@@ -72,6 +73,9 @@ public class CacheSmallStoresRecordAccessTest
         LabelTokenRecord label0 = new LabelTokenRecord( 0 );
         LabelTokenRecord label1 = new LabelTokenRecord( 1 );
         LabelTokenRecord label2 = new LabelTokenRecord( 2 );
+        TimeZoneTokenRecord timeZone0 = new TimeZoneTokenRecord( 0 );
+        TimeZoneTokenRecord timeZone1 = new TimeZoneTokenRecord( 1 );
+        TimeZoneTokenRecord timeZone2 = new TimeZoneTokenRecord( 2 );
 
         CacheSmallStoresRecordAccess recordAccess = new CacheSmallStoresRecordAccess(
                 delegate, new PropertyKeyTokenRecord[]{
@@ -86,6 +90,10 @@ public class CacheSmallStoresRecordAccessTest
                 label0,
                 label1,
                 label2,
+        }, new TimeZoneTokenRecord[]{
+                timeZone0,
+                timeZone1,
+                timeZone2,
         } );
 
         // when
@@ -98,6 +106,9 @@ public class CacheSmallStoresRecordAccessTest
         assertThat( recordAccess.label( 0 ), isDirectReferenceTo( label0 ) );
         assertThat( recordAccess.label( 1 ), isDirectReferenceTo( label1 ) );
         assertThat( recordAccess.label( 2 ), isDirectReferenceTo( label2 ) );
+        assertThat( recordAccess.timeZone( 0 ), isDirectReferenceTo( timeZone0 ) );
+        assertThat( recordAccess.timeZone( 1 ), isDirectReferenceTo( timeZone1 ) );
+        assertThat( recordAccess.timeZone( 2 ), isDirectReferenceTo( timeZone2 ) );
 
         // then
         verifyZeroInteractions( delegate );

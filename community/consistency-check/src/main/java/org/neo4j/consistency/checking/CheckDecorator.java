@@ -27,6 +27,7 @@ import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistenc
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.TimeZoneTokenConsistencyReport;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 public interface CheckDecorator
 {
@@ -63,6 +65,9 @@ public interface CheckDecorator
 
     RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
             RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
+
+    RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> decorateTimeZoneTokenChecker(
+            RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> checker );
 
     RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker );
@@ -121,6 +126,13 @@ public interface CheckDecorator
         @Override
         public RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
                 RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker )
+        {
+            return checker;
+        }
+
+        @Override
+        public RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> decorateTimeZoneTokenChecker(
+                RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> checker )
         {
             return checker;
         }
@@ -225,6 +237,17 @@ public interface CheckDecorator
             for ( CheckDecorator decorator : decorators )
             {
                 checker = decorator.decorateLabelTokenChecker( checker );
+            }
+            return checker;
+        }
+
+        @Override
+        public RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> decorateTimeZoneTokenChecker(
+                RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> checker )
+        {
+            for ( CheckDecorator decorator : decorators )
+            {
+                checker = decorator.decorateTimeZoneTokenChecker( checker );
             }
             return checker;
         }

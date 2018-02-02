@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
@@ -51,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.TimeZoneTokenCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -105,6 +107,14 @@ public class Commands
         LabelTokenRecord after = new LabelTokenRecord( id );
         populateTokenRecord( after, nameId );
         return new LabelTokenCommand( before, after );
+    }
+
+    public static TimeZoneTokenCommand createTimeZoneToken( int id, int nameId )
+    {
+        TimeZoneTokenRecord before = new TimeZoneTokenRecord( id );
+        TimeZoneTokenRecord after = new TimeZoneTokenRecord( id );
+        populateTokenRecord( after, nameId );
+        return new TimeZoneTokenCommand( before, after );
     }
 
     private static void populateTokenRecord( TokenRecord record, int nameId )

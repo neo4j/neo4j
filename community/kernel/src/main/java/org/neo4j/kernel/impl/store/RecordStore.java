@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord) updating} and
@@ -469,6 +470,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
                 record ) throws FAILURE;
 
         public abstract void processLabelToken( RecordStore<LabelTokenRecord> store, LabelTokenRecord record ) throws
+                FAILURE;
+
+        public abstract void processTimeZoneToken( RecordStore<TimeZoneTokenRecord> store, TimeZoneTokenRecord record ) throws
                 FAILURE;
 
         public abstract void processRelationshipGroup( RecordStore<RelationshipGroupRecord> store,

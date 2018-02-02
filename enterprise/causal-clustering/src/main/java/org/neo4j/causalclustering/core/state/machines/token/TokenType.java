@@ -23,5 +23,6 @@ public enum TokenType
 {
     PROPERTY,
     RELATIONSHIP,
-    LABEL
+    LABEL,
+    TIME_ZONE
 }

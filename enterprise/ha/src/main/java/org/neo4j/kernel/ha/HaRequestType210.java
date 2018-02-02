@@ -64,6 +64,7 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         registerNewLockSession();
         registerCreatePropertyKey();
         registerCreateLabel();
+        registerCreateTimeZone();
     }
 
     private void registerAllocateIds()
@@ -207,5 +208,12 @@ public class HaRequestType210 extends AbstractHaRequestTypes
         TargetCaller<Master,Integer> createLabelTarget =
                 ( master, context, input, target ) -> master.createLabel( context, readString( input ) );
         register( Type.CREATE_LABEL, createLabelTarget, INTEGER_SERIALIZER );
+    }
+
+    private void registerCreateTimeZone()
+    {
+        TargetCaller<Master,Integer> createTimeZoneTarget =
+                ( master, context, input, target ) -> master.createTimeZone( context, readString( input ) );
+        register( Type.CREATE_TIME_ZONE, createTimeZoneTarget, INTEGER_SERIALIZER );
     }
 }

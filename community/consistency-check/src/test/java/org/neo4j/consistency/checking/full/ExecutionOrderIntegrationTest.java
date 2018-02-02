@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -244,6 +245,13 @@ public class ExecutionOrderIntegrationTest
         @Override
         public RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
                 RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker )
+        {
+            return logging( checker );
+        }
+
+        @Override
+        public RecordCheck<TimeZoneTokenRecord,ConsistencyReport.TimeZoneTokenConsistencyReport> decorateTimeZoneTokenChecker(
+                RecordCheck<TimeZoneTokenRecord,ConsistencyReport.TimeZoneTokenConsistencyReport> checker )
         {
             return logging( checker );
         }
@@ -424,6 +432,18 @@ public class ExecutionOrderIntegrationTest
         public RecordReference<DynamicRecord> labelName( int id )
         {
             return logging( access.labelName( id ) );
+        }
+
+        @Override
+        public RecordReference<TimeZoneTokenRecord> timeZone( int id )
+        {
+            return logging( access.timeZone( id ) );
+        }
+
+        @Override
+        public RecordReference<DynamicRecord> timeZoneName( int id )
+        {
+            return logging( access.timeZoneName( id ) );
         }
 
         @Override

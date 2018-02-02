@@ -168,6 +168,7 @@ public class DataSourceModule
 
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup(
                 editionModule.labelTokenHolder,
+                editionModule.timeZoneTokenHolder,
                 editionModule.relationshipTypeTokenHolder,
                 editionModule.propertyKeyTokenHolder );
 
@@ -181,6 +182,7 @@ public class DataSourceModule
                 deps,
                 editionModule.propertyKeyTokenHolder,
                 editionModule.labelTokenHolder,
+                editionModule.timeZoneTokenHolder,
                 relationshipTypeTokenHolder,
                 editionModule.statementLocksFactory,
                 schemaWriteGuard,

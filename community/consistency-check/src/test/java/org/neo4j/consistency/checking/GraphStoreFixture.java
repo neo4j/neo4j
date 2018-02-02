@@ -105,6 +105,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private long schemaId;
     private long nodeId;
     private int labelId;
+    private int timeZoneId;
     private long nodeLabelsId;
     private long relId;
     private long relGroupId;
@@ -274,6 +275,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             return nodeLabelsId++;
         }
 
+        public int timeZone()
+        {
+            return timeZoneId++;
+        }
+
         public long relationship()
         {
             return relId++;
@@ -334,7 +340,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             writer.createSchema( beforeRecords, afterRecords, rule );
         }
 
-        // In the following three methods there's an assumption that all tokens use one dynamic record
+        // In the following methods there's an assumption that all tokens use one dynamic record
         // and since the first record in a dynamic store the id starts at 1 instead of 0... hence the +1
 
         public void propertyKey( int id, String key )
@@ -345,6 +351,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         public void nodeLabel( int id, String name )
         {
             writer.label( id, name, id + 1 );
+        }
+
+        public void timeZone( int id, String name )
+        {
+            writer.timeZone( id, name, id + 1);
         }
 
         public void relationshipType( int id, String relationshipType )
@@ -544,6 +555,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();
+            timeZoneId = (int) stores.getTimeZoneTokenStore().getHighId();
             nodeLabelsId = stores.getNodeDynamicLabelStore().getHighId();
             relId = stores.getRelationshipStore().getHighId();
             relGroupId = stores.getRelationshipGroupStore().getHighId();

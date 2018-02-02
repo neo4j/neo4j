@@ -42,9 +42,11 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.DefaultTimeZoneIdCreator;
 import org.neo4j.kernel.impl.core.DelegatingLabelTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingPropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.DelegatingRelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.DelegatingTimeZoneTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -115,6 +117,8 @@ public class CommunityEditionModule extends EditionModule
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
         labelTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingLabelTokenHolder( createLabelIdCreator( config,
+                dataSourceManager, idGeneratorFactory ) ) ));
+        timeZoneTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingTimeZoneTokenHolder( createTimeZoneIdCreator( config,
                 dataSourceManager, idGeneratorFactory ) ) ));
         relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency(new DelegatingRelationshipTypeTokenHolder(
                 createRelationshipTypeCreator( config, dataSourceManager, idGeneratorFactory ) ) ));
@@ -207,6 +211,19 @@ public class CommunityEditionModule extends EditionModule
         else
         {
             return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
+        }
+    }
+
+    private TokenCreator createTimeZoneIdCreator( Config config, DataSourceManager dataSourceManager,
+            IdGeneratorFactory idGeneratorFactory )
+    {
+        if ( config.get( GraphDatabaseSettings.read_only ) )
+        {
+            return new ReadOnlyTokenCreator();
+        }
+        else
+        {
+            return new DefaultTimeZoneIdCreator( dataSourceManager, idGeneratorFactory );
         }
     }
 

@@ -71,6 +71,8 @@ public interface TransactionState extends ReadableTransactionState
 
     void labelDoCreateForName( String labelName, int id );
 
+    void timeZoneDoCreateForName( String timeZoneName, int id );
+
     void propertyKeyDoCreateForName( String propertyKeyName, int id );
 
     void relationshipTypeDoCreateForName( String relationshipTypeName, int id );

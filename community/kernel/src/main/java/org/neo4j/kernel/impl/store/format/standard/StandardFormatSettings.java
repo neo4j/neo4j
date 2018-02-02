@@ -30,6 +30,8 @@ public final class StandardFormatSettings
     static final int PROPERTY_MAXIMUM_ID_BITS = 36;
     public static final int DYNAMIC_MAXIMUM_ID_BITS = 36;
     public static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
+    // TODO decide on correct max bits
+    public static final int TIMEZONE_TOKEN_MAXIMUM_ID_BITS = 32;
     public static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
     static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
 

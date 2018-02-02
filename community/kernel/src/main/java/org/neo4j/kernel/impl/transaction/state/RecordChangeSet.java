@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -41,6 +42,7 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordAccess<SchemaRecord, SchemaRule> schemaRuleChanges;
     private final RecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
     private final RecordAccess<LabelTokenRecord, Void> labelTokenChanges;
+    private final RecordAccess<TimeZoneTokenRecord, Void> timeZoneTokenChanges;
     private final RecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final IntCounter changeCounter = new IntCounter();
 
@@ -53,6 +55,7 @@ public class RecordChangeSet implements RecordAccessSet
                 loaders.schemaRuleLoader(),
                 loaders.propertyKeyTokenLoader(),
                 loaders.labelTokenLoader(),
+                loaders.timeZoneTokenLoader(),
                 loaders.relationshipTypeTokenLoader() );
     }
 
@@ -64,6 +67,7 @@ public class RecordChangeSet implements RecordAccessSet
             Loader<SchemaRecord,SchemaRule> schemaRuleLoader,
             Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
             Loader<LabelTokenRecord,Void> labelTokenLoader,
+            Loader<TimeZoneTokenRecord,Void> timeZoneTokenLoader,
             Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
     {
         this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter );
@@ -73,6 +77,7 @@ public class RecordChangeSet implements RecordAccessSet
         this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter );
         this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter );
         this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter );
+        this.timeZoneTokenChanges = new RecordChanges<>( timeZoneTokenLoader, changeCounter );
         this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter );
     }
 
@@ -116,6 +121,12 @@ public class RecordChangeSet implements RecordAccessSet
     public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenChanges;
+    }
+
+    @Override
+    public RecordAccess<TimeZoneTokenRecord,Void> getTimeZoneTokenChanges()
+    {
+        return timeZoneTokenChanges;
     }
 
     @Override

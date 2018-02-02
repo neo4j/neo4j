@@ -36,6 +36,8 @@ trait ExceptionTranslationSupport {
 
       def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
 
+      def timeZoneGetName(timeZoneId: Int) = inner.getTimeZoneName(timeZoneId)
+
       def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)

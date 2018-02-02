@@ -258,6 +258,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         dependencies.satisfyDependency( idController );
 
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
+        this.timeZoneTokenHolder = coreStateMachinesModule.timeZoneTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
         this.lockManager = coreStateMachinesModule.lockManager;

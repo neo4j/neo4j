@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -95,6 +96,8 @@ public abstract class EditionModule
     public IdTypeConfigurationProvider idTypeConfigurationProvider;
 
     public LabelTokenHolder labelTokenHolder;
+
+    public TimeZoneTokenHolder timeZoneTokenHolder;
 
     public PropertyKeyTokenHolder propertyKeyTokenHolder;
 
