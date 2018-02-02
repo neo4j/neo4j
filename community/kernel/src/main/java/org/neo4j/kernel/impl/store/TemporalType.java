@@ -402,7 +402,7 @@ public enum TemporalType
         return data;
     }
 
-    public static long[] encodeDuration( int keyId, long months, long days, long seconds, int nanos)
+    public static long[] encodeDuration( int keyId, long months, long days, long seconds, int nanos )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
 
