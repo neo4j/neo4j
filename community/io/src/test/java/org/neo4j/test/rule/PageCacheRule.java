@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.memory.LocalMemoryTracker;
 
 public class PageCacheRule extends ExternalResource
 {
@@ -193,7 +194,8 @@ public class PageCacheRule extends ExternalResource
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fs, Configuration.EMPTY );
 
-        MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ) );
+        MemoryAllocator mman = MemoryAllocator.createAllocator( selectConfig( baseConfig.memory, overriddenConfig.memory, "8 MiB" ),
+                new LocalMemoryTracker() );
         if ( pageSize != null )
         {
             pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier );

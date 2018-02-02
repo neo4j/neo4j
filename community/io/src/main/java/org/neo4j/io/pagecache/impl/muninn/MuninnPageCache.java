@@ -47,6 +47,8 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.util.FeatureToggles.flag;
@@ -219,7 +221,7 @@ public class MuninnPageCache implements PageCache
     {
         this( swapperFactory,
                 // Cast to long prevents overflow:
-                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ) ),
+                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ), GlobalMemoryTracker.INSTANCE ),
                 PAGE_SIZE,
                 pageCacheTracer,
                 pageCursorTracerSupplier );
@@ -261,6 +263,7 @@ public class MuninnPageCache implements PageCache
 
         // Expose the total number of pages
         pageCacheTracer.maxPages( maxPages );
+        MemoryAllocationTracker memoryTracker = GlobalMemoryTracker.INSTANCE;
 
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
@@ -270,7 +273,7 @@ public class MuninnPageCache implements PageCache
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.printExceptionsOnClose = true;
         long alignment = swapperFactory.getRequiredBufferAlignment();
-        this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
+        this.victimPage = VictimPageReference.getVictimPage( cachePageSize, memoryTracker );
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
 
         setFreelistHead( new AtomicInteger() );

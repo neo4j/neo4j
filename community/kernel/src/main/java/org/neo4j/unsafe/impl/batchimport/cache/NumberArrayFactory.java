@@ -28,6 +28,7 @@ import java.util.function.Function;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -79,19 +80,19 @@ public interface NumberArrayFactory
         @Override
         public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            return new OffHeapIntArray( length, defaultValue, base );
+            return new OffHeapIntArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
         }
 
         @Override
         public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            return new OffHeapLongArray( length, defaultValue, base );
+            return new OffHeapLongArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
         }
 
         @Override
         public ByteArray newByteArray( long length, byte[] defaultValue, long base )
         {
-            return new OffHeapByteArray( length, defaultValue, base );
+            return new OffHeapByteArray( length, defaultValue, base, GlobalMemoryTracker.INSTANCE );
         }
 
         @Override

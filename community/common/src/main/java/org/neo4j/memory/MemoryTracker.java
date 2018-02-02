@@ -17,23 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.cache;
+package org.neo4j.memory;
 
 /**
- * Visits objects able to provide stats about amount of used memory.
+ * Tracker that capable to report number of allocated bytes.
+ * @see MemoryAllocationTracker
  */
-public interface MemoryStatsVisitor
+public interface MemoryTracker
 {
-    Visitable NONE = visitor ->
-    {   // report no memory
-    };
-
-    interface Visitable
-    {
-        void acceptMemoryStatsVisitor( MemoryStatsVisitor visitor );
-    }
-
-    void heapUsage( long bytes );
-
-    void offHeapUsage( long bytes );
+    /**
+     * @return number of bytes of direct memory that are used
+     */
+    long usedDirectMemory();
 }

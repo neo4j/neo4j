@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.memory.GlobalMemoryTracker;
 
 /*
  * This class is an helper to allow to construct properly a page cache in the few places we need it without all
@@ -47,7 +48,7 @@ public final class StandalonePageCacheFactory
 
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB" );
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB", GlobalMemoryTracker.INSTANCE );
         return new MuninnPageCache( factory, memoryAllocator, cacheTracer, cursorTracerSupplier );
     }
 }

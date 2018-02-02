@@ -17,32 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.memory;
 
-import org.neo4j.memory.MemoryAllocationTracker;
+import java.util.concurrent.atomic.LongAdder;
 
-public class LongKeyUnsafeTable<VALUE> extends UnsafeTable<VALUE>
+/**
+ * Global memory tracker that can be used in a global multi threaded context to record
+ * allocation and de-allocation of native memory.
+ * @see org.neo4j.memory.MemoryAllocationTracker
+ * @see MemoryTracker
+ */
+public class GlobalMemoryTracker implements MemoryTracker, MemoryAllocationTracker
 {
-    public LongKeyUnsafeTable( int capacity, VALUE valueMarker, MemoryAllocationTracker allocationTracker )
+    private LongAdder longAdder = new LongAdder();
+
+    public static final GlobalMemoryTracker INSTANCE = new GlobalMemoryTracker();
+
+    private GlobalMemoryTracker()
     {
-        super( capacity, 8, valueMarker, allocationTracker );
     }
 
     @Override
-    protected long internalKey( long keyAddress )
+    public long usedDirectMemory()
     {
-        return alignmentSafeGetLongAsTwoInts( keyAddress );
+        return longAdder.sum();
     }
 
     @Override
-    protected void internalPut( long keyAddress, long key, VALUE value )
+    public void allocate( long allocatedBytes )
     {
-        alignmentSafePutLongAsTwoInts( keyAddress, key );
+        longAdder.add( allocatedBytes );
     }
 
     @Override
-    protected Table<VALUE> newInstance( int newCapacity )
+    public void deallocate( long deAllocatedBytes )
     {
-        return new LongKeyUnsafeTable<>( newCapacity, valueMarker, allocationTracker );
+        longAdder.add( -deAllocatedBytes );
     }
 }

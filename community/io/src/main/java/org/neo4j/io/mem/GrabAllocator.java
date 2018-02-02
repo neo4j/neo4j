@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.mem;
 
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -39,6 +40,7 @@ public final class GrabAllocator implements MemoryAllocator
      * The amount of memory that this memory manager can still allocate.
      */
     private long memoryReserve;
+    private final MemoryAllocationTracker memoryTracker;
 
     private Grab grabs;
 
@@ -47,10 +49,12 @@ public final class GrabAllocator implements MemoryAllocator
      * given alignment size.
      * @param expectedMaxMemory The maximum amount of memory that this memory manager is expected to allocate. The
      * actual amount of memory used can end up greater than this value, if some of it gets wasted on alignment padding.
+     * @param memoryTracker memory usage tracker
      */
-    GrabAllocator( long expectedMaxMemory )
+    GrabAllocator( long expectedMaxMemory, MemoryAllocationTracker memoryTracker )
     {
         this.memoryReserve = expectedMaxMemory;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -93,12 +97,12 @@ public final class GrabAllocator implements MemoryAllocator
                 // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
                 grabSize = bytes;
                 Grab nextGrab = grabs == null ? null : grabs.next;
-                Grab allocationGrab = new Grab( nextGrab, grabSize );
+                Grab allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
                 if ( !allocationGrab.canAllocate( bytes ) )
                 {
                     allocationGrab.free();
                     grabSize = bytes + alignment;
-                    allocationGrab = new Grab( nextGrab, grabSize );
+                    allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
                 }
                 long allocation = allocationGrab.allocate( bytes, alignment );
                 grabs = grabs == null ? allocationGrab : grabs.setNext( allocationGrab );
@@ -111,7 +115,7 @@ public final class GrabAllocator implements MemoryAllocator
                 if ( grabSize < bytes )
                 {
                     grabSize = bytes;
-                    Grab grab = new Grab( grabs, grabSize );
+                    Grab grab = new Grab( grabs, grabSize, memoryTracker );
                     if ( grab.canAllocate( bytes ) )
                     {
                         memoryReserve -= grabSize;
@@ -121,7 +125,7 @@ public final class GrabAllocator implements MemoryAllocator
                     grab.free();
                     grabSize = bytes + alignment;
                 }
-                grabs = new Grab( grabs, grabSize );
+                grabs = new Grab( grabs, grabSize, memoryTracker );
                 memoryReserve -= grabSize;
             }
             return grabs.allocate( bytes, alignment );
@@ -176,22 +180,25 @@ public final class GrabAllocator implements MemoryAllocator
         public final Grab next;
         private final long address;
         private final long limit;
+        private final MemoryAllocationTracker memoryTracker;
         private long nextPointer;
 
-        Grab( Grab next, long size )
+        Grab( Grab next, long size, MemoryAllocationTracker memoryTracker )
         {
             this.next = next;
-            this.address = UnsafeUtil.allocateMemory( size );
+            this.address = UnsafeUtil.allocateMemory( size, memoryTracker );
             this.limit = address + size;
+            this.memoryTracker = memoryTracker;
             nextPointer = address;
         }
 
-        Grab( Grab next, long address, long limit, long nextPointer )
+        Grab( Grab next, long address, long limit, long nextPointer, MemoryAllocationTracker memoryTracker )
         {
             this.next = next;
             this.address = address;
             this.limit = limit;
             this.nextPointer = nextPointer;
+            this.memoryTracker = memoryTracker;
         }
 
         private long nextAligned( long pointer, long alignment )
@@ -213,7 +220,7 @@ public final class GrabAllocator implements MemoryAllocator
 
         void free()
         {
-            UnsafeUtil.free( address );
+            UnsafeUtil.free( address, limit - address, memoryTracker );
         }
 
         boolean canAllocate( long bytes )
@@ -223,7 +230,7 @@ public final class GrabAllocator implements MemoryAllocator
 
         Grab setNext( Grab grab )
         {
-            return new Grab( grab, address, limit, nextPointer );
+            return new Grab( grab, address, limit, nextPointer, memoryTracker );
         }
 
         @Override

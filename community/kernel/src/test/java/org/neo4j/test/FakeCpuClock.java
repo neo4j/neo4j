@@ -19,14 +19,15 @@
  */
 package org.neo4j.test;
 
-import java.util.concurrent.TimeUnit;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongLongMap;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.resources.CpuClock;
 
 public class FakeCpuClock extends CpuClock implements TestRule
@@ -39,7 +40,7 @@ public class FakeCpuClock extends CpuClock implements TestRule
             return -1;
         }
     };
-    private final PrimitiveLongLongMap cpuTimes = Primitive.offHeapLongLongMap();
+    private final PrimitiveLongLongMap cpuTimes = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE );
 
     @Override
     public long cpuTimeNanos( long threadId )

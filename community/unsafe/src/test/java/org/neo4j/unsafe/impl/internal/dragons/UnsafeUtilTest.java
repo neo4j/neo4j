@@ -24,6 +24,8 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import org.neo4j.memory.GlobalMemoryTracker;
+
 import static java.lang.System.currentTimeMillis;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
@@ -131,13 +133,13 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void mustHaveUnsafe() throws Exception
+    public void mustHaveUnsafe()
     {
         assertHasUnsafe();
     }
 
     @Test
-    public void pageSizeIsPowerOfTwo() throws Exception
+    public void pageSizeIsPowerOfTwo()
     {
         assertThat( pageSize(), isOneOf(
                 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144,
@@ -146,7 +148,7 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void mustSupportReadingFromAndWritingToFields() throws Exception
+    public void mustSupportReadingFromAndWritingToFields()
     {
         Obj obj;
 
@@ -271,89 +273,90 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void mustSupportReadingAndWritingOfPrimitivesToMemory() throws Exception
+    public void mustSupportReadingAndWritingOfPrimitivesToMemory()
     {
-        long address = allocateMemory( 8 );
+        int sizeInBytes = 8;
+        long address = allocateMemory( sizeInBytes );
         try
         {
             putByte( address, (byte) 1 );
             assertThat( getByte( address ), is( (byte) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getByte( address ), is( (byte) 0 ) );
 
             putByteVolatile( address, (byte) 1 );
             assertThat( getByteVolatile( address ), is( (byte) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getByteVolatile( address ), is( (byte) 0 ) );
 
             putShort( address, (short) 1 );
             assertThat( getShort( address ), is( (short) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getShort( address ), is( (short) 0 ) );
 
             putShortVolatile( address, (short) 1 );
             assertThat( getShortVolatile( address ), is( (short) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getShortVolatile( address ), is( (short) 0 ) );
 
             putFloat( address, 1 );
             assertThat( getFloat( address ), is( (float) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getFloat( address ), is( (float) 0 ) );
 
             putFloatVolatile( address, 1 );
             assertThat( getFloatVolatile( address ), is( (float) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getFloatVolatile( address ), is( (float) 0 ) );
 
             putChar( address, '1' );
             assertThat( getChar( address ), is( '1' ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getChar( address ), is( (char) 0 ) );
 
             putCharVolatile( address, '1' );
             assertThat( getCharVolatile( address ), is( '1' ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getCharVolatile( address ), is( (char) 0 ) );
 
             putInt( address, 1 );
             assertThat( getInt( address ), is( 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getInt( address ), is( 0 ) );
 
             putIntVolatile( address, 1 );
             assertThat( getIntVolatile( address ), is( 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getIntVolatile( address ), is( 0 ) );
 
             putLong( address, 1 );
             assertThat( getLong( address ), is( 1L ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getLong( address ), is( 0L ) );
 
             putLongVolatile( address, 1 );
             assertThat( getLongVolatile( address ), is( 1L ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getLongVolatile( address ), is( 0L ) );
 
             putDouble( address, 1 );
             assertThat( getDouble( address ), is( (double) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getDouble( address ), is( (double) 0 ) );
 
             putDoubleVolatile( address, 1 );
             assertThat( getDoubleVolatile( address ), is( (double) 1 ) );
-            setMemory( address, 8, (byte) 0 );
+            setMemory( address, sizeInBytes, (byte) 0 );
             assertThat( getDoubleVolatile( address ), is( (double) 0 ) );
         }
         finally
         {
-            free( address );
+            free( address, sizeInBytes, GlobalMemoryTracker.INSTANCE );
         }
     }
 
     @Test
-    public void getAndAddIntOfField() throws Exception
+    public void getAndAddIntOfField()
     {
         Obj obj = new Obj();
         long anIntOffset = getFieldOffset( Obj.class, "anInt" );
@@ -365,7 +368,7 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void compareAndSwapLongField() throws Exception
+    public void compareAndSwapLongField()
     {
         Obj obj = new Obj();
         long aLongOffset = getFieldOffset( Obj.class, "aLong" );
@@ -376,7 +379,7 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void compareAndSwapObjectField() throws Exception
+    public void compareAndSwapObjectField()
     {
         Obj obj = new Obj();
         long objectOffset = getFieldOffset( Obj.class, "object" );
@@ -387,7 +390,7 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void getAndSetObjectField() throws Exception
+    public void getAndSetObjectField()
     {
         Obj obj = new Obj();
         long objectOffset = getFieldOffset( Obj.class, "object" );
@@ -397,7 +400,7 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void unsafeArrayElementAccess() throws Exception
+    public void unsafeArrayElementAccess()
     {
         int len = 3;
         int scale;
@@ -479,18 +482,19 @@ public class UnsafeUtilTest
     @Test
     public void directByteBufferCreationAndInitialisation() throws Exception
     {
-        long address = allocateMemory( 313 );
+        int sizeInBytes = 313;
+        long address = allocateMemory( sizeInBytes );
         try
         {
-            setMemory( address, 313, (byte) 0 );
-            ByteBuffer a = newDirectByteBuffer( address, 313 );
-            assertThat( a, is( not( sameInstance( newDirectByteBuffer( address, 313 ) ) ) ) );
+            setMemory( address, sizeInBytes, (byte) 0 );
+            ByteBuffer a = newDirectByteBuffer( address, sizeInBytes );
+            assertThat( a, is( not( sameInstance( newDirectByteBuffer( address, sizeInBytes ) ) ) ) );
             assertThat( a.hasArray(), is( false ) );
             assertThat( a.isDirect(), is( true ) );
-            assertThat( a.capacity(), is( 313 ) );
-            assertThat( a.limit(), is( 313 ) );
+            assertThat( a.capacity(), is( sizeInBytes ) );
+            assertThat( a.limit(), is( sizeInBytes ) );
             assertThat( a.position(), is( 0 ) );
-            assertThat( a.remaining(), is( 313 ) );
+            assertThat( a.remaining(), is( sizeInBytes ) );
             assertThat( getByte( address ), is( (byte) 0 ) );
             a.put( (byte) -1 );
             assertThat( getByte( address ), is( (byte) -1 ) );
@@ -499,34 +503,35 @@ public class UnsafeUtilTest
             a.mark();
             a.limit( 202 );
 
-            long address2 = allocateMemory( 424 );
+            int sizeInBytes2 = 424;
+            long address2 = allocateMemory( sizeInBytes2 );
             try
             {
-                setMemory( address2, 424, (byte) 0 );
-                initDirectByteBuffer( a, address2, 424 );
+                setMemory( address2, sizeInBytes2, (byte) 0 );
+                initDirectByteBuffer( a, address2, sizeInBytes2 );
                 assertThat( a.hasArray(), is( false ) );
                 assertThat( a.isDirect(), is( true ) );
-                assertThat( a.capacity(), is( 424 ) );
-                assertThat( a.limit(), is( 424 ) );
+                assertThat( a.capacity(), is( sizeInBytes2 ) );
+                assertThat( a.limit(), is( sizeInBytes2 ) );
                 assertThat( a.position(), is( 0 ) );
-                assertThat( a.remaining(), is( 424 ) );
+                assertThat( a.remaining(), is( sizeInBytes2 ) );
                 assertThat( getByte( address2 ), is( (byte) 0 ) );
                 a.put( (byte) -1 );
                 assertThat( getByte( address2 ), is( (byte) -1 ) );
             }
             finally
             {
-                free( address2 );
+                free( address2, sizeInBytes2, GlobalMemoryTracker.INSTANCE );
             }
         }
         finally
         {
-            free( address );
+            free( address, sizeInBytes, GlobalMemoryTracker.INSTANCE );
         }
     }
 
     @Test
-    public void shouldAlignMemoryTo4ByteBoundary() throws Exception
+    public void shouldAlignMemoryTo4ByteBoundary()
     {
         // GIVEN
         long allocatedMemory = currentTimeMillis();
@@ -545,10 +550,12 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void shouldPutAndGetByteWiseLittleEndianShort() throws Exception
+    public void shouldPutAndGetByteWiseLittleEndianShort()
     {
         // GIVEN
-        long p = allocateMemory( 2 );
+        int sizeInBytes = 2;
+        GlobalMemoryTracker tracker = GlobalMemoryTracker.INSTANCE;
+        long p = allocateMemory( sizeInBytes, tracker );
         short value = (short) 0b11001100_10101010;
 
         // WHEN
@@ -556,15 +563,17 @@ public class UnsafeUtilTest
         short readValue = UnsafeUtil.getShortByteWiseLittleEndian( p );
 
         // THEN
-        free( p );
+        free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
     }
 
     @Test
-    public void shouldPutAndGetByteWiseLittleEndianInt() throws Exception
+    public void shouldPutAndGetByteWiseLittleEndianInt()
     {
         // GIVEN
-        long p = allocateMemory( 4 );
+        int sizeInBytes = 4;
+        GlobalMemoryTracker tracker = GlobalMemoryTracker.INSTANCE;
+        long p = allocateMemory( sizeInBytes, tracker );
         int value = 0b11001100_10101010_10011001_01100110;
 
         // WHEN
@@ -572,15 +581,17 @@ public class UnsafeUtilTest
         int readValue = UnsafeUtil.getIntByteWiseLittleEndian( p );
 
         // THEN
-        free( p );
+        free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
     }
 
     @Test
-    public void shouldPutAndGetByteWiseLittleEndianLong() throws Exception
+    public void shouldPutAndGetByteWiseLittleEndianLong()
     {
         // GIVEN
-        long p = allocateMemory( 8 );
+        int sizeInBytes = 8;
+        GlobalMemoryTracker tracker = GlobalMemoryTracker.INSTANCE;
+        long p = allocateMemory( sizeInBytes, tracker );
         long value = 0b11001100_10101010_10011001_01100110__10001000_01000100_00100010_00010001L;
 
         // WHEN
@@ -588,7 +599,7 @@ public class UnsafeUtilTest
         long readValue = UnsafeUtil.getLongByteWiseLittleEndian( p );
 
         // THEN
-        free( p );
+        free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
     }
 }

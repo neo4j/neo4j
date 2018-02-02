@@ -38,6 +38,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
+
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -52,7 +55,7 @@ public final class UnsafeUtil
 {
     /**
      * Whether or not to explicitly dirty the allocated memory. This is off by default.
-     * The {@link UnsafeUtil#allocateMemory(long)} method is not guaranteed to allocate zeroed out memory, but might
+     * The {@link UnsafeUtil#allocateMemory(long, MemoryAllocationTracker)} method is not guaranteed to allocate zeroed out memory, but might
      * often do so by pure chance.
      * Enabling this feature will make sure that the allocated memory is full of random data, such that we can test
      * and verify that our code does not assume that memory is clean when allocated.
@@ -344,13 +347,18 @@ public final class UnsafeUtil
         }
     }
 
+    public static long allocateMemory( long sizeInBytes )
+    {
+        return allocateMemory( sizeInBytes, GlobalMemoryTracker.INSTANCE );
+    }
+
     /**
      * Allocate a block of memory of the given size in bytes, and return a pointer to that memory.
      * <p>
      * The memory is aligned such that it can be used for any data type.
      * The memory is uninitialised, so it may contain random garbage, or it may not.
      */
-    public static long allocateMemory( long sizeInBytes )
+    public static long allocateMemory( long sizeInBytes, MemoryAllocationTracker allocationTracker )
     {
         final long pointer = unsafe.allocateMemory( sizeInBytes );
         if ( DIRTY_MEMORY )
@@ -358,6 +366,7 @@ public final class UnsafeUtil
             setMemory( pointer, sizeInBytes, (byte) 0xA5 );
         }
         addAllocatedPointer( pointer, sizeInBytes );
+        allocationTracker.allocate( sizeInBytes );
         return pointer;
     }
 
@@ -375,7 +384,7 @@ public final class UnsafeUtil
      *         ^------^              ; used memory
      * </code></pre>
      *
-     * @param pointer pointer to allocated memory from {@link #allocateMemory(long)}.
+     * @param pointer pointer to allocated memory from {@link #allocateMemory(long, MemoryAllocationTracker)} )}.
      * @param alignBy power-of-two size to align to, e.g. 4 or 8.
      * @return pointer to place inside the allocated memory to consider the effective start of the
      * memory, which from that point is aligned by {@code alignBy}.
@@ -391,10 +400,11 @@ public final class UnsafeUtil
     /**
      * Free the memory that was allocated with {@link #allocateMemory}.
      */
-    public static void free( long pointer )
+    public static void free( long pointer, long bytes, MemoryAllocationTracker allocationTracker )
     {
         checkFree( pointer );
         unsafe.freeMemory( pointer );
+        allocationTracker.deallocate( bytes );
     }
 
     private static final class FreeTrace extends Throwable implements Comparable<FreeTrace>

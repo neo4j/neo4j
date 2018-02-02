@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.tools.txlog.checktypes.CheckType;
 import org.neo4j.tools.txlog.checktypes.CheckTypes;
@@ -127,7 +128,7 @@ public class CheckTxLogs
         final long lowestLogVersion = logFiles.getLowestLogVersion();
         final long highestLogVersion = logFiles.getHighestLogVersion();
         boolean success = true;
-        try ( PrimitiveLongLongMap logFileSizes = Primitive.offHeapLongLongMap() )
+        try ( PrimitiveLongLongMap logFileSizes = Primitive.offHeapLongLongMap( GlobalMemoryTracker.INSTANCE ) )
         {
             for ( long i = lowestLogVersion; i <= highestLogVersion; i++ )
             {
