@@ -23,11 +23,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
+import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -58,9 +58,9 @@ public class CoreStateDownloaderTest
     private final RemoteStore remoteStore = mock( RemoteStore.class );
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
-    private CoreSnapshotService snaptshotService = mock( CoreSnapshotService.class );
+    private CoreSnapshotService snapshotService = mock( CoreSnapshotService.class );
     private TopologyService topologyService = mock( TopologyService.class );
-
+    private CommitStateHelper commitStateHelper = mock( CommitStateHelper.class );
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
@@ -72,7 +72,7 @@ public class CoreStateDownloaderTest
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,
-                    snaptshotService, topologyService );
+                    snapshotService, topologyService, commitStateHelper );
 
     @Before
     public void commonMocking()
@@ -144,8 +144,7 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) )
-                .thenReturn( SUCCESS_END_OF_STREAM );
+        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir, false ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
         downloader.downloadSnapshot( remoteMember );

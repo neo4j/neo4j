@@ -28,6 +28,7 @@ import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
+import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -191,8 +192,9 @@ public class CoreServerModule
         StoreCopyProcess storeCopyProcess = new StoreCopyProcess( platformModule.fileSystem, platformModule.pageCache, localDatabase,
                 copiedStoreRecovery, remoteStore, logProvider );
 
+        CommitStateHelper commitStateHelper = new CommitStateHelper( platformModule.pageCache, platformModule.fileSystem, config );
         return new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider,
-                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, clusteringModule.topologyService() );
+                storeCopyProcess, coreStateMachinesModule.coreStateMachines, snapshotService, clusteringModule.topologyService(), commitStateHelper );
     }
 
     private MembershipWaiterLifecycle createMembershipWaiterLifecycle()
