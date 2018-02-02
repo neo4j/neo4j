@@ -113,7 +113,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
             throw new RejectedExecutionException( "Scheduler is not started" );
         }
 
-        return register( new PooledJobHandle( this.globalPool.submit( job ) ) );
+        return register( new PooledJobHandle( globalPool.submit( job ) ) );
     }
 
     private JobHandle register( PooledJobHandle pooledJobHandle )

@@ -17,22 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.kernel.impl.pagecache;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import java.io.IOException;
 
-public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+
+class SingleCursorPageLoader extends PageLoader
 {
-    @Override
-    protected GraphDatabaseFactory newFactory()
+    private final PageCursor cursor;
+
+    SingleCursorPageLoader( PagedFile file ) throws IOException
     {
-        return new TestEnterpriseGraphDatabaseFactory();
+        cursor = file.io( 0, PF_SHARED_READ_LOCK );
     }
 
     @Override
-    public EnterpriseDatabaseRule startLazily()
+    public void load( long pageId ) throws IOException
     {
-        return (EnterpriseDatabaseRule) super.startLazily();
+        cursor.next( pageId );
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        cursor.close();
     }
 }

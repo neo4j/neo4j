@@ -202,6 +202,8 @@ public interface JobScheduler extends Lifecycle
          */
         public static Group vmPauseMonitor = new Group( "VmPauseMonitor" );
 
+        public static Group pageCacheIOHelper = new Group( "PageCacheIOHelper" );
+
         private Groups()
         {
         }
@@ -235,7 +237,9 @@ public interface JobScheduler extends Lifecycle
     /** Expose a group scheduler as an {@link Executor} */
     Executor executor( Group group );
 
-    /** Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}*/
+    /**
+     * Creates an {@link ExecutorService} that does works-stealing - read more about this in {@link ForkJoinPool}
+     */
     ExecutorService workStealingExecutor( Group group, int parallelism );
 
     /**

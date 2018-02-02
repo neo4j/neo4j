@@ -17,22 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.rule;
+package org.neo4j.kernel.impl.pagecache;
 
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-
-public class EnterpriseDatabaseRule extends EmbeddedDatabaseRule
+public interface PageCacheWarmerMonitor
 {
-    @Override
-    protected GraphDatabaseFactory newFactory()
-    {
-        return new TestEnterpriseGraphDatabaseFactory();
-    }
-
-    @Override
-    public EnterpriseDatabaseRule startLazily()
-    {
-        return (EnterpriseDatabaseRule) super.startLazily();
-    }
+    void warmupCompleted( long elapsedMillis, long pagesLoaded );
+    void profileCompleted( long elapsedMillis, long pagesInMemory );
 }
