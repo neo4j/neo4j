@@ -27,7 +27,6 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -39,10 +38,8 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.ResourceUtils;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -640,7 +637,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 IndexQuery.ExactPredicate query = IndexQuery.exact( propertyId, value );
                 read.nodeIndexSeek( index, cursor, IndexOrder.NONE, query );
 
-                return new NodeCursorResourceIterator<>( cursor, statement );
+                return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )
             {
@@ -662,7 +659,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         transaction.dataRead().nodeLabelScan( labelId, nodeLabelCursor );
 
-        return new NodeLabelPropertyIterator( transaction.dataRead(), nodeLabelCursor, nodeCursor, propertyCursor, statement, propertyId, value );
+        return new NodeLabelPropertyIterator( transaction.dataRead(),
+                                                nodeLabelCursor,
+                                                nodeCursor,
+                                                propertyCursor,
+                                                statement,
+                                                this::newNodeProxy,
+                                                propertyId,
+                                                value );
     }
 
     private ResourceIterator<Node> allNodesWithLabel( final Label myLabel )
@@ -679,50 +683,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         NodeLabelIndexCursor cursor = ktx.cursors().allocateNodeLabelIndexCursor();
         ktx.dataRead().nodeLabelScan( labelId, cursor );
-        return new NodeCursorResourceIterator<>( cursor, statement );
-    }
-
-    private ResourceIterator<Node> map2nodes( PrimitiveLongIterator input, Resource... resources )
-    {
-       return new ResourceIterator<Node>()
-       {
-           private boolean closed;
-
-           @Override
-           public void close()
-           {
-               if ( !closed && resources != null )
-               {
-                   ResourceUtils.closeAll( resources );
-                   closed = true;
-               }
-           }
-
-           @Override
-           public boolean hasNext()
-           {
-               boolean hasNext = input.hasNext();
-               if ( !hasNext )
-               {
-                   close();
-               }
-               return hasNext;
-           }
-
-           @Override
-           public Node next()
-           {
-               try
-               {
-                   return newNodeProxy( input.next() );
-               }
-               catch ( NoSuchElementException e )
-               {
-                   close();
-                   throw e;
-               }
-           }
-       };
+        return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
     }
 
     @Override
@@ -766,92 +727,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public String toString()
     {
         return spi.name() + " [" + getStoreDir() + "]";
-    }
-
-    private class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
-    {
-        private final Read read;
-        private final NodeLabelIndexCursor nodeLabelCursor;
-        private final NodeCursor nodeCursor;
-        private final PropertyCursor propertyCursor;
-        private final int propertyKeyId;
-        private final Value value;
-
-        NodeLabelPropertyIterator(
-                Read read,
-                NodeLabelIndexCursor nodeLabelCursor,
-                NodeCursor nodeCursor,
-                PropertyCursor propertyCursor,
-                Statement statement,
-                int propertyKeyId,
-                Value value )
-        {
-            super( statement );
-            this.read = read;
-            this.nodeLabelCursor = nodeLabelCursor;
-            this.nodeCursor = nodeCursor;
-            this.propertyCursor = propertyCursor;
-            this.propertyKeyId = propertyKeyId;
-            this.value = value;
-        }
-
-        @Override
-        protected long fetchNext()
-        {
-            boolean hasNext;
-            do
-            {
-                hasNext = nodeLabelCursor.next();
-
-            } while ( hasNext && !hasPropertyWithValue() );
-
-            if ( hasNext )
-            {
-                return nodeLabelCursor.nodeReference();
-            }
-            else
-            {
-                close();
-                return NO_ID;
-            }
-        }
-
-        @Override
-        void closeResources( Statement statement )
-        {
-            IOUtils.closeAllSilently( statement, nodeLabelCursor, nodeCursor, propertyCursor );
-        }
-
-        private boolean hasPropertyWithValue()
-        {
-            read.singleNode( nodeLabelCursor.nodeReference(), nodeCursor );
-            if ( nodeCursor.next() )
-            {
-                nodeCursor.properties( propertyCursor );
-                while ( propertyCursor.next() )
-                {
-                    if ( propertyCursor.propertyKey() == propertyKeyId && propertyCursor.propertyValue().equals( value ) )
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    private void assertTransactionOpen()
-    {
-        assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true ) );
-    }
-
-    private void assertTransactionOpen( KernelTransaction transaction )
-    {
-        if ( transaction.isTerminated() )
-        {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
-        }
     }
 
     @Override
@@ -927,13 +802,100 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return new GraphPropertiesProxy( this );
     }
 
+    private static class NodeLabelPropertyIterator extends PrefetchingNodeResourceIterator
+    {
+        private final Read read;
+        private final NodeLabelIndexCursor nodeLabelCursor;
+        private final NodeCursor nodeCursor;
+        private final PropertyCursor propertyCursor;
+        private final int propertyKeyId;
+        private final Value value;
+
+        NodeLabelPropertyIterator(
+                Read read,
+                NodeLabelIndexCursor nodeLabelCursor,
+                NodeCursor nodeCursor,
+                PropertyCursor propertyCursor,
+                Statement statement,
+                NodeFactory nodeFactory,
+                int propertyKeyId,
+                Value value )
+        {
+            super( statement, nodeFactory );
+            this.read = read;
+            this.nodeLabelCursor = nodeLabelCursor;
+            this.nodeCursor = nodeCursor;
+            this.propertyCursor = propertyCursor;
+            this.propertyKeyId = propertyKeyId;
+            this.value = value;
+        }
+
+        @Override
+        protected long fetchNext()
+        {
+            boolean hasNext;
+            do
+            {
+                hasNext = nodeLabelCursor.next();
+
+            } while ( hasNext && !hasPropertyWithValue() );
+
+            if ( hasNext )
+            {
+                return nodeLabelCursor.nodeReference();
+            }
+            else
+            {
+                close();
+                return NO_ID;
+            }
+        }
+
+        @Override
+        void closeResources( Statement statement )
+        {
+            IOUtils.closeAllSilently( statement, nodeLabelCursor, nodeCursor, propertyCursor );
+        }
+
+        private boolean hasPropertyWithValue()
+        {
+            read.singleNode( nodeLabelCursor.nodeReference(), nodeCursor );
+            if ( nodeCursor.next() )
+            {
+                nodeCursor.properties( propertyCursor );
+                while ( propertyCursor.next() )
+                {
+                    if ( propertyCursor.propertyKey() == propertyKeyId && propertyCursor.propertyValue().equals( value ) )
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    private void assertTransactionOpen()
+    {
+        assertTransactionOpen( statementContext.getKernelTransactionBoundToThisThread( true ) );
+    }
+
+    private void assertTransactionOpen( KernelTransaction transaction )
+    {
+        if ( transaction.isTerminated() )
+        {
+            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
+            throw new TransactionTerminatedException( terminationReason );
+        }
+    }
+
     private final class NodeCursorResourceIterator<CURSOR extends NodeIndexCursor> extends PrefetchingNodeResourceIterator
     {
         private final CURSOR cursor;
 
-        NodeCursorResourceIterator( CURSOR cursor, Statement statement )
+        NodeCursorResourceIterator( CURSOR cursor, Statement statement, NodeFactory nodeFactory )
         {
-            super( statement );
+            super( statement, nodeFactory );
             this.cursor = cursor;
         }
 
@@ -957,18 +919,20 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         }
     }
 
-    private abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
+    private static abstract class PrefetchingNodeResourceIterator implements ResourceIterator<Node>
     {
         private final Statement statement;
+        private final NodeFactory nodeFactory;
         private long next;
         private boolean closed;
 
         private static final long NOT_INITIALIZED = -2L;
         protected static final long NO_ID = -1L;
 
-        PrefetchingNodeResourceIterator( Statement statement )
+        PrefetchingNodeResourceIterator( Statement statement, NodeFactory nodeFactory )
         {
             this.statement = statement;
+            this.nodeFactory = nodeFactory;
             this.next = NOT_INITIALIZED;
         }
 
@@ -990,7 +954,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
                 close();
                 throw new NoSuchElementException(  );
             }
-            Node nodeProxy = newNodeProxy( next );
+            Node nodeProxy = nodeFactory.make( next );
             next = fetchNext();
             return nodeProxy;
         }
@@ -1008,5 +972,10 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         abstract long fetchNext();
 
         abstract void closeResources( Statement statement );
+    }
+
+    private interface NodeFactory
+    {
+        NodeProxy make( long id );
     }
 }
