@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api.state;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
@@ -56,9 +58,9 @@ class RelationshipStateImpl extends PropertyContainerStateImpl implements Relati
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public PrimitiveLongIterator removedProperties()
         {
-            return emptyIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override

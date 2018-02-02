@@ -96,6 +96,29 @@ public class PrimitiveLongList implements PrimitiveLongCollection
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        PrimitiveLongList that = (PrimitiveLongList) o;
+        return size == that.size && Arrays.equals( elements, that.elements );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = size;
+        result = 31 * result + Arrays.hashCode( elements );
+        return result;
+    }
+
     public long[] toArray()
     {
         return Arrays.copyOf( elements, size );

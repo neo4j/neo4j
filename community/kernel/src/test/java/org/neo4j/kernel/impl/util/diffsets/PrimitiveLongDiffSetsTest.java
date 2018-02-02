@@ -25,12 +25,15 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.resourceIterator;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
@@ -147,12 +150,12 @@ public class PrimitiveLongDiffSetsTest
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );
         diffSet.removeAll( PrimitiveLongCollections.iterator( 1L, 2L ) );
 
-        PrimitiveLongIterator augmentedIterator = diffSet.augment( iterator( 5L, 6L ) );
+        PrimitiveLongIterator augmentedIterator = diffSet.augment( resourceIterator( iterator( 5L, 6L ), Resource.EMPTY) );
         assertEquals( asSet( 5L, 6L, 9L, 10L, 11L ), toSet( augmentedIterator ) );
     }
 
     @Test
-    public void visitAddedAndRemovedElements()
+    public void visitAddedAndRemovedElements() throws ConstraintValidationException
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );

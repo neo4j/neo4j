@@ -21,6 +21,8 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.storageengine.api.StorageProperty;
 
@@ -36,24 +38,19 @@ import static java.util.Collections.emptyIterator;
  */
 public interface PropertyContainerState
 {
+    PropertyContainerState EMPTY = new EmptyPropertyContainerState();
+
     Iterator<StorageProperty> addedProperties();
 
     Iterator<StorageProperty> changedProperties();
 
-    Iterator<Integer> removedProperties();
+    PrimitiveLongIterator removedProperties();
 
     Iterator<StorageProperty> addedAndChangedProperties();
 
     Iterator<StorageProperty> augmentProperties( Iterator<StorageProperty> iterator );
 
     void accept( Visitor visitor ) throws ConstraintValidationException;
-
-    interface Visitor
-    {
-        void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
-                Iterator<StorageProperty> changed,
-                Iterator<Integer> removed ) throws ConstraintValidationException;
-    }
 
     boolean hasPropertyChanges();
 
@@ -65,7 +62,12 @@ public interface PropertyContainerState
 
     boolean isPropertyRemoved( int propertyKeyId );
 
-    PropertyContainerState EMPTY = new EmptyPropertyContainerState();
+    interface Visitor
+    {
+        void visitPropertyChanges( long entityId, Iterator<StorageProperty> added,
+                Iterator<StorageProperty> changed,
+                PrimitiveLongIterator removed ) throws ConstraintValidationException;
+    }
 
     class EmptyPropertyContainerState implements PropertyContainerState
     {
@@ -82,9 +84,9 @@ public interface PropertyContainerState
         }
 
         @Override
-        public Iterator<Integer> removedProperties()
+        public PrimitiveLongIterator removedProperties()
         {
-            return emptyIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
 
         @Override

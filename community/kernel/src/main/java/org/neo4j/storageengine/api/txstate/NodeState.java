@@ -19,12 +19,12 @@
  */
 package org.neo4j.storageengine.api.txstate;
 
-import java.util.Set;
-
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.newapi.RelationshipDirection;
+import org.neo4j.kernel.impl.util.diffsets.PrimitiveLongDiffSets;
 import org.neo4j.storageengine.api.Direction;
 
 /**
@@ -40,11 +40,11 @@ public interface NodeState extends PropertyContainerState
 {
     interface Visitor extends PropertyContainerState.Visitor
     {
-        void visitLabelChanges( long nodeId, Set<Integer> added, Set<Integer> removed )
+        void visitLabelChanges( long nodeId, PrimitiveLongSet added, PrimitiveLongSet removed )
                 throws ConstraintValidationException;
     }
 
-    ReadableDiffSets<Integer> labelDiffSets();
+    PrimitiveLongDiffSets labelDiffSets();
 
     int augmentDegree( Direction direction, int degree );
 

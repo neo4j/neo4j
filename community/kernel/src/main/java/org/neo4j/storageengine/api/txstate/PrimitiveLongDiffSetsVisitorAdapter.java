@@ -17,30 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.collection.primitive.hopscotch;
+package org.neo4j.storageengine.api.txstate;
 
-public class LongKeyTable<VALUE> extends IntArrayBasedKeyTable<VALUE>
+import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+
+public class PrimitiveLongDiffSetsVisitorAdapter implements PrimitiveLongDiffSetsVisitor
 {
-    public LongKeyTable( int capacity, VALUE singleValue )
+    @Override
+    public void visitAdded( long element ) throws ConstraintValidationException
     {
-        super( capacity, 3, 32, singleValue );
+        //empty
     }
 
     @Override
-    public long key( int index )
+    public void visitRemoved( long element ) throws ConstraintValidationException
     {
-        return getLong( address( index ) );
-    }
-
-    @Override
-    protected void internalPut( int actualIndex, long key, VALUE value )
-    {
-        putLong( actualIndex, key );
-    }
-
-    @Override
-    protected LongKeyTable<VALUE> newInstance( int newCapacity )
-    {
-        return new LongKeyTable<>( newCapacity, singleValue );
+        //empty
     }
 }
