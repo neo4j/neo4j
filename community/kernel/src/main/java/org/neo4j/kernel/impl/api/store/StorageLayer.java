@@ -546,6 +546,12 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public boolean relationshipExists( long id )
+    {
+        return relationshipStore.isInUse( id );
+    }
+
+    @Override
     public PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node )
     {
         PrimitiveIntSet set = intSet();

@@ -116,6 +116,26 @@ public class AllStoreHolder extends Read
     }
 
     @Override
+    public boolean relationshipExists( long reference )
+    {
+        ktx.assertOpen();
+
+        if ( hasTxStateWithChanges() )
+        {
+            TransactionState txState = txState();
+            if ( txState.relationshipIsDeletedInThisTx( reference ) )
+            {
+                return false;
+            }
+            else if ( txState.relationshipIsAddedInThisTx( reference ) )
+            {
+                return true;
+            }
+        }
+        return storeReadLayer.relationshipExists( reference );
+    }
+
+    @Override
     long graphPropertiesReference()
     {
         throw new UnsupportedOperationException( "not implemented" );

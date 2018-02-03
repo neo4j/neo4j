@@ -20,34 +20,34 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 
 /**
  * Instances allow looking up ids back to their names.
  *
- * Deprecated: will be replaced by SilentTokenNameLookup
+ * NOTE: this class will replace StatementTokenNameLookup.
  */
-@Deprecated
-public final class StatementTokenNameLookup implements TokenNameLookup
+public final class SilentTokenNameLookup implements TokenNameLookup
 {
-    private final ReadOperations statement;
+    private final TokenRead tokenRead;
 
-    public StatementTokenNameLookup( ReadOperations statement )
+    public SilentTokenNameLookup( TokenRead tokenRead )
     {
-        this.statement = statement;
+        this.tokenRead = tokenRead;
     }
 
     /**
-     * Returns the label name for the given label id. In case of downstream failure, returns label[id].
+     * Returns the a label name given its id. In case of downstream failure, returns [labelId].
      */
     @Override
     public String labelGetName( int labelId )
     {
         try
         {
-            return statement.labelGetName( labelId );
+            return tokenRead.nodeLabelName( labelId );
         }
         catch ( LabelNotFoundKernelException e )
         {
@@ -55,28 +55,31 @@ public final class StatementTokenNameLookup implements TokenNameLookup
         }
     }
 
+    /**
+     * Returns the name of a relationship type given its id. In case of downstream failure, returns [relationshipTypeId].
+     */
     @Override
     public String relationshipTypeGetName( int relTypeId )
     {
         try
         {
-            return statement.relationshipTypeGetName( relTypeId );
+            return tokenRead.relationshipTypeName( relTypeId );
         }
-        catch ( RelationshipTypeIdNotFoundKernelException e )
+        catch ( KernelException e )
         {
             return "[" + relTypeId + "]";
         }
     }
 
     /**
-     * Returns the name of a property given its property key id. In case of downstream failure, returns property[id].
+     * Returns the name of a property given its id. In case of downstream failure, returns [propertyId].
      */
     @Override
     public String propertyKeyGetName( int propertyKeyId )
     {
         try
         {
-            return statement.propertyKeyGetName( propertyKeyId );
+            return tokenRead.propertyKeyName( propertyKeyId );
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
         {
