@@ -40,22 +40,15 @@ case object PlanUpdates
     //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
       Eagerness.tailReadWriteEagerizeNonRecursive(in, query)
 
-    val updatePlan = computePlan(plan, query, firstPlannerQuery)
+    val updatePlan = query.queryGraph.mutatingPatterns.foldLeft(plan) {
+      case (acc, pattern) => planUpdate(acc, pattern, firstPlannerQuery)
+    }
 
     if (firstPlannerQuery)
       Eagerness.headWriteReadEagerize(updatePlan, query)
     else {
       Eagerness.tailWriteReadEagerize(Eagerness.tailReadWriteEagerizeRecursive(updatePlan, query), query)
     }
-  }
-
-  private def computePlan(plan: LogicalPlan, query: PlannerQuery, firstPlannerQuery: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan  = {
-    var updatePlan = plan
-    val iterator = query.queryGraph.mutatingPatterns.iterator
-    while(iterator.hasNext) {
-      updatePlan = planUpdate(updatePlan, iterator.next(), firstPlannerQuery)
-    }
-    updatePlan
   }
 
   private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean)
@@ -174,7 +167,7 @@ case object PlanUpdates
     val innerContext: LogicalPlanningContext =
       context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
 
-    val ids: Seq[String] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
+    val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
     val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
 
@@ -217,7 +210,7 @@ case object PlanUpdates
                              createNodePatterns: Seq[CreateNodePattern],
                              createRelationshipPatterns: Seq[CreateRelationshipPattern],
                              context: LogicalPlanningContext,
-                             ids: Seq[String]): LogicalPlan = {
+                             ids: Seq[IdName]): LogicalPlan = {
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph)(ctx)
       if (mergeReadPart.solved.queryGraph != matchGraph)

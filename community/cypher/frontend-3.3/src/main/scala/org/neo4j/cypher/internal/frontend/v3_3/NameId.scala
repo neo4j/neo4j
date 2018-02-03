@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3
 
+import scala.language.implicitConversions
+
 sealed trait NameId {
   def id: Int
 }

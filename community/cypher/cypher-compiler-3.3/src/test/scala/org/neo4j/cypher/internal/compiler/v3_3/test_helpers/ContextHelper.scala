@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, InternalException}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
   def create(exceptionCreator: (String, InputPosition) => CypherException = (_, _) => new InternalException("apa"),

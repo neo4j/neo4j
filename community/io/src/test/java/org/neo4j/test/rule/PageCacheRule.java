@@ -232,11 +232,11 @@ public class PageCacheRule extends ExternalResource
         }
     }
 
-    public static class AtomicBooleanInconsistentReadAdversary implements Adversary
+    private static class AtomicBooleanInconsistentReadAdversary implements Adversary
     {
         final AtomicBoolean nextReadIsInconsistent;
 
-        public AtomicBooleanInconsistentReadAdversary( AtomicBoolean nextReadIsInconsistent )
+        AtomicBooleanInconsistentReadAdversary( AtomicBoolean nextReadIsInconsistent )
         {
             this.nextReadIsInconsistent = nextReadIsInconsistent;
         }

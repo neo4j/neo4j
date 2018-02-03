@@ -55,7 +55,7 @@ case class VariableLengthGraphRelationship(path: PathValue) extends GraphRelatio
 
   override def equals(obj: Any) = obj match {
     case r: EdgeValue => path.edges().contains(r)
-    case x => obj == this || (obj == path && path.size() > 0)
+    case _ => obj == this || (obj == path && path.size() > 0)
   }
 
   def relationships: ListValue = VirtualValues.list(path.edges():_*)

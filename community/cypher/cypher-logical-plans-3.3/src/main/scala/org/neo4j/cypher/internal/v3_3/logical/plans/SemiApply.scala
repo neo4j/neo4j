@@ -32,5 +32,5 @@ abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan, solved: 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val availableSymbols = left.availableSymbols
+  def availableSymbols = left.availableSymbols
 }

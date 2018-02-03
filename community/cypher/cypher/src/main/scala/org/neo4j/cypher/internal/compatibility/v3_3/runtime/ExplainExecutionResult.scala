@@ -26,7 +26,6 @@ import java.util.Collections
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
 
@@ -75,7 +74,7 @@ final class EmptyResourceIterator[T]() extends ResourceIterator[T] {
 
   def next(): T= Iterator.empty.next()
 
-  def remove() {
+  override def remove() {
     throw new UnsupportedOperationException
   }
 

@@ -38,7 +38,7 @@ case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
       try {
         Values.booleanValue(v.stringValue().trim.toBoolean)
       } catch {
-        case e: IllegalArgumentException =>
+        case _: IllegalArgumentException =>
           Values.NO_VALUE
       }
     case v =>

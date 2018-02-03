@@ -26,7 +26,7 @@ object IdentitySet {
   def empty[T] = IdentitySet(IdentityMap.empty[T, AnyRef])
 }
 
-case class IdentitySet[T] private (idSet: IdentityMap[T, AnyRef] = IdentityMap.empty)
+case class IdentitySet[T] (idSet: IdentityMap[T, AnyRef] = IdentityMap.empty)
   extends Set[T] with ((T) => Boolean) {
   self =>
 

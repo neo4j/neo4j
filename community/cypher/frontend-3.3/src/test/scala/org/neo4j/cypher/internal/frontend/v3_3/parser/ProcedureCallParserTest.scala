@@ -76,10 +76,10 @@ class ProcedureCallParserTest
 
   private def result(name: String): ProcedureResultItem =
     ast.ProcedureResultItem(ast.Variable(name)(pos))(pos)
-
+/*
   private def result(output: String, name: String): ProcedureResultItem =
     ast.ProcedureResultItem(ast.ProcedureOutput(output)(pos), ast.Variable(name)(pos))(pos)
-
+*/
   private implicit val pos = DummyPosition(-1)
 
   implicit class StringToVariable(string: String) {

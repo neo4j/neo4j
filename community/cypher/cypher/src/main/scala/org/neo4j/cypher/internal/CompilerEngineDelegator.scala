@@ -23,19 +23,18 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, StatsDivergenceCalculator}
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
+import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.startDeprecated
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.configuration.Config
+import org.neo4j.kernel.configuration.{Config}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.logging.{Log, LogProvider}
+import org.neo4j.logging.{LogProvider}
 
 object CompilerEngineDelegator {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -92,8 +91,6 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
   import org.neo4j.cypher.internal.CompilerEngineDelegator._
 
-  private val log: Log = logProvider.getLog(getClass)
-
   private val config = CypherCompilerConfiguration(
     queryCacheSize = getQueryCacheSize,
     statsDivergenceCalculator = getStatisticsDivergenceCalculator,
@@ -106,8 +103,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     nonIndexedLabelWarningThreshold = getNonIndexedLabelWarningThreshold
   )
 
-  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled), (CypherPlanner.rule, CypherRuntime.slotted))
-  private final val ILLEGAL_PLANNER_VERSION_COMBINATIONS: Set[(CypherPlanner, CypherVersion)] = Set((CypherPlanner.rule, CypherVersion.v3_2), (CypherPlanner.rule, CypherVersion.v3_3))
+  private final val ILLEGAL_PLANNER_RUNTIME_COMBINATIONS: Set[(CypherPlanner, CypherRuntime)] = Set((CypherPlanner.rule, CypherRuntime.compiled))
 
   @throws(classOf[SyntaxException])
   def preParseQuery(queryText: String): PreParsedQuery = exceptionHandler.runSafely {
@@ -122,11 +118,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val pickedRuntime = pick(runtime, CypherRuntime, if (cypherVersion == configuredVersion) Some(configuredRuntime) else None)
     val pickedUpdateStrategy = pick(updateStrategy, CypherUpdateStrategy, None)
 
-    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((pickedPlanner, pickedRuntime)))
-      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${pickedPlanner.name} - ${pickedRuntime.name}")
-    // Only disallow using rule if incompatible version is explicitly requested
-    if (version.isDefined && ILLEGAL_PLANNER_VERSION_COMBINATIONS((pickedPlanner, cypherVersion)))
-      throw new InvalidArgumentException(s"Unsupported PLANNER - VERSION combination: ${pickedPlanner.name} - ${cypherVersion.name}")
+    assertValidOptions(CypherStatementWithOptions(preParsedStatement), cypherVersion, pickedExecutionMode, pickedPlanner, pickedRuntime)
 
     PreParsedQuery(statement, queryText, cypherVersion, pickedExecutionMode,
       pickedPlanner, pickedRuntime, pickedUpdateStrategy, debugOptions)(offset)
@@ -137,23 +129,22 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     if (specified == companion.default) configured.getOrElse(specified) else specified
   }
 
+  private def assertValidOptions(statementWithOption: CypherStatementWithOptions,
+                                 cypherVersion: CypherVersion, executionMode: CypherExecutionMode,
+                                 planner: CypherPlanner, runtime: CypherRuntime) {
+    if (ILLEGAL_PLANNER_RUNTIME_COMBINATIONS((planner, runtime)))
+      throw new InvalidArgumentException(s"Unsupported PLANNER - RUNTIME combination: ${planner.name} - ${runtime.name}")
+  }
+
   @throws(classOf[SyntaxException])
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
-    import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
-    import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-    import org.neo4j.cypher.internal.compatibility.v3_2.helpers._
 
-    var version = preParsedQuery.version
+    val version = preParsedQuery.version
     val planner = preParsedQuery.planner
     val runtime = preParsedQuery.runtime
     val updateStrategy = preParsedQuery.updateStrategy
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
-    if ((version == CypherVersion.v3_3 || version == CypherVersion.v3_2) && planner == CypherPlanner.rule) {
-      val position = preParsedQuery.offset
-      preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(position)
-      version = CypherVersion.v3_1
-    }
 
     def planForVersion(input: Either[CypherVersion, ParsedQuery]): Either[CypherVersion, ParsedQuery] = input match {
       case r@Right(_) => r
@@ -168,44 +159,14 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
           case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueNotification(ex, preParsedQuery)
-            Left(CypherVersion.v3_1)
+            Right(parserQuery)
           case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
             preParsingNotifications = preParsingNotifications +
               createStartUnavailableNotification(ex, preParsedQuery) +
               createStartDeprecatedNotification(ex, preParsedQuery)
-            Left(CypherVersion.v3_1)
+            Right(parserQuery)
           case _ => Right(parserQuery)
         }.getOrElse(Right(parserQuery))
-
-      case Left(CypherVersion.v3_2) =>
-        val parserQuery = compatibilityFactory.
-          create(PlannerSpec_v3_2(planner, runtime, updateStrategy), config).
-          produceParsedQuery(preParsedQuery, as3_2(tracer), preParsingNotifications)
-        parserQuery.onError {
-          // if there is a create unique in the cypher 3.2 query try to fallback to 3.1
-          case ex: v3_2.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
-            preParsingNotifications = preParsingNotifications + createUniqueNotification(ex, preParsedQuery)
-            Left(CypherVersion.v3_1)
-          case ex: v3_2.SyntaxException if ex.getMessage.startsWith("START is no longer supported") =>
-            preParsingNotifications = preParsingNotifications +
-              createStartNotification(ex, preParsedQuery) +
-              createStartDeprecatedNotification(ex, preParsedQuery)
-
-            Left(CypherVersion.v3_1)
-          case _ => Right(parserQuery)
-        }.getOrElse(Right(parserQuery))
-
-      case Left(CypherVersion.v3_1) =>
-        val parsedQuery = compatibilityFactory.
-          create(PlannerSpec_v3_1(planner, runtime, updateStrategy), config).
-          produceParsedQuery(preParsedQuery, as3_1(tracer), preParsingNotifications)
-        Right(parsedQuery)
-
-      case Left(CypherVersion.v2_3) =>
-        val parsedQuery = compatibilityFactory.
-          create(PlannerSpec_v2_3(planner, runtime), config).
-          produceParsedQuery(preParsedQuery, as2_3(tracer), preParsingNotifications)
-        Right(parsedQuery)
     }
 
     val result: Either[CypherVersion, ParsedQuery] = fixedPoint(planForVersion).apply(Left(version))
@@ -228,31 +189,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
-  private def createStartNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
-    val pos = convertInputPosition(ex.pos.getOrElse(
-      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
-    START_UNAVAILABLE_FALLBACK.notification(pos)
-  }
-
-  private def createStartDeprecatedNotification(ex: frontend.v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
-    val pos = convertInputPosition(ex.pos.getOrElse(
-      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
-    START_DEPRECATED.notification(pos, startDeprecated(ex.getMessage))
-  }
-
-  private def createUniqueNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
-    val pos = convertInputPosition(ex.pos.getOrElse(
-      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
-    CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
-  }
-
-  private def rulePlannerUnavailableFallbackNotification(offset: InputPosition) =
-    RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(convertInputPosition(offset))
-
   private def convertInputPosition(offset: InputPosition) =
-    new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
-
-  private def convertInputPosition(offset: v3_2.InputPosition) =
     new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
 
   private def getQueryCacheSize : Int = {
@@ -281,7 +218,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
   private def getNonIndexedLabelWarningThreshold: Long = {
     val setting: (Config) => Long = config => config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue()
-    getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD)
+    getSetting(graph, setting, DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD.toLong)
   }
 
   private def getSetting[A](gds: GraphDatabaseQueryService, configLookup: Config => A, default: A): A = gds match {

@@ -51,7 +51,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     relationshipByIndexQuery
 
   val nodeByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ NodeByIndex(varName, idxName, key, value, _)) =>
+    case (planContext, startItem @ NodeByIndex(_, idxName, key, value, _)) =>
       planContext.checkNodeIndex(idxName)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
@@ -62,7 +62,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   val nodeByIndexQuery: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ NodeByIndexQuery(varName, idxName, query, _)) =>
+    case (planContext, startItem @ NodeByIndexQuery(_, idxName, query, _)) =>
       planContext.checkNodeIndex(idxName)
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val queryText = query(m, state)
@@ -119,7 +119,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   val relationshipByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
-    case (planContext, startItem @ RelationshipByIndex(varName, idxName, key, value, _)) =>
+    case (planContext, startItem @ RelationshipByIndex(_, idxName, key, value, _)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m, state).toString
@@ -129,7 +129,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   val relationshipByIndexQuery: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
-    case (planContext, startItem @ RelationshipByIndexQuery(varName, idxName, query, _)) =>
+    case (planContext, startItem @ RelationshipByIndexQuery(_, idxName, query, _)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val queryText = query(m, state)
@@ -138,7 +138,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   val relationshipById: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
-    case (planContext, startItem @ RelationshipById(varName, ids, _)) =>
+    case (_, startItem @ RelationshipById(varName, ids, _)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         GetGraphElements.getElements[Relationship](ids(m, state), varName, (id) =>
           state.query.relationshipOps.getById(id))

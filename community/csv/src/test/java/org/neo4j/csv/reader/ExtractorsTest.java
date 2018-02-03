@@ -224,35 +224,35 @@ public class ExtractorsTest
     }
 
     @Test
-    public void shouldTrimStringArrayIfConfiguredTo() throws Exception
+    public void shouldTrimStringIfConfiguredTo() throws Exception
     {
         // GIVEN
-        Extractors extractors = new Extractors( ';', true, true );
-        String value = "ab;cd ; ef; gh ";
+        Extractors extractors = new Extractors( ',', true, true );
+        String value = " abcde fgh  ";
 
         // WHEN
         char[] asChars = value.toCharArray();
-        Extractor<String[]> extractor = extractors.stringArray();
+        Extractor<String> extractor = extractors.string();
         extractor.extract( asChars, 0, asChars.length, true );
 
         // THEN
-        assertArrayEquals( new String[] {"ab", "cd", "ef", "gh"}, extractor.value() );
+        assertEquals( value.trim(), extractor.value() );
     }
 
     @Test
     public void shouldNotTrimStringIfNotConfiguredTo() throws Exception
     {
         // GIVEN
-        Extractors extractors = new Extractors( ';', true, false );
-        String value = "ab;cd ; ef; gh ";
+        Extractors extractors = new Extractors( ',', true, false );
+        String value = " abcde fgh  ";
 
         // WHEN
         char[] asChars = value.toCharArray();
-        Extractor<String[]> extractor = extractors.stringArray();
+        Extractor<String> extractor = extractors.string();
         extractor.extract( asChars, 0, asChars.length, true );
 
         // THEN
-        assertArrayEquals( new String[] {"ab", "cd ", " ef", " gh "}, extractor.value() );
+        assertEquals( value, extractor.value() );
     }
 
     @Test

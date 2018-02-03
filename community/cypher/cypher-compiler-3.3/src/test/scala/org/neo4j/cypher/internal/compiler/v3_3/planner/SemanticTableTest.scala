@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{ExpressionTypeInfo, InputPosition, InternalException, SemanticTable}
 
+import scala.language.{implicitConversions}
+
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   override implicit def varFor(name: String): Variable = Variable(name)(pos)

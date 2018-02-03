@@ -72,12 +72,6 @@ public class UpdateCapturingIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void refresh() throws IOException
-    {
-        actual.refresh();
-    }
-
-    @Override
     public void close() throws IOException
     {
         actual.close();

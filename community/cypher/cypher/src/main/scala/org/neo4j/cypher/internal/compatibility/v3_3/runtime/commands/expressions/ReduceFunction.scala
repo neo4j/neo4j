@@ -48,7 +48,9 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
 
   override def children = Seq(collection, expression, init)
 
-  def variableDependencies(expectedType: CypherType) = AnyType
+  def variableDependencies(expectedType: CypherType) = {
+    AnyType
+  }
 
   def symbolTableDependencies = (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - id - acc
 }

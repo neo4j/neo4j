@@ -36,7 +36,7 @@ object NonEmptyList {
     loop(Last(first), tail.iterator).reverse
 
   def newBuilder[T]: mutable.Builder[T, Option[NonEmptyList[T]]] = new mutable.Builder[T, Option[NonEmptyList[T]]] {
-    private var vecBuilder = Vector.newBuilder[T]
+    private val vecBuilder = Vector.newBuilder[T]
 
     override def +=(elem: T): this.type = {
       vecBuilder += elem

@@ -37,11 +37,12 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
     override def lhs: Option[LogicalPlan] = None
 
-    override val availableSymbols: Set[String] = Set.empty[String]
+
+    override def availableSymbols = ???
 
     override def rhs: Option[LogicalPlan] = None
 
-    override def strictness: Nothing = ???
+    override def strictness = ???
   }
 
   abstract class FakeRonjaPipe extends FakePipe(Iterator.empty)

@@ -33,6 +33,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
 
 import scala.collection.Map
+import scala.language.{existentials}
 
 sealed trait SetOperation {
 
@@ -53,7 +54,7 @@ object SetOperation {
   }
 
   private def propertyKeyMap(qtx: QueryContext, map: MapValue): Map[Int, AnyValue] = {
-    var builder = Map.newBuilder[Int, AnyValue]
+    val builder = Map.newBuilder[Int, AnyValue]
     map.foreach(new BiConsumer[String, AnyValue] {
       override def accept(k: String, v: AnyValue): Unit = {
         if (v == Values.NO_VALUE) {

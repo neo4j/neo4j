@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans._
+import scala.language.{implicitConversions}
 
 /**
   * This builder takes on queries that requires no planning such as procedures and schema commands
@@ -94,7 +95,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
 
         // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
         case DropNodePropertyExistenceConstraint(label, prop) =>
-          Some(PureSideEffectExecutionPlan("DropNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
+          Some(PureSideEffectExecutionPlan("CreateNodePropertyExistenceConstraint", SCHEMA_WRITE, (ctx) => {
             (ctx.dropNodePropertyExistenceConstraint _).tupled(labelProp(ctx)(label, prop.propertyKey))
           }))
 

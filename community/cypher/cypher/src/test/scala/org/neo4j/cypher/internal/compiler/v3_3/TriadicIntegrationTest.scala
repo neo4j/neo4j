@@ -81,7 +81,6 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
     // given
     graph.createIndex( "Person", "name")
 
-    execute("CALL db.awaitIndexes(300)") // wait for max 5 min.
     execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c",age:39}), (d:Person{name:"d"}), (e:Person{name:"e"})
                |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (b)-[:FRIEND]->(d), (b)-[:FRIEND]->(e)
                |CREATE (a)-[:FRIEND]->(c), (a)-[:FRIEND]->(d), (c)-[:FRIEND]->(d)""".stripMargin)
@@ -189,7 +188,6 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
         execute(query)
       }
     }
-    println(execute("MATCH (n) RETURN count(*)").toList)
     Map(
       "non-triadic1" -> Map(
         "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",
@@ -224,7 +222,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
         "command" -> "TriadicSelection",
         "count" -> 3)
     ).collect {
-      case (name, config:Map[String,Any]) =>
+      case (_, config:Map[String,Any]) =>
         val query = config("query").asInstanceOf[String]
         val count = config("count").asInstanceOf[Int]
         val command = config("command").asInstanceOf[String]

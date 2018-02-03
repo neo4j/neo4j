@@ -42,6 +42,7 @@ public class PrimitiveNodeStream extends PrimitiveEntityStream<NodeIdWrapper>
         return new PrimitiveNodeStream( LongStream.of( array ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     public static PrimitiveNodeStream of( Object list )
     {
         if ( list == null )

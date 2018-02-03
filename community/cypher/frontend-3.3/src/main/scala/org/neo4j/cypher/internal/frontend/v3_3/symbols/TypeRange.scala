@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
+import scala.language.{postfixOps}
+
 object TypeRange {
   def apply(lower: CypherType, upper: CypherType): TypeRange = TypeRange(lower, Some(upper))
 }

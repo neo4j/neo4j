@@ -25,12 +25,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3._
 
-import scala.collection.mutable
-
-case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[String] = Seq.empty)
+case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends ListSupport {
 
-  def withReturns(returns: Seq[String]): PlannerQueryBuilder = copy(returns = returns)
+  def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.amendQueryGraph(f)))
@@ -42,11 +40,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
   }
 
-  private def currentlyExposedSymbols: Set[String] = {
+  private def currentlyExposedSymbols: Set[IdName] = {
     q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds)
   }
 
-  def currentlyAvailableVariables: Set[String] = {
+  def currentlyAvailableVariables: Set[IdName] = {
     val allPlannerQueries = q.allPlannerQueries
     val previousAvailableSymbols = if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
@@ -59,20 +57,16 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
-  def allSeenPatternNodes: collection.Set[String] = {
-    val nodes = mutable.Set[String]()
-
+  def allSeenPatternNodes: Set[IdName] = {
     val allPlannerQueries = q.allPlannerQueries
-    if (allPlannerQueries.length > 1) {
+    val previousPatternNodes = if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
       val projectedNodes = current.horizon.exposedSymbols(current.queryGraph.allCoveredIds).collect {
-        case id@n if semanticTable.containsNode(n) => id
+        case id@IdName(n) if semanticTable.containsNode(n) => id
       }
-      projectedNodes.foreach(nodes.add)
-      current.queryGraph.collectAllPatternNodes(nodes.add)
-    }
-    q.lastQueryGraph.collectAllPatternNodes(nodes.add)
-    nodes
+      projectedNodes ++ current.queryGraph.allPatternNodes
+    } else Set.empty
+    previousPatternNodes ++ q.lastQueryGraph.allPatternNodes
   }
 
   def readOnly: Boolean = q.queryGraph.readOnly
@@ -102,11 +96,11 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     def fixQueriesWithOnlyRelationshipIndex(plannerQuery: PlannerQuery): PlannerQuery = {
       val qg = plannerQuery.queryGraph
       val patternRelationships = qg.hints.collect {
-        case r: RelationshipStartItem if !qg.patternRelationships.exists(_.name == r.name) =>
+        case r: RelationshipStartItem if !qg.patternRelationships.exists(_.name.name == r.name) =>
           val lNode = UnNamedNameGenerator.name(r.position)
           val rNode = UnNamedNameGenerator.name(r.position.bumped())
 
-          PatternRelationship(r.name, (lNode, rNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(IdName(r.name), (IdName(lNode), IdName(rNode)), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       }
 
       val patternNodes = patternRelationships.flatMap(relationship => Set(relationship.nodes._1, relationship.nodes._2))

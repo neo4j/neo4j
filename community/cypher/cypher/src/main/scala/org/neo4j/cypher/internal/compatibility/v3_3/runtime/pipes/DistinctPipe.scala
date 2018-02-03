@@ -47,7 +47,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
      * in a set.
      */
-    var seen = mutable.Set[AnyValue]()
+    val seen = mutable.Set[AnyValue]()
 
     result.filter { ctx =>
       val values = VirtualValues.list(keyNames.map(ctx): _*)

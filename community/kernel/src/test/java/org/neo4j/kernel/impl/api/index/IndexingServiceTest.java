@@ -90,7 +90,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.mockito.answer.AwaitAnswer;
 import org.neo4j.values.storable.Values;
@@ -193,7 +192,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).close( true );
-        order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE_IDEMPOTENT );
+        order.verify( accessor ).newUpdater( IndexUpdateMode.RECOVERY );
         order.verify( updater ).process( add( 10, "foo" ) );
         order.verify( updater ).close();
     }
@@ -227,27 +226,15 @@ public class IndexingServiceTest
         AwaitAnswer<Void> awaitAnswer = afterAwaiting( latch );
         doAnswer( awaitAnswer ).when( populator ).add( any( Collection.class ) );
 
-        Barrier.Control populationStartBarrier = new Barrier.Control();
-        IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
-        {
-            @Override
-            public void indexPopulationScanStarting()
-            {
-                populationStartBarrier.reached();
-            }
-        };
         IndexingService indexingService =
-                newIndexingServiceWithMockedDependencies( populator, accessor, withData( addNodeUpdate( 1, "value1" ) ), monitor );
+                newIndexingServiceWithMockedDependencies( populator, accessor, withData( addNodeUpdate( 1, "value1" ) ) );
 
         life.start();
 
         // when
-
         indexingService.createIndexes( IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR ) );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
-        populationStartBarrier.await();
-        populationStartBarrier.release();
 
         IndexEntryUpdate<?> value2 = add( 2, "value2" );
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
@@ -400,8 +387,6 @@ public class IndexingServiceTest
                 .thenReturn( InternalIndexState.POPULATING );
         when( provider.getInitialState( failedIndex.getId(), failedIndex.getIndexDescriptor() ) )
                 .thenReturn( InternalIndexState.FAILED );
-        when( provider.getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenAnswer(
-                invocation -> mock( IndexAccessor.class ) );
 
         indexingService.init();
 
@@ -1049,29 +1034,6 @@ public class IndexingServiceTest
         expectedException.expectMessage( "Unable to force" );
         expectedException.expect( UnderlyingStorageException.class );
         indexingService.forceAll();
-    }
-
-    @Test
-    public void shouldRefreshIndexesOnStart() throws Exception
-    {
-        // given
-        IndexRule rule = IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR );
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), rule );
-
-        IndexAccessor accessor = mock( IndexAccessor.class );
-        IndexUpdater updater = mock( IndexUpdater.class );
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
-        when( indexProvider.getOnlineAccessor( eq( rule.getId() ), any( IndexDescriptor.class ),
-                any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
-
-        life.init();
-
-        verify( accessor, times( 0 ) ).refresh();
-
-        life.start();
-
-        // Then
-        verify( accessor, times( 1 ) ).refresh();
     }
 
     private IndexProxy createIndexProxyMock()

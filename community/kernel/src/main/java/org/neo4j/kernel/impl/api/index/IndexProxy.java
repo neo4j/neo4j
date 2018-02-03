@@ -80,7 +80,6 @@ public interface IndexProxy extends LabelSchemaSupplier
 
     IndexDescriptor getDescriptor();
 
-    @Override
     LabelSchemaDescriptor schema();
 
     SchemaIndexProvider.Descriptor getProviderDescriptor();
@@ -95,8 +94,6 @@ public interface IndexProxy extends LabelSchemaSupplier
     PopulationProgress getIndexPopulationProgress();
 
     void force() throws IOException;
-
-    void refresh() throws IOException;
 
     /**
      * @throws IndexNotFoundKernelException if the index isn't online yet.

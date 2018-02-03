@@ -31,5 +31,5 @@ case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)
   override val lhs = Some(left)
   override val rhs = Some(right)
 
-  override val availableSymbols = left.availableSymbols ++ right.availableSymbols
+  override def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

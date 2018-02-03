@@ -31,15 +31,5 @@ public interface WorkerFactory
      * @param boltChannel channel over which Bolt messages can be exchanged
      * @return a new job queue
      */
-    default BoltWorker newWorker( BoltChannel boltChannel )
-    {
-        return newWorker( boltChannel, null );
-    }
-
-    /**
-     * @param boltChannel channel over which Bolt messages can be exchanged
-     * @param queueMonitor         object that will be notified of changes (enqueue, dequeue, drain) in worker job queue
-     * @return a new job queue
-     */
-    BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor );
+    BoltWorker newWorker( BoltChannel boltChannel );
 }

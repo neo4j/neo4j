@@ -43,5 +43,5 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
       if (negated) !cond else cond
   }
 
-  private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
+//  private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"
 }

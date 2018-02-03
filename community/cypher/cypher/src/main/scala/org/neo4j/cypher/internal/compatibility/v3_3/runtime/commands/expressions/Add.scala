@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IsList, TypeSafeMathSupport}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
@@ -53,12 +52,12 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
 
 
   def arguments = Seq(a, b)
-
+/*
   private def mergeWithCollection(collection: CypherType, singleElement: CypherType):CypherType= {
     val collectionType = collection.asInstanceOf[ListType]
     val mergedInnerType = collectionType.innerType.leastUpperBound(singleElement)
     CTList(mergedInnerType)
   }
-
+*/
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }

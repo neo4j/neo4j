@@ -28,8 +28,8 @@ import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport
-import org.neo4j.cypher.internal.helpers.JavaConversionSupport._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, _}
@@ -168,7 +168,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def indexSeekByRange(index: IndexDescriptor, value: Any) = value match {
 
-    case PrefixRange(null) => Iterator.empty
     case PrefixRange(prefix: String) =>
       indexSeekByPrefixRange(index, prefix)
     case range: InequalitySeekRange[Any] =>
@@ -181,9 +180,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   private def indexSeekByPrefixRange(index: IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
       bound.endPoint match {
-        case n: Number => classOf[Number]
-        case s: String => classOf[String]
-        case c: Character => classOf[String]
+        case _: Number => classOf[Number]
+        case _: String => classOf[String]
+        case _: Character => classOf[String]
         case _ => classOf[Any]
       }
     }
@@ -484,7 +483,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       })
       Option(relationship)
     } catch {
-      case e: exceptions.EntityNotFoundException => None
+      case _: exceptions.EntityNotFoundException => None
     }
 
     override def all: Iterator[Relationship] = {
@@ -514,7 +513,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
         true
       } catch {
-        case e: exceptions.EntityNotFoundException => false
+        case _: exceptions.EntityNotFoundException => false
       }
     }
   }
@@ -558,7 +557,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.schemaWriteOperations().nodeKeyConstraintCreate(descriptor)
     true
   } catch {
-    case existing: AlreadyConstrainedException => false
+    case _: AlreadyConstrainedException => false
   }
 
   override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
@@ -568,7 +567,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.schemaWriteOperations().uniquePropertyConstraintCreate(descriptor)
     true
   } catch {
-    case existing: AlreadyConstrainedException => false
+    case _: AlreadyConstrainedException => false
   }
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor) =
@@ -580,7 +579,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
       true
     } catch {
-      case existing: AlreadyConstrainedException => false
+      case _: AlreadyConstrainedException => false
     }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
@@ -592,7 +591,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId))
       true
     } catch {
-      case existing: AlreadyConstrainedException => false
+      case _: AlreadyConstrainedException => false
     }
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =

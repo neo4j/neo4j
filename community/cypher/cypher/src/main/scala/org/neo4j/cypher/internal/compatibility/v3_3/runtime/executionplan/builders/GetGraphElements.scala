@@ -30,20 +30,20 @@ object GetGraphElements {
 
   def getElements[T: ClassTag](data: Any, name: String, getElement: Long => T): Iterator[T] = {
     def castElement(x: Any): T = x match {
-      case i: Int     => getElement(i)
+      case i: Int     => getElement(i.toLong)
       case i: Long    => getElement(i)
       case i: String  => getElement(i.toLong)
       case element: T => element
     }
 
     data match {
-      case result: Int                   => Iterator.single(getElement(result))
+      case result: Int                   => Iterator.single(getElement(result.toLong))
       case result: Long                  => Iterator.single(getElement(result))
       case result: java.util.Iterator[_] => result.asScala.map(castElement)
       case result: java.lang.Iterable[_] => result.asScala.view.map(castElement).iterator
       case result: Seq[_]                => result.view.map(castElement).iterator
       case element: PropertyContainer    => Iterator.single(element.asInstanceOf[T])
-      case x                             => Iterator.empty
+      case _                             => Iterator.empty
     }
   }
 }

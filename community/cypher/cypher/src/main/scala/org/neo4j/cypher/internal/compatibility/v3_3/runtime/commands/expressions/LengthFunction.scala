@@ -31,9 +31,9 @@ case class LengthFunction(inner: Expression)
   with ListSupport {
   //NOTE all usage except for paths is deprecated
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
-    case path: PathValue => Values.longValue(path.size())
-    case s: TextValue  => Values.longValue(s.length())
-    case x          => Values.longValue(makeTraversable(x).size())
+    case path: PathValue => Values.longValue(path.size().toLong)
+    case s: TextValue  => Values.longValue(s.length().toLong)
+    case x          => Values.longValue(makeTraversable(x).size().toLong)
   }
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))

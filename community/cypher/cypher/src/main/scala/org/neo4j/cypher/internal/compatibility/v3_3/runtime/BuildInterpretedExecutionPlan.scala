@@ -41,7 +41,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
 
   override def description = "create interpreted execution plan"
 
-  override def postConditions = Set(CompilationContains[ExecutionPlan])
+  override def postConditions = Set(CompilationContains[ExecutionPlan]())
 
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val logicalPlan = from.logicalPlan
@@ -53,7 +53,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
-    val func = getExecutionPlanFunction(periodicCommitInfo, updating, resultBuilderFactory,
+    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
                                         context.notificationLogger, InterpretedRuntimeName)
 
     val execPlan: ExecutionPlan = new InterpretedExecutionPlan(func,
@@ -75,6 +75,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   }
 
   def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
+                                       queryId: AnyRef,
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory,
                                        notificationLogger: InternalNotificationLogger,
@@ -97,7 +98,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(planType, params, notificationLogger, runtimeName)
+      builder.build(queryId, planType, params, notificationLogger, runtimeName)
     }
 
   /**

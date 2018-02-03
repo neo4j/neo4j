@@ -26,7 +26,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -80,18 +79,6 @@ public class AdversarialPageCache implements PageCache
             return Optional.of( new AdversarialPagedFile( optional.get(), adversary ) );
         }
         return optional;
-    }
-
-    @Override
-    public List<PagedFile> listExistingMappings() throws IOException
-    {
-        adversary.injectFailure( IOException.class, SecurityException.class );
-        List<PagedFile> list = delegate.listExistingMappings();
-        for ( int i = 0; i < list.size(); i++ )
-        {
-            list.set( i, new AdversarialPagedFile( list.get( i ), adversary ) );
-        }
-        return list;
     }
 
     @Override

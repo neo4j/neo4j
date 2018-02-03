@@ -39,7 +39,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def unapply(v: Any) = implicitly[ClassTag[E]].unapply(v).map(_.children)
   }
 
-  final case class Location(elem: E, context: Context) {
+  case class Location(elem: E, context: Context) {
     self =>
 
     def isRoot = context == Top
@@ -50,7 +50,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     }
 
     @tailrec
-    def root: Location = self match {
+    final def root: Location = self match {
       case Location(_, Top) =>
         self
 

@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
+public class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
 {
     private final int notificationThreshold;
 
     private volatile long nextTransactionIdTarget;
 
-    CountCommittedTransactionThreshold( int notificationThreshold )
+    public CountCommittedTransactionThreshold( int notificationThreshold )
     {
-        super( "tx count threshold" );
         this.notificationThreshold = notificationThreshold;
     }
 
@@ -44,16 +43,14 @@ class CountCommittedTransactionThreshold extends AbstractCheckPointThreshold
     }
 
     @Override
-    public void checkPointHappened( long transactionId )
+    protected String description()
     {
-        nextTransactionIdTarget = transactionId + notificationThreshold;
+        return "tx count threshold";
     }
 
     @Override
-    public long checkFrequencyMillis()
+    public void checkPointHappened( long transactionId )
     {
-        // Transaction counts can change at any time, so we need to check fairly regularly to see if a checkpoint
-        // should be triggered.
-        return DEFAULT_CHECKING_FREQUENCY_MILLIS;
+        nextTransactionIdTarget = transactionId + notificationThreshold;
     }
 }

@@ -29,7 +29,7 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = value match {
     case p: PathValue => VirtualValues.list(p.nodes():_*)
-    case x => throw new SyntaxException("Expected " + path + " to be a path.")
+    case _ => throw new SyntaxException("Expected " + path + " to be a path.")
   }
 
   def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))

@@ -24,38 +24,38 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{AliasedReturnItem, Expressio
 
 trait QueryHorizon {
 
-  def exposedSymbols(coveredIds: Set[String]): Set[String]
+  def exposedSymbols(coveredIds: Set[IdName]): Set[IdName]
 
   def dependingExpressions: Seq[Expression]
 
   def preferredStrictness: Option[StrictnessMode]
 
-  def dependencies: Set[String] = dependingExpressions.treeFold(Set.empty[String]) {
+  def dependencies: Set[IdName] = dependingExpressions.treeFold(Set.empty[IdName]) {
     case id: Variable =>
-      acc => (acc + id.name, Some(identity))
+      acc => (acc + IdName(id.name), Some(identity))
   }
 
   def readOnly = true
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds
 
   override def dependingExpressions = Seq.empty
 
   override def preferredStrictness = None
 }
 
-case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
+case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
 
   override def dependingExpressions = Seq(exp)
 
   override def preferredStrictness = None
 }
 
-case class LoadCSVProjection(variable: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
+case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
 
   override def dependingExpressions = Seq(url)
 
@@ -79,9 +79,9 @@ sealed abstract class QueryProjection extends QueryHorizon {
 object QueryProjection {
   val empty = RegularQueryProjection()
 
-  def forIds(coveredIds: Set[String]) =
+  def forIds(coveredIds: Set[IdName]) =
     coveredIds.toIndexedSeq.map(idName =>
-      AliasedReturnItem(Variable(idName)(null), Variable(idName)(null))(null))
+      AliasedReturnItem(Variable(idName.name)(null), Variable(idName.name)(null))(null))
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
     case (left: RegularQueryProjection, right: RegularQueryProjection) =>
@@ -108,7 +108,7 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = projections.keySet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = projections.keys.map(IdName.apply).toSet
 
   override def dependingExpressions = super.dependingExpressions ++ projections.values
 }
@@ -134,8 +134,7 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
   override def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions
-    .keySet ++ aggregationExpressions.keySet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingExpressions.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
 final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
@@ -153,5 +152,5 @@ final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] =
   override def withShuffle(shuffle: QueryShuffle): DistinctQueryProjection =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingKeys.keySet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = groupingKeys.keys.map(IdName.apply).toSet
 }

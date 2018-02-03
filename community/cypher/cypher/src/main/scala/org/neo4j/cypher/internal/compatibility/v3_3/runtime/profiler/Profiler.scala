@@ -41,7 +41,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
   val pageCacheStats: mutable.Map[LogicalPlanId, (Long, Long)] = mutable.Map.empty
   val dbHitsStats: mutable.Map[LogicalPlanId, ProfilingPipeQueryContext] = mutable.Map.empty
   val rowStats: mutable.Map[LogicalPlanId, ProfilingIterator] = mutable.Map.empty
-  private var parentPipe: Option[Pipe] = None
+  private[this] var parentPipe: Option[Pipe] = None
 
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
@@ -86,7 +86,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
         val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
         val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
         val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
-        val hitRatio = MathUtil.portion(hits, misses)
+        val hitRatio = MathUtil.portion(hits.toDouble, misses.toDouble)
 
         input
           .addArgument(Arguments.Rows(rows))
@@ -111,8 +111,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
       outerProfiler.decorate(plan, verifyProfileReady)
   }
 
-  def registerParentPipe(pipe: Pipe): Unit =
-    parentPipe = Some(pipe)
+  def registerParentPipe(pipe: Pipe): Unit = parentPipe = Some(pipe)
 }
 
 trait Counter {

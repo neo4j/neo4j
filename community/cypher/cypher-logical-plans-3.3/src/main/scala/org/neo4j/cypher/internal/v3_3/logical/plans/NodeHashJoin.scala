@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class NodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan)
+case class NodeHashJoin(nodes: Set[IdName], left: LogicalPlan, right: LogicalPlan)
                        (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with EagerLogicalPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val availableSymbols = left.availableSymbols ++ right.availableSymbols
+  def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

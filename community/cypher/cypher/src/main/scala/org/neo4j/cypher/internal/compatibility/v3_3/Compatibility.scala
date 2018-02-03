@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CachedMetricsFactory, QueryGraphSolver, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Parameter, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
@@ -85,7 +85,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
   def createExecPlan: Transformer[CONTEXT, LogicalPlanState, CompilationState] = {
     ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
       If((s: CompilationState) => s.maybeExecutionPlan.isEmpty)(
-        runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan])
+        runtimeBuilder.create(maybeRuntimeName, config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]())
       )
   }
 
@@ -96,7 +96,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
-    val preparedSyntacticQueryForV_3_3 =
+    val preparedSyntacticQueryForV_3_2 =
       Try(compiler.parseQuery(preParsedQuery.statement,
                               preParsedQuery.rawStatement,
                               notificationLogger, preParsedQuery.planner.name,
@@ -104,8 +104,8 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
                               Some(preParsedQuery.offset), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
-        (ExecutionPlan, Map[String, Any], Seq[String]) = exceptionHandler.runSafely {
-        val syntacticQuery = preparedSyntacticQueryForV_3_3.get
+        (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
+        val syntacticQuery = preparedSyntacticQueryForV_3_2.get
 
         //Context used for db communication during planning
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
@@ -118,7 +118,6 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
                                                         clock, simpleExpressionEvaluator)
         //Prepare query for caching
         val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
-        val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
         val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
         val isStale = (plan: ExecutionPlan_v3_3) => plan.isStale(planContext.txIdProvider, planContext.statistics)
 
@@ -136,10 +135,10 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
         // Log notifications/warnings from planning
        executionPlan.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams(), queryParamNames)
+        (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }
 
-      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_3
+      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
   }
 
@@ -225,13 +224,17 @@ object Compatibility {
 }
 
 trait CypherCacheFlushingMonitor[T] {
-  def cacheFlushDetected(justBeforeKey: T) {}
+  def cacheFlushDetected(justBeforeKey: T) {
+  }
 }
 
 trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T) {}
-  def cacheMiss(key: T) {}
-  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {}
+  def cacheHit(key: T) {
+  }
+  def cacheMiss(key: T) {
+  }
+  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int) {
+  }
 }
 
 trait InfoLogger {

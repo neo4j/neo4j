@@ -26,8 +26,6 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
-import scala.collection.mutable
-
 trait VarLengthPredicate {
   def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean
   def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean
@@ -56,12 +54,18 @@ case class VarLengthExpandPipe(source: Pipe,
                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(NodeValue, Seq[EdgeValue])] = {
-    val stack = new mutable.Stack[(NodeValue, Seq[EdgeValue])]
-    stack.push((node, Seq.empty))
+    var stack: List[(NodeValue, Seq[EdgeValue])] = Nil
+    def push(item: (NodeValue, Seq[EdgeValue])) {stack = item :: stack}
+    def pop(): (NodeValue, Seq[EdgeValue]) = {
+      val item = stack.head
+      stack = stack.tail
+      item
+    }
+    push((node, Seq.empty))
 
     new Iterator[(NodeValue, Seq[EdgeValue])] {
       def next(): (NodeValue, Seq[EdgeValue]) = {
-        val (node, rels) = stack.pop()
+        val (node, rels) = pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
           val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir,
                                                                                       types.types(state.query)).map(ValueUtils.fromRelationshipProxy)
@@ -69,7 +73,7 @@ case class VarLengthExpandPipe(source: Pipe,
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
             val otherNode = rel.otherNode(node)
             if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
-              stack.push((otherNode, rels :+ rel))
+              push((otherNode, rels :+ rel))
             }
           }
         }
@@ -97,11 +101,7 @@ case class VarLengthExpandPipe(source: Pipe,
                 row.newWith2(relName, VirtualValues.list(rels:_*), toName, node)
             }
 
-          case Values.NO_VALUE =>
-            if (nodeInScope)
-              Iterator(row.newWith1(relName, Values.NO_VALUE))
-            else
-              Iterator(row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
+          case Values.NO_VALUE => Iterator(row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE))
 
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }

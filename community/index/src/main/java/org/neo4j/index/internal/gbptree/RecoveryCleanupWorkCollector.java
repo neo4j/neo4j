@@ -29,8 +29,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * this, implementing class must be ready to receive new jobs through {@link #add(CleanupJob)}.
  * <p>
  * Jobs may be processed during {@link #add(CleanupJob) add} or {@link Lifecycle#start() start}.
- * <p>
- * Take full responsibility for closing added {@link CleanupJob CleanupJobs} as soon as possible after run.
  */
 public interface RecoveryCleanupWorkCollector extends Lifecycle
 {
@@ -50,7 +48,7 @@ public interface RecoveryCleanupWorkCollector extends Lifecycle
     /**
      * Ignore all clean jobs.
      */
-    RecoveryCleanupWorkCollector IGNORE = new IgnoringRecoveryCleanupWorkCollector();
+    RecoveryCleanupWorkCollector NULL = new NullRecoveryCleanupWorkCollector();
 
     /**
      * {@link RecoveryCleanupWorkCollector} which runs added {@link CleanupJob} as part of the {@link #add(CleanupJob)}
@@ -61,26 +59,18 @@ public interface RecoveryCleanupWorkCollector extends Lifecycle
         @Override
         public void add( CleanupJob job )
         {
-            try
-            {
-                job.run();
-            }
-            finally
-            {
-                job.close();
-            }
+            job.run();
         }
     }
 
     /**
      * {@link RecoveryCleanupWorkCollector} ignoring all {@link CleanupJob} added to it.
      */
-    class IgnoringRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
+    class NullRecoveryCleanupWorkCollector extends LifecycleAdapter implements RecoveryCleanupWorkCollector
     {
         @Override
         public void add( CleanupJob job )
-        {
-            job.close();
+        {   // no-op
         }
     }
 }

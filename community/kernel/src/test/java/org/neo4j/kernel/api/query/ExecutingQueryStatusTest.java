@@ -100,7 +100,7 @@ public class ExecutingQueryStatusTest
                                 null,
                                 null,
                                 null,
-                                ( /*activeLockCount:*/ ) -> 0,
+                                null,
                                 PageCursorTracer.NULL,
                                 Thread.currentThread().getId(),
                                 Thread.currentThread().getName(),

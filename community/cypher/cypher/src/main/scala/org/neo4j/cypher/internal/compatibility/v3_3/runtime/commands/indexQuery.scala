@@ -106,18 +106,18 @@ object indexQuery extends GraphElementPropertyFunctions {
           case _ => throw new CypherTypeException(s"Expected the value for $inner to be a collection but it was not.")
         }
 
-      case CompositeQueryExpression(innerExpressions) =>
+      case CompositeQueryExpression(_) =>
         throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
 
-      case RangeQueryExpression(rangeWrapper) =>
+      case RangeQueryExpression(_) =>
         throw new InternalException("Range queries on composite indexes not yet supported")
     }
   }
 }
 
 class IteratorOfIterarors[T](inner: Seq[Iterator[T]]) extends Iterator[T] {
+  private val _innerIterator = inner.toIterator
   private var _buffer: Option[T] = None
-  private var _innerIterator = inner.toIterator
   private var _current: Iterator[T] = Iterator.empty
 
   fillBuffer()

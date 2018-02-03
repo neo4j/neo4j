@@ -250,10 +250,7 @@ public class TransactionRecordState implements RecordState
         }
         for ( RecordProxy<SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
-            if ( change.forReadingLinkage().inUse() )
-            {
-                integrityValidator.validateSchemaRule( change.getAdditionalData() );
-            }
+            integrityValidator.validateSchemaRule( change.getAdditionalData() );
             commands.add( new Command.SchemaRuleCommand(
                     change.getBefore(), change.forChangingData(), change.getAdditionalData() ) );
         }
@@ -588,7 +585,6 @@ public class TransactionRecordState implements RecordState
         {
             record.setInUse( false );
         }
-        records.setInUse( false );
     }
 
     public void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )

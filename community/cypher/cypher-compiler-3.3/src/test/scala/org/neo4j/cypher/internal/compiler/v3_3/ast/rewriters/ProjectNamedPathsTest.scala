@@ -284,7 +284,6 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
   test("Aggregating WITH downstreams" ) {
     val rewritten = projectionInlinedAst("MATCH p = (a) WITH length(p) as l, count(*) as x WITH l, x RETURN l + x")
     val a = varFor("a")
-    val p = varFor("p")
     val l = varFor("l")
     val x = varFor("x")
     val MATCH =

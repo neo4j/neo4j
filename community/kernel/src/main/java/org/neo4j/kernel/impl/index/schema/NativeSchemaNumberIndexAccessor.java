@@ -96,12 +96,6 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     }
 
     @Override
-    public void refresh()
-    {
-        // not required in this implementation
-    }
-
-    @Override
     public void close() throws IOException
     {
         closeTree();

@@ -47,13 +47,13 @@ public class MonitoredWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( BoltChannel boltChannel, BoltWorkerQueueMonitor queueMonitor )
+    public BoltWorker newWorker( BoltChannel boltChannel )
     {
         if ( monitors.hasListeners( SessionMonitor.class ) )
         {
             return new MonitoredBoltWorker( monitor, delegate.newWorker( boltChannel ), clock );
         }
-        return delegate.newWorker( boltChannel, queueMonitor );
+        return delegate.newWorker( boltChannel );
     }
 
     static class MonitoredBoltWorker implements BoltWorker

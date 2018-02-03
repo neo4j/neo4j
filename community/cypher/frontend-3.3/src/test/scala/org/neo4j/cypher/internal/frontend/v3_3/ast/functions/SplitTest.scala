@@ -18,8 +18,6 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-import scala.languageFeature.existentials
-
 class SplitTest extends FunctionTestBase("split")  {
 
   test("shouldAcceptCorrectTypes") {

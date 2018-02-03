@@ -29,7 +29,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 
 class ComparablePredicateTest extends CypherFunSuite {
 
-  private val numericalValues: Seq[Any] = Seq[Number](
+  val numericalValues = Seq[Number](
     Double.NegativeInfinity,
     Double.MinValue,
     Long.MinValue,
@@ -55,7 +55,7 @@ class ComparablePredicateTest extends CypherFunSuite {
     case v => Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
   }
 
-  private val textualValues: Seq[String] = Seq(
+  val textualValues = Seq(
     "",
     "Hal",
     s"Hal${Character.MIN_VALUE}",
@@ -70,7 +70,7 @@ class ComparablePredicateTest extends CypherFunSuite {
     case v: String => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
   }
 
-  private val allValues = numericalValues ++ textualValues
+  val allValues = numericalValues// ++ textualValues
 
   test("should compare values using <") {
     for (left <- allValues)

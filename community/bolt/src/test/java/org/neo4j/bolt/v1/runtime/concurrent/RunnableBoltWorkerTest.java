@@ -22,43 +22,25 @@ package org.neo4j.bolt.v1.runtime.concurrent;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
-import org.neo4j.bolt.v1.runtime.BoltWorkerQueueMonitor;
-import org.neo4j.bolt.v1.runtime.Job;
-import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Collect;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollection;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -301,85 +283,6 @@ public class RunnableBoltWorkerTest
         workerFuture.get();
 
         verify( machine, atLeastOnce() ).validateTransaction();
-    }
-
-    @Test
-    public void shouldNotNotifyMonitorWhenNothingEnqueued() throws Exception
-    {
-        BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
-        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
-
-        verify( monitor, never() ).enqueued( any( Job.class ) );
-        verify( monitor, never() ).dequeued( any( Job.class ) );
-        verify( monitor, never() ).drained( any( Collection.class ) );
-    }
-
-    @Test
-    public void shouldNotifyMonitorWhenQueued() throws Exception
-    {
-        BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
-        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
-        Job job = s -> s.run( "Hello world", null, null );
-
-        worker.enqueue( job );
-
-        verify( monitor ).enqueued( job );
-    }
-
-    @Test
-    public void shouldNotifyMonitorWhenDequeued() throws Exception
-    {
-        BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
-        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
-        Job job = s -> s.run( "Hello world", null, null );
-
-        worker.enqueue( job );
-        worker.enqueue( s -> worker.halt() );
-        worker.run();
-
-        verify( monitor ).enqueued( job );
-        verify( monitor ).dequeued( job );
-    }
-
-    @Test
-    public void shouldNotifyMonitorWhenDrained() throws Exception
-    {
-        List<Job> drainedJobs = new ArrayList<>();
-        BoltWorkerQueueMonitor monitor = newMonitor( drainedJobs );
-        RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
-        Job job1 = s -> s.run( "Hello world 1", null, null );
-        Job job2 = s -> s.run( "Hello world 1", null, null );
-        Job job3 = s -> s.run( "Hello world 1", null, null );
-        Job haltJob = s -> worker.halt();
-
-        worker.enqueue( job1 );
-        worker.enqueue( job2 );
-        worker.enqueue( job3 );
-        worker.enqueue( haltJob );
-        worker.run();
-
-        verify( monitor ).enqueued( job1 );
-        verify( monitor ).enqueued( job2 );
-        verify( monitor ).enqueued( job3 );
-        verify( monitor ).dequeued( job1 );
-        verify( monitor ).drained( anyCollection() );
-
-        assertThat( drainedJobs, hasSize( 3 ) );
-        assertThat( drainedJobs, contains( job2, job3, haltJob ) );
-    }
-
-    private static BoltWorkerQueueMonitor newMonitor( final List<Job> drained )
-    {
-        BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
-
-        doAnswer( invocation ->
-        {
-            final Collection<Job> jobs = invocation.getArgumentAt( 0, Collection.class );
-            drained.addAll( jobs );
-            return null;
-        } ).when( monitor ).drained( anyListOf( Job.class ) );
-
-        return monitor;
     }
 
 }

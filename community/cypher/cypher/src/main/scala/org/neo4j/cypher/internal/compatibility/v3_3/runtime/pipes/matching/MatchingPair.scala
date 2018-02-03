@@ -37,8 +37,7 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
       case (a: SingleGraphRelationship, b: EdgeValue)                            => a.rel == b
       case (a: EdgeValue, b: SingleGraphRelationship)                            => a == b.rel
       case (a: VariableLengthGraphRelationship, b: VariableLengthGraphRelationship) => a.path == b.path
-      case (a: VariableLengthGraphRelationship, _)                                  => false
-      case (a, _: VariableLengthGraphRelationship)                                  => false
+      case _                                                                        => false
 
     })
     case None             => true

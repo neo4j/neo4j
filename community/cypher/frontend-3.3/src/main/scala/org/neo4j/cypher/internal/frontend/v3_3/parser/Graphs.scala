@@ -74,9 +74,6 @@ trait Graphs
   def BoundGraph: Rule1[ast.BoundGraphAs] =
     SourceGraphAs | TargetGraphAs | GraphAs
 
-  private def SingleGraphAsList: Rule1[List[ast.SingleGraphAs]] =
-    oneOrMore(SingleGraph, separator = CommaSep)
-
   private def ShortGraph: Rule1[ast.SingleGraphAs] =
     GraphAlias ~~>> (ast.GraphAs(_, _))
 

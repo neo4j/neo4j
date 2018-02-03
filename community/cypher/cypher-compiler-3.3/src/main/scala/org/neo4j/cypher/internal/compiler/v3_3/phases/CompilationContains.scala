@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 import scala.reflect.ClassTag
 
-case class CompilationContains[T: ClassTag](implicit manifest: Manifest[T]) extends Condition {
+case class CompilationContains[T: ClassTag](a: Int = 0)(implicit manifest: Manifest[T]) extends Condition {
 
   override def check(in: AnyRef): Seq[String] = in match {
     case state: LogicalPlanState =>

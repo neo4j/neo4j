@@ -107,6 +107,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class DatabaseActions
@@ -1100,6 +1101,12 @@ public class DatabaseActions
             protected Representation underlyingObjectToObject( Path position )
             {
                 return returnType.toRepresentation( position );
+            }
+
+            @Override
+            public Iterator<Representation> iterator()
+            {
+                return newResourceIterator( () -> paths.forEach( Path::close ), super.iterator() );
             }
         };
         return new ListRepresentation( returnType.repType, result );

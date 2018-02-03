@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
@@ -73,7 +72,7 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
         innerJavaIterator.hasNext
       }
 
-      def remove() = runSafely {
+      override def remove() = runSafely {
         innerJavaIterator.remove()
       }
     }

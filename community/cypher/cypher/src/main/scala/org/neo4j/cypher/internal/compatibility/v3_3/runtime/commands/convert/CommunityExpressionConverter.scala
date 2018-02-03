@@ -38,9 +38,9 @@ object CommunityExpressionConverter extends ExpressionConverter {
 
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression] = {
       val result = expression match {
-        case e: ast.Null => commandexpressions.Null()
-        case e: ast.True => predicates.True()
-        case e: ast.False => predicates.Not(predicates.True())
+        case _: ast.Null => commandexpressions.Null()
+        case _: ast.True => predicates.True()
+        case _: ast.False => predicates.Not(predicates.True())
         case e: ast.Literal => commandexpressions.Literal(e.value)
         case e: ast.Variable => variable(e)
         case e: ast.Or => predicates.Or(self.toCommandPredicate(e.lhs), self.toCommandPredicate(e.rhs))
@@ -69,7 +69,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
         case e: ast.Modulo => commandexpressions.Modulo(self.toCommandExpression(e.lhs), self.toCommandExpression(e.rhs))
         case e: ast.Pow => commandexpressions.Pow(self.toCommandExpression(e.lhs), self.toCommandExpression(e.rhs))
         case e: ast.FunctionInvocation => toCommandExpression(e.function, e, self)
-        case e: ast.CountStar => commandexpressions.CountStar()
+        case _: ast.CountStar => commandexpressions.CountStar()
         case e: ast.Property => toCommandProperty(e, self)
         case e: ast.Parameter => toCommandParameter(e)
         case e: ast.CaseExpression => caseExpression(e, self)
@@ -105,7 +105,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
           val signature = e.fcnSignature.get
           if (signature.isAggregate) commandexpressions.AggregationFunctionInvocation(signature, callArgumentCommands)
           else commandexpressions.FunctionInvocation(signature, callArgumentCommands)
-        case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
+        case _: ast.MapProjection => throw new InternalException("should have been rewritten away")
         case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
         case _ => null
       }
@@ -343,7 +343,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
     case value: Parameter =>
       predicates.ConstantCachedIn(self.toCommandExpression(e.lhs), self.toCommandExpression(value))
 
-    case value@ListLiteral(expressions) if expressions.isEmpty =>
+    case ListLiteral(expressions) if expressions.isEmpty =>
       predicates.Not(predicates.True())
 
     case value@ListLiteral(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>

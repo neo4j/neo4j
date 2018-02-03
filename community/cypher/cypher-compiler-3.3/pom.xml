@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>3.3.3-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-cypher-compiler-3.3</artifactId>
   <packaging>jar</packaging>
-  <version>3.3.3-SNAPSHOT</version>
+  <version>3.3.1-SNAPSHOT</version>
   <name>Neo4j - Cypher Compiler 3.3</name>
   <description>Compiler for Cypher 3.3</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -23,8 +23,8 @@
 
   <properties>
     <version-package>cypher.internal.compiler.v3_1</version-package>
-    <scala.version>2.11.12</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
+    <scala.version>2.12.4</scala.version>
+    <scala.binary.version>2.12</scala.binary.version>
   </properties>
 
   <licenses>
@@ -60,7 +60,6 @@
             <arg>-Xmax-classfile-name</arg>
             <arg>100</arg>
             <arg>-Xlint</arg>
-            <arg>-target:jvm-${maven.compiler.target}</arg>
           </args>
         </configuration>
       </plugin>
@@ -94,7 +93,7 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.11</artifactId>
+      <artifactId>scalatest_2.12</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -106,7 +105,7 @@
 
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.11</artifactId>
+      <artifactId>scalacheck_2.12</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -161,7 +160,7 @@
 
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.11</artifactId>
+      <artifactId>parboiled-scala_2.12</artifactId>
     </dependency>
 
     <dependency>

@@ -77,11 +77,11 @@ case class MatchPattern(nodes:Seq[String], relationships:Seq[MatchRelationship])
     var nodesLeft = nodes.toSet
     var relationshipsLeft = relationships.toSet
 
-    var currentNodes= mutable.ListBuffer[String]()
-    var currentRels = mutable.ListBuffer[MatchRelationship]()
+    val currentNodes= mutable.ListBuffer[String]()
+    val currentRels = mutable.ListBuffer[MatchRelationship]()
 
     def popNextNode() {
-      var current = nodesLeft.head
+      val current = nodesLeft.head
       nodesLeft -= current
       currentNodes += current
     }

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PatternLength, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PatternLength, PlannerQuery}
 
 case class ProjectEndpoints(left: LogicalPlan,
-                            rel: String,
-                            start: String,
+                            rel: IdName,
+                            start: IdName,
                             startInScope: Boolean,
-                            end: String,
+                            end: IdName,
                             endInScope: Boolean,
                             types: Option[Seq[RelTypeName]],
                             directed: Boolean,
@@ -36,5 +36,5 @@ case class ProjectEndpoints(left: LogicalPlan,
   val lhs = Some(left)
   def rhs = None
 
-  val availableSymbols: Set[String] = left.availableSymbols + rel + start + end
+  def availableSymbols: Set[IdName] = left.availableSymbols + rel + start + end
 }

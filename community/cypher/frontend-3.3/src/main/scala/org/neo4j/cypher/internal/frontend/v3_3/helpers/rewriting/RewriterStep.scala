@@ -18,6 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting
 
 import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 
+import scala.language.{implicitConversions}
+
 object RewriterStep {
    implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
 

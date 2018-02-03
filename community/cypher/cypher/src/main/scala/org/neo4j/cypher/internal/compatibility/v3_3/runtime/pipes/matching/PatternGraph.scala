@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, R
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effects, ReadsRelationshipsWithTypes}
 import org.neo4j.cypher.internal.frontend.v3_3.PatternException
 
+import scala.language.{postfixOps}
+
 case class PatternGraph(patternNodes: Map[String, PatternNode],
                         patternRels: Map[String, Seq[PatternRelationship]],
                         boundElements: Seq[String],
@@ -83,7 +85,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
     var loop = false
 
     def follow(element: PatternElement) = element match {
-      case n: PatternNode         => true
+      case _: PatternNode         => true
       case r: PatternRelationship => !visited.contains(r)
     }
 
@@ -104,7 +106,6 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
     loop
   }
-
   override def toString = if(patternRels.isEmpty && patternNodes.isEmpty) {
       "[EMPTY PATTERN]"
   } else {

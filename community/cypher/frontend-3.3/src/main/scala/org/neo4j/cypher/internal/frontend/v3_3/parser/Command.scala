@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName, Property, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, Property, Variable}
 import org.parboiled.scala._
 
 trait Command extends Parser
@@ -94,13 +94,13 @@ trait Command extends Parser
   def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
     group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
-
+/*
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
     optional(group("(" ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq))
   }
-
+*/
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 

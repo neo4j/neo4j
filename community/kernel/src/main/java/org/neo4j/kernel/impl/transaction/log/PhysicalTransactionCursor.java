@@ -57,10 +57,6 @@ public class PhysicalTransactionCursor<T extends ReadableClosablePositionAwareCh
     @Override
     public boolean next() throws IOException
     {
-        // Clear the previous deserialized transaction so that it won't have to be kept in heap while deserializing
-        // the next one. Could be problematic if both are really big.
-        current = null;
-
         while ( true )
         {
             if ( !logEntryCursor.next() )

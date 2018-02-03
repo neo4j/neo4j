@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
 
 case class SingleRow()(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  val argumentIds: Set[String] = Set.empty
+  val argumentIds: Set[IdName] = Set.empty
 
-  val availableSymbols = argumentIds
+  def availableSymbols = argumentIds
 }

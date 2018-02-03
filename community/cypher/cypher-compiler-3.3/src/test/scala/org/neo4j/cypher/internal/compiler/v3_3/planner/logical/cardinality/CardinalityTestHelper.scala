@@ -58,7 +58,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
                       knownRelationshipCardinality: Map[(String, String, String), Double] = Map.empty,
                       knownNodeNames: Set[String] = Set.empty,
                       knownRelNames: Set[String] = Set.empty,
-                      queryGraphArgumentIds: Set[String] = Set.empty,
+                      queryGraphArgumentIds: Set[IdName] = Set.empty,
                       inboundCardinality: Cardinality = Cardinality(1),
                       strictness: Option[StrictnessMode] = None) {
 
@@ -79,7 +79,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       copy(knownLabelCardinality = knownLabelCardinality.fuse(increments)(_ + _))
     }
 
-    def withQueryGraphArgumentIds(idNames: String*): TestUnit =
+    def withQueryGraphArgumentIds(idNames: IdName*): TestUnit =
       copy(queryGraphArgumentIds = Set(idNames: _*))
 
     def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number))
@@ -248,8 +248,8 @@ trait CardinalityCustomMatchers {
         expected.size == other.size && expected.foldLeft(true) {
           case (acc, (key, value)) =>
             import Cardinality._
-            import org.scalautils.Tolerance._
-            import org.scalautils.TripleEquals._
+            import org.scalactic.Tolerance._
+            import org.scalactic.TripleEquals._
             acc && other.contains(key) && other(key) === value +- tolerance
         },
         s"""$other did not equal "$expected" wrt a tolerance of $tolerance""",

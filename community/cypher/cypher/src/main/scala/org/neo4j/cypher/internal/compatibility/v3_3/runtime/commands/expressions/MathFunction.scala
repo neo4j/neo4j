@@ -278,7 +278,7 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
 
 case class RoundFunction(expression: Expression) extends NullSafeMathFunction(expression) {
 
-  override def apply(value: Double) = math.round(value)
+  override def apply(value: Double) = math.round(value).toDouble
 
   override def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
 }

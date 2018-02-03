@@ -31,7 +31,7 @@ object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState
 
   override def description = "from the normalized ast, create the corresponding PlannerQuery"
 
-  override def postConditions = Set(CompilationContains[UnionQuery])
+  override def postConditions = Set(CompilationContains[UnionQuery]())
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
     case query: Query =>

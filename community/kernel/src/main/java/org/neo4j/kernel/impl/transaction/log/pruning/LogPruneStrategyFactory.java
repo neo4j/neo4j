@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import java.util.stream.LongStream;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -36,10 +34,9 @@ public class LogPruneStrategyFactory
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
-        public LongStream findLogVersionsToDelete( long upToLogVersion )
+        public void prune( long upToLogVersion )
         {
-            // Never delete anything.
-            return LongStream.empty();
+            // do nothing
         }
 
         @Override

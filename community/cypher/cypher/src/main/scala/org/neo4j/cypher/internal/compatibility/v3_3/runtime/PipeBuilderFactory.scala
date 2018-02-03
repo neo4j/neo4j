@@ -37,7 +37,6 @@ trait PipeBuilderFactory {
 
   protected def recursePipes(recurse: LogicalPlan => Pipe, planContext: PlanContext)
                             (in: frontEndAst.Expression): frontEndAst.Expression = {
-
     val buildPipeExpressions = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
         case expr@compilerAst.NestedPlanExpression(patternPlan, expression) =>

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.parser.{Base, Strings}
 import org.parboiled.scala._
 
 import scala.collection.mutable
+import scala.language.{postfixOps}
 
 sealed abstract class SyntaxToken {
   def text: String

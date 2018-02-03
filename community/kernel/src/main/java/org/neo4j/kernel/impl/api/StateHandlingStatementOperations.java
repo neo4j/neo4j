@@ -607,15 +607,7 @@ public class StateHandlingStatementOperations implements
                     }
                 }
                 long indexId = constraintIndexCreator.createUniquenessConstraintIndex( state, this, descriptor );
-                if ( !constraintExists( state, constraint ) )
-                {
-                    // This looks weird, but since we release the label lock while awaiting population of the index
-                    // backing this constraint there can be someone else getting ahead of us, creating this exact constraint
-                    // before we do, so now getting out here under the lock we must check again and if it exists
-                    // we must at this point consider this an idempotent operation because we verified earlier
-                    // that it didn't exist and went on to create it.
-                    state.txState().constraintDoAdd( constraint, indexId );
-                }
+                state.txState().constraintDoAdd( constraint, indexId );
             }
             return constraint;
         }
@@ -1061,7 +1053,7 @@ public class StateHandlingStatementOperations implements
             }
             else
             {
-                if ( propertyHasChanged( value, existingValue ) )
+                if ( !value.equals( existingValue ) )
                 {
                     state.txState().nodeDoChangeProperty( node.id(), propertyKeyId, existingValue, value );
                     indexTxStateUpdater.onPropertyChange( state, node, propertyKeyId, existingValue, value );
@@ -1093,7 +1085,7 @@ public class StateHandlingStatementOperations implements
                             ops, relationshipId, propertyKeyId, existingValue, value );
                 }
             }
-            if ( propertyHasChanged( value, existingValue ) )
+            if ( !value.equals( existingValue ) )
             {
                 state.txState().relationshipDoReplaceProperty(
                         relationship.id(), propertyKeyId, existingValue, value );
@@ -1810,13 +1802,5 @@ public class StateHandlingStatementOperations implements
                           ? storeLayer.nodeGetRelationships( storeStatement, node, direction )
                           : storeLayer.nodeGetRelationships( storeStatement, node, direction, t -> t == relType ) );
         }
-    }
-
-    private boolean propertyHasChanged( Value lhs, Value rhs )
-    {
-        //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
-        //so by only checking for equality users cannot change type of property without also "changing" the value.
-        //Hence the extra type check here.
-        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
     }
 }

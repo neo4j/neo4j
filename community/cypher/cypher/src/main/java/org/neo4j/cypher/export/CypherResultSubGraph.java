@@ -142,6 +142,7 @@ public class CypherResultSubGraph implements SubGraph
         }
     }
 
+    @SuppressWarnings( "rawtypes" )
     private void addToGraph( Object value )
     {
         if ( value instanceof Node )

@@ -19,8 +19,6 @@ package org.neo4j.cypher.internal.frontend.v3_3.parser
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 
-import scala.language.implicitConversions
-
 class GraphReturnItemsParserTest
   extends ParserAstTest[ast.GraphReturnItems]
   with Graphs

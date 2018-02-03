@@ -66,15 +66,23 @@ case object pruningVarExpander extends Rewriter {
       lowerDistinctLand
     }
 
-    val planStack = new mutable.Stack[(LogicalPlan, Option[Set[String]])]()
-    planStack.push((plan, None))
+    var planStack: List[(LogicalPlan, Option[Set[String]])] = Nil
+    def push(item: (LogicalPlan, Option[Set[String]])) {
+      planStack = item :: planStack
+    }
+    def pop(): (LogicalPlan, Option[Set[String]]) = {
+      val item = planStack.head
+      planStack = planStack.tail
+      item
+    }
+    push((plan, None))
 
     while(planStack.nonEmpty) {
-      val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
+      val (plan: LogicalPlan, deps: Option[Set[String]]) = pop()
       val newDeps = collectDistinctSet(plan, deps)
 
-      plan.lhs.foreach(p => planStack.push((p, newDeps)))
-      plan.rhs.foreach(p => planStack.push((p, newDeps)))
+      plan.lhs.foreach(p => push((p, newDeps)))
+      plan.rhs.foreach(p => push((p, newDeps)))
     }
 
     distinctSet.toSet
@@ -83,7 +91,7 @@ case object pruningVarExpander extends Rewriter {
   // When the distinct horizon needs the path that includes the var length relationship,
   // we can't use DistinctVarExpand - we need all the paths
   def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
-    inDistinctLand.forall(vars => vars(expand.relName))
+    inDistinctLand.forall(vars => vars(expand.relName.name))
   }
 
   private def isDistinct(e: Expression) = e match {
@@ -98,7 +106,11 @@ case object pruningVarExpander extends Rewriter {
 
         val innerRewriter = topDown(Rewriter.lift {
           case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, ExpandAll, _, _, _, _, predicates) if distinctSet(expand) =>
-            if (length.max.get > 1)
+            if (length.min >= 4 && length.max.get >= 5)
+              // These constants were selected by benchmarking on randomized graphs, with different
+              // degrees of interconnection.
+              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
+            else if (length.max.get > 1)
               PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
             else expand
         })

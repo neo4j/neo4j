@@ -42,6 +42,7 @@ public class PrimitiveRelationshipStream extends PrimitiveEntityStream<Relations
         return new PrimitiveRelationshipStream( LongStream.of( array ) );
     }
 
+    @SuppressWarnings( "unchecked" )
     public static PrimitiveRelationshipStream of( Object list )
     {
         if ( null == list )

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, PlannerName, ast}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
@@ -46,7 +47,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
     assert(plan.isLeaf)
 
     val id = plan.assignedId
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols.map(_.name)
 
     val result: InternalPlanDescription = plan match {
       case _: AllNodesScan =>
@@ -77,12 +78,12 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
 
       case DirectedRelationshipByIdSeek(_, relIds, _, _, _) =>
         val entityByIdRhs = EntityByIdRhs(relIds)
-        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeek", NoChildren, Seq(entityByIdRhs), variables)
+        PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
 
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
 
-      case NodeCountFromCountStore(variable, labelNames, _) =>
+      case NodeCountFromCountStore(IdName(variable), labelNames, _) =>
         val arguments = Seq(CountNodesExpression(variable, labelNames.map(l => l.map(_.name))))
         PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren, arguments, variables)
 
@@ -101,7 +102,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
-      case RelationshipCountFromCountStore(ident, startLabel, typeNames, endLabel, _) =>
+      case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
         val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name),
                                                endLabel.map(_.name))
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(exp), variables)
@@ -120,7 +121,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
     assert(plan.rhs.isEmpty)
 
     val id = plan.assignedId
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols.map(_.name)
     val children = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
@@ -151,24 +152,24 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
 
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
-      case NodeCountFromCountStore(id, labelName, arguments) =>
+      case NodeCountFromCountStore(IdName(id), labelName, _) =>
         PlanDescriptionImpl(id = plan.assignedId, "NodeCountFromCountStore", NoChildren,
                             Seq(CountNodesExpression(id, labelName.map(l => l.map(_.name)))), variables)
 
-      case RelationshipCountFromCountStore(id, start, types, end, arguments) =>
+      case RelationshipCountFromCountStore(IdName(id), start, types, end, _) =>
         PlanDescriptionImpl(id = plan.assignedId, "RelationshipCountFromCountStore", NoChildren,
                             Seq(
                               CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
-      case NodeUniqueIndexSeek(id, label, propKeys, value, arguments) =>
+      case NodeUniqueIndexSeek(IdName(_), label, propKeys, _, _) =>
         PlanDescriptionImpl(id = plan.assignedId, "NodeUniqueIndexSeek", NoChildren,
                             Seq(Index(label.name, propKeys.map(_.name))), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
 
-      case Expand(_, fromName, dir, typeNames, toName, relName, mode) =>
+      case Expand(_, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode) =>
         val expression = ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
           case ExpandAll => "Expand(All)"
@@ -180,9 +181,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, name = "Limit", children, Seq(Expression(count)), variables)
 
       case LockNodes(_, nodesToLock) =>
-        PlanDescriptionImpl(id, name = "LockNodes", children, Seq(KeyNames(nodesToLock.toSeq)), variables)
+        PlanDescriptionImpl(id, name = "LockNodes", children, Seq(KeyNames(nodesToLock.map(_.name).toSeq)), variables)
 
-      case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
+      case OptionalExpand(_, IdName(fromName), dir, typeNames, IdName(toName), IdName(relName), mode, predicates) =>
         val expressions = predicates.map(Expression.apply) :+
           ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
@@ -209,7 +210,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "ShortestPath", children, Seq(Expressions(args.toMap)), variables)
 
       case Limit(_, count, _) =>
-        PlanDescriptionImpl(id, "Limit", children, Seq(Expression(count)), variables)
+        PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq(Expression(count)), variables)
 
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", children, Seq.empty, variables)
@@ -227,14 +228,19 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
         PlanDescriptionImpl(id, "ProcedureCall", children, Seq(signature), variables)
 
-      case ProjectEndpoints(_, relName, start, _, end, _, _, directed, _) =>
+      case ProjectEndpoints(_, IdName(relName), IdName(start), _, IdName(end), _, _, directed, _) =>
         val name = if (directed) "ProjectEndpoints" else "ProjectEndpoints(BOTH)"
         PlanDescriptionImpl(id, name, children, Seq(KeyNames(Seq(relName, start, end))), variables)
 
-      case PruningVarExpand(_, fromName, dir, types, toName, min, max, predicates) =>
+      case PruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, _) =>
         val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
                                           maxLength = Some(max))
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec), variables)
+
+      case FullPruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, _) =>
+        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
+                                          maxLength = Some(max))
+        PlanDescriptionImpl(id, s"VarLengthExpand(FullPruning)", children, Seq(expandSpec), variables)
 
       case _: RemoveLabels =>
         PlanDescriptionImpl(id, "RemoveLabels", children, Seq.empty, variables)
@@ -254,15 +260,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "SetRelationshipPropertyFromMap", children, Seq.empty, variables)
 
       case Sort(_, orderBy) =>
-        PlanDescriptionImpl(id, "Sort", children, Seq(KeyNames(orderBy.map(_.id))), variables)
+        PlanDescriptionImpl(id, "Sort", children, Seq(KeyNames(orderBy.map(_.id.name))), variables)
 
       case Top(_, orderBy, limit) =>
-        PlanDescriptionImpl(id, "Top", children, Seq(KeyNames(orderBy.map(_.id)), Expression(limit)), variables)
+        PlanDescriptionImpl(id, "Top", children, Seq(KeyNames(orderBy.map(_.id.name)), Expression(limit)), variables)
 
       case UnwindCollection(_, _, expression) =>
         PlanDescriptionImpl(id, "Unwind", children, Seq(Expression(expression)), variables)
 
-      case VarExpand(_, fromName, dir, _, types, toName, relName, length, mode, _, _, _, _, predicates) =>
+      case VarExpand(_, IdName(fromName), dir, _, types, IdName(toName), IdName(relName), length, mode, _, _, _, _, predicates) =>
         val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir,
                                                  minLength = length.min, maxLength = length.max)
         val predicatesMap = predicates.map(_._2).zipWithIndex.map({ case (p, idx) => s"p$idx" -> p }).toMap
@@ -289,7 +295,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
     assert(plan.rhs.nonEmpty)
 
     val id = plan.assignedId
-    val variables = plan.availableSymbols
+    val variables = plan.availableSymbols.map(_.name)
     val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
@@ -312,7 +318,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables)
 
       case NodeHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeHashJoin", children, Seq(KeyNames(nodes.toIndexedSeq)), variables)
+        PlanDescriptionImpl(id, "NodeHashJoin", children, Seq(KeyNames(nodes.toIndexedSeq.map(_.name))), variables)
 
       case _: ForeachApply =>
         PlanDescriptionImpl(id, "Foreach", children, Seq.empty, variables)
@@ -321,10 +327,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
       case row: SingleRow =>
-        SingleRowPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds)
+        SingleRowPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
-        PlanDescriptionImpl(id, "LetSelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
+        PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
       case _: LetSemiApply =>
         PlanDescriptionImpl(id, "LetSemiApply", children, Seq.empty, variables)
@@ -333,21 +339,21 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
         PlanDescriptionImpl(id, "LetAntiSemiApply", children, Seq.empty, variables)
 
       case OuterHashJoin(nodes, _, _) =>
-        PlanDescriptionImpl(id, "NodeOuterHashJoin", children, Seq(KeyNames(nodes.toSeq)), variables)
+        PlanDescriptionImpl(id, "NodeOuterHashJoin", children, Seq(KeyNames(nodes.map(_.name).toSeq)), variables)
 
       case RollUpApply(_, _, collectionName, _, _) =>
-        PlanDescriptionImpl(id, "RollUpApply", children, Seq(KeyNames(Seq(collectionName))), variables)
+        PlanDescriptionImpl(id, "RollUpApply", children, Seq(KeyNames(Seq(collectionName.name))), variables)
 
       case SelectOrAntiSemiApply(_, _, predicate) =>
         PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
 
       case SelectOrSemiApply(_, _, predicate) =>
-        PlanDescriptionImpl(id, "SelectOrSemiApply", children, Seq(Expression(predicate)), variables)
+        PlanDescriptionImpl(id, "SelectOrAntiSemiApply", children, Seq(Expression(predicate)), variables)
 
       case _: SemiApply =>
         PlanDescriptionImpl(id, "SemiApply", children, Seq.empty, variables)
 
-      case TriadicSelection(_, _, source, seen, target, _) =>
+      case TriadicSelection(_, _, IdName(source), IdName(seen), IdName(target), _) =>
         PlanDescriptionImpl(id, "TriadicSelection", children, Seq(KeyNames(Seq(source, seen, target))), variables)
 
       case _: Union =>

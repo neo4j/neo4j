@@ -29,7 +29,7 @@ class PlanCacheMetricsMonitor extends StringCacheMonitor {
 
   override def cacheDiscard(ignored1: String, ignored2: String, secondsSinceReplan: Int): Unit = {
     counter.incrementAndGet()
-    waitTime.addAndGet(secondsSinceReplan)
+    waitTime.addAndGet(secondsSinceReplan.toLong)
   }
 
   def numberOfReplans: Long = counter.get()

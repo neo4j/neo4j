@@ -77,12 +77,12 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos))): (LogicalPlanningContext, LogicalPlan) = {
+                             projectionsMap: Map[String, ast.Expression]): (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
-    val ids = projectionsMap.keySet
+    val ids = projectionsMap.keys.map(IdName(_)).toSet
 
     val plan =
       newMockedLogicalPlanWithSolved(ids, CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)), Cardinality(0)))

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.Map
+import scala.language.{postfixOps}
 
 class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
                      predicates: Seq[Predicate],

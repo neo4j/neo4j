@@ -89,7 +89,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
     if (result.isEmpty) "<Nothing happened>" else result
   }
 
-  private def includeIfNonZero(builder: StringBuilder, message: String, count: Long) = if (count > 0) {
+  private def includeIfNonZero(builder: StringBuilder, message: String, count: Int) = if (count > 0) {
     builder.append(message + count.toString + "\n")
   }
 

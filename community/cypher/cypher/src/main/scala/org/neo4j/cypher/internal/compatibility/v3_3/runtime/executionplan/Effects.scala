@@ -34,7 +34,7 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
   def contains(effect: Effect): Boolean = effectsSet(effect)
 
   def containsWrites = effectsSet.exists {
-    case write: WriteEffect => true
+    case _: WriteEffect => true
     case _ => false
   }
 

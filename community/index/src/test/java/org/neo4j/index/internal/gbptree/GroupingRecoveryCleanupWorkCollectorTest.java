@@ -185,11 +185,6 @@ public class GroupingRecoveryCleanupWorkCollectorTest
         }
 
         @Override
-        public void close()
-        {   // no-op
-        }
-
-        @Override
         public void run()
         {
             allRuns.add( this );

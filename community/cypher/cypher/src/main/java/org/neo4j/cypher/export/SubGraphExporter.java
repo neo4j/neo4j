@@ -291,6 +291,7 @@ public class SubGraphExporter
         return "\"" + value.replaceAll( "\\\\", "\\\\\\\\" ).replaceAll( "\"", "\\\\\"" ) + "\"";
     }
 
+    @SuppressWarnings( "rawtypes" )
     private String toString( Object value )
     {
         if ( value == null )

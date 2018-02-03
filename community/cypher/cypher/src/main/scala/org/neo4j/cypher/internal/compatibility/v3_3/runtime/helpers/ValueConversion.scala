@@ -60,7 +60,7 @@ object ValueConversion {
     case s: String => Values.stringValue(s)
     case c: Char => Values.charValue(c)
     case d: Double => Values.doubleValue(d)
-    case f: Float => Values.doubleValue(f)
+    case f: Float => Values.doubleValue(f.toDouble)
     case n: Number => Values.longValue(n.longValue())
     case b: Boolean => Values.booleanValue(b)
     case n: Node => ValueUtils.fromNodeProxy(n)

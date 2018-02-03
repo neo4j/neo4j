@@ -81,8 +81,9 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
         result.flatMap(r => element.map(e => e :: r))
     ).toIndexedSeq
 
-  private def createPatternMatcher(boundPairs: Map[String, Set[MatchingPair]], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] =
-      new PatternMatcher(boundPairs, predicates, source, state, variablesInClause)
+  private def createPatternMatcher(boundPairs: Map[String, Set[MatchingPair]], includeOptionals: Boolean, source: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
+    new PatternMatcher(boundPairs, predicates, source, state, variablesInClause)
+  }
 
 
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, Set[MatchingPair]] = bindings.flatMap {

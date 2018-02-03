@@ -45,7 +45,7 @@ object TransactionBoundGraphStatistics {
         Selectivity.of(indexSelectivity)
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
@@ -59,14 +59,14 @@ object TransactionBoundGraphStatistics {
         Selectivity.of(indexSelectivity)
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      atLeastOne(operations.countsForNodeWithoutTxState(labelId))
+      atLeastOne(operations.countsForNodeWithoutTxState(labelId).toDouble)
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+      atLeastOne(operations.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel).toDouble)
 
     /**
       * Due to the way cardinality calculations work, zero is a bit dangerous, as it cancels out
@@ -80,7 +80,7 @@ object TransactionBoundGraphStatistics {
         Cardinality(count)
     }
 
-    override def nodesAllCardinality(): Cardinality = atLeastOne(operations.countsForNodeWithoutTxState(-1))
+    override def nodesAllCardinality(): Cardinality = atLeastOne(operations.countsForNodeWithoutTxState(-1).toDouble)
   }
 }
 

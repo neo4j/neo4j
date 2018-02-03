@@ -36,7 +36,7 @@ object valueHelper {
     case d: IntegralValue => d.longValue()
 
     case m: MapValue => {
-      var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
+      val map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       m.foreach(new BiConsumer[String, AnyValue] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, fromValue(u))
       })

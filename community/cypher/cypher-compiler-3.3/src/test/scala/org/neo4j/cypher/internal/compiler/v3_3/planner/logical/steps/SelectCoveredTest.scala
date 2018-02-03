@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, Selection}
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   private implicit val planContext = newMockedPlanContext
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
   private implicit val context = newMockedLogicalPlanningContext(planContext)
 
   test("when a predicate that isn't already solved is solvable it should be applied") {
@@ -80,7 +79,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
   test("when a predicate is already solved, it should not be applied again") {
     // Given
-    val coveredIds = Set("x")
+    val coveredIds = Set(IdName("x"))
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedDecimalIntegerLiteral("1") _))))
     val solved = CardinalityEstimation.lift(RegularPlannerQuery(qg), 0.0)
     val inner = newMockedLogicalPlanWithProjections("x").updateSolved(solved)
@@ -95,7 +94,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
   test("a predicate without all dependencies covered should not be applied ") {
     // Given
     val predicate = mock[Expression]
-    val selections = Selections(Set(Predicate(Set("x", "y"), predicate)))
+    val selections = Selections(Set(Predicate(Set(IdName("x"), IdName("y")), predicate)))
     val inner = newMockedLogicalPlanWithProjections("x")
     val qg = QueryGraph(selections = selections)
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v3_3.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalization, PropertyPredicateNormalizer}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -27,9 +26,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, inSequence}
 
 class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
 
-  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer, getDegreeRewriting = true)
+  object PropertyPredicateNormalization extends MatchPredicateNormalization(PropertyPredicateNormalizer)
 
-  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer, getDegreeRewriting = true)
+  object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
 
   def rewriterUnderTest: Rewriter = inSequence(
     PropertyPredicateNormalization,
@@ -177,20 +176,5 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
                                           Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _, _))))=>
 
     }
-  }
-
-  test("does not rewrite getDegree if turned off") {
-    val rewriter1 = new MatchPredicateNormalization(PropertyPredicateNormalizer, getDegreeRewriting = false) {}
-    val rewriter2 = new MatchPredicateNormalization(LabelPredicateNormalizer, getDegreeRewriting = false){}
-
-    val rewriterUnderTest: Rewriter = inSequence(
-      rewriter1,
-      rewriter2
-    )
-
-    val query = "MATCH (a) WHERE ()-[:R]->(a) RETURN a.prop"
-    val original = parser.parse(query)
-    val result = original.rewrite(rewriterUnderTest)
-    assert(result === original, "\n" + query)
   }
 }

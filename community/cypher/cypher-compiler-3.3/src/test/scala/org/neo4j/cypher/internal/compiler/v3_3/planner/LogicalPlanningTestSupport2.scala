@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.QueryGraphCardinalityModel
@@ -45,18 +44,18 @@ import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}
 
-import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
+import scala.language.{implicitConversions}
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
   final var planner = new QueryPlanner() {
-    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan =
       planSingleQuery(query)
   }
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
@@ -147,7 +146,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       ResolveTokens andThen
       CreatePlannerQuery andThen
       OptionalMatchRemover andThen
-      QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
+      QueryPlanner().adds(CompilationContains[LogicalPlan]()) andThen
       Do(removeApply _)
 
     // This fakes pattern expression naming for testing purposes
@@ -155,11 +154,12 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     //
     // cf. QueryPlanningStrategy
     //
+/*
     private def namePatternPredicates(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
       val newStatement = input.statement.endoRewrite(namePatternPredicatePatternElements)
       input.copy(maybeStatement = Some(newStatement))
     }
-
+*/
     private def removeApply(input: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply))
       input.copy(maybeLogicalPlan = Some(newPlan))
@@ -196,7 +196,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)(solved)
+  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.map(IdName(_)).toSet)(solved)
 
   def planFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) =
     new given().getLogicalPlanFor(queryString)

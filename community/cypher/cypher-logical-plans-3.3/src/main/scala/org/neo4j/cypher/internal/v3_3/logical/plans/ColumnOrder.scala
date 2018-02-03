@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+
 sealed trait ColumnOrder {
-  def id: String
+  def id: IdName
 }
 
-case class Ascending(id: String) extends ColumnOrder
+case class Ascending(id: IdName) extends ColumnOrder
 
-case class Descending(id: String) extends ColumnOrder
+case class Descending(id: IdName) extends ColumnOrder

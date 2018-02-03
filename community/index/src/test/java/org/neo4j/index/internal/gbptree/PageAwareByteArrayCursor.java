@@ -27,7 +27,7 @@ import java.util.List;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
+import static org.neo4j.index.internal.gbptree.ByteArrayPageCursor.wrap;
 
 class PageAwareByteArrayCursor extends PageCursor
 {

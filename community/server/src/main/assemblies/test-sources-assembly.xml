@@ -21,7 +21,7 @@
 -->
 <assembly>
   <id>test-sources</id>
-  <includeBaseDirectory>false</includeBaseDirectory>  
+  <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
     <format>jar</format>
   </formats>
