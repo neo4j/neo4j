@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -47,8 +47,9 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.helpers.ArrayUtil.contains;
 
 public class ArrayEncoderTest
 {
@@ -94,8 +95,8 @@ public class ArrayEncoderTest
             }
             else
             {
-                assertTrue( "Char " + character + " at position " + i + " is not a valid Base64 encoded char",
-                        ArrayUtil.contains( base64chars, character ) );
+                assertTrue( contains( base64chars, character ),
+                        "Char " + character + " at position " + i + " is not a valid Base64 encoded char" );
             }
         }
         assertEquals( array.length, separators );
@@ -162,8 +163,9 @@ public class ArrayEncoderTest
                 for ( int i = 0; i < 1000; i++ )
                 {
                     String encoded = encodeFunction.apply( inputValue );
-                    assertEquals( "Each attempt at encoding should yield the same result. Turns out that first one was '"
-                            + first + "', yet another one was '" + encoded + "'", first, encoded );
+                    assertEquals( first, encoded,
+                            "Each attempt at encoding should yield the same result. Turns out that first one was '" +
+                                    first + "', yet another one was '" + encoded + "'" );
                 }
             } );
         }

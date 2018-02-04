@@ -20,9 +20,9 @@
 package org.neo4j.shell;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,8 +46,8 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -63,8 +63,8 @@ public class StartClientIT extends AbstractShellIT
     public SuppressOutput mute = suppressAll();
     private GraphDatabaseShellServer shellServer;
 
-    @Before
-    public void startDatabase()
+    @BeforeEach
+    public void startDatabase() throws Exception
     {
         makeServerRemotelyAvailable();
     }

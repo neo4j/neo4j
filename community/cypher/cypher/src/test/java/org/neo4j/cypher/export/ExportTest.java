@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.export;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.PrintWriter;
@@ -44,7 +44,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExportTest
 {
@@ -52,14 +52,14 @@ public class ExportTest
     private GraphDatabaseService gdb;
     private Transaction tx;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         gdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         tx = gdb.beginTx();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         tx.close();

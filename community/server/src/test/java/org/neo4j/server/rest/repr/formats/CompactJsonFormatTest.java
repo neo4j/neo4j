@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest.repr.formats;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.MappingRepresentation;
@@ -38,7 +38,7 @@ public class CompactJsonFormatTest
 {
     private OutputFormat json;
 
-    @Before
+    @BeforeEach
     public void createOutputFormat() throws Exception
     {
         json = new OutputFormat( new CompactJsonFormat(), new URI( "http://localhost/" ), null );

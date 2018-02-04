@@ -20,9 +20,9 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -54,7 +54,7 @@ public class StoreFileStreamingProtocolTest
 
     private PageCache pageCache;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         pageCache = pageCacheRule.getPageCache( fs.get() );

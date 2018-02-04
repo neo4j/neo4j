@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +40,7 @@ public class TransactionTimeoutIT extends ExclusiveServerTestBase
 {
     private CommunityNeoServer server;
 
-    @After
+    @AfterEach
     public void stopTheServer()
     {
         server.stop();

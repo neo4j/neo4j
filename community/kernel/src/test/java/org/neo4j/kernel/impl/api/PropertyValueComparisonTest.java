@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.api;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.Comparator;
@@ -35,6 +36,7 @@ import static org.neo4j.kernel.impl.api.PropertyValueComparison.COMPARE_VALUES;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.NUMBER;
 import static org.neo4j.kernel.impl.api.PropertyValueComparison.SuperType.STRING;
 
+@EnableRuleMigrationSupport
 public class PropertyValueComparisonTest
 {
     @Rule

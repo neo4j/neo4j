@@ -74,7 +74,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // Given
         String configValue = tempDir.newFile().getAbsolutePath();
         server = CommunityServerBuilder.serverOnRandomPorts().withProperty(
-        ServerSettings.run_directory.name(), configValue ).build();
+                ServerSettings.run_directory.name(), configValue ).build();
 
         // When
         server.start();

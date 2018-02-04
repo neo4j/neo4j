@@ -47,11 +47,11 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
                 name = "example",
                 suffix = "dc=example,dc=com",
                 contextEntry = @ContextEntry( entryLdif = "dn: dc=example,dc=com\n" +
-                                                          "dc: example\n" +
-                                                          "o: example\n" +
-                                                          "objectClass: top\n" +
-                                                          "objectClass: dcObject\n" +
-                                                          "objectClass: organization\n\n" ) ),
+                        "dc: example\n" +
+                        "o: example\n" +
+                        "objectClass: top\n" +
+                        "objectClass: dcObject\n" +
+                        "objectClass: organization\n\n" ) ),
         },
         loadedSchemas = {
                 @LoadSchema( name = "nis", enabled = true ),

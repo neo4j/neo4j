@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
@@ -39,9 +39,9 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -116,15 +116,14 @@ public class StateMachinesTest
         stateMachines.process( Message.internal( TestMessage.message1 ) );
 
         // Then
-        assertEquals( "StateMachines should not make up messages from thin air", 1, sentOut.size() );
+        assertEquals( 1, sentOut.size(), "StateMachines should not make up messages from thin air" );
         Message sent = sentOut.get( 0 );
-        assertTrue( "StateMachines should add the instance-id header", sent.hasHeader( Message.HEADER_INSTANCE_ID ) );
-        assertEquals( "StateMachines should add instance-id header that has the correct value",
-                me.toString(), sent.getHeader( Message.HEADER_INSTANCE_ID ) );
+        assertTrue( sent.hasHeader( Message.HEADER_INSTANCE_ID ), "StateMachines should add the instance-id header" );
+        assertEquals( me.toString(), sent.getHeader( Message.HEADER_INSTANCE_ID ),
+                "StateMachines should add instance-id header that has the correct value" );
     }
 
-    public enum TestMessage
-            implements MessageType
+    public enum TestMessage implements MessageType
     {
         message1, message2, message3, message4, message5
     }

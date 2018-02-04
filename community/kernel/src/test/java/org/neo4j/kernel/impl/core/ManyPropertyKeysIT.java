@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -52,29 +55,32 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for handling many property keys (even after restart of database)
  * as well as concurrent creation of property keys.
  */
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class ManyPropertyKeysIT
 {
     private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-            .around( fileSystemRule ).around( pageCacheRule );
+    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( pageCacheRule );
 
     private File storeDir;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         storeDir  = testDirectory.graphDbDir();

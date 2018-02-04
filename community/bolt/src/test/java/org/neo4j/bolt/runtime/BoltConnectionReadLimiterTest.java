@@ -21,8 +21,8 @@ package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -32,10 +32,10 @@ import org.neo4j.util.FeatureToggles;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.contains;
@@ -53,7 +53,7 @@ public class BoltConnectionReadLimiterTest
     private Channel channel;
     private Log log;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         channel = new EmbeddedChannel();

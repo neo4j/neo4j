@@ -19,11 +19,12 @@
  */
 package org.neo4j.harness.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Arrays;
+import javax.annotation.Resource;
 
 import org.neo4j.harness.EnterpriseTestServerBuilders;
 import org.neo4j.harness.ServerControls;
@@ -33,20 +34,23 @@ import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ServerSettings;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class EnterpriseInProcessServerBuilderIT
 {
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDir;
 
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory()

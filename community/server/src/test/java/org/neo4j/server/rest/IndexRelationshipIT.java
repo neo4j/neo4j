@@ -288,12 +288,12 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Get or create unique relationship (create).\n" +
-                 "\n" +
-                 "Create a unique relationship in an index.\n" +
-                 "If a relationship matching the given key and value already exists in the index, it will be returned.\n" +
-                 "If not, a new relationship will be created.\n" +
-                 "\n" +
-                 "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
+            "\n" +
+            "Create a unique relationship in an index.\n" +
+            "If a relationship matching the given key and value already exists in the index, it will be returned.\n" +
+            "If not, a new relationship will be created.\n" +
+            "\n" +
+            "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
     @Test
     public void get_or_create_relationship()
     {
@@ -308,17 +308,17 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 201 /* created */)
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\":\"" + value +
-                          "\", \"start\": \"" + functionalTestHelper.nodeUri( start ) +
-                          "\", \"end\": \"" + functionalTestHelper.nodeUri( end ) +
-                          "\", \"type\": \"" + type + "\"}" )
+                        "\", \"start\": \"" + functionalTestHelper.nodeUri( start ) +
+                        "\", \"end\": \"" + functionalTestHelper.nodeUri( end ) +
+                        "\", \"type\": \"" + type + "\"}" )
                 .post( functionalTestHelper.relationshipIndexUri() + index + "/?uniqueness=get_or_create" );
     }
 
     @Documented( "Get or create unique relationship (existing).\n" +
-                 "\n" +
-                 "Here, in case\n" +
-                 "of an already existing relationship, the sent data is ignored and the\n" +
-                 "existing relationship returned." )
+            "\n" +
+            "Here, in case\n" +
+            "of an already existing relationship, the sent data is ignored and the\n" +
+            "existing relationship returned." )
     @Test
     public void get_or_create_unique_relationship_existing()
     {
@@ -347,10 +347,10 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Create a unique relationship or return fail (create).\n" +
-                 "\n" +
-                 "Here, in case\n" +
-                 "of an already existing relationship, an error should be returned. In this\n" +
-                 "example, no existing relationship is found and a new relationship is created." )
+            "\n" +
+            "Here, in case\n" +
+            "of an already existing relationship, an error should be returned. In this\n" +
+            "example, no existing relationship is found and a new relationship is created." )
     @Test
     public void create_a_unique_relationship_or_return_fail___create() throws Exception
     {
@@ -374,10 +374,10 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Create a unique relationship or return fail (fail).\n" +
-                 "\n" +
-                 "Here, in case\n" +
-                 "of an already existing relationship, an error should be returned. In this\n" +
-                 "example, an existing relationship is found and an error is returned." )
+            "\n" +
+            "Here, in case\n" +
+            "of an already existing relationship, an error should be returned. In this\n" +
+            "example, an existing relationship is found and an error is returned." )
     @Test
     public void create_a_unique_relationship_or_return_fail___fail()
     {
@@ -406,13 +406,13 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Add an existing relationship to a unique index (not indexed).\n" +
-                 "\n" +
-                 "If a relationship matching the given key and value already exists in the index, it will be returned.\n" +
-                 "If not, an `HTTP 409` (conflict) status will be returned in this case, as we are using `create_or_fail`.\n" +
-                 "\n" +
-                 "It's possible to use `get_or_create` uniqueness as well.\n" +
-                 "\n" +
-                 "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
+            "\n" +
+            "If a relationship matching the given key and value already exists in the index, it will be returned.\n" +
+            "If not, an `HTTP 409` (conflict) status will be returned in this case, as we are using `create_or_fail`.\n" +
+            "\n" +
+            "It's possible to use `get_or_create` uniqueness as well.\n" +
+            "\n" +
+            "NOTE: The type and direction of the relationship is not regarded when determining uniqueness." )
     @Test
     public void put_relationship_or_fail_if_absent()
     {
@@ -551,7 +551,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
     private String createJsonStringFor( final long relationshipId, final String key, final String value )
     {
         return "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\": \""
-               + functionalTestHelper.relationshipUri( relationshipId ) + "\"}";
+                + functionalTestHelper.relationshipUri( relationshipId ) + "\"}";
     }
 
     private JaxRsResponse httpGet( String indexUri )
@@ -569,7 +569,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
             String value )
     {
         return "{\"to\" : \"" + functionalTestHelper.dataUri() + "node/" + endNode + "\"," + "\"type\" : \""
-               + relationshipName + "\", " + "\"data\" : {\"" + key + "\" : \"" + value + "\"}}";
+                + relationshipName + "\", " + "\"data\" : {\"" + key + "\" : \"" + value + "\"}}";
     }
 
     private final Factory<String> indexes = UniqueStrings.withPrefix( "index" );

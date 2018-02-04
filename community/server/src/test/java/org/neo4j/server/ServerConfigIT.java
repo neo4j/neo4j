@@ -106,7 +106,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         assertEquals( 200, response.getStatus() );
         assertEquals( "application/vnd.sun.wadl+xml", response.getHeaders().get( "Content-Type" ).iterator().next() );
         assertThat( response.getEntity(), containsString( "<application xmlns=\"http://wadl.dev.java" +
-                                                          ".net/2009/02\">" ) );
+                ".net/2009/02\">" ) );
     }
 
     @Test

@@ -60,10 +60,10 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -305,7 +305,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.create( new NodeRecord( next.node(), false, next.relationship(), -1 ) );
             }
@@ -316,7 +316,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -327,7 +327,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null );
@@ -340,7 +340,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -351,7 +351,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
@@ -369,7 +369,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -404,7 +404,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     private void write( LabelScanStore labelScanStore, Iterable<NodeLabelUpdate> nodeLabelUpdates )
@@ -434,9 +434,9 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.INDEX, 3 ) // 3 index entries are pointing to nodes not in use
-                   .verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
-                   .verify( RecordType.COUNTS, 3 )
-                   .andThatsAllFolks();
+                .verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
+                .verify( RecordType.COUNTS, 3 )
+                .andThatsAllFolks();
     }
 
     @Test
@@ -455,7 +455,7 @@ public class FullCheckIntegrationTest
             IndexRule rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = storeAccess.indexes().apply( rule.getProviderDescriptor() )
-                .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
+                    .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -472,8 +472,8 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
-                   .verify( RecordType.COUNTS, 3 )
-                   .andThatsAllFolks();
+                .verify( RecordType.COUNTS, 3 )
+                .andThatsAllFolks();
     }
 
     @Test
@@ -487,7 +487,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord node = new NodeRecord( 42, false, -1, -1 );
                 node.setInUse( true );
@@ -511,7 +511,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     private long[] asArray( List<? extends Number> in )
@@ -537,7 +537,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord node = new NodeRecord( 42, false, -1, -1 );
                 node.setInUse( true );
@@ -553,7 +553,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.LABEL_SCAN_DOCUMENT, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -571,7 +571,7 @@ public class FullCheckIntegrationTest
             IndexDescriptor descriptor = indexRule.getIndexDescriptor();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
-                            indexRule.getId(), descriptor, samplingConfig );
+                    indexRule.getId(), descriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -592,7 +592,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -619,8 +619,8 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in unique index
-                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to non-existent node 42
-                   .andThatsAllFolks();
+                .verify( RecordType.INDEX, 3 ) // the index entries pointing to non-existent node 42
+                .andThatsAllFolks();
     }
 
     private Value[] values( IndexRule indexRule )
@@ -742,7 +742,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ).asObject())[0];
                 NodeRecord before = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
@@ -763,8 +763,8 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 )
-                   .verify( RecordType.COUNTS, 177 )
-                   .andThatsAllFolks();
+                .verify( RecordType.COUNTS, 177 )
+                .andThatsAllFolks();
     }
 
     private Pair<List<DynamicRecord>,List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount )
@@ -851,8 +851,8 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE, 1 ) // the duplicated label
-                   .verify( RecordType.COUNTS, 0 )
-                   .andThatsAllFolks();
+                .verify( RecordType.COUNTS, 0 )
+                .andThatsAllFolks();
     }
 
     @Test
@@ -863,7 +863,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.nodeLabel( 42, "Label" );
 
@@ -883,7 +883,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.NODE_DYNAMIC_LABEL, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -894,7 +894,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.create( new RelationshipRecord( next.relationship(), 1, 2, C ) );
             }
@@ -905,8 +905,8 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP, 2 )
-                   .verify( RecordType.COUNTS, 3 )
-                   .andThatsAllFolks();
+                .verify( RecordType.COUNTS, 3 )
+                .andThatsAllFolks();
     }
 
     @Test
@@ -933,9 +933,9 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP, 2 )
-                   .verify( RecordType.NODE, 2 )
-                   .verify( RecordType.COUNTS, 2 )
-                   .andThatsAllFolks();
+                .verify( RecordType.NODE, 2 )
+                .verify( RecordType.COUNTS, 2 )
+                .andThatsAllFolks();
     }
 
     @Test
@@ -946,7 +946,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord node = new NodeRecord( next.node() );
                 PropertyRecord property = new PropertyRecord( next.property() );
@@ -968,8 +968,8 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.PROPERTY, 2 )
-                   .verify( RecordType.NODE, 1 )
-                   .andThatsAllFolks();
+                .verify( RecordType.NODE, 1 )
+                .andThatsAllFolks();
     }
 
     @Test
@@ -980,7 +980,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord string = new DynamicRecord( next.stringProperty() );
                 string.setInUse( true );
@@ -1005,7 +1005,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.STRING_PROPERTY, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1016,7 +1016,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord schema = new DynamicRecord( next.schema() );
                 DynamicRecord schemaBefore = schema.clone();
@@ -1034,7 +1034,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.SCHEMA, 3 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1045,7 +1045,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
@@ -1079,7 +1079,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.SCHEMA, 4 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1090,7 +1090,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
@@ -1124,7 +1124,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.SCHEMA, 2 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1135,7 +1135,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 DynamicRecord array = new DynamicRecord( next.arrayProperty() );
                 array.setInUse( true );
@@ -1160,7 +1160,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.ARRAY_PROPERTY, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1172,7 +1172,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 inconsistentName.set( next.relationshipType() );
                 tx.relationshipType( inconsistentName.get(), "FOO" );
@@ -1189,7 +1189,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE_NAME, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1201,7 +1201,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 inconsistentName.set( next.propertyKey() );
                 tx.propertyKey( inconsistentName.get(), "FOO" );
@@ -1218,7 +1218,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY_NAME, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1239,7 +1239,7 @@ public class FullCheckIntegrationTest
         // then
         access.close();
         on( stats ).verify( RecordType.RELATIONSHIP_TYPE, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1258,7 +1258,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.LABEL, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1270,7 +1270,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 inconsistentKey.set( next.propertyKey() );
                 tx.propertyKey( inconsistentKey.get(), "FOO" );
@@ -1287,7 +1287,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1298,7 +1298,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 long node = next.node();
                 long group = next.relationshipGroup();
@@ -1313,7 +1313,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1339,7 +1339,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1367,7 +1367,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1394,7 +1394,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 3 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1433,7 +1433,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 3 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1464,7 +1464,7 @@ public class FullCheckIntegrationTest
         // - next group has other owner that its previous
         // - first group has other owner
         on( stats ).verify( RecordType.NODE, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1501,7 +1501,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1526,7 +1526,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1550,7 +1550,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     private RelationshipRecord withNext( RelationshipRecord relationship, long next )
@@ -1604,7 +1604,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.RELATIONSHIP_GROUP, 3 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1659,7 +1659,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.incrementNodeCount( label3, 1 );
             }
@@ -1670,7 +1670,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.COUNTS, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1681,7 +1681,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.incrementRelationshipCount( label1 , C, ANY_LABEL, 1 );
             }
@@ -1692,7 +1692,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.COUNTS, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1703,7 +1703,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.incrementNodeCount( label3, -1 );
             }
@@ -1714,7 +1714,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.COUNTS, 1 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test
@@ -1725,7 +1725,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                    GraphStoreFixture.IdGenerator next )
             {
                 tx.incrementNodeCount( 1024 /* new label */, 1 );
             }
@@ -1736,7 +1736,7 @@ public class FullCheckIntegrationTest
 
         // then
         on( stats ).verify( RecordType.COUNTS, 2 )
-                   .andThatsAllFolks();
+                .andThatsAllFolks();
     }
 
     @Test

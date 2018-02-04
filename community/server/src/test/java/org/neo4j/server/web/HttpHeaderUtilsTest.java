@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import javax.servlet.http.HttpServletRequest;
@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 public class HttpHeaderUtilsTest
@@ -38,7 +38,7 @@ public class HttpHeaderUtilsTest
     public AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private HttpServletRequest request;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         request = Mockito.mock( HttpServletRequest.class );
@@ -50,7 +50,7 @@ public class HttpHeaderUtilsTest
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "100" );
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-        assertEquals( "Transaction timeout should be retrieved.", 100, transactionTimeout );
+        assertEquals( 100, transactionTimeout, "Transaction timeout should be retrieved." );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -59,7 +59,7 @@ public class HttpHeaderUtilsTest
     {
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-        assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
+        assertEquals( 0, transactionTimeout, "Transaction timeout not specified." );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -69,7 +69,7 @@ public class HttpHeaderUtilsTest
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) ).thenReturn( "aa" );
         Log log = logProvider.getLog( HttpServletRequest.class );
         long transactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-        assertEquals( "Transaction timeout not specified.", 0, transactionTimeout );
+        assertEquals( 0, transactionTimeout, "Transaction timeout not specified." );
         logProvider.assertContainsMessageContaining("Fail to parse `max-execution-time` " +
                 "header with value: 'aa'. Should be a positive number.");
     }

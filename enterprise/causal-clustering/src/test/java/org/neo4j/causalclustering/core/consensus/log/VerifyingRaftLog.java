@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.core.consensus.log;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * A log that uses the in-memory RAFT log as the reference implementation

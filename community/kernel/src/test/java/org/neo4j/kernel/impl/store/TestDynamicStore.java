@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -42,8 +42,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestDynamicStore
@@ -57,7 +57,7 @@ public class TestDynamicStore
     private NeoStores neoStores;
     private Config config;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         File storeDir = new File( "dynamicstore" );
@@ -67,7 +67,7 @@ public class TestDynamicStore
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if ( neoStores != null )

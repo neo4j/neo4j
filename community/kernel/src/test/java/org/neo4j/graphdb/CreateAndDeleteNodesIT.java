@@ -19,16 +19,20 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.test.GraphDatabaseServiceCleaner;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class CreateAndDeleteNodesIT
 {
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
     enum RelTypes implements RelationshipType
     {

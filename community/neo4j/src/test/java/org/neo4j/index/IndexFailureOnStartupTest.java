@@ -20,13 +20,14 @@
 package org.neo4j.index;
 
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -42,18 +44,19 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class IndexFailureOnStartupTest
 {
     private static final Label PERSON = Label.label( "Person" );
-    @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule().startLazily();
+    @Resource
+    public EmbeddedDatabaseRule db;
 
     @Test
     public void failedIndexShouldRepairAutomatically() throws Exception
@@ -152,8 +155,8 @@ public class IndexFailureOnStartupTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( "Must be able to find node created while index was offline",
-                    db.findNode( label, "name", name ) );
+            assertNotNull( db.findNode( label, "name", name ),
+                    "Must be able to find node created while index was offline" );
             tx.success();
         }
     }

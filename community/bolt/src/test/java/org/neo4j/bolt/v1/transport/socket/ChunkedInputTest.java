@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.transport.socket;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

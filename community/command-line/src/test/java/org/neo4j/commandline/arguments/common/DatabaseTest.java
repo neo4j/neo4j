@@ -20,7 +20,8 @@
 package org.neo4j.commandline.arguments.common;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.nio.file.Path;
@@ -28,8 +29,9 @@ import java.nio.file.Paths;
 
 import org.neo4j.helpers.Args;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@EnableRuleMigrationSupport
 public class DatabaseTest
 {
     @Rule

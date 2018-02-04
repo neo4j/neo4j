@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.function.IntPredicate;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -52,7 +52,7 @@ public class LabelScanViewNodeStoreScanTest
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );

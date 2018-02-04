@@ -19,10 +19,10 @@
  */
 package org.neo4j.ha;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.InputStream;
@@ -37,8 +37,8 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import javax.annotation.Resource;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -54,10 +54,12 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.StreamConsumer;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * This test case ensures that updates in HA are first written out to the log
@@ -72,10 +74,11 @@ import static org.junit.Assert.assertTrue;
  * bit better than checking debug.log for certain entries. Another, more
  * direct, test is present in community.
  */
+@ExtendWith( TestDirectoryExtension.class )
 public class PullUpdatesAppliedIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private SortedMap<Integer, Configuration> configurations;
     private Map<Integer, HighlyAvailableGraphDatabase> databases;
@@ -96,8 +99,8 @@ public class PullUpdatesAppliedIT
         }
     }
 
-    @Before
-    public void doBefore()
+    @BeforeEach
+    public void doBefore() throws Exception
     {
         configurations = createConfigurations();
         databases = startDatabases();
@@ -146,7 +149,7 @@ public class PullUpdatesAppliedIT
         return databases;
     }
 
-    @After
+    @AfterEach
     public void doAfter()
     {
         if ( databases != null )
@@ -182,7 +185,7 @@ public class PullUpdatesAppliedIT
 
         databaseToKill.shutdown();
 
-        assertTrue( "Timeout waiting for instance to leave cluster", latch1.await( 60, TimeUnit.SECONDS ) );
+        assertTrue( latch1.await( 60, SECONDS ), "Timeout waiting for instance to leave cluster" );
 
         addNode( serverIdOfMaster ); // this will be pulled by tne next start up, applied but not written to log.
 
@@ -210,7 +213,7 @@ public class PullUpdatesAppliedIT
 
         runInOtherJvm( directory, serverIdOfDatabaseToKill, clusterPort, haPort, configurations.get( serverIdOfMaster ).clusterPort );
 
-        assertTrue( "Timeout waiting for instance to fail", latch2.await( 60, TimeUnit.SECONDS ) );
+        assertTrue( latch2.await( 60, SECONDS ), "Timeout waiting for instance to fail" );
 
         // This is to allow other instances to mark the dead instance as failed, otherwise on startup it will be denied.
         // TODO This is to demonstrate shortcomings in our design. Fix this, you ugly, ugly hacker

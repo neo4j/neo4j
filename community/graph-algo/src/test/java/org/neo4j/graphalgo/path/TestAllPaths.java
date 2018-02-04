@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphalgo.path;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphdb.Path;

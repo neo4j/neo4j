@@ -21,7 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RepresentationTestBase
 {
@@ -36,7 +36,7 @@ class RepresentationTestBase
 
     static void assertUriMatches( String expectedRegex, String actualUri )
     {
-        assertTrue( "expected <" + expectedRegex + "> got <" + actualUri + ">", actualUri.matches( expectedRegex ) );
+        assertTrue( actualUri.matches( expectedRegex ), "expected <" + expectedRegex + "> got <" + actualUri + ">" );
     }
 
     static String uriPattern( String subPath )

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.cursor.Cursor;
@@ -41,7 +41,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyIterator;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -67,7 +67,7 @@ public class ConstraintEnforcingEntityOperationsTest
     private SchemaReadOperations schemaReadOps;
     private EntityWriteOperations entityWriteOperations;
 
-    @Before
+    @BeforeEach
     public void given_ConstraintEnforcingEntityOperations_with_OnlineIndex() throws Exception
     {
         this.readOps = mock( EntityReadOperations.class );

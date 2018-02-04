@@ -20,12 +20,12 @@
 package org.neo4j.server.rest.dbms;
 
 import com.sun.jersey.core.util.Base64;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.string.UTF8;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.server.rest.dbms.AuthorizationHeaders.decode;
 
 public class AuthorizationHeadersTest

@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.transactional;
 
 import org.codehaus.jackson.JsonGenerator;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -58,7 +58,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     private Neo4jJsonCodec jsonCodec;
     private JsonGenerator jsonGenerator;
 
-    @Before
+    @BeforeEach
     public void init()
     {
         jsonCodec = new Neo4jJsonCodec( TPTPMC );

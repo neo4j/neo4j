@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,7 +28,7 @@ import java.util.UUID;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class AnyGroupFilterTest

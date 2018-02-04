@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.replication;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.concurrent.ExecutorCompletionService;
@@ -35,9 +35,9 @@ import org.neo4j.function.ThrowingSupplier;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ThrottlerTest
@@ -45,7 +45,7 @@ public class ThrottlerTest
     private ExecutorService es = Executors.newCachedThreadPool();
     private ExecutorCompletionService<Integer> ecs = new ExecutorCompletionService<>( es );
 
-    @After
+    @AfterEach
     public void after() throws InterruptedException
     {
         es.shutdown();

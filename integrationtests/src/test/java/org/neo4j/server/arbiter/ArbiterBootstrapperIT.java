@@ -20,10 +20,10 @@
 package org.neo4j.server.arbiter;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Resource;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -52,6 +53,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.ServerCommandLineArgs;
 import org.neo4j.test.InputStreamAwaiter;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -60,10 +63,10 @@ import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -71,10 +74,61 @@ import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 
+@ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
 public class ArbiterBootstrapperIT
 {
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public SuppressOutput suppressOutput;
+    @Resource
+    public TestDirectory testDirectory;
+
+    private static Integer SHOULD_NOT_JOIN;
+    private File directory;
+    private LifeSupport life;
+    private ClusterClient[] clients;
+
+    @BeforeEach
+    public void before() throws Exception
+    {
+        directory = testDirectory.directory( "temp" );
+        life = new LifeSupport();
+        life.start(); // So that the clients get started as they are added
+        clients = new ClusterClient[2];
+        for ( int i = 1; i <= clients.length; i++ )
+        {
+            Map<String, String> config = stringMap();
+            config.put( cluster_server.name(), ":" + (5000 + i) );
+            config.put( server_id.name(), "" + i );
+            config.put( initial_hosts.name(), ":5001" );
+
+            LifeSupport moduleLife = new LifeSupport();
+            ClusterClientModule clusterClientModule = new ClusterClientModule( moduleLife, new Dependencies(),
+                    new Monitors(), Config.defaults( config ), NullLogService.getInstance(),
+                    new ServerIdElectionCredentialsProvider() );
+
+            ClusterClient client = clusterClientModule.clusterClient;
+            CountDownLatch latch = new CountDownLatch( 1 );
+            client.addClusterListener( new ClusterListener.Adapter()
+            {
+                @Override
+                public void enteredCluster( ClusterConfiguration configuration )
+                {
+                    latch.countDown();
+                    client.removeClusterListener( this );
+                }
+            } );
+            life.add( moduleLife );
+            clients[i - 1] = client;
+            assertTrue( latch.await( 20, SECONDS ), "Didn't join the cluster" );
+        }
+    }
+
+    @AfterEach
+    public void after()
+    {
+        life.shutdown();
+    }
+
 
     @Test
     public void canJoinWithExplicitInitialHosts() throws Exception
@@ -119,59 +173,6 @@ public class ArbiterBootstrapperIT
         );
     }
 
-    // === Everything else ===
-
-    private static Integer SHOULD_NOT_JOIN;
-
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    private File directory;
-    private LifeSupport life;
-    private ClusterClient[] clients;
-
-    @Before
-    public void before() throws Exception
-    {
-        directory = testDirectory.directory( "temp" );
-        life = new LifeSupport();
-        life.start(); // So that the clients get started as they are added
-        clients = new ClusterClient[2];
-        for ( int i = 1; i <= clients.length; i++ )
-        {
-            Map<String, String> config = stringMap();
-            config.put( cluster_server.name(), ":" + (5000 + i) );
-            config.put( server_id.name(), "" + i );
-            config.put( initial_hosts.name(), ":5001" );
-
-            LifeSupport moduleLife = new LifeSupport();
-            ClusterClientModule clusterClientModule = new ClusterClientModule( moduleLife, new Dependencies(),
-                    new Monitors(), Config.defaults( config ), NullLogService.getInstance(),
-                    new ServerIdElectionCredentialsProvider() );
-
-            ClusterClient client = clusterClientModule.clusterClient;
-            CountDownLatch latch = new CountDownLatch( 1 );
-            client.addClusterListener( new ClusterListener.Adapter()
-            {
-                @Override
-                public void enteredCluster( ClusterConfiguration configuration )
-                {
-                    latch.countDown();
-                    client.removeClusterListener( this );
-                }
-            } );
-            life.add( moduleLife );
-            clients[i - 1] = client;
-            assertTrue( "Didn't join the cluster", latch.await( 20, SECONDS ) );
-        }
-    }
-
-    @After
-    public void after()
-    {
-        life.shutdown();
-    }
-
     private File writeConfig( Map<String, String> config ) throws IOException
     {
         config.put( GraphDatabaseSettings.logs_directory.name(), directory.getPath() );
@@ -190,11 +191,11 @@ public class ArbiterBootstrapperIT
         boolean arbiterStarted = startArbiter( configDir, latch );
         if ( expectedAssignedPort == null )
         {
-            assertFalse( format( "Should not be able to start arbiter given config file:%s", config ), arbiterStarted );
+            assertFalse( arbiterStarted, format( "Should not be able to start arbiter given config file:%s", config ) );
         }
         else
         {
-            assertTrue( format( "Should be able to start arbiter given config file:%s", config ), arbiterStarted );
+            assertTrue( arbiterStarted, format( "Should be able to start arbiter given config file:%s", config ) );
             assertEquals( expectedAssignedPort.intValue(), port.get() );
         }
     }

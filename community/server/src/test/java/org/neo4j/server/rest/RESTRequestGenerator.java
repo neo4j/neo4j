@@ -42,8 +42,8 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.GraphDefinition;
 import org.neo4j.test.TestData.Producer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RESTRequestGenerator
 {
@@ -295,17 +295,17 @@ public class RESTRequestGenerator
         }
         if ( response.getType() != null )
         {
-            assertTrue( "wrong response type: " + data.entity, response.getType().isCompatible( type ) );
+            assertTrue( response.getType().isCompatible( type ), "wrong response type: " + data.entity );
         }
         for ( Pair<String,Predicate<String>> headerField : headerFields )
         {
-            assertTrue( "wrong headers: " + response.getHeaders(), headerField.other().test( response.getHeaders()
-                    .getFirst( headerField.first() ) ) );
+            assertTrue( headerField.other().test( response.getHeaders().getFirst( headerField.first() ) ),
+                    "wrong headers: " + response.getHeaders() );
         }
         data.setMethod( request.getMethod() );
         data.setUri( uri );
         data.setStatus( responseCode );
-        assertEquals( "Wrong response status. response: " + data.entity, responseCode, response.getStatus() );
+        assertEquals( responseCode, response.getStatus(), "Wrong response status. response: " + data.entity );
         getResponseHeaders( data, response.getHeaders(), headerNames(headerFields) );
         return new ResponseEntity( response, data.entity );
     }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -57,14 +57,14 @@ public class CoreStateDownloaderServiceTest
     private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( someMemberAddress );
     private Neo4jJobScheduler neo4jJobScheduler;
 
-    @Before
+    @BeforeEach
     public void create()
     {
         neo4jJobScheduler = new Neo4jJobScheduler();
         neo4jJobScheduler.init();
     }
 
-    @After
+    @AfterEach
     public void shutdown()
     {
         neo4jJobScheduler.shutdown();

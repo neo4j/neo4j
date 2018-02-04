@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IndexCursorTest
 {
@@ -35,15 +35,15 @@ public class IndexCursorTest
         StubIndexCursor cursor = new StubIndexCursor();
         StubProgressor progressor = new StubProgressor();
         cursor.initialize( progressor );
-        assertFalse( "open before re-initialize", progressor.isClosed );
+        assertFalse( progressor.isClosed, "open before re-initialize" );
 
         // when
         StubProgressor otherProgressor = new StubProgressor();
         cursor.initialize( otherProgressor );
 
         // then
-        assertTrue( "closed after re-initialize", progressor.isClosed );
-        assertFalse( "new still open", otherProgressor.isClosed );
+        assertTrue( progressor.isClosed, "closed after re-initialize" );
+        assertFalse( otherProgressor.isClosed, "new still open" );
     }
 
     private static class StubIndexCursor extends IndexCursor<StubProgressor>

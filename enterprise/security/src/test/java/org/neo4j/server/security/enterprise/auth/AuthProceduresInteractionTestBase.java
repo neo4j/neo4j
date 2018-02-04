@@ -43,8 +43,7 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
-import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures
-        .exceptionsInProcedure;
+import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures.exceptionsInProcedure;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
@@ -68,7 +67,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 String description = s.get( "description" ).toString();
                 // TODO: remove filter for Transaction and Connection once those procedures are removed
                 if ( name.contains( "dbms.security" ) &&
-                     !(name.contains( "Transaction" ) || name.contains( "Connection" )) )
+                        !(name.contains( "Transaction" ) || name.contains( "Connection" )) )
                 {
                     assertThat( "Description for '" + name + "' should not be empty", description.trim().length(),
                             greaterThan( 0 ) );

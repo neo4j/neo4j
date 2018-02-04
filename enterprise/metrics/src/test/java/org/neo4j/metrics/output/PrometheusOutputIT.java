@@ -19,37 +19,40 @@
  */
 package org.neo4j.metrics.output;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Scanner;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.metrics.MetricsSettings.prometheusEnabled;
 import static org.neo4j.metrics.MetricsSettings.prometheusEndpoint;
 import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_NODE;
 import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_RELATIONSHIP_TYPE;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class PrometheusOutputIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private GraphDatabaseService database;
     private String serverAddress;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         serverAddress = "localhost:" + PortAuthority.allocatePort();
@@ -59,7 +62,7 @@ public class PrometheusOutputIT
                 .newGraphDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         database.shutdown();

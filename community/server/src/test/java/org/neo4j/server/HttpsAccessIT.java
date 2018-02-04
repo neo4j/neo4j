@@ -65,8 +65,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
         // Because we are generating a non-CA-signed certificate, we need to turn off verification in the client.
         // This is ironic, since there is no proper verification on the CA side in the first place, but I digress.
 
-        TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager()
+        TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
         {
             public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
             {
@@ -80,8 +79,7 @@ public class HttpsAccessIT extends ExclusiveServerTestBase
             {
                 return null;
             }
-        }
-        };
+        }};
 
         // Install the all-trusting trust manager
         SSLContext sc = SSLContext.getInstance( "TLS" );

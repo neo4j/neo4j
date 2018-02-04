@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.function.IntPredicate;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.test.extension.MockitoExtension;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexCapability.NO_CAPABILITY;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class MultipleIndexPopulatorUpdatesTest
 {
     @Mock( answer = Answers.RETURNS_MOCKS )

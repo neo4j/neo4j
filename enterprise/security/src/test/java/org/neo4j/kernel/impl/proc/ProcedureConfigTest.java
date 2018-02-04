@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.configuration.Config;
 

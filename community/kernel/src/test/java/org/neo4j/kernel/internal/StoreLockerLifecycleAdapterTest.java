@@ -19,28 +19,31 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class StoreLockerLifecycleAdapterTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void shouldAllowDatabasesToUseFilesetsSequentially()
@@ -70,7 +73,7 @@ public class StoreLockerLifecycleAdapterTest
             new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir() )
                     .setConfig( config ).newGraphDatabase();
 
-            fail();
+            fail("Failure was expected");
         }
         catch ( RuntimeException e )
         {

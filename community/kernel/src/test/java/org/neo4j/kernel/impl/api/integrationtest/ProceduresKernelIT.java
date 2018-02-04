@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -40,12 +41,13 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
+@EnableRuleMigrationSupport
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
     @Rule

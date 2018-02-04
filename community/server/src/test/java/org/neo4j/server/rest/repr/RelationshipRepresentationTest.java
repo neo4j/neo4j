@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.NODE_URI_PATTERN;
 import static org.neo4j.server.rest.repr.RepresentationTestBase.RELATIONSHIP_URI_PATTERN;

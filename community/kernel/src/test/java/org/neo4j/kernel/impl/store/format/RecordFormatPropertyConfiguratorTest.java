@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.store.format;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.configuration.Config;
@@ -37,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
@@ -45,6 +46,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_block_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
 
+@EnableRuleMigrationSupport
 public class RecordFormatPropertyConfiguratorTest
 {
     @Rule
@@ -56,7 +58,7 @@ public class RecordFormatPropertyConfiguratorTest
         Config config = Config.defaults( string_block_size, "36" );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
-        assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );
+        assertEquals( 36, config.get( string_block_size ).intValue(), "Should keep used specified value" );
     }
 
     @Test

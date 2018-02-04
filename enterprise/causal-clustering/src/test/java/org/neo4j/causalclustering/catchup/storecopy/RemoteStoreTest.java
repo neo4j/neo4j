@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.catchup.storecopy;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;

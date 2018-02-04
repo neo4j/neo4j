@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -40,7 +40,7 @@ public class TransactionChecksumLookupTest
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private LogicalTransactionStore transactionStore = mock( LogicalTransactionStore.class );
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 1, 1, 1 ) );

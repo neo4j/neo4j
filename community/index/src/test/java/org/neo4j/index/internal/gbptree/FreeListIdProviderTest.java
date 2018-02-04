@@ -19,30 +19,34 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.annotation.Resource;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.index.internal.gbptree.FreeListIdProvider.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static java.lang.String.valueOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
 
+@ExtendWith( RandomExtension.class )
 public class FreeListIdProviderTest
 {
     private static final int PAGE_SIZE = 128;
@@ -57,10 +61,10 @@ public class FreeListIdProviderTest
     private final FreelistPageMonitor monitor = new FreelistPageMonitor();
     private final FreeListIdProvider freelist = new FreeListIdProvider( pagedFile, PAGE_SIZE, BASE_ID, monitor );
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
-    @Before
+    @BeforeEach
     public void setUpPagedFile() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
@@ -185,7 +189,7 @@ public class FreeListIdProviderTest
         }
 
         // THEN
-        assertTrue( String.valueOf( freelist.lastId() ), freelist.lastId() < 200 );
+        assertTrue( freelist.lastId() < 200, valueOf( freelist.lastId() ) );
     }
 
     @Test

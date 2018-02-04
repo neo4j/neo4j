@@ -109,7 +109,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
         Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
-            Direction.BOTH );
+                Direction.BOTH );
         // add new property
         node2.setProperty( key3, int1 );
         rel.setProperty( key3, int2 );
@@ -137,7 +137,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
         Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
-            Direction.BOTH );
+                Direction.BOTH );
 
         // test remove property
         assertEquals( 1, node1.removeProperty( key1 ) );
@@ -157,7 +157,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().getNodeById( node1Id );
         Node node2 = getGraphDb().getNodeById( node2Id );
         Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
-            Direction.BOTH );
+                Direction.BOTH );
 
         // test change property
         node1.setProperty( key1, int2 );
@@ -183,7 +183,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     }
 
     private Relationship[] getRelationshipArray(
-        Iterable<Relationship> relsIterable )
+            Iterable<Relationship> relsIterable )
     {
         ArrayList<Relationship> relList = new ArrayList<>();
         for ( Relationship rel : relsIterable )
@@ -210,7 +210,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 1, relArray.length );
         assertEquals( rel, relArray[0] );
         relArray = getRelationshipArray( node2.getRelationships(
-            MyRelTypes.TEST, Direction.INCOMING ) );
+                MyRelTypes.TEST, Direction.INCOMING ) );
         assertEquals( 1, relArray.length );
         assertEquals( rel, relArray[0] );
     }
@@ -222,14 +222,14 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Relationship rel = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         assertEquals( 1,
-            getRelationshipArray( node1.getRelationships() ).length );
+                getRelationshipArray( node1.getRelationships() ).length );
         assertEquals( 1,
-            getRelationshipArray( node2.getRelationships() ).length );
+                getRelationshipArray( node2.getRelationships() ).length );
         rel.delete();
         assertEquals( 0,
-            getRelationshipArray( node1.getRelationships() ).length );
+                getRelationshipArray( node1.getRelationships() ).length );
         assertEquals( 0,
-            getRelationshipArray( node2.getRelationships() ).length );
+                getRelationshipArray( node2.getRelationships() ).length );
         node1.delete();
         node2.delete();
     }
@@ -239,7 +239,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     {
         Node node1 = getGraphDb().getNodeById( node1Id );
         Relationship rel = node1.getSingleRelationship( MyRelTypes.TEST,
-            Direction.OUTGOING );
+                Direction.OUTGOING );
         assertEquals( int1, rel.getProperty( key1 ) );
     }
 

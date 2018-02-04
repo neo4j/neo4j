@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;

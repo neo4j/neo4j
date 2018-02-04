@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
 
 import java.io.Serializable;
@@ -46,9 +46,10 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.helpers.collection.Iterables.asCollection;
 import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
 import static org.neo4j.shell.ShellLobby.remoteLocation;
 
@@ -65,7 +66,7 @@ public abstract class AbstractShellIT
 
     private Transaction tx;
 
-    @Before
+    @BeforeEach
     public void doBefore() throws Exception
     {
         db = newDb();
@@ -94,7 +95,7 @@ public abstract class AbstractShellIT
         return new GraphDatabaseShellServer( db );
     }
 
-    @After
+    @AfterEach
     public void doAfter() throws Exception
     {
         if ( tx != null )
@@ -219,8 +220,9 @@ public abstract class AbstractShellIT
                     break;
                 }
             }
-            assertTrue( "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
-                    Iterables.asCollection( output ), found != negative );
+            assertTrue( found != negative,
+                    "Was expecting a line matching '" + lineThatMustExist + "', but didn't find any from out of " +
+                            asCollection( output ) );
         }
     }
 

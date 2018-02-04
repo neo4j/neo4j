@@ -20,7 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 import java.util.Map;
@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;

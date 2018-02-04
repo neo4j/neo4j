@@ -21,9 +21,9 @@ package org.neo4j.server;
 
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.helpers.ServerHelper;
@@ -34,7 +34,7 @@ public class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
     private AssertableLogProvider logProvider;
     private NeoServer server;
 
-    @Before
+    @BeforeEach
     public void setupServer() throws IOException
     {
         logProvider = new AssertableLogProvider();
@@ -42,7 +42,7 @@ public class NeoServerShutdownLoggingIT extends ExclusiveServerTestBase
         ServerHelper.cleanTheDatabase( server );
     }
 
-    @After
+    @AfterEach
     public void shutdownTheServer()
     {
         if ( server != null )

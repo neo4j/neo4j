@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -42,7 +42,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -61,7 +61,7 @@ public class FusionIndexReaderTest
     private static final int PROP_KEY = 1;
     private static final int LABEL_KEY = 11;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         nativeReader = mock( IndexReader.class );
@@ -312,7 +312,7 @@ public class FusionIndexReaderTest
         PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
         for ( long i = 0L; i < 10L; i++ )
         {
-            assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
+            assertTrue( resultSet.contains( i ), "Expected to contain " + i + ", but was " + resultSet );
         }
     }
 

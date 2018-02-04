@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.DateTimeException;
 import java.time.DayOfWeek;
@@ -28,10 +28,11 @@ import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.time.DayOfWeek.SUNDAY;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.values.storable.DateValue.date;
 import static org.neo4j.values.storable.DateValue.epochDate;
@@ -134,7 +135,7 @@ public class DateValueTest
     public void shouldEnforceStrictWeekRanges()
     {
         LocalDate localDate = weekDate( 2017, 52, 7 ).temporal();
-        assertEquals( "Sunday is the seventh day of the week.", DayOfWeek.SUNDAY, localDate.getDayOfWeek() );
+        assertEquals( SUNDAY, localDate.getDayOfWeek(), "Sunday is the seventh day of the week." );
         assertEquals( 52, localDate.get( IsoFields.WEEK_OF_WEEK_BASED_YEAR ) );
         assertEquals( localDate, date( 2017, 12, 31 ).temporal() );
         try

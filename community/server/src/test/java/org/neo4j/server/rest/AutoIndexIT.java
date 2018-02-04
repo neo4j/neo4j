@@ -379,7 +379,7 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 204 )
                 .payload( null )
                 .delete( autoIndexURI( uriPartForType )
-                         + "/properties/" + myProperty2 );
+                        + "/properties/" + myProperty2 );
 
         properties = getAutoIndexedPropertiesForType( uriPartForType );
         assertEquals( intialPropertiesSize + 1, properties.size() );
@@ -423,6 +423,6 @@ public class AutoIndexIT extends AbstractRestFunctionalTestBase
     private String autoIndexURI( String type )
     {
         return getDataUri()
-               + RestfulGraphDatabase.PATH_AUTO_INDEX.replace( "{type}", type );
+                + RestfulGraphDatabase.PATH_AUTO_INDEX.replace( "{type}", type );
     }
 }

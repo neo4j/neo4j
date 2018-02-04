@@ -20,12 +20,14 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+@EnableRuleMigrationSupport
 public class InMemoryTokenCacheTest
 {
     private static final String INBOUND2_TYPE = "inbound2";

@@ -20,13 +20,15 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.logging.Log;
 
 import static org.mockito.Mockito.mock;
 
+@EnableRuleMigrationSupport
 public class EditionModuleTest
 {
     @Rule

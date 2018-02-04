@@ -20,7 +20,8 @@
 package org.neo4j.bolt.v1.messaging;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
@@ -59,6 +60,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
+@EnableRuleMigrationSupport
 public class Neo4jPackV1Test
 {
     private final Neo4jPackV1 neo4jPack = new Neo4jPackV1();

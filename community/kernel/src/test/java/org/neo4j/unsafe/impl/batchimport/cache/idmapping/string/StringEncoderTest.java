@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StringEncoderTest
 {

@@ -21,7 +21,7 @@ package org.neo4j.harness;
 
 import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.procedure.UserAggregationFunction;
@@ -32,7 +32,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class JavaAggregationFunctionsTestIT

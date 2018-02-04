@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.filters;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Set;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class FirstValidRuleTest

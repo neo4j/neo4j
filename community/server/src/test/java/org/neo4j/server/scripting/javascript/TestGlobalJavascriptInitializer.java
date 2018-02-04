@@ -19,21 +19,25 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.neo4j.server.rest.web.ScriptExecutionMode;
 
 public class TestGlobalJavascriptInitializer
 {
 
-    @Test( expected = RuntimeException.class )
+    @Test
     public void shouldNotAllowChangingMode()
     {
-        // Given
-        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
+        assertThrows( RuntimeException.class, () -> {
+            // Given
+            GlobalJavascriptInitializer.initialize( ScriptExecutionMode.SANDBOXED );
 
-        // When
-        GlobalJavascriptInitializer.initialize( ScriptExecutionMode.UNRESTRICTED );
+            // When
+            GlobalJavascriptInitializer.initialize( ScriptExecutionMode.UNRESTRICTED );
+        } );
     }
 
     @Test

@@ -44,7 +44,6 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
@@ -352,7 +351,7 @@ public class CrashGenerationCleanerTest
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         int keyCount;
                         for ( keyCount = 0; corruptibleTreeNode.internalOverflow( cursor, keyCount, layout.newKey() ) == Overflow.NO;
-                              keyCount++ )
+                                keyCount++ )
                         {
                             long child = base + keyCount;
                             corruptibleTreeNode.setChildAt( cursor, child, keyCount, stableGeneration, unstableGeneration );

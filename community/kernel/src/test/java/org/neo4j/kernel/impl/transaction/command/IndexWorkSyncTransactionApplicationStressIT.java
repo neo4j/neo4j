@@ -77,9 +77,9 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory )
-                                          .around( fileSystemRule )
-                                          .around( pageCacheRule )
-                                          .around( storageEngineRule );
+            .around( fileSystemRule )
+            .around( pageCacheRule )
+            .around( storageEngineRule );
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 

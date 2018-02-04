@@ -19,12 +19,13 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,20 +42,24 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Resource;
 
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings( "OptionalGetWithoutIsPresent" )
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public abstract class PageSwapperTest
 {
     public static final PageEvictionCallback NO_CALLBACK = filePageId -> {};
@@ -64,10 +69,10 @@ public abstract class PageSwapperTest
 
     protected static final int cachePageSize = 32;
 
-    public final TestDirectory testDir = TestDirectory.testDirectory();
-    public final ExpectedException expectedException = ExpectedException.none();
+    @Resource
+    public TestDirectory testDir;
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( testDir ).around( expectedException );
+    public final ExpectedException expectedException = ExpectedException.none();
 
     private final ConcurrentLinkedQueue<PageSwapperFactory> openedFactories = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
@@ -179,14 +184,14 @@ public abstract class PageSwapperTest
         return UnsafeUtil.getByte( address + offset );
     }
 
-    @Before
-    @After
+    @BeforeEach
+    @AfterEach
     public void clearStrayInterrupts()
     {
         Thread.interrupted();
     }
 
-    @After
+    @AfterEach
     public void closeOpenedPageSwappers() throws Exception
     {
         Exception exception = null;

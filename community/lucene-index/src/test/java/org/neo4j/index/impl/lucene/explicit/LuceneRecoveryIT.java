@@ -20,11 +20,12 @@
 package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.index.CorruptIndexException;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -34,16 +35,18 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class LuceneRecoveryIT
 {
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void testHardCoreRecovery() throws Exception

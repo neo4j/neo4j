@@ -63,20 +63,20 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     @Test
     @Title( "Enforcing Server Authorization Rules" )
     @Documented( "In this example, a (dummy) failing security rule is registered to deny\n" +
-                 "access to all URIs to the server by listing the rules class in\n" +
-                 "'neo4j.conf':\n" +
-                 "\n" +
-                 "@@config\n" +
-                 "\n" +
-                 "with the rule source code of:\n" +
-                 "\n" +
-                 "@@failingRule\n" +
-                 "\n" +
-                 "With this rule registered, any access to the server will be\n" +
-                 "denied. In a production-quality implementation the rule\n" +
-                 "will likely lookup credentials/claims in a 3rd-party\n" +
-                 "directory service (e.g. LDAP) or in a local database of\n" +
-                 "authorized users." )
+            "access to all URIs to the server by listing the rules class in\n" +
+            "'neo4j.conf':\n" +
+            "\n" +
+            "@@config\n" +
+            "\n" +
+            "with the rule source code of:\n" +
+            "\n" +
+            "@@failingRule\n" +
+            "\n" +
+            "With this rule registered, any access to the server will be\n" +
+            "denied. In a production-quality implementation the rule\n" +
+            "will likely lookup credentials/claims in a 3rd-party\n" +
+            "directory service (e.g. LDAP) or in a local database of\n" +
+            "authorized users." )
     public void should401WithBasicChallengeWhenASecurityRuleFails()
             throws Exception
     {
@@ -150,25 +150,25 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     @Test
     @Title( "Using Wildcards to Target Security Rules" )
     @Documented( "In this example, a security rule is registered to deny\n" +
-                 "access to all URIs to the server by listing the rule(s) class(es) in\n" +
-                 "'neo4j.conf'.\n" +
-                 "In this case, the rule is registered\n" +
-                 "using a wildcard URI path (where `*` characters can be used to signify\n" +
-                 "any part of the path). For example `/users*` means the rule\n" +
-                 "will be bound to any resources under the `/users` root path. Similarly\n" +
-                 "`/users*type*` will bind the rule to resources matching\n" +
-                 "URIs like `/users/fred/type/premium`.\n" +
-                 "\n" +
-                 "@@config\n" +
-                 "\n" +
-                 "with the rule source code of:\n" +
-                 "\n" +
-                 "@@failingRuleWithWildcardPath\n" +
-                 "\n" +
-                 "With this rule registered, any access to URIs under /protected/ will be\n" +
-                 "denied by the server. Using wildcards allows flexible targeting of security rules to\n" +
-                 "arbitrary parts of the server's API, including any unmanaged extensions or managed\n" +
-                 "plugins that have been registered." )
+            "access to all URIs to the server by listing the rule(s) class(es) in\n" +
+            "'neo4j.conf'.\n" +
+            "In this case, the rule is registered\n" +
+            "using a wildcard URI path (where `*` characters can be used to signify\n" +
+            "any part of the path). For example `/users*` means the rule\n" +
+            "will be bound to any resources under the `/users` root path. Similarly\n" +
+            "`/users*type*` will bind the rule to resources matching\n" +
+            "URIs like `/users/fred/type/premium`.\n" +
+            "\n" +
+            "@@config\n" +
+            "\n" +
+            "with the rule source code of:\n" +
+            "\n" +
+            "@@failingRuleWithWildcardPath\n" +
+            "\n" +
+            "With this rule registered, any access to URIs under /protected/ will be\n" +
+            "denied by the server. Using wildcards allows flexible targeting of security rules to\n" +
+            "arbitrary parts of the server's API, including any unmanaged extensions or managed\n" +
+            "plugins that have been registered." )
     public void aSimpleWildcardUriPathShould401OnAccessToProtectedSubPath()
             throws Exception
     {
@@ -198,14 +198,14 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
     @Test
     @Title( "Using Complex Wildcards to Target Security Rules" )
     @Documented( "In this example, a security rule is registered to deny\n" +
-                 "access to all URIs matching a complex pattern.\n" +
-                 "The config looks like this:\n" +
-                 "\n" +
-                 "@@config\n" +
-                 "\n" +
-                 "with the rule source code of:\n" +
-                 "\n" +
-                 "@@failingRuleWithComplexWildcardPath" )
+            "access to all URIs matching a complex pattern.\n" +
+            "The config looks like this:\n" +
+            "\n" +
+            "@@config\n" +
+            "\n" +
+            "with the rule source code of:\n" +
+            "\n" +
+            "@@failingRuleWithComplexWildcardPath" )
     public void aComplexWildcardUriPathShould401OnAccessToProtectedSubPath()
             throws Exception
     {

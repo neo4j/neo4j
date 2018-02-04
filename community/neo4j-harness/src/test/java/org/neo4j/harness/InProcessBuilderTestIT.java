@@ -21,8 +21,8 @@ package org.neo4j.harness;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonNode;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +35,7 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import javax.annotation.Resource;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -59,6 +60,8 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
@@ -66,19 +69,20 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class InProcessBuilderTestIT
 {
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDir;
 
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Test
     public void shouldLaunchAServerInSpecifiedDirectory()

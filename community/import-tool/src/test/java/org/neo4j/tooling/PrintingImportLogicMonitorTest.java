@@ -19,14 +19,14 @@
  */
 package org.neo4j.tooling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import org.neo4j.unsafe.impl.batchimport.ImportLogic;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.io.ByteUnit.gibiBytes;

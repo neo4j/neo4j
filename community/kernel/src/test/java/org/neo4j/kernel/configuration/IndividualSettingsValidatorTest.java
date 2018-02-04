@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
@@ -40,13 +41,14 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
+@EnableRuleMigrationSupport
 public class IndividualSettingsValidatorTest
 {
     @Rule
     public ExpectedException expected = ExpectedException.none();
     private Log log;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         log = mock( Log.class );

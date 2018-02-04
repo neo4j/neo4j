@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -47,7 +47,7 @@ public class FusionIndexUpdaterTest
     private IndexUpdater[] allUpdaters;
     private FusionIndexUpdater fusionIndexUpdater;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         nativeUpdater = mock( IndexUpdater.class );

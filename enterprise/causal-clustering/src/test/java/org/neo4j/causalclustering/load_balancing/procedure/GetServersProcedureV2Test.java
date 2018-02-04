@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.procedure;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 

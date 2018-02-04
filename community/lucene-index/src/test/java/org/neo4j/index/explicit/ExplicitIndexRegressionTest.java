@@ -19,21 +19,24 @@
  */
 package org.neo4j.index.explicit;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ExplicitIndexRegressionTest
 {
-    @Rule
-    public final DatabaseRule graphdb = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule graphdb;
 
     @Test
     public void shouldAccessAndUpdateIndexInSameTransaction()

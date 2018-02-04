@@ -20,12 +20,13 @@
 package org.neo4j.helpers.progress;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TestName;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -34,11 +35,13 @@ import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.lang.System.lineSeparator;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
@@ -48,23 +51,34 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
+@ExtendWith( SuppressOutputExtension.class )
 public class ProgressMonitorTest
 {
     @Rule
     public ExpectedException expected = ExpectedException.none();
-    @Rule
-    public final TestName testName = new TestName();
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public final SingleIndicator factory = new SingleIndicator();
+    @Resource
+    public SuppressOutput suppressOutput;
+    public SingleIndicator factory;
+
+    @BeforeEach
+    void setUp()
+    {
+        factory = new SingleIndicator();
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        factory.verifyMocks();
+    }
 
     @Test
-    public void shouldReportProgressInTheSpecifiedIntervals()
+    public void shouldReportProgressInTheSpecifiedIntervals( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
-        ProgressListener progressListener = factory.mock( indicator, 10 ).singlePart( testName.getMethodName(), 16 );
+        ProgressListener progressListener = factory.mock( indicator, 10 ).singlePart( testInfo.getDisplayName(), 16 );
 
         // when
         progressListener.started();
@@ -86,11 +100,12 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldAggregateProgressFromMultipleProcesses()
+    public void shouldAggregateProgressFromMultipleProcesses( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
-        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicator, 10 ).multipleParts( testName.getMethodName() );
+        ProgressMonitorFactory.MultiPartBuilder builder =
+                factory.mock( indicator, 10 ).multipleParts( testInfo.getDisplayName() );
         ProgressListener first = builder.progressForPart( "first", 5 );
         ProgressListener other = builder.progressForPart( "other", 5 );
         builder.build();
@@ -135,10 +150,10 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder()
+    public void shouldNotAllowAddingPartsAfterCompletingMultiPartBuilder( TestInfo testInfo )
     {
-        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicatorMock(), 10 )
-                                                   .multipleParts( testName.getMethodName() );
+        ProgressMonitorFactory.MultiPartBuilder builder =
+                factory.mock( indicatorMock(), 10 ).multipleParts( testInfo.getDisplayName() );
         builder.progressForPart( "first", 10 );
         builder.build();
 
@@ -148,10 +163,10 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldNotAllowAddingMultiplePartsWithSameIdentifier()
+    public void shouldNotAllowAddingMultiplePartsWithSameIdentifier( TestInfo testInfo )
     {
         ProgressMonitorFactory.MultiPartBuilder builder = Mockito.mock( ProgressMonitorFactory.class )
-                                                   .multipleParts( testName.getMethodName() );
+                                                   .multipleParts( testInfo.getDisplayName() );
         builder.progressForPart( "first", 10 );
 
         expected.expect( IllegalArgumentException.class );
@@ -160,11 +175,11 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldStartProcessAutomaticallyIfNotDoneBefore()
+    public void shouldStartProcessAutomaticallyIfNotDoneBefore( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
-        ProgressListener progressListener = factory.mock( indicator, 10 ).singlePart( testName.getMethodName(), 16 );
+        ProgressListener progressListener = factory.mock( indicator, 10 ).singlePart( testInfo.getDisplayName(), 16 );
 
         // when
         for ( int i = 0; i < 16; i++ )
@@ -185,11 +200,11 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldStartMultiPartProcessAutomaticallyIfNotDoneBefore()
+    public void shouldStartMultiPartProcessAutomaticallyIfNotDoneBefore( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
-        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicator, 10 ).multipleParts( testName.getMethodName() );
+        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicator, 10 ).multipleParts( testInfo.getDisplayName() );
         ProgressListener first = builder.progressForPart( "first", 5 );
         ProgressListener other = builder.progressForPart( "other", 5 );
         builder.build();
@@ -232,11 +247,11 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldCompleteMultiPartProgressWithNoPartsImmediately()
+    public void shouldCompleteMultiPartProgressWithNoPartsImmediately( TestInfo testInfo )
     {
         // given
         Indicator indicator = indicatorMock();
-        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicator, 10 ).multipleParts( testName.getMethodName() );
+        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicator, 10 ).multipleParts( testInfo.getDisplayName() );
 
         // when
         builder.build();
@@ -273,11 +288,13 @@ public class ProgressMonitorTest
     }
 
     @Test
-    public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentWithTextualIndicator() throws Exception
+    public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentWithTextualIndicator( TestInfo testInfo )
+            throws Exception
     {
         // given
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        ProgressListener progressListener = ProgressMonitorFactory.textual( stream ).singlePart( testName.getMethodName(), 1000 );
+        ProgressListener progressListener =
+                ProgressMonitorFactory.textual( stream ).singlePart( testInfo.getDisplayName(), 1000 );
 
         // when
         for ( int i = 0; i < 1000; i++ )
@@ -286,16 +303,18 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT,
-                      stream.toString( Charset.defaultCharset().name() ) );
+        assertEquals( testInfo.getDisplayName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT,
+                stream.toString( Charset.defaultCharset().name() ) );
     }
 
     @Test
-    public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentEvenWhenStepResolutionIsLower()
+    public void shouldPrintADotEveryHalfPercentAndFullPercentageEveryTenPercentEvenWhenStepResolutionIsLower(
+            TestInfo testInfo )
     {
         // given
         StringWriter writer = new StringWriter();
-        ProgressListener progressListener = ProgressMonitorFactory.textual( writer ).singlePart( testName.getMethodName(), 50 );
+        ProgressListener progressListener =
+                ProgressMonitorFactory.textual( writer ).singlePart( testInfo.getDisplayName(), 50 );
 
         // when
         for ( int i = 0; i < 50; i++ )
@@ -304,16 +323,15 @@ public class ProgressMonitorTest
         }
 
         // then
-        assertEquals( testName.getMethodName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT,
-                      writer.toString() );
+        assertEquals( testInfo.getDisplayName() + lineSeparator() + EXPECTED_TEXTUAL_OUTPUT, writer.toString() );
     }
 
     @Test
-    public void shouldAllowStartingAPartBeforeCompletionOfMultiPartBuilder()
+    public void shouldAllowStartingAPartBeforeCompletionOfMultiPartBuilder( TestInfo testInfo )
     {
         // given
         Indicator indicator = mock( Indicator.class );
-        ProgressMonitorFactory.MultiPartBuilder builder = factory.mock( indicator, 10 ).multipleParts( testName.getMethodName() );
+        ProgressMonitorFactory.MultiPartBuilder builder = createBuilder( indicator, testInfo );
         ProgressListener part1 = builder.progressForPart( "part1", 1 );
         ProgressListener part2 = builder.progressForPart( "part2", 1 );
 
@@ -334,8 +352,15 @@ public class ProgressMonitorTest
         order.verify( indicator ).completeProcess();
     }
 
-    private static class SingleIndicator implements TestRule
+    private ProgressMonitorFactory.MultiPartBuilder createBuilder( Indicator indicator, TestInfo testInfo )
     {
+        return factory.mock( indicator, 10 ).multipleParts( testInfo.getDisplayName() );
+    }
+
+    private static class SingleIndicator
+    {
+        private final Map<ProgressMonitorFactory,Boolean> factoryMocks = new HashMap<>();
+
         ProgressMonitorFactory mock( Indicator indicatorMock, int indicatorSteps )
         {
             when( indicatorMock.reportResolution() ).thenReturn( indicatorSteps );
@@ -345,23 +370,13 @@ public class ProgressMonitorTest
             return factory;
         }
 
-        private final Map<ProgressMonitorFactory,Boolean> factoryMocks = new HashMap<>();
-
-        @Override
-        public Statement apply( final Statement base, Description description )
+        private void verifyMocks()
         {
-            return new Statement()
+            for ( Map.Entry<ProgressMonitorFactory,Boolean> factoryMock : factoryMocks.entrySet() )
             {
-                @Override
-                public void evaluate() throws Throwable
-                {
-                    base.evaluate();
-                    for ( Map.Entry<ProgressMonitorFactory,Boolean> factoryMock : factoryMocks.entrySet() )
-                    {
-                        verify( factoryMock.getKey(), times( 1 ) ).newIndicator( any( String.class ) );
-                    }
-                }
-            };
+                verify( factoryMock.getKey(), times( 1 ) ).newIndicator( any( String.class ) );
+            }
         }
+
     }
 }

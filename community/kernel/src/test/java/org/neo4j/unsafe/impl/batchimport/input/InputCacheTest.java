@@ -20,7 +20,9 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
@@ -34,31 +36,39 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.annotation.Resource;
 
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.Randoms;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 
 import static java.lang.Math.abs;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
 public class InputCacheTest
 {
     private static final String[] TOKENS = new String[] {"One", "Two", "Three", "Four", "Five", "Six", "Seven"};
     private static final int countPerThread = 10_000;
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory();
-    private final RandomRule randomRule = new RandomRule().withSeedForAllTests( 1515752471383L );
+    @Resource
+    public TestDirectory dir;
+    @Resource
+    public RandomRule randomRule;
+
     private final int threads = Runtime.getRuntime().availableProcessors();
     private final ExecutorService executor = Executors.newFixedThreadPool( threads );
     private final List<Future<?>> futures = new ArrayList<>();
     private final int totalCount = threads * countPerThread;
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( dir ).around( randomRule ).around( fileSystemRule );
+    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule );
 
     @Test
     public void shouldCacheAndRetrieveNodes() throws Exception

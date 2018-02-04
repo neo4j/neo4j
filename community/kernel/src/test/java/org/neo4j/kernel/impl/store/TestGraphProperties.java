@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.Future;
@@ -45,12 +45,12 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -65,7 +65,7 @@ public class TestGraphProperties
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         factory = new TestGraphDatabaseFactory()

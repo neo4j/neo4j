@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -44,10 +44,12 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static java.time.Duration.ofMillis;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,6 +64,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
 public class CheckPointerImplTest
@@ -185,8 +188,7 @@ public class CheckPointerImplTest
         Lock lock = new ReentrantLock();
         final Lock spyLock = spy( lock );
 
-        doAnswer( invocation ->
-        {
+        doAnswer( invocation -> {
             verify( appender ).checkPoint( any( LogPosition.class ), any( LogCheckPointEvent.class ) );
             reset( appender );
             invocation.callRealMethod();
@@ -203,8 +205,7 @@ public class CheckPointerImplTest
 
         Thread checkPointerThread = new CheckPointerThread( checkPointing, startSignal, completed );
 
-        Thread forceCheckPointThread = new Thread( () ->
-        {
+        Thread forceCheckPointThread = new Thread( () -> {
             try
             {
                 startSignal.countDown();
@@ -362,8 +363,7 @@ public class CheckPointerImplTest
         mockTxIdStore();
         CheckPointerImpl checkPointer = checkPointer();
 
-        doAnswer( invocation ->
-        {
+        doAnswer( invocation -> {
             backgroundCheckPointStartedLatch.release();
             forceCheckPointStartLatch.await();
             long newValue = limitDisableCounter.get();
@@ -371,8 +371,7 @@ public class CheckPointerImplTest
             return null;
         } ).when( storageEngine ).flushAndForce( limiter );
 
-        Future<Object> forceCheckPointer = forkFuture( () ->
-        {
+        Future<Object> forceCheckPointer = forkFuture( () -> {
             backgroundCheckPointStartedLatch.await();
             asyncAction.accept( checkPointer );
             return null;
@@ -384,24 +383,26 @@ public class CheckPointerImplTest
         assertThat( observedRushCount.get(), is( 1L ) );
     }
 
-    @Test( timeout = 5000 )
-    public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
+    @Test
+    public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        verifyAsyncActionCausesConcurrentFlushingRush(
-                checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+        assertTimeout( ofMillis( 5000 ), () -> {
+            verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+        } );
     }
 
-    @Test( timeout = 5000 )
-    public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
+    @Test
+    public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        verifyAsyncActionCausesConcurrentFlushingRush(
-                checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+        assertTimeout( ofMillis( 5000 ), () -> {
+            verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+        } );
     }
 
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )
     {
-        return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, limiter, mutex );
+        return new CheckPointerImpl( txIdStore, threshold, storageEngine, logPruning, appender, health, getInstance(),
+                tracer, limiter, mutex );
     }
 
     private CheckPointerImpl checkPointer()

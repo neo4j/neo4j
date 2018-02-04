@@ -20,17 +20,19 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.KeySearch.search;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
@@ -39,6 +41,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.io.pagecache.ByteArrayPageCursor.wrap;
 
+@ExtendWith( RandomExtension.class )
 public class KeySearchTest
 {
     private static final int STABLE_GENERATION = 1;
@@ -54,8 +57,8 @@ public class KeySearchTest
     private final MutableLong insertKey = layout.newKey();
     private final MutableLong dummyValue = layout.newValue();
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
     @Test
     public void searchEmptyLeaf()

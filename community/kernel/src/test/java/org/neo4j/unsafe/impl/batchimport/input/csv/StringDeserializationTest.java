@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.csv.reader.Extractors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StringDeserializationTest
 {

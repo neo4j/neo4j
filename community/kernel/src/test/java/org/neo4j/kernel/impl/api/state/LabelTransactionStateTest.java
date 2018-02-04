@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,9 +45,9 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -61,7 +61,7 @@ import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiv
 
 public class LabelTransactionStateTest
 {
-    @Before
+    @BeforeEach
     public void before()
     {
         store = mock( StoreReadLayer.class );
@@ -201,7 +201,7 @@ public class LabelTransactionStateTest
         boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
 
         // THEN
-        assertTrue( "Should have been added now", added );
+        assertTrue( added, "Should have been added now" );
     }
 
     @Test
@@ -214,7 +214,7 @@ public class LabelTransactionStateTest
         boolean added = txContext.nodeAddLabel( state, nodeId, labelId1 );
 
         // THEN
-        assertFalse( "Shouldn't have been added now", added );
+        assertFalse( added, "Shouldn't have been added now" );
     }
 
     @Test
@@ -227,7 +227,7 @@ public class LabelTransactionStateTest
         boolean removed = txContext.nodeRemoveLabel( state, nodeId, labelId1 );
 
         // THEN
-        assertTrue( "Should have been removed now", removed );
+        assertTrue( removed, "Should have been removed now" );
     }
 
     @Test
@@ -255,7 +255,7 @@ public class LabelTransactionStateTest
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
 
         // THEN
-        assertTrue( "Label should have been added", added );
+        assertTrue( added, "Label should have been added" );
     }
 
     @Test
@@ -271,7 +271,7 @@ public class LabelTransactionStateTest
         boolean added = txContext.nodeAddLabel( state, 1337, 12 );
 
         // THEN
-        assertFalse( "Label should have been added", added );
+        assertFalse( added, "Label should have been added" );
     }
 
     @Test
@@ -287,7 +287,7 @@ public class LabelTransactionStateTest
         boolean added = txContext.nodeRemoveLabel( state, 1337, 12 );
 
         // THEN
-        assertTrue( "Label should have been removed", added );
+        assertTrue( added, "Label should have been removed" );
     }
 
     @Test
@@ -300,7 +300,7 @@ public class LabelTransactionStateTest
         boolean removed = txContext.nodeRemoveLabel( state, 1337, 12 );
 
         // THEN
-        assertFalse( "Label should have been removed", removed );
+        assertFalse( removed, "Label should have been removed" );
     }
 
     // exists
@@ -376,7 +376,7 @@ public class LabelTransactionStateTest
         {
             for ( int label : labels )
             {
-                assertTrue( "Expected labels not found on node", node.hasLabel( label ) );
+                assertTrue( node.hasLabel( label ), "Expected labels not found on node" );
             }
         } );
     }

@@ -111,7 +111,7 @@ public class BatchingTransactionAppenderTest
         // THEN
         final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
-                      new PhysicalTransactionCursor<>( channel, logEntryReader ) )
+                new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
             TransactionRepresentation tx = reader.get().getTransactionRepresentation();
@@ -183,7 +183,7 @@ public class BatchingTransactionAppenderTest
         // THEN
         LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
-                      new PhysicalTransactionCursor<>( channel, logEntryReader ) )
+                new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
             reader.next();
             TransactionRepresentation result = reader.get().getTransactionRepresentation();

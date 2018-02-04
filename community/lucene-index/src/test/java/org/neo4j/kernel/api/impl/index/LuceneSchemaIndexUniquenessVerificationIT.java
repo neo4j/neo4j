@@ -299,7 +299,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         catch ( Throwable t )
         {
             fail( "Unable to create uniqueness constraint for data: " + Strings.prettyPrint( data.toArray() ) +
-                  "\n" + Exceptions.stringify( t ) );
+                    "\n" + Exceptions.stringify( t ) );
         }
     }
 
@@ -309,7 +309,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         {
             verifyUniqueness( data );
             fail( "Should not be possible to create uniqueness constraint for data: " +
-                  Strings.prettyPrint( data.toArray() ) );
+                    Strings.prettyPrint( data.toArray() ) );
         }
         catch ( Throwable t )
         {

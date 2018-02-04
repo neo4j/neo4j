@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -27,8 +27,8 @@ import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class IdAllocationStateTest
 {
@@ -81,7 +81,7 @@ public class IdAllocationStateTest
         try
         {
             marshal.unmarshal( channel );
-            fail();
+            fail("Failure was expected");
         }
         catch ( EndOfStreamException e )
         {

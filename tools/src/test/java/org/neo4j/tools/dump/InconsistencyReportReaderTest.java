@@ -19,7 +19,7 @@
  */
 package org.neo4j.tools.dump;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.tools.dump.inconsistency.ReportInconsistencies;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class InconsistencyReportReaderTest
 {

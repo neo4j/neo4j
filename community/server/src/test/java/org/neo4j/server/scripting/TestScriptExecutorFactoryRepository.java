@@ -19,27 +19,32 @@
  */
 package org.neo4j.server.scripting;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.server.scripting.ScriptExecutor.Factory;
 
 public class TestScriptExecutorFactoryRepository
 {
 
-    @Test( expected = NoSuchScriptLanguageException.class )
+    @Test
     public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages()
     {
-        // Given
-        ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<>() );
+        assertThrows( NoSuchScriptLanguageException.class, () -> {
+            // Given
+            ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<>() );
 
-        // When
-        repo.getFactory( "Blah" );
+            // When
+            repo.getFactory( "Blah" );
+        } );
     }
 
     @Test
@@ -52,7 +57,7 @@ public class TestScriptExecutorFactoryRepository
         ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( languages );
 
         // When
-        ScriptExecutor.Factory factory = repo.getFactory( "js" );
+        Factory factory = repo.getFactory( "js" );
 
         // Then
         assertThat(factory, not(nullValue()));

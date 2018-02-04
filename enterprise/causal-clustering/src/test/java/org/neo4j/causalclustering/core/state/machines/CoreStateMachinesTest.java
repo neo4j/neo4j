@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.machines;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.util.function.Consumer;
@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.storageengine.api.Token;
 
 import static java.lang.Math.max;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

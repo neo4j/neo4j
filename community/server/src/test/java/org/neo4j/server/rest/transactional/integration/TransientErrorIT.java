@@ -114,7 +114,7 @@ public class TransientErrorIT extends AbstractRestFunctionalTestBase
         // When
         HTTP.Response second = POST( txUri( txId ), quotedJson(
                 "{'statements': [{'statement': 'LOAD CSV FROM \\\"http://127.0.0.1/null/\\\" AS line " +
-                "CREATE (a {name:line[0]})'}]}" ) );
+                        "CREATE (a {name:line[0]})'}]}" ) );
 
         // Then
 

@@ -19,13 +19,14 @@
  */
 package org.neo4j.metrics.output;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -33,25 +34,27 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.metrics.source.db.TransactionMetrics;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.metrics.MetricsSettings.csvPath;
 import static org.neo4j.metrics.MetricsSettings.csvRotationThreshold;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValueAndAssert;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class RotatableCsvOutputIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private File outputPath;
     private GraphDatabaseService database;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         outputPath = testDirectory.directory( "metrics" );
@@ -62,7 +65,7 @@ public class RotatableCsvOutputIT
                 .newGraphDatabase();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         database.shutdown();

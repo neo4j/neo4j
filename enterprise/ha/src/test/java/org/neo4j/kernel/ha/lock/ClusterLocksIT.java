@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
@@ -38,55 +38,66 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.ha.ClusterManager;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.assertEquals;
+import static java.lang.Thread.sleep;
+import static java.time.Duration.ofMillis;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.rules.ExpectedException.none;
+import static org.junit.rules.RuleChain.outerRule;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
+import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.lock_manager;
+import static org.neo4j.kernel.impl.ha.ClusterManager.NetworkFlag;
+import static org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.instanceEvicted;
+import static org.neo4j.storageengine.api.EntityType.NODE;
 
 public class ClusterLocksIT
 {
     private static final long TIMEOUT_MILLIS = 120_000;
 
-    public final ExpectedException expectedException = ExpectedException.none();
+    public final ExpectedException expectedException = none();
     public final ClusterRule clusterRule = new ClusterRule();
 
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( expectedException ).around( clusterRule );
+    public final RuleChain rules = outerRule( expectedException ).around( clusterRule );
 
     private ClusterManager.ManagedCluster cluster;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
-        cluster = clusterRule
-                .withSharedSetting( HaSettings.tx_push_factor, "2" )
-                .withInstanceSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, i -> "community" )
+        cluster = clusterRule.withSharedSetting( tx_push_factor, "2" )
+                .withInstanceSetting( lock_manager, i -> "community" )
                 .startCluster();
     }
 
-    private final Label testLabel = Label.label( "testLabel" );
+    private final Label testLabel = label( "testLabel" );
 
-    @Test( timeout = TIMEOUT_MILLIS )
+    @Test
     public void lockCleanupOnModeSwitch() throws Throwable
     {
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        createNodeOnMaster( testLabel, master );
+        assertTimeout( ofMillis( TIMEOUT_MILLIS ), () -> {
+            HighlyAvailableGraphDatabase master = cluster.getMaster();
+            createNodeOnMaster( testLabel, master );
 
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        ClusterManager.RepairKit repairKit = takeExclusiveLockAndKillSlave( testLabel, slave );
+            HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+            RepairKit repairKit = takeExclusiveLockAndKillSlave( testLabel, slave );
 
-        // repair of slave and new mode switch cycle on all members
-        repairKit.repair();
-        cluster.await( allSeesAllAsAvailable() );
+            // repair of slave and new mode switch cycle on all members
+            repairKit.repair();
+            cluster.await( allSeesAllAsAvailable() );
 
-        HighlyAvailableGraphDatabase clusterMaster = cluster.getMaster();
-        // now it should be possible to take exclusive lock on the same node
-        takeExclusiveLockOnSameNodeAfterSwitch( testLabel, master, clusterMaster );
+            HighlyAvailableGraphDatabase clusterMaster = cluster.getMaster();
+            // now it should be possible to take exclusive lock on the same node
+            takeExclusiveLockOnSameNodeAfterSwitch( testLabel, master, clusterMaster );
+        } );
     }
 
     @Test
@@ -107,8 +118,7 @@ public class ClusterLocksIT
 
             transaction.acquireWriteLock( slaveB );
 
-            Thread masterTx = new Thread( () ->
-            {
+            Thread masterTx = new Thread( () -> {
                 try ( Transaction tx = master.beginTx() )
                 {
                     tx.acquireWriteLock( masterA );
@@ -145,7 +155,7 @@ public class ClusterLocksIT
         cluster.sync();
 
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        cluster.fail( slave, ClusterManager.NetworkFlag.values() );
+        cluster.fail( slave, NetworkFlag.values() );
         cluster.await( instanceEvicted( slave ) );
 
         assertEquals( PENDING, slave.getInstanceState() );
@@ -155,8 +165,8 @@ public class ClusterLocksIT
         {
             try ( Transaction tx = slave.beginTx() )
             {
-                Node single = Iterables.single( slave.getAllNodes() );
-                Label label = Iterables.single( single.getLabels() );
+                Node single = single( slave.getAllNodes() );
+                Label label = single( single.getLabels() );
                 assertEquals( testLabel, label );
                 tx.success();
                 break;
@@ -164,7 +174,7 @@ public class ClusterLocksIT
             catch ( TransactionTerminatedException e )
             {
                 // Race between going to pending and reading, try again in a little while
-                Thread.sleep( 1_000 );
+                sleep( 1_000 );
             }
         }
 
@@ -183,14 +193,15 @@ public class ClusterLocksIT
         }
     }
 
-    private ClusterManager.RepairKit takeExclusiveLockAndKillSlave( Label testLabel, HighlyAvailableGraphDatabase db )
+    private RepairKit takeExclusiveLockAndKillSlave( Label testLabel, HighlyAvailableGraphDatabase db )
             throws EntityNotFoundException
     {
         takeExclusiveLock( testLabel, db );
         return cluster.shutdown( db );
     }
 
-    private Transaction takeExclusiveLock( Label testLabel, HighlyAvailableGraphDatabase db ) throws EntityNotFoundException
+    private Transaction takeExclusiveLock( Label testLabel, HighlyAvailableGraphDatabase db )
+            throws EntityNotFoundException
     {
         Transaction transaction = db.beginTx();
         Node node = getNode( db, testLabel );
@@ -213,7 +224,7 @@ public class ClusterLocksIT
     {
         try ( ResourceIterator<Node> nodes = db.findNodes( testLabel ) )
         {
-            return nodes.stream().findFirst().orElseThrow( () -> new EntityNotFoundException( EntityType.NODE, 0L ) );
+            return nodes.stream().findFirst().orElseThrow( () -> new EntityNotFoundException( NODE, 0L ) );
         }
     }
 }

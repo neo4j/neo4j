@@ -463,7 +463,7 @@ public class PropertyConstraintsStressIT
                 }
                 catch ( ConstraintViolationException e )
                 {
-                /* Unable to create constraint since it is not consistent with existing data. */
+                    /* Unable to create constraint since it is not consistent with existing data. */
                     constraintCreationFailed = true;
                 }
 

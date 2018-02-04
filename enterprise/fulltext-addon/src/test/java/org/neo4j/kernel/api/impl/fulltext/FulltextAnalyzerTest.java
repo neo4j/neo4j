@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
 

@@ -30,15 +30,15 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
@@ -118,7 +118,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "123", document.get( NODE_ID_KEY ) );
-        assertEquals( 12.0, document.getField( Number.key( 0 ) ).numericValue().doubleValue(), 0.001 );
+        assertEquals( document.getField( Number.key( 0 ) ).numericValue().doubleValue(), 0.001, 12.0 );
     }
 
     @Test
@@ -165,8 +165,8 @@ public class LuceneDocumentStructureTest
         NumericRangeQuery<Double> query = (NumericRangeQuery<Double>) constantScoreQuery.getQuery();
 
         // then
-        assertEquals( 12.0, query.getMin(), 0.001 );
-        assertEquals( 12.0, query.getMax(),0.001 );
+        assertEquals( query.getMin(), 0.001, 12.0 );
+        assertEquals( query.getMax(), 0.001, 12.0 );
     }
 
     @Test
@@ -202,8 +202,8 @@ public class LuceneDocumentStructureTest
         // then
         assertEquals( "true", boolTermQuery.getTerm().text() );
         assertEquals( "Characters", stringTermQuery.getTerm().text() );
-        assertEquals( 12.0, numericRangeQuery.getMin(), 0.001 );
-        assertEquals( 12.0, numericRangeQuery.getMax(), 0.001 );
+        assertEquals( numericRangeQuery.getMin(), 0.001, 12.0 );
+        assertEquals( numericRangeQuery.getMax(), 0.001, 12.0 );
         assertEquals( "D1.0|2.0|3.0|", arrayTermQuery.getTerm().text() );
     }
 
@@ -215,7 +215,7 @@ public class LuceneDocumentStructureTest
 
         // then
         assertEquals( "number", query.getField() );
-        assertEquals( 12.0, query.getMin(), 0.001 );
+        assertEquals( query.getMin(), 0.001, 12.0 );
         assertEquals( true, query.includesMin() );
         assertEquals( null, query.getMax() );
         assertEquals( true, query.includesMax() );

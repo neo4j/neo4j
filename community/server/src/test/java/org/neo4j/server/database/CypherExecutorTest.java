@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.database;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +62,7 @@ public class CypherExecutorTest
     private HttpServletRequest request;
     private AssertableLogProvider logProvider;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         setUpMocks();

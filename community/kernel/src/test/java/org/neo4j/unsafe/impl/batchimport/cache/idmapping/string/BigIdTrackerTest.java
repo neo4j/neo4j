@@ -19,19 +19,23 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.annotation.Resource;
+
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.BigIdTracker.MAX_ID;
 
+@ExtendWith( RandomExtension.class )
 public class BigIdTrackerTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
     @Test
     public void shouldKeepIdsAndMarkDuplicates()

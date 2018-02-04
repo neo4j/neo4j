@@ -19,7 +19,7 @@
  */
 package org.neo4j.tooling.procedure.compilerutils;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

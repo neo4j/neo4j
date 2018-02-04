@@ -302,7 +302,7 @@ public class TestRecoveryScenarios
     private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
     {
         return new TestGraphDatabaseFactory()
-            .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
+                .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
     }
 
     @After

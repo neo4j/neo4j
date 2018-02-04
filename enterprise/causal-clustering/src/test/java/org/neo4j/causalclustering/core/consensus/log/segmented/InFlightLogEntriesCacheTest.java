@@ -19,14 +19,15 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class InFlightLogEntriesCacheTest
 {
@@ -75,14 +76,16 @@ public class InFlightLogEntriesCacheTest
         }
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldNotReinsertValues()
     {
-        InFlightMap<Object> entries = new InFlightMap<>();
-        entries.enable();
-        Object addedObject = new Object();
-        entries.put( 1L, addedObject );
-        entries.put( 1L, addedObject );
+        assertThrows( IllegalArgumentException.class, () -> {
+            InFlightMap<Object> entries = new InFlightMap<>();
+            entries.enable();
+            Object addedObject = new Object();
+            entries.put( 1L, addedObject );
+            entries.put( 1L, addedObject );
+        } );
     }
 
     @Test

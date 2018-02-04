@@ -196,7 +196,7 @@ public class CompositeIndexingIT
     {
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx();
-              Statement statement = statement() )
+                Statement statement = statement() )
         {
             statement.dataWriteOperations().nodeDelete( nodeID );
             assertFalse( seek( statement ).hasNext() );
@@ -220,7 +220,7 @@ public class CompositeIndexingIT
     {
         long nodeID = createNode();
         try ( Transaction ignore = graphDatabaseAPI.beginTx();
-              Statement statement = statement() )
+                Statement statement = statement() )
         {
             statement.dataWriteOperations().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
             assertFalse( seek( statement ).hasNext() );
@@ -254,7 +254,7 @@ public class CompositeIndexingIT
             long nodeID2 = createNode();
             long nodeID3 = createNode();
             try ( Transaction ignore = graphDatabaseAPI.beginTx();
-                  Statement statement = statement() )
+                    Statement statement = statement() )
             {
                 PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
@@ -290,7 +290,7 @@ public class CompositeIndexingIT
     {
         long nodeID;
         try ( Transaction tx = graphDatabaseAPI.beginTx() ;
-              Statement statement = statement() )
+                Statement statement = statement() )
         {
             DataWriteOperations writeOperations = statement.dataWriteOperations();
             nodeID = writeOperations.nodeCreate();

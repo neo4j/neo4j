@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +40,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -57,7 +57,7 @@ public class PropertyStoreTest
     private EphemeralFileSystemAbstraction fileSystemAbstraction;
     private File path;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         fileSystemAbstraction = fsRule.get();

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,13 +38,13 @@ public class FileWatcherLifecycleAdapterTest
     private static Neo4jJobScheduler jobScheduler;
     private FileWatcher fileWatcher = Mockito.mock( FileWatcher.class );
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp()
     {
         jobScheduler = new Neo4jJobScheduler();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown()
     {
         jobScheduler.shutdown();

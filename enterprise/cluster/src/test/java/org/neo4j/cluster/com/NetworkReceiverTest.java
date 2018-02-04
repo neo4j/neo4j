@@ -22,7 +22,7 @@ package org.neo4j.cluster.com;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -31,8 +31,8 @@ import org.neo4j.cluster.com.message.Message;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +51,7 @@ public class NetworkReceiverTest
         final String wildCard = "0.0.0.0";
         URI uri = networkReceiver.getURI( new InetSocketAddress( wildCard, PORT ) );
 
-        assertTrue( wildCard + " does not match Uri host: " + uri.getHost(), wildCard.equals( uri.getHost() ) );
+        assertTrue( wildCard.equals( uri.getHost() ), wildCard + " does not match Uri host: " + uri.getHost() );
         assertTrue( PORT == uri.getPort() );
     }
 
@@ -64,7 +64,7 @@ public class NetworkReceiverTest
         // We should NOT do a reverse DNS lookup for hostname. It might not be routed properly.
         URI uri = networkReceiver.getURI( new InetSocketAddress( "localhost", PORT ) );
 
-        assertTrue( "Uri host is not localhost ip: " + uri.getHost(), "127.0.0.1".equals( uri.getHost() ) );
+        assertTrue( "127.0.0.1".equals( uri.getHost() ), "Uri host is not localhost ip: " + uri.getHost() );
         assertTrue( PORT == uri.getPort() );
     }
 
@@ -98,8 +98,7 @@ public class NetworkReceiverTest
 
         networkReceiver.new MessageReceiver().messageReceived( ctx, messageEvent );
 
-        assertEquals(
-                "HEADER_FROM header should have been changed to visible ip address: " + message.getHeader( Message.HEADER_FROM ),
-                "cluster://127.0.0.1:1234", message.getHeader( Message.HEADER_FROM ) );
+        assertEquals( "cluster://127.0.0.1:1234", message.getHeader( Message.HEADER_FROM ),
+                "HEADER_FROM header should have been changed to visible ip address: " + message.getHeader( Message.HEADER_FROM ) );
     }
 }

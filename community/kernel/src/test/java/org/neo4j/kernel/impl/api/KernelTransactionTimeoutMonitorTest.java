@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +46,7 @@ public class KernelTransactionTimeoutMonitorTest
     private AssertableLogProvider logProvider;
     private LogService logService;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         kernelTransactions = mock( KernelTransactions.class );

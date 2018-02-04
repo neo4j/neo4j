@@ -19,22 +19,25 @@
  */
 package org.neo4j.harness;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.ClassRule;
-import org.junit.Test;
+import javax.annotation.Resource;
 
 import org.neo4j.harness.CausalClusterInProcessRunner.CausalCluster;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class CausalClusterInProcessRunnerIT
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void shouldBootAndShutdownCluster() throws Exception

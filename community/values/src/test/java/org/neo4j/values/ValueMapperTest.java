@@ -19,15 +19,14 @@
  */
 package org.neo4j.values;
 
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.Value;
@@ -40,7 +39,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -79,10 +78,8 @@ import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-@RunWith( Parameterized.class )
 public class ValueMapperTest
 {
-    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> parameters()
     {
         NodeValue node1 = nodeValue( 1, stringArray(), emptyMap() );
@@ -132,15 +129,9 @@ public class ValueMapperTest
                         pointArray( new Point[] {pointValue( Cartesian, 11, 32 ), pointValue( WGS84, 13, 56 )} )} );
     }
 
-    private final AnyValue value;
-
-    public ValueMapperTest( AnyValue value )
-    {
-        this.value = value;
-    }
-
-    @Test
-    public void shouldMapToJavaObject()
+    @ParameterizedTest
+    @MethodSource( "parameters" )
+    public void shouldMapToJavaObject( AnyValue value )
     {
         // given
         ValueMapper<Object> mapper = new Mapper();

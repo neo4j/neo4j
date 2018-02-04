@@ -19,14 +19,14 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogAppendIndexMonitor;
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MonitoredRaftLogTest
 {

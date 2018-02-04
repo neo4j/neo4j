@@ -38,9 +38,9 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 

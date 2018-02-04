@@ -19,15 +19,13 @@
  */
 package org.neo4j.causalclustering.core.consensus.roles;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
 import org.neo4j.causalclustering.core.consensus.NewLeaderBarrier;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
-import org.neo4j.causalclustering.core.consensus.TestMessageBuilders;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.AppendLogEntry;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
@@ -37,12 +35,13 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.MockitoExtension;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.preVoteRequest;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.preVoteResponse;
 import static org.neo4j.causalclustering.core.consensus.TestMessageBuilders.voteRequest;
@@ -53,7 +52,7 @@ import static org.neo4j.causalclustering.core.consensus.roles.Role.LEADER;
 import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class CandidateTest
 {
     private MemberId myself = member( 0 );

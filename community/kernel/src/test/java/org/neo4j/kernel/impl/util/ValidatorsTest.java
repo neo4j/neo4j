@@ -19,21 +19,24 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class ValidatorsTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void shouldFindFilesByRegex() throws Exception

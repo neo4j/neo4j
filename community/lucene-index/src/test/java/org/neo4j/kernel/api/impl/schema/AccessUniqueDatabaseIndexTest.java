@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +47,7 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AccessUniqueDatabaseIndexTest
 {

@@ -21,39 +21,43 @@ package org.neo4j.server.enterprise.functional;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.metrics.MetricsSettings;
 import org.neo4j.metrics.source.server.ServerMetrics;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TestDirectory;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class ServerMetricsIT
 {
-    @Rule
-    public final TemporaryFolder folder = new TemporaryFolder();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public TestDirectory folder;
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Test
     public void shouldShowServerMetrics() throws Throwable
     {
         // Given
-        String path = folder.getRoot().getAbsolutePath();
+        String path = folder.directory().getAbsolutePath();
         File metricsPath = new File( path + "/metrics" );
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .usingDataDir( path )

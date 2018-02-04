@@ -20,7 +20,7 @@
 package org.neo4j.tooling.procedure;
 
 import com.google.testing.compile.CompileTester;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.processing.Processor;
 import javax.tools.JavaFileObject;

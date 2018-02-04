@@ -20,10 +20,10 @@
 package org.neo4j.io.pagecache.impl;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.After;
 import org.junit.AssumptionViolatedException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -54,11 +54,11 @@ import org.neo4j.io.pagecache.PageSwapperTest;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 
 public class SingleFilePageSwapperTest extends PageSwapperTest
@@ -67,7 +67,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     private DefaultFileSystemAbstraction fileSystem;
     private File file;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         file = new File( "file" ).getCanonicalFile();
@@ -75,7 +75,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         fileSystem = new DefaultFileSystemAbstraction();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         IOUtils.closeAll( ephemeralFileSystem, fileSystem );

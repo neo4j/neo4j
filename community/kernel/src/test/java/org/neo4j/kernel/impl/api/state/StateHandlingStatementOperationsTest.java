@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Set;
@@ -64,8 +64,8 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyIterator;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;

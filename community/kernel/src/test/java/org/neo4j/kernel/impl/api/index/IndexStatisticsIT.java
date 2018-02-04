@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +51,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static java.util.Arrays.asList;
 
@@ -71,13 +71,13 @@ public class IndexStatisticsIT
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         setupDb( fsRule.get() );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         try
@@ -128,8 +128,8 @@ public class IndexStatisticsIT
 
     private void assertEqualRegisters( String message, DoubleLongRegister expected, DoubleLongRegister actual )
     {
-        assertEquals( message + " (first part of register)", expected.readFirst(), actual.readFirst() );
-        assertEquals( message + " (second part of register)", expected.readSecond(), actual.readSecond() );
+        assertEquals( expected.readFirst(), actual.readFirst(), message + " (first part of register)" );
+        assertEquals( expected.readSecond(), actual.readSecond(), message + " (second part of register)" );
     }
 
     private void assertLogExistsForRecoveryOn( String labelAndProperty )

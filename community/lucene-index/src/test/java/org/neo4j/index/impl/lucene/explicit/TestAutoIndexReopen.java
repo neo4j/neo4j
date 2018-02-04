@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
@@ -34,7 +34,7 @@ import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestAutoIndexReopen
 {
@@ -45,7 +45,7 @@ public class TestAutoIndexReopen
     private long id2 = -1;
     private long id3 = -1;
 
-    @Before
+    @BeforeEach
     public void startDb()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().
@@ -81,7 +81,7 @@ public class TestAutoIndexReopen
         }
     }
 
-    @After
+    @AfterEach
     public void stopDb()
     {
         if ( graphDb != null )

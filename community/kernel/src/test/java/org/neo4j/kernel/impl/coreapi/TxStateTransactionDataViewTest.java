@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +53,8 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -79,7 +79,7 @@ public class TxStateTransactionDataViewTest
 
     private final TransactionState state = new TxState();
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         when( bridge.get() ).thenReturn( stmt );

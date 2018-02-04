@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
@@ -75,7 +75,7 @@ public class CatchupStoreCopyInteractionStressTesting
     private FileSystemAbstraction fs;
     private PageCache pageCache;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         fs = fileSystemRule.get();

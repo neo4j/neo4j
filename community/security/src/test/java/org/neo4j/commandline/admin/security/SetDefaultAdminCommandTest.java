@@ -19,15 +19,18 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import javax.annotation.Resource;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -44,17 +47,20 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.assertion.Assert.assertException;
 
+@ExtendWith( TestDirectoryExtension.class )
+@EnableRuleMigrationSupport
 public class SetDefaultAdminCommandTest
 {
     private SetDefaultAdminCommand setDefaultAdmin;
@@ -64,10 +70,10 @@ public class SetDefaultAdminCommandTest
 
     @Rule
     public ExpectedException expect = ExpectedException.none();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory( fileSystem );
+    @Resource
+    public TestDirectory testDir;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException, InvalidArgumentsException
     {
         OutsideWorld mock = mock( OutsideWorld.class );

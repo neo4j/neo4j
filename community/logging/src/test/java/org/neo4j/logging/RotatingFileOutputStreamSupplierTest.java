@@ -82,7 +82,7 @@ public class RotatingFileOutputStreamSupplierTest
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
     @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory( getClass(), fileSystem );
+    public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystem );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 

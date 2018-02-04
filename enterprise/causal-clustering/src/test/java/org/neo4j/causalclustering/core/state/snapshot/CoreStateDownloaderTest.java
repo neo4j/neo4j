@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.state.snapshot;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Optional;
@@ -42,7 +42,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
@@ -76,7 +76,7 @@ public class CoreStateDownloaderTest
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,
                     snapshotService, commitStateHelper );
 
-    @Before
+    @BeforeEach
     public void commonMocking()
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
@@ -128,7 +128,7 @@ public class CoreStateDownloaderTest
         try
         {
             downloader.downloadSnapshot( catchupAddressProvider );
-            fail();
+            fail( "Failure was expected" );
         }
         catch ( StoreCopyFailedException e )
         {

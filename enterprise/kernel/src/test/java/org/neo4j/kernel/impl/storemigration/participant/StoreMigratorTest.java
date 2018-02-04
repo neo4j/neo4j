@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -45,11 +46,12 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
@@ -57,10 +59,11 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.StoreFile.NEO_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class StoreMigratorTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void shouldNotDoActualStoreMigrationBetween3_0_5_and_next() throws Exception
@@ -83,7 +86,7 @@ public class StoreMigratorTest
             String fromStoreVersion = StoreVersion.HIGH_LIMIT_V3_0_0.versionString();
             Result hasVersionResult = new StoreVersionCheck( pageCache ).hasVersion(
                     new File( storeDir, NEO_STORE.fileName( STORE ) ), fromStoreVersion );
-            assertTrue( hasVersionResult.actualVersion, hasVersionResult.outcome.isSuccessful() );
+            assertTrue( hasVersionResult.outcome.isSuccessful(), hasVersionResult.actualVersion );
 
             // WHEN
             StoreMigrator migrator = new StoreMigrator( fs, pageCache, config, NullLogService.getInstance()

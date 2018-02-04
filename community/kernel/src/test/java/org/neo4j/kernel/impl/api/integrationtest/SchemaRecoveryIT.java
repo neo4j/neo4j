@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -31,14 +32,19 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.subprocess.SubProcess;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class SchemaRecoveryIT
 {
+    @Resource
+    public TestDirectory testDirectory;
+
     @Test
     public void schemaTransactionsShouldSurviveRecovery() throws Exception
     {
@@ -57,9 +63,6 @@ public class SchemaRecoveryIT
 
         recoveredDatabase.shutdown();
     }
-
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private List<ConstraintDefinition> constraints( GraphDatabaseService database )
     {

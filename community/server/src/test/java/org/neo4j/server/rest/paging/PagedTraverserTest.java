@@ -19,11 +19,12 @@
  */
 package org.neo4j.server.rest.paging;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,20 +35,22 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+@ExtendWith( {ImpermanentDatabaseExtension.class} )
 public class PagedTraverserTest
 {
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( );
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
     private static final int LIST_LENGTH = 100;
     private Node startNode;
 
-    @Before
+    @BeforeEach
     public void clearDb()
     {
         createLinkedList( LIST_LENGTH, dbRule.getGraphDatabaseAPI() );

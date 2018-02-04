@@ -22,7 +22,7 @@ package org.neo4j.bolt.v1.transport;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogger;

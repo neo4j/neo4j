@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
 
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -127,7 +127,7 @@ public class ShellQueryLoggingIT
 
         // when
         try ( Result result = db.execute( query );
-              PrintWriter out = new PrintWriter( this.out ) )
+                PrintWriter out = new PrintWriter( this.out ) )
         {
             result.writeAsStringTo( out );
         }

@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -34,22 +34,22 @@ import org.neo4j.server.rest.repr.formats.NullFormat;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class PluginManagerTest
 {
     private static PluginManager manager;
     private static GraphDatabaseAPI graphDb;
 
-    @BeforeClass
+    @BeforeAll
     public static void loadExtensionManager()
     {
         graphDb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
         manager = new PluginManager( null, NullLogProvider.getInstance() );
     }
 
-    @AfterClass
+    @AfterAll
     public static void destroyExtensionManager()
     {
         manager = null;

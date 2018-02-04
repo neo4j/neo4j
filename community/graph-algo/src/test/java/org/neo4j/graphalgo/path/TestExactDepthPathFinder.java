@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
 {

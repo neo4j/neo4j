@@ -19,22 +19,26 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 /**
  * This test ensures that lazy properties
  */
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class TestReferenceDangling
 {
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( );
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
     @Test
     public void testPropertyStoreReferencesOnRead() throws Throwable

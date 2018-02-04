@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.fs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

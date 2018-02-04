@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -35,8 +35,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_log_pruning_strategy;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -46,7 +46,7 @@ public class SegmentedRaftLogCursorIT
     private final LifeSupport life = new LifeSupport();
     private FileSystemAbstraction fileSystem;
 
-    @After
+    @AfterEach
     public void tearDown() throws Throwable
     {
         life.stop();

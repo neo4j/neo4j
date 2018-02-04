@@ -57,7 +57,7 @@ public class LuceneDataSourceTest
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule )
-                                                 .around( life ).around( expectedException );
+            .around( life ).around( expectedException );
 
     private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;

@@ -22,9 +22,8 @@ package org.neo4j.causalclustering.protocol.handshake;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,10 +37,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-@RunWith( Parameterized.class )
+
 public class ServerMessageEncodingTest
 {
-    private final ServerMessage message;
     private final ClientMessageEncoder encoder = new ClientMessageEncoder();
     private final ServerMessageDecoder decoder = new ServerMessageDecoder();
 
@@ -56,7 +54,6 @@ public class ServerMessageEncodingTest
         return output;
     }
 
-    @Parameterized.Parameters( name = "ResponseMessage-{0}" )
     public static Collection<ServerMessage> data()
     {
         return asList(
@@ -69,13 +66,9 @@ public class ServerMessageEncodingTest
                 );
     }
 
-    public ServerMessageEncodingTest( ServerMessage message )
-    {
-        this.message = message;
-    }
-
-    @Test
-    public void shouldCompleteEncodingRoundTrip()
+    @ParameterizedTest
+    @MethodSource(value = "data")
+    public void shouldCompleteEncodingRoundTrip( ServerMessage message ) throws Throwable
     {
         //when
         List<Object> output = encodeDecode( message );

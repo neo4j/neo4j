@@ -22,11 +22,11 @@ package org.neo4j.causalclustering.core.consensus.vote;
 import java.util.UUID;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class VoteStateTest
 {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -38,8 +38,8 @@ import org.neo4j.server.security.auth.FileUserRepository;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -58,7 +58,7 @@ public class SetDefaultAdminCommandIT
 
     private static final String SET_ADMIN = "set-default-admin";
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         File graphDir = new File( "graph-db" );

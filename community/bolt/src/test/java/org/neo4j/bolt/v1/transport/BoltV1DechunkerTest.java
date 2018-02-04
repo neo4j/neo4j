@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.transport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -31,8 +31,8 @@ import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.messaging.util.MessageMatchers;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 
 public class BoltV1DechunkerTest
@@ -65,11 +65,11 @@ public class BoltV1DechunkerTest
 
             // when
             dechunker.handle( wrappedBuffer( new byte[]{head1} ) );
-            assertTrue( "content length " + len + ": should be waiting for second chunk", messages.asList().isEmpty() );
+            assertTrue( messages.asList().isEmpty(), "content length " + len + ": should be waiting for second chunk" );
             dechunker.handle( wrappedBuffer( chunk2 ) );
 
             // then
-            assertEquals( "content length " + len + ": should have received message", 1, messages.asList().size() );
+            assertEquals( 1, messages.asList().size(), "content length " + len + ": should have received message" );
             assertEquals( run, messages.asList().get( 0 ) );
         }
     }

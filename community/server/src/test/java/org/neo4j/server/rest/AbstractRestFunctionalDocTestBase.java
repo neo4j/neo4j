@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import org.neo4j.graphdb.Transaction;
-
 import org.junit.Before;
+
+import org.neo4j.graphdb.Transaction;
 
 /**
  * Remove nodes and relationships between tests.

@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -39,9 +39,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -62,7 +62,7 @@ public class IndexRestartIT
     private final ControlledPopulationSchemaIndexProvider provider = new ControlledPopulationSchemaIndexProvider();
     private final Label myLabel = label( "MyLabel" );
 
-    @Before
+    @BeforeEach
     public void before()
     {
         factory = new TestGraphDatabaseFactory();
@@ -72,7 +72,7 @@ public class IndexRestartIT
         ) );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

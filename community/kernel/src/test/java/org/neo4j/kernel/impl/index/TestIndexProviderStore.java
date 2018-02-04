@@ -19,26 +19,28 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import javax.annotation.Resource;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -46,22 +48,29 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.fs.FileUtils.truncateFile;
+import static org.neo4j.io.fs.OpenMode.READ_WRITE;
+import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
+import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class TestIndexProviderStore
 {
+    @Resource
+    public TestDirectory testDirectory;
     private File file;
     private FileSystemAbstraction fileSystem;
 
-    @Before
+    @BeforeEach
     public void createStore()
     {
-        file = new File( "target/test-data/index-provider-store" );
+        file = testDirectory.file( "index-provider-store" );
         fileSystem = new DefaultFileSystemAbstraction();
         file.mkdirs();
         fileSystem.deleteFile( file );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         fileSystem.close();
@@ -83,61 +92,67 @@ public class TestIndexProviderStore
     @Test
     public void shouldFailUpgradeIfNotAllowed()
     {
-        IndexProviderStore store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.1" ), true );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), true );
         store.close();
-        store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.1" ), false );
+        store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.1" ), false );
         store.close();
         try
         {
-            new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), false );
+            new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
             fail( "Shouldn't be able to upgrade there" );
         }
         catch ( UpgradeNotAllowedByConfigurationException e )
         {   // Good
         }
-        store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), true );
-        assertEquals( "3.5", MetaDataStore.versionLongToString( store.getIndexVersion() ) );
+        store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), true );
+        assertEquals( "3.5", versionLongToString( store.getIndexVersion() ) );
         store.close();
     }
 
-    @Test( expected = NotCurrentStoreVersionException.class )
+    @Test
     public void shouldFailToGoBackToOlderVersion()
     {
-        String newerVersion = "3.5";
-        String olderVersion = "3.1";
-        try
-        {
-            IndexProviderStore store = new IndexProviderStore( file, fileSystem,
-                    MetaDataStore.versionStringToLong( newerVersion ), true );
-            store.close();
-            store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), false );
-        }
-        catch ( NotCurrentStoreVersionException e )
-        {
-            assertTrue( e.getMessage().contains( newerVersion ) );
-            assertTrue( e.getMessage().contains( olderVersion ) );
-            throw e;
-        }
+        assertThrows( NotCurrentStoreVersionException.class, () -> {
+            String newerVersion = "3.5";
+            String olderVersion = "3.1";
+            try
+            {
+                IndexProviderStore store =
+                        new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+                store.close();
+                store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), false );
+            }
+            catch ( NotCurrentStoreVersionException e )
+            {
+                assertTrue( e.getMessage().contains( newerVersion ) );
+                assertTrue( e.getMessage().contains( olderVersion ) );
+                throw e;
+            }
+            ;
+        } );
     }
 
-    @Test( expected = NotCurrentStoreVersionException.class )
+    @Test
     public void shouldFailToGoBackToOlderVersionEvenIfAllowUpgrade()
     {
-        String newerVersion = "3.5";
-        String olderVersion = "3.1";
-        try
-        {
-            IndexProviderStore store = new IndexProviderStore( file, fileSystem,
-                    MetaDataStore.versionStringToLong( newerVersion ), true );
-            store.close();
-            store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), true );
-        }
-        catch ( NotCurrentStoreVersionException e )
-        {
-            assertTrue( e.getMessage().contains( newerVersion ) );
-            assertTrue( e.getMessage().contains( olderVersion ) );
-            throw e;
-        }
+        assertThrows( NotCurrentStoreVersionException.class, () -> {
+            String newerVersion = "3.5";
+            String olderVersion = "3.1";
+            try
+            {
+                IndexProviderStore store =
+                        new IndexProviderStore( file, fileSystem, versionStringToLong( newerVersion ), true );
+                store.close();
+                store = new IndexProviderStore( file, fileSystem, versionStringToLong( olderVersion ), true );
+            }
+            catch ( NotCurrentStoreVersionException e )
+            {
+                assertTrue( e.getMessage().contains( newerVersion ) );
+                assertTrue( e.getMessage().contains( olderVersion ) );
+                throw e;
+            }
+            ;
+        } );
     }
 
     @Test
@@ -146,7 +161,7 @@ public class TestIndexProviderStore
         // This was before 1.6.M02
         IndexProviderStore store = new IndexProviderStore( file, fileSystem, 0, false );
         store.close();
-        FileUtils.truncateFile( file, 4 * 8 );
+        truncateFile( file, 4 * 8 );
         try
         {
             store = new IndexProviderStore( file, fileSystem, 0, false );
@@ -168,9 +183,9 @@ public class TestIndexProviderStore
 
         FileSystemAbstraction fs = spy( fileSystem );
         StoreChannel tempChannel;
-        when( tempChannel = fs.open( file, OpenMode.READ_WRITE ) ).then( ignored ->
+        when( tempChannel = fs.open( file, READ_WRITE ) ).then( ignored ->
         {
-            StoreChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
+            StoreChannel channel = fileSystem.open( file, READ_WRITE );
             if ( channelUsedToCreateFile[0] == null )
             {
                 StoreChannel channelSpy = spy( channel );
@@ -186,7 +201,7 @@ public class TestIndexProviderStore
         fs.deleteFile( file );
 
         // When
-        IndexProviderStore store = new IndexProviderStore( file, fs, MetaDataStore.versionStringToLong( "3.5" ), false );
+        IndexProviderStore store = new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
 
         // Then
         StoreChannel channel = channelUsedToCreateFile[0];
@@ -197,19 +212,21 @@ public class TestIndexProviderStore
         store.close();
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenTryingToCreateFileThatAlreadyExists()
     {
-        // Given
-        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
-        when( fs.fileExists( file ) ).thenReturn( false ).thenReturn( true );
-        when( fs.getFileSize( file ) ).thenReturn( 42L );
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+            when( fs.fileExists( file ) ).thenReturn( false ).thenReturn( true );
+            when( fs.getFileSize( file ) ).thenReturn( 42L );
 
-        // When
-        new IndexProviderStore( file, fs, MetaDataStore.versionStringToLong( "3.5" ), false );
+            // When
+            new IndexProviderStore( file, fs, versionStringToLong( "3.5" ), false );
 
-        // Then
-        // exception is thrown
+            // Then
+            // exception is thrown
+        } );
     }
 
     @Test
@@ -219,7 +236,7 @@ public class TestIndexProviderStore
         file.createNewFile();
 
         // When
-        IndexProviderStore store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), false );
+        IndexProviderStore store = new IndexProviderStore( file, fileSystem, versionStringToLong( "3.5" ), false );
 
         // Then
         assertTrue( fileSystem.getFileSize( file ) > 0 );

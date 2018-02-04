@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -36,10 +36,10 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
@@ -282,7 +282,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         // then
         statement = statementInNewTransaction( AnonymousContext.writeToken() );
-        assertEquals( "number of nodes", 5, count( statement.readOperations().nodesGetAll() ) );
+        assertEquals( 5, count( statement.readOperations().nodesGetAll() ), "number of nodes" );
         rollback();
     }
 

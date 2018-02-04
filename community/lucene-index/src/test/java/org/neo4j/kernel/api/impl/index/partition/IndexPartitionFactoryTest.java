@@ -22,31 +22,36 @@ package org.neo4j.kernel.api.impl.index.partition;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class IndexPartitionFactoryTest
 {
-
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     private Directory directory;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         directory = DirectoryFactory.PERSISTENT.open( testDirectory.directory() );
@@ -80,8 +85,8 @@ public class IndexPartitionFactoryTest
                 indexPartition.maybeRefreshBlocking();
                 try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
                 {
-                    assertEquals( "We should be able to see newly added document ",
-                            1, searcher.getIndexSearcher().getIndexReader().numDocs() );
+                    assertEquals( 1, searcher.getIndexSearcher().getIndexReader().numDocs(),
+                            "We should be able to see newly added document " );
                 }
             }
         }

@@ -20,9 +20,9 @@
 package org.neo4j.server;
 
 import com.sun.jersey.api.client.Client;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,19 +33,19 @@ import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
 {
     private static NeoServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void startServer() throws IOException
     {
         server = ServerHelper.createNonPersistentServer();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         if ( server != null )

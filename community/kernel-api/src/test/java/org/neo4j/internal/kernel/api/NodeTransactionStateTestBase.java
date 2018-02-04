@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -29,9 +29,9 @@ import org.neo4j.helpers.collection.Iterables;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -49,9 +49,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             try ( NodeCursor node = cursors.allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
                 assertEquals( nodeId, node.nodeReference() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -78,12 +78,12 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             try ( NodeCursor node = cursors.allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 LabelSet labels = node.labels();
                 assertEquals( 1, labels.numberOfLabels() );
                 assertEquals( labelId, labels.label( 0 ) );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -131,10 +131,10 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             try ( NodeCursor node = cursors.allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 assertLabels( node.labels(), toRetain, toAdd );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -206,7 +206,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
                 assertTrue( property.next() );
@@ -218,8 +218,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( prop2, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should only find two properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find two properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -247,15 +247,15 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
                 assertTrue( property.next() );
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "hello" ) );
 
-                assertFalse( "should only find one properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find one properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -295,7 +295,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
 
@@ -309,8 +309,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( propToken1, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "hello" ) );
 
-                assertFalse( "should only find two properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find two properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -348,7 +348,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
 
@@ -356,8 +356,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should only find one property", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find one property" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -393,11 +393,11 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
-                assertFalse( "should not find any properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should not find any properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -434,15 +434,15 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = cursors.allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
                 assertTrue( property.next() );
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should not find any properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should not find any properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -859,7 +859,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             labelArray[i] = labels.label( i );
         }
         Arrays.sort( labelArray );
-        assertTrue( "labels match expected", Arrays.equals( expected, labelArray ) );
+        assertTrue( Arrays.equals( expected, labelArray ), "labels match expected" );
     }
 
     public Node createNode( String... labels ) throws Exception

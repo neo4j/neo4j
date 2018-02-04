@@ -163,7 +163,7 @@ public abstract class AbstractRecordFormatTest
             Generator<R> generator = generatorSupplier.get();
             int recordSize = format.getRecordSize( new IntStoreHeader( DATA_SIZE ) );
             BatchingIdSequence idSequence = new BatchingIdSequence( random.nextBoolean() ?
-                    idSureToBeOnTheNextPage( PAGE_SIZE, recordSize ) : 10 );
+                                                                    idSureToBeOnTheNextPage( PAGE_SIZE, recordSize ) : 10 );
 
             // WHEN
             long time = currentTimeMillis();

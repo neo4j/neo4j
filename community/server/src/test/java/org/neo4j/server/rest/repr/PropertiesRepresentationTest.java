@@ -19,19 +19,19 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.Test;
+
 import org.neo4j.graphdb.PropertyContainer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
@@ -76,8 +76,8 @@ public class PropertiesRepresentationTest
         assertEquals( "value", map.get( "string" ) );
         assertEquals( 5, ( (Number) map.get( "int" ) ).longValue() );
         assertEquals( 17, ( (Number) map.get( "long" ) ).longValue() );
-        assertEquals( 3.14, ( (Number) map.get( "double" ) ).doubleValue(), 0.0 );
-        assertEquals( 42.0, ( (Number) map.get( "float" ) ).doubleValue(), 0.0 );
+        assertEquals( ((Number) map.get( "double" )).doubleValue(), 0.0, 3.14 );
+        assertEquals( ((Number) map.get( "float" )).doubleValue(), 0.0, 42.0 );
         assertEqualContent( Arrays.asList( "one", "two" ), (List) map.get( "string array" ) );
         assertEqualContent( Arrays.asList( 5L, 17L ), (List) map.get( "long array" ) );
         assertEqualContent( Arrays.asList( 3.14, 42.0 ), (List) map.get( "double array" ) );

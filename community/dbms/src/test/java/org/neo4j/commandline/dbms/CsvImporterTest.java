@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -29,23 +29,27 @@ import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class CsvImporterTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public TestDirectory testDir;
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Test
     public void writesReportToSpecifiedReportFile() throws Exception

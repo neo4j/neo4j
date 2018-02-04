@@ -19,10 +19,10 @@
  */
 package org.neo4j.index;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -35,33 +35,33 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class Neo4jTestCase
 {
     private static GraphDatabaseService graphDb;
     private Transaction tx;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownDb()
     {
         graphDb.shutdown();
     }
 
-    @Before
+    @BeforeEach
     public void setUpTest()
     {
         tx = graphDb.beginTx();
     }
 
-    @After
+    @AfterEach
     public void tearDownTest()
     {
         if ( !manageMyOwnTxFinish() )
@@ -113,7 +113,7 @@ public abstract class Neo4jTestCase
                 deleteFileOrDirectory( child );
             }
         }
-        assertTrue( "delete " + file, file.delete() );
+        assertTrue( file.delete(), "delete " + file );
     }
 
     protected static GraphDatabaseService graphDb()
@@ -125,8 +125,7 @@ public abstract class Neo4jTestCase
         T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
-        assertEquals( collectionString, expectedItems.length,
-            collection.size() );
+        assertEquals( expectedItems.length, collection.size(), collectionString );
         for ( T item : expectedItems )
         {
             assertTrue( collection.contains( item ) );
@@ -142,7 +141,7 @@ public abstract class Neo4jTestCase
             T... expectedItems )
     {
         String collectionString = join( ", ", collection.toArray() );
-        assertEquals( collectionString, expectedItems.length, collection.size() );
+        assertEquals( expectedItems.length, collection.size(), collectionString );
         Iterator<T> itr = collection.iterator();
         for ( int i = 0; itr.hasNext(); i++ )
         {

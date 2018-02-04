@@ -19,9 +19,9 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -33,29 +33,32 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class FileMoveProviderTest
 {
     private DefaultFileSystemAbstraction defaultFileSystemAbstraction = new DefaultFileSystemAbstraction();
     private EphemeralFileSystemAbstraction ephemeralFileSystemAbstraction = new EphemeralFileSystemAbstraction();
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( defaultFileSystemAbstraction );
+    @Resource
+    public TestDirectory testDirectory;
 
     private FileMoveProvider subject;
 
@@ -63,7 +66,7 @@ public class FileMoveProviderTest
     private PageCache pageCache;
     private FileMoveActionInformer fileMoveActionInformer;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         pageCache = pageCacheRule.getPageCache( ephemeralFileSystemAbstraction );
@@ -183,7 +186,8 @@ public class FileMoveProviderTest
 
         // and correct files are copied over the page cache
         File expectedPageCacheCopy = new File( targetDirectory, aPageCacheFile.getName() );
-        assertTrue( expectedPageCacheCopy.toString(), pageCache.getCachedFileSystem().fileExists( expectedPageCacheCopy ) );
+        assertTrue( pageCache.getCachedFileSystem().fileExists( expectedPageCacheCopy ),
+                expectedPageCacheCopy.toString() );
     }
 
     @Test

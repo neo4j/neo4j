@@ -20,11 +20,14 @@
 package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import javax.annotation.Resource;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.OpenMode;
@@ -33,20 +36,23 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class ReadAheadLogChannelTest
 {
 
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void shouldReadFromSingleChannel() throws Exception
@@ -82,8 +88,8 @@ public class ReadAheadLogChannelTest
             assertEquals( shortValue, channel.getShort() );
             assertEquals( intValue, channel.getInt() );
             assertEquals( longValue, channel.getLong() );
-            assertEquals( floatValue, channel.getFloat(), 0.1f );
-            assertEquals( doubleValue, channel.getDouble(), 0.1d );
+            assertEquals( channel.getFloat(), 0.1f, floatValue );
+            assertEquals( channel.getDouble(), 0.1d, doubleValue );
 
             byte[] bytes = new byte[byteArrayValue.length];
             channel.get( bytes, byteArrayValue.length );

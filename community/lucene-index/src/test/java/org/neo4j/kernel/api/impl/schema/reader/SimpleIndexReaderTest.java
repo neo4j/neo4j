@@ -27,8 +27,8 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +59,7 @@ public class SimpleIndexReaderTest
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( partitionSearcher.getIndexSearcher() ).thenReturn( indexSearcher );

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,8 +33,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ReadAheadChannelTest
 {
@@ -203,7 +203,7 @@ public class ReadAheadChannelTest
         try
         {
             bufferedReader.getLong();
-            fail();
+            fail("Failure was expected");
         }
         catch ( ReadPastEndException e )
         {

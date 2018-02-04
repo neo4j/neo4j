@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Map;
@@ -40,8 +40,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class KernelTest

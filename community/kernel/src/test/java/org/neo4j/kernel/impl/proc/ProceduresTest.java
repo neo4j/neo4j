@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -40,9 +41,9 @@ import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.Key.key;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTAny;
@@ -50,6 +51,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
+@EnableRuleMigrationSupport
 public class ProceduresTest
 {
     @Rule

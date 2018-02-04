@@ -20,7 +20,7 @@
 package org.neo4j.server.modules;
 
 import org.apache.commons.configuration.Configuration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Collection;
@@ -35,7 +35,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginLifecycle;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class ExtensionInitializerTest

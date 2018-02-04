@@ -19,10 +19,10 @@
  */
 package recovery;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,7 +44,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
 public class CountsStoreRecoveryTest
@@ -127,7 +127,7 @@ public class CountsStoreRecoveryTest
     private GraphDatabaseService db;
     private final InMemoryIndexProvider indexProvider = new InMemoryIndexProvider( 100 );
 
-    @Before
+    @BeforeEach
     public void before()
     {
         db = databaseFactory( fsRule.get(), indexProvider ).newImpermanentDatabase();
@@ -139,7 +139,7 @@ public class CountsStoreRecoveryTest
                 .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

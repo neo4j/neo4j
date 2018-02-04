@@ -19,14 +19,14 @@
  */
 package org.neo4j.values.storable;
 
-import org.junit.Test;
-
 import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
+
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.LocalTimeValue.parse;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;

@@ -34,7 +34,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

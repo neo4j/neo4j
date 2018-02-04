@@ -19,10 +19,10 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Resource;
 
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.Node;
@@ -54,12 +55,13 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for a problem where multiple threads getting an index for the first time
@@ -68,20 +70,21 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Mattias Persson
  */
+@ExtendWith( TestDirectoryExtension.class )
 public class IndexCreationTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private GraphDatabaseAPI db;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();
@@ -163,7 +166,7 @@ public class IndexCreationTest
                 {
                     // The first COMMIT
                     assertTrue( startFound );
-                    assertFalse( "Index creation transaction wasn't the first one", commandsInFirstEntry.isEmpty() );
+                    assertFalse( commandsInFirstEntry.isEmpty(), "Index creation transaction wasn't the first one" );
                     List<StorageCommand> createCommands = Iterators.asList( new FilteringIterator<>(
                             commandsInFirstEntry.iterator(),
                             item -> item instanceof IndexDefineCommand
@@ -175,6 +178,6 @@ public class IndexCreationTest
             }
         }
 
-        assertTrue( "Didn't find any commit record in log " + version, success.get() );
+        assertTrue( success.get(), "Didn't find any commit record in log " + version );
     }
 }

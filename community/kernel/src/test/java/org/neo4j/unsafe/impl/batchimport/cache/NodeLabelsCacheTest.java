@@ -19,16 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.test.Race;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NodeLabelsCacheTest
 {
@@ -89,7 +89,7 @@ public class NodeLabelsCacheTest
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             int[] labels = cache.get( client, i, forceCreationOfNewIntArray );
-            assertArrayEquals( "For node " + i, expectedLabels[i], labels );
+            assertArrayEquals( expectedLabels[i], labels, "For node " + i );
         }
     }
 

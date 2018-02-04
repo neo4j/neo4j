@@ -19,44 +19,48 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.server.rest.MasterInfoService.BASE_PATH;
 import static org.neo4j.server.rest.MasterInfoService.IS_MASTER_PATH;
 import static org.neo4j.server.rest.MasterInfoService.IS_SLAVE_PATH;
 import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersistentServer;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class StandaloneHaInfoFunctionalTest
 {
     private static OpenEnterpriseNeoServer server;
 
-    @Rule
-    public final TestDirectory target = TestDirectory.testDirectory();
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public TestDirectory target;
+    @Resource
+    public SuppressOutput suppressOutput;
 
-    @Before
+    @BeforeEach
     public void before() throws IOException
     {
         server = createNonPersistentServer(target.directory());
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if ( server != null )

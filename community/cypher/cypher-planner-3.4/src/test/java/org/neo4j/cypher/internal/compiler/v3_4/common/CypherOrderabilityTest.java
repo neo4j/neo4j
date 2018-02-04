@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.common;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;

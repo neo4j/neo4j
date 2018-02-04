@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -239,7 +239,7 @@ public class NodeCommandTest
         return labels;
     }
 
-    @Before
+    @BeforeEach
     public void before()
     {
         File dir = new File( "dir" );
@@ -252,7 +252,7 @@ public class NodeCommandTest
         nodeStore = neoStores.getNodeStore();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         neoStores.close();

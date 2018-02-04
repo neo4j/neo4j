@@ -128,11 +128,11 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     @Documented( "Creating a paged traverser.\n\n" +
-                 "Paged traversers are created by ++POST++-ing a\n" +
-                 "traversal description to the link identified by the +paged_traverser+ key\n" +
-                 "in a node representation. When creating a paged traverser, the same\n" +
-                 "options apply as for a regular traverser, meaning that +node+, +path+,\n" +
-                 "or +fullpath+, can be targeted." )
+            "Paged traversers are created by ++POST++-ing a\n" +
+            "traversal description to the link identified by the +paged_traverser+ key\n" +
+            "in a node representation. When creating a paged traverser, the same\n" +
+            "options apply as for a regular traverser, meaning that +node+, +path+,\n" +
+            "or +fullpath+, can be targeted." )
     @Test
     public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults()
     {
@@ -155,19 +155,19 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     @Documented( "Paging through the results of a paged traverser.\n\n" +
-                 "Paged traversers holdstate on the server, and allow clients to page through\n" +
-                 "the results of a traversal. To progress to the next page of traversal results,\n" +
-                 "the client issues a HTTP GET request on the paged traversal URI which causes the\n" +
-                 "traversal to fill the next page (or partially fill it if insufficient\n" +
-                 "results are available).\n" +
-                 " \n" +
-                 "Note that if a traverser expires through inactivity it will cause a 404\n" +
-                 "response on the next +GET+ request. Traversers' leases are renewed on\n" +
-                 "every successful access for the same amount of time as originally\n" +
-                 "specified.\n" +
-                 " \n" +
-                 "When the paged traverser reaches the end of its results, the client can\n" +
-                 "expect a 404 response as the traverser is disposed by the server." )
+            "Paged traversers holdstate on the server, and allow clients to page through\n" +
+            "the results of a traversal. To progress to the next page of traversal results,\n" +
+            "the client issues a HTTP GET request on the paged traversal URI which causes the\n" +
+            "traversal to fill the next page (or partially fill it if insufficient\n" +
+            "results are available).\n" +
+            " \n" +
+            "Note that if a traverser expires through inactivity it will cause a 404\n" +
+            "response on the next +GET+ request. Traversers' leases are renewed on\n" +
+            "every successful access for the same amount of time as originally\n" +
+            "specified.\n" +
+            " \n" +
+            "When the paged traverser reaches the end of its results, the client can\n" +
+            "expect a 404 response as the traverser is disposed by the server." )
     @Test
     public void shouldBeAbleToTraverseAllThePagesWithDefaultPageSize()
     {
@@ -207,9 +207,9 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     @Documented( "Paged traverser page size.\n\n" +
-                 "The default page size is 50 items, but\n" +
-                 "depending on the application larger or smaller pages sizes might be\n" +
-                 "appropriate. This can be set by adding a +pageSize+ query parameter." )
+            "The default page size is 50 items, but\n" +
+            "depending on the application larger or smaller pages sizes might be\n" +
+            "appropriate. This can be set by adding a +pageSize+ query parameter." )
     @Test
     public void shouldBeAbleToTraverseAllThePagesWithNonDefaultPageSize()
     {
@@ -230,10 +230,10 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     @Documented( "Paged traverser timeout.\n\n" +
-                 "The default timeout for a paged traverser is 60\n" +
-                 "seconds, but depending on the application larger or smaller timeouts\n" +
-                 "might be appropriate. This can be set by adding a +leaseTime+ query\n" +
-                 "parameter with the number of seconds the paged traverser should last." )
+            "The default timeout for a paged traverser is 60\n" +
+            "seconds, but depending on the application larger or smaller timeouts\n" +
+            "might be appropriate. This can be set by adding a +leaseTime+ query\n" +
+            "parameter with the number of seconds the paged traverser should last." )
     @Test
     public void shouldExpireTraverserWithNonDefaultTimeout()
     {
@@ -345,7 +345,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     private JaxRsResponse createStreamingPagedTraverserWithTimeoutInMinutesAndPageSize( int leaseTimeInSeconds,
-                                                                                        int pageSize )
+            int pageSize )
     {
         String description = traverserDescription();
 
@@ -405,7 +405,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     private JaxRsResponse createPagedTraverserWithTimeoutInMinutesAndPageSize( final int leaseTimeInSeconds,
-                                                                               final int pageSize )
+            final int pageSize )
     {
         String description = traverserDescription();
 

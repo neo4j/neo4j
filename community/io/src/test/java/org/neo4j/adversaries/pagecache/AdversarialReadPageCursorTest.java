@@ -19,14 +19,14 @@
  */
 package org.neo4j.adversaries.pagecache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.test.rule.PageCacheRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AdversarialReadPageCursorTest
 {

@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class PhysicalToLogicalLabelChangesTest
 {

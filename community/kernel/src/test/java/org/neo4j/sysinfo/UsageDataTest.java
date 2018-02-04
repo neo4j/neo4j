@@ -19,13 +19,13 @@
  */
 package org.neo4j.sysinfo;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKey;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.udc.UsageDataKey.key;
 

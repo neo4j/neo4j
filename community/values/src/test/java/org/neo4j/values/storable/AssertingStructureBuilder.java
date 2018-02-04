@@ -29,8 +29,8 @@ import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.values.StructureBuilder;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public final class AssertingStructureBuilder<Input, Result> implements StructureBuilder<Input,Result>
 {

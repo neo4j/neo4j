@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.setStaticField;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SetStaticFieldTest
 {

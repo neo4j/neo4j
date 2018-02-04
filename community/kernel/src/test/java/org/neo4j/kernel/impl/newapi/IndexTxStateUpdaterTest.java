@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -77,7 +77,7 @@ public class IndexTxStateUpdaterTest
     private StubNodeCursor node;
     private StubPropertyCursor propertyCursor;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         txState = mock( TransactionState.class );

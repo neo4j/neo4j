@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -174,7 +174,7 @@ public class BloomFulltextIndexBenchmarks
         db = null;
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if ( db != null )

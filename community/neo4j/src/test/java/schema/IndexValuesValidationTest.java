@@ -22,14 +22,16 @@ package schema;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -39,29 +41,31 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class IndexValuesValidationTest
 {
 
-    @ClassRule
-    public static final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     private static GraphDatabaseService database;
 
-    @BeforeClass
-    public static void setUp()
+    @BeforeEach
+    public void setUp()
     {
         database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.graphDbDir() );
     }
 
-    @AfterClass
-    public static void tearDown()
+    @AfterEach
+    public void tearDown()
     {
         database.shutdown();
     }

@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.core.consensus.roles;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.NullLog;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;

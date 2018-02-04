@@ -19,15 +19,17 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@EnableRuleMigrationSupport
 public class ArgumentsTest
 {
     @Rule
@@ -35,7 +37,7 @@ public class ArgumentsTest
 
     private Arguments builder;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         builder = new Arguments();

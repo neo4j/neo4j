@@ -19,11 +19,12 @@
  */
 package org.neo4j.metrics;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -54,10 +56,11 @@ import static org.neo4j.metrics.source.db.BoltMetrics.TOTAL_PROCESSING_TIME;
 import static org.neo4j.metrics.source.db.BoltMetrics.TOTAL_QUEUE_TIME;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class BoltMetricsIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private GraphDatabaseAPI db;
     private TransportConnection conn;
@@ -110,7 +113,7 @@ public class BoltMetricsIT
                 greaterThanOrEqualTo( 0L ), 5, SECONDS );
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws Exception
     {
         conn.disconnect();

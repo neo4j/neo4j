@@ -20,23 +20,24 @@
 package org.neo4j.kernel;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.RepeatRule;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
 /**
@@ -47,15 +48,15 @@ import static org.neo4j.helpers.collection.Iterables.asSet;
  * "name -> id" and "id -> name" populated.
  * Otherwise attempt to retrieve labels from newly created node can fail.
  */
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class TokenCreationIT
 {
-    @Rule
-    public final EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule databaseRule;
 
     private volatile boolean stop;
 
-    @Test
-    @RepeatRule.Repeat( times = 5 )
+    @RepeatedTest( 5 )
     public void concurrentLabelTokenCreation() throws InterruptedException
     {
         int concurrentWorkers = 10;

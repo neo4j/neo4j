@@ -20,7 +20,7 @@
 package org.neo4j.graphalgo.impl.util;
 
 import common.Neo4jAlgoTestCase;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,9 +32,9 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Anton Persson
@@ -47,8 +47,8 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
         topFetcher = new TopFetchingWeightedPathIterator(
                 Collections.emptyIterator(), evaluator );
 
-        assertFalse( "Expected iterator to be empty", topFetcher.hasNext() );
-        assertNull( "Expected null after report has no next", topFetcher.fetchNextOrNull() );
+        assertFalse( topFetcher.hasNext(), "Expected iterator to be empty" );
+        assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
     }
 
     @Test
@@ -60,10 +60,10 @@ public class TestTopFetchingWeightedPathIterator extends Neo4jAlgoTestCase
 
         topFetcher = new TopFetchingWeightedPathIterator( list.iterator(), evaluator, epsilon );
 
-        assertTrue( "Expected at least one element", topFetcher.hasNext() );
+        assertTrue( topFetcher.hasNext(), "Expected at least one element" );
         assertPathDef( a, topFetcher.next() );
-        assertFalse( "Expected no more elements", topFetcher.hasNext() );
-        assertNull( "Expected null after report has no next", topFetcher.fetchNextOrNull() );
+        assertFalse( topFetcher.hasNext(), "Expected no more elements" );
+        assertNull( topFetcher.fetchNextOrNull(), "Expected null after report has no next" );
     }
 
     @Test

@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -35,7 +35,7 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ClientIT
 {

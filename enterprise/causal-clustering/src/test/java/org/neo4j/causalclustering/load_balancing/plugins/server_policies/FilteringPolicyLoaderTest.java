@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -28,7 +28,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.load_balancing_config;
 import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterBuilder.filter;

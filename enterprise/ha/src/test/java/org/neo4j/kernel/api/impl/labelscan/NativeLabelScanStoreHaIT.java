@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -36,18 +38,20 @@ import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allAvailabilityGuardsReleased;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class NativeLabelScanStoreHaIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     private final LifeSupport life = new LifeSupport();
     private ManagedCluster cluster;
     private final TestMonitor monitor = new TestMonitor();
@@ -58,7 +62,7 @@ public class NativeLabelScanStoreHaIT
         Second
     }
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
@@ -96,7 +100,7 @@ public class NativeLabelScanStoreHaIT
         cluster.await( allAvailabilityGuardsReleased() );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         life.shutdown();
@@ -108,9 +112,9 @@ public class NativeLabelScanStoreHaIT
         // This check is here o check so that the extension provided by this test is selected.
         // It can be higher than 3 (number of cluster members) since some members may restart
         // some services to switch role.
-        assertTrue( "Expected initial calls to init to be at least one per cluster member (>= 3), " +
-                        "but was " + monitor.callsTo_init,
-                monitor.callsTo_init >= 3 );
+        assertTrue( monitor.callsTo_init >= 3,
+                "Expected initial calls to init to be at least one per cluster member (>= 3), " + "but was " +
+                        monitor.callsTo_init );
 
         // GIVEN
         // An HA cluster where the master started with initial data consisting
@@ -119,8 +123,7 @@ public class NativeLabelScanStoreHaIT
         // and get the label scan store with it.
 
         // THEN
-        assertEquals( "Expected none to build their label scan store index.",
-                0, monitor.timesRebuiltWithData );
+        assertEquals( 0, monitor.timesRebuiltWithData, "Expected none to build their label scan store index." );
         for ( GraphDatabaseService db : cluster.getAllMembers() )
         {
             assertEquals( 2, numberOfNodesHavingLabel( db, Labels.First ) );

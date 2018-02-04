@@ -19,7 +19,7 @@
  */
 package org.neo4j.ha.correctness;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
@@ -32,7 +32,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
 
 public class TestProver

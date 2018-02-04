@@ -19,26 +19,30 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static java.lang.Thread.sleep;
+import static java.time.Duration.ofMillis;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.locking.LockTracer.NONE;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.time.Clocks.systemClock;
 
 public class RWLockTest
 {
@@ -46,29 +50,29 @@ public class RWLockTest
 
     private static ExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void initExecutor()
     {
-        executor = Executors.newCachedThreadPool();
+        executor = newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopExecutor() throws InterruptedException
     {
         executor.shutdown();
-        executor.awaitTermination( 2, TimeUnit.SECONDS );
+        executor.awaitTermination( 2, SECONDS );
     }
 
     @Test
     public void assertWriteLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
-        final LockResource resource = new LockResource( ResourceTypes.NODE, 0 );
+        final LockResource resource = new LockResource( NODE, 0 );
         final RWLock lock = createRWLock( ragManager, resource );
         final Transaction tx1 = mock( Transaction.class );
 
         lock.mark();
-        lock.acquireWriteLock( LockTracer.NONE, tx1 );
+        lock.acquireWriteLock( NONE, tx1 );
         lock.mark();
 
         assertEquals( 1, lock.getTxLockElementCount() );
@@ -80,12 +84,12 @@ public class RWLockTest
     public void assertReadLockDoesNotLeakMemory()
     {
         final RagManager ragManager = new RagManager();
-        final LockResource resource = new LockResource( ResourceTypes.NODE, 0 );
+        final LockResource resource = new LockResource( NODE, 0 );
         final RWLock lock = createRWLock( ragManager, resource );
         final Transaction tx1 = mock( Transaction.class );
 
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, tx1 );
+        lock.acquireReadLock( NONE, tx1 );
         lock.mark();
 
         assertEquals( 1, lock.getTxLockElementCount() );
@@ -97,156 +101,160 @@ public class RWLockTest
      * In case if writer thread can't grab write lock now, it should be added to
      * into a waiting list, wait till resource will be free and grab it.
      */
-    @Test( timeout = TEST_TIMEOUT_MILLIS )
+    @Test
     public void testWaitingWriterLock() throws InterruptedException
     {
-        RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, 1L );
-        final RWLock lock = createRWLock( ragManager, resource );
-        final LockTransaction lockTransaction = new LockTransaction();
-        final LockTransaction anotherTransaction = new LockTransaction();
+        assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
+            RagManager ragManager = new RagManager();
+            LockResource resource = new LockResource( NODE, 1L );
+            final RWLock lock = createRWLock( ragManager, resource );
+            final LockTransaction lockTransaction = new LockTransaction();
+            final LockTransaction anotherTransaction = new LockTransaction();
 
-        lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, lockTransaction );
-        lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, anotherTransaction );
+            lock.mark();
+            lock.acquireReadLock( NONE, lockTransaction );
+            lock.mark();
+            lock.acquireReadLock( NONE, anotherTransaction );
 
-        final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
+            final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
 
-        Runnable writer = createWriter( lock, lockTransaction, writerCompletedLatch );
+            Runnable writer = createWriter( lock, lockTransaction, writerCompletedLatch );
 
-        // start writer that will be placed in a wait list
-        executor.execute( writer );
+            // start writer that will be placed in a wait list
+            executor.execute( writer );
 
-        // wait till writer will be added into a list of waiters
-        waitWaitingThreads( lock, 1 );
+            // wait till writer will be added into a list of waiters
+            waitWaitingThreads( lock, 1 );
 
-        assertEquals( "No writers for now.", 0, lock.getWriteCount() );
-        assertEquals( 2, lock.getReadCount() );
+            assertEquals( 0, lock.getWriteCount(), "No writers for now." );
+            assertEquals( 2, lock.getReadCount() );
 
-        // releasing read locks that will allow writer to grab the lock
-        lock.releaseReadLock( lockTransaction );
-        lock.releaseReadLock( anotherTransaction );
+            // releasing read locks that will allow writer to grab the lock
+            lock.releaseReadLock( lockTransaction );
+            lock.releaseReadLock( anotherTransaction );
 
-        // wait till writer will have write lock
-        writerCompletedLatch.await();
+            // wait till writer will have write lock
+            writerCompletedLatch.await();
 
-        assertEquals( 1, lock.getWriteCount() );
-        assertEquals( 0, lock.getReadCount() );
+            assertEquals( 1, lock.getWriteCount() );
+            assertEquals( 0, lock.getReadCount() );
 
-        // now releasing write lock
-        lock.releaseWriteLock( lockTransaction );
+            // now releasing write lock
+            lock.releaseWriteLock( lockTransaction );
 
-        assertEquals( "Lock should not have any writers left.", 0, lock.getWriteCount() );
-        assertEquals( "No waiting threads left.", 0, lock.getWaitingThreadsCount() );
-        assertEquals( "No lock elements left.", 0, lock.getTxLockElementCount() );
+            assertEquals( 0, lock.getWriteCount(), "Lock should not have any writers left." );
+            assertEquals( 0, lock.getWaitingThreadsCount(), "No waiting threads left." );
+            assertEquals( 0, lock.getTxLockElementCount(), "No lock elements left." );
+        } );
     }
 
-    @Test( timeout = TEST_TIMEOUT_MILLIS )
+    @Test
     public void testWaitingReaderLock() throws InterruptedException
     {
-        RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, 1L );
-        final RWLock lock = createRWLock( ragManager, resource );
-        final LockTransaction transaction = new LockTransaction();
-        final LockTransaction readerTransaction = new LockTransaction();
+        assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
+            RagManager ragManager = new RagManager();
+            LockResource resource = new LockResource( NODE, 1L );
+            final RWLock lock = createRWLock( ragManager, resource );
+            final LockTransaction transaction = new LockTransaction();
+            final LockTransaction readerTransaction = new LockTransaction();
 
-        final CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
+            final CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
 
-        lock.mark();
-        lock.acquireWriteLock( LockTracer.NONE, transaction );
+            lock.mark();
+            lock.acquireWriteLock( NONE, transaction );
 
-        Runnable reader = createReader( lock, readerTransaction, readerCompletedLatch );
+            Runnable reader = createReader( lock, readerTransaction, readerCompletedLatch );
 
-        // start reader that should wait for writer to release write lock
-        executor.execute( reader );
+            // start reader that should wait for writer to release write lock
+            executor.execute( reader );
 
-        waitWaitingThreads( lock, 1 );
+            waitWaitingThreads( lock, 1 );
 
-        assertEquals( 1, lock.getWriteCount() );
-        assertEquals( "No readers for now", 0, lock.getReadCount() );
+            assertEquals( 1, lock.getWriteCount() );
+            assertEquals( 0, lock.getReadCount(), "No readers for now" );
 
-        lock.releaseWriteLock( transaction );
+            lock.releaseWriteLock( transaction );
 
-        // wait till reader finish lock grab
-        readerCompletedLatch.await();
+            // wait till reader finish lock grab
+            readerCompletedLatch.await();
 
-        assertEquals( 0, lock.getWriteCount() );
-        assertEquals( 1, lock.getReadCount() );
+            assertEquals( 0, lock.getWriteCount() );
+            assertEquals( 1, lock.getReadCount() );
 
-        lock.releaseReadLock( readerTransaction );
+            lock.releaseReadLock( readerTransaction );
 
-        assertEquals( "Lock should not have any readers left.", 0, lock.getReadCount() );
-        assertEquals( "No waiting threads left.", 0, lock.getWaitingThreadsCount() );
-        assertEquals( "No lock elements left.", 0, lock.getTxLockElementCount() );
+            assertEquals( 0, lock.getReadCount(), "Lock should not have any readers left." );
+            assertEquals( 0, lock.getWaitingThreadsCount(), "No waiting threads left." );
+            assertEquals( 0, lock.getTxLockElementCount(), "No lock elements left." );
+        } );
     }
 
-    @Test( timeout = TEST_TIMEOUT_MILLIS )
+    @Test
     public void testThreadRemovedFromWaitingListOnDeadlock() throws InterruptedException
     {
-        RagManager ragManager = Mockito.mock( RagManager.class );
-        LockResource resource = new LockResource( ResourceTypes.NODE, 1L );
-        final RWLock lock = createRWLock( ragManager, resource );
-        final LockTransaction lockTransaction = new LockTransaction();
-        final LockTransaction anotherTransaction = new LockTransaction();
+        assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
+            RagManager ragManager = mock( RagManager.class );
+            LockResource resource = new LockResource( NODE, 1L );
+            final RWLock lock = createRWLock( ragManager, resource );
+            final LockTransaction lockTransaction = new LockTransaction();
+            final LockTransaction anotherTransaction = new LockTransaction();
 
-        final CountDownLatch exceptionLatch = new CountDownLatch( 1 );
-        final CountDownLatch completionLatch = new CountDownLatch( 1 );
+            final CountDownLatch exceptionLatch = new CountDownLatch( 1 );
+            final CountDownLatch completionLatch = new CountDownLatch( 1 );
 
-        Mockito.doNothing().doAnswer( invocation ->
-        {
-            exceptionLatch.countDown();
-            throw new DeadlockDetectedException( "Deadlock" );
-        } ).when( ragManager ).checkWaitOn( lock, lockTransaction );
+            doNothing().doAnswer( invocation -> {
+                exceptionLatch.countDown();
+                throw new DeadlockDetectedException( "Deadlock" );
+            } ).when( ragManager ).checkWaitOn( lock, lockTransaction );
 
-        lock.mark();
-        lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, lockTransaction );
-        lock.acquireReadLock( LockTracer.NONE, anotherTransaction );
+            lock.mark();
+            lock.mark();
+            lock.acquireReadLock( NONE, lockTransaction );
+            lock.acquireReadLock( NONE, anotherTransaction );
 
-        // writer will be added to a waiting list
-        // then spurious wake up will be simulated
-        // and deadlock will be detected
-        Runnable writer = () ->
-        {
-            try
+            // writer will be added to a waiting list
+            // then spurious wake up will be simulated
+            // and deadlock will be detected
+            Runnable writer = () -> {
+                try
+                {
+                    lock.mark();
+                    lock.acquireWriteLock( NONE, lockTransaction );
+                }
+                catch ( DeadlockDetectedException ignored )
+                {
+                    // ignored
+                }
+                completionLatch.countDown();
+            };
+            executor.execute( writer );
+
+            waitWaitingThreads( lock, 1 );
+
+            // sending notify for all threads till our writer will not cause deadlock exception
+            do
             {
-                lock.mark();
-                lock.acquireWriteLock( LockTracer.NONE, lockTransaction );
+                //noinspection SynchronizationOnLocalVariableOrMethodParameter
+                synchronized ( lock )
+                {
+                    lock.notifyAll();
+                }
             }
-            catch ( DeadlockDetectedException ignored )
-            {
-                // ignored
-            }
-            completionLatch.countDown();
-        };
-        executor.execute( writer );
+            while ( exceptionLatch.getCount() == 1 );
 
-        waitWaitingThreads( lock, 1 );
+            // waiting for writer to finish
+            completionLatch.await();
 
-        // sending notify for all threads till our writer will not cause deadlock exception
-        do
-        {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized ( lock )
-            {
-                lock.notifyAll();
-            }
-        }
-        while ( exceptionLatch.getCount() == 1 );
-
-        // waiting for writer to finish
-        completionLatch.await();
-
-        assertEquals( "In case of deadlock caused by spurious wake up " +
-                      "thread should be removed from waiting list", 0, lock.getWaitingThreadsCount() );
+            assertEquals( 0, lock.getWaitingThreadsCount(),
+                    "In case of deadlock caused by spurious wake up " + "thread should be removed from waiting list" );
+        } );
     }
 
     @Test
     public void testLockCounters() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
-        LockResource resource = new LockResource( ResourceTypes.NODE, 1L );
+        LockResource resource = new LockResource( NODE, 1L );
         final RWLock lock = createRWLock( ragManager, resource );
         LockTransaction lockTransaction = new LockTransaction();
         LockTransaction anotherTransaction = new LockTransaction();
@@ -255,9 +263,9 @@ public class RWLockTest
         final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
 
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, lockTransaction );
+        lock.acquireReadLock( NONE, lockTransaction );
         lock.mark();
-        lock.acquireReadLock( LockTracer.NONE, anotherTransaction );
+        lock.acquireReadLock( NONE, anotherTransaction );
 
         assertEquals( 2, lock.getReadCount() );
         assertEquals( 0, lock.getWriteCount() );
@@ -294,143 +302,137 @@ public class RWLockTest
         assertEquals( 0, lock.getWriteCount() );
     }
 
-    @Test( timeout = TEST_TIMEOUT_MILLIS )
+    @Test
     public void testDeadlockDetection() throws InterruptedException
     {
-        RagManager ragManager = new RagManager();
-        LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
-        LockResource node2 = new LockResource( ResourceTypes.NODE, 2L );
-        LockResource node3 = new LockResource( ResourceTypes.NODE, 3L );
+        assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
+            RagManager ragManager = new RagManager();
+            LockResource node1 = new LockResource( NODE, 1L );
+            LockResource node2 = new LockResource( NODE, 2L );
+            LockResource node3 = new LockResource( NODE, 3L );
 
-        final RWLock lockNode1 = createRWLock( ragManager, node1 );
-        final RWLock lockNode2 = createRWLock( ragManager, node2 );
-        final RWLock lockNode3 = createRWLock( ragManager, node3 );
+            final RWLock lockNode1 = createRWLock( ragManager, node1 );
+            final RWLock lockNode2 = createRWLock( ragManager, node2 );
+            final RWLock lockNode3 = createRWLock( ragManager, node3 );
 
-        final LockTransaction client1Transaction = new LockTransaction();
-        final LockTransaction client2Transaction = new LockTransaction();
-        final LockTransaction client3Transaction = new LockTransaction();
+            final LockTransaction client1Transaction = new LockTransaction();
+            final LockTransaction client2Transaction = new LockTransaction();
+            final LockTransaction client3Transaction = new LockTransaction();
 
-        final CountDownLatch deadLockDetector = new CountDownLatch( 1 );
+            final CountDownLatch deadLockDetector = new CountDownLatch( 1 );
 
-        lockNode1.mark();
-        lockNode1.acquireWriteLock( LockTracer.NONE, client1Transaction );
-        lockNode2.mark();
-        lockNode2.acquireWriteLock( LockTracer.NONE, client2Transaction );
-        lockNode3.mark();
-        lockNode3.acquireWriteLock( LockTracer.NONE, client3Transaction );
+            lockNode1.mark();
+            lockNode1.acquireWriteLock( NONE, client1Transaction );
+            lockNode2.mark();
+            lockNode2.acquireWriteLock( NONE, client2Transaction );
+            lockNode3.mark();
+            lockNode3.acquireWriteLock( NONE, client3Transaction );
 
-        Runnable readerLockNode2 = createReaderForDeadlock( lockNode3, client1Transaction, deadLockDetector );
-        Runnable readerLockNode3 = createReaderForDeadlock( lockNode1, client2Transaction, deadLockDetector );
-        Runnable readerLockNode1 = createReaderForDeadlock( lockNode2, client3Transaction, deadLockDetector );
-        executor.execute( readerLockNode2 );
-        executor.execute( readerLockNode3 );
-        executor.execute( readerLockNode1 );
+            Runnable readerLockNode2 = createReaderForDeadlock( lockNode3, client1Transaction, deadLockDetector );
+            Runnable readerLockNode3 = createReaderForDeadlock( lockNode1, client2Transaction, deadLockDetector );
+            Runnable readerLockNode1 = createReaderForDeadlock( lockNode2, client3Transaction, deadLockDetector );
+            executor.execute( readerLockNode2 );
+            executor.execute( readerLockNode3 );
+            executor.execute( readerLockNode1 );
 
-        // Deadlock should occur
-        Assert.assertTrue( "Deadlock was detected as expected.",
-                deadLockDetector.await( TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS ) );
+            // Deadlock should occur
+            assertTrue( deadLockDetector.await( TEST_TIMEOUT_MILLIS, MILLISECONDS ),
+                    "Deadlock was detected as expected." );
 
-        lockNode3.releaseWriteLock( client3Transaction );
-        lockNode2.releaseWriteLock( client2Transaction );
-        lockNode1.releaseWriteLock( client1Transaction );
+            lockNode3.releaseWriteLock( client3Transaction );
+            lockNode2.releaseWriteLock( client2Transaction );
+            lockNode1.releaseWriteLock( client1Transaction );
+        } );
     }
 
-    @Test( timeout = TEST_TIMEOUT_MILLIS )
-    public void testLockRequestsTermination() throws InterruptedException
+    @Test
+    public void testLockRequestsTermination()
     {
-        // given
-        RagManager ragManager = new RagManager();
-        LockResource node1 = new LockResource( ResourceTypes.NODE, 1L );
-        final RWLock lock = createRWLock( ragManager, node1 );
-        final LockTransaction mainTransaction = new LockTransaction();
+        assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () -> {
+            //  given
 
-        final LockTransaction writerTransaction = new LockTransaction();
-        final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
-        Runnable conflictingWriter = createFailedWriter( lock, writerTransaction, writerCompletedLatch );
+            RagManager ragManager = new RagManager();
+            LockResource node1 = new LockResource( NODE, 1L );
+            final RWLock lock = createRWLock( ragManager, node1 );
+            final LockTransaction mainTransaction = new LockTransaction();
 
-        final LockTransaction readerTransaction = new LockTransaction();
-        final CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
-        Runnable reader = createFailedReader( lock, readerTransaction, readerCompletedLatch );
+            final LockTransaction writerTransaction = new LockTransaction();
+            final CountDownLatch writerCompletedLatch = new CountDownLatch( 1 );
+            Runnable conflictingWriter = createFailedWriter( lock, writerTransaction, writerCompletedLatch );
 
-        // when
-        lock.mark();
-        assertTrue( lock.acquireWriteLock( LockTracer.NONE, mainTransaction ) );
-        executor.submit( reader );
-        executor.submit( conflictingWriter );
+            final LockTransaction readerTransaction = new LockTransaction();
+            final CountDownLatch readerCompletedLatch = new CountDownLatch( 1 );
+            Runnable reader = createFailedReader( lock, readerTransaction, readerCompletedLatch );
 
-        // wait waiters to come
-        waitWaitingThreads( lock, 2 );
-        assertEquals( 3, lock.getTxLockElementCount() );
-
-        // when
-        lock.terminateLockRequestsForLockTransaction( readerTransaction );
-        lock.terminateLockRequestsForLockTransaction( writerTransaction );
-
-        readerCompletedLatch.await();
-        writerCompletedLatch.await();
-
-        // expect only main write lock counters and elements present
-        // all the rest should be cleaned up
-        assertEquals( 0, lock.getWaitingThreadsCount() );
-        assertEquals( 0, lock.getReadCount() );
-        assertEquals( 1, lock.getWriteCount() );
-        assertEquals( 1, lock.getTxLockElementCount() );
-
-    }
-
-    private Runnable createReader( final RWLock lock, final LockTransaction transaction,
-                                   final CountDownLatch latch )
-    {
-        return () ->
-        {
+            // when
             lock.mark();
-            lock.acquireReadLock( LockTracer.NONE, transaction );
+            assertTrue( lock.acquireWriteLock( NONE, mainTransaction ) );
+            executor.submit( reader );
+            executor.submit( conflictingWriter );
+
+            // wait waiters to come
+            waitWaitingThreads( lock, 2 );
+            assertEquals( 3, lock.getTxLockElementCount() );
+
+            // when
+            lock.terminateLockRequestsForLockTransaction( readerTransaction );
+            lock.terminateLockRequestsForLockTransaction( writerTransaction );
+
+            readerCompletedLatch.await();
+            writerCompletedLatch.await();
+
+            // expect only main write lock counters and elements present
+            // all the rest should be cleaned up
+            assertEquals( 0, lock.getWaitingThreadsCount() );
+            assertEquals( 0, lock.getReadCount() );
+            assertEquals( 1, lock.getWriteCount() );
+            assertEquals( 1, lock.getTxLockElementCount() );
+        } );
+    }
+
+    private Runnable createReader( final RWLock lock, final LockTransaction transaction, final CountDownLatch latch )
+    {
+        return () -> {
+            lock.mark();
+            lock.acquireReadLock( NONE, transaction );
             latch.countDown();
         };
     }
 
-    private Runnable createFailedReader( final RWLock lock, final LockTransaction transaction,
-                                         final CountDownLatch latch )
+    private Runnable createFailedReader( final RWLock lock, final LockTransaction transaction, final CountDownLatch latch )
     {
-        return () ->
-        {
+        return () -> {
             lock.mark();
-            Assert.assertFalse( lock.acquireReadLock( LockTracer.NONE, transaction ) );
+            assertFalse( lock.acquireReadLock( NONE, transaction ) );
             latch.countDown();
         };
     }
 
-    private Runnable createWriter( final RWLock lock, final LockTransaction transaction,
-                                   final CountDownLatch latch )
+    private Runnable createWriter( final RWLock lock, final LockTransaction transaction, final CountDownLatch latch )
     {
-        return () ->
-        {
+        return () -> {
             lock.mark();
-            lock.acquireWriteLock( LockTracer.NONE, transaction );
+            lock.acquireWriteLock( NONE, transaction );
             latch.countDown();
         };
     }
 
-    private Runnable createFailedWriter( final RWLock lock, final LockTransaction transaction,
-                                         final CountDownLatch latch )
+    private Runnable createFailedWriter( final RWLock lock, final LockTransaction transaction, final CountDownLatch latch )
     {
-        return () ->
-        {
+        return () -> {
             lock.mark();
-            Assert.assertFalse( lock.acquireWriteLock( LockTracer.NONE, transaction ) );
+            assertFalse( lock.acquireWriteLock( NONE, transaction ) );
             latch.countDown();
         };
     }
 
-    private Runnable createReaderForDeadlock( final RWLock node, final LockTransaction transaction,
-                                              final CountDownLatch latch )
+    private Runnable createReaderForDeadlock( final RWLock node, final LockTransaction transaction, final CountDownLatch latch )
     {
-        return () ->
-        {
+        return () -> {
             try
             {
                 node.mark();
-                node.acquireReadLock( LockTracer.NONE, transaction );
+                node.acquireReadLock( NONE, transaction );
             }
             catch ( DeadlockDetectedException e )
             {
@@ -441,14 +443,14 @@ public class RWLockTest
 
     private RWLock createRWLock( RagManager ragManager, LockResource resource )
     {
-        return new RWLock( resource, ragManager, Clocks.systemClock(), 0 );
+        return new RWLock( resource, ragManager, systemClock(), 0 );
     }
 
     private void waitWaitingThreads( RWLock lock, int expectedThreads ) throws InterruptedException
     {
         while ( lock.getWaitingThreadsCount() != expectedThreads )
         {
-            Thread.sleep( 20 );
+            sleep( 20 );
         }
     }
 }

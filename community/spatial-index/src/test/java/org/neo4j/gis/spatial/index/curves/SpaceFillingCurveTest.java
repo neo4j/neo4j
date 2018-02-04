@@ -19,8 +19,8 @@
  */
 package org.neo4j.gis.spatial.index.curves;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -634,7 +634,7 @@ public class SpaceFillingCurveTest
      * This test can be uses to reproduce a bug with a single search envelope, if {@link #shouldHaveReasonableCoveredArea()}
      * fails an assertion. It should be ignored by default.
      */
-    @Ignore
+    @Disabled
     public void debugSingle()
     {
         final int xmin = -100;

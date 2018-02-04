@@ -85,22 +85,22 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         // firstNode and secondNode
         Node[] relNodes = rel.getNodes();
         assertEquals( "A relationship should always be connected to exactly "
-            + "two nodes", relNodes.length, 2 );
+                + "two nodes", relNodes.length, 2 );
         assertTrue( "Relationship says that it isn't connected to firstNode",
-            this.objectExistsInArray( firstNode, relNodes ) );
+                this.objectExistsInArray( firstNode, relNodes ) );
         assertTrue( "Relationship says that it isn't connected to secondNode",
-            this.objectExistsInArray( secondNode, relNodes ) );
+                this.objectExistsInArray( secondNode, relNodes ) );
         assertTrue( "The other node should be secondNode but it isn't", rel
-            .getOtherNode( firstNode ).equals( secondNode ) );
+                .getOtherNode( firstNode ).equals( secondNode ) );
         assertTrue( "The other node should be firstNode but it isn't", rel
-            .getOtherNode( secondNode ).equals( firstNode ) );
+                .getOtherNode( secondNode ).equals( firstNode ) );
         rel.delete();
         secondNode.delete();
         firstNode.delete();
     }
 
     private boolean objectExistsInIterable( Relationship rel,
-        ResourceIterable<Relationship> allRels )
+            ResourceIterable<Relationship> allRels )
     {
         try ( ResourceIterator<Relationship> resourceIterator = allRels.iterator() )
         {
@@ -135,7 +135,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
     {
         Node node1 = getGraphDb().createNode();
         String key = "random_"
-            + new Random( System.currentTimeMillis() ).nextLong();
+                + new Random( System.currentTimeMillis() ).nextLong();
         node1.setProperty( key, "value" );
         assertEquals( "value", node1.getProperty( key ) );
         node1.delete();

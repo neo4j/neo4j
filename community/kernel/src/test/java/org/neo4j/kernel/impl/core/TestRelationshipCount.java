@@ -306,38 +306,38 @@ public class TestRelationshipCount
         {
             ensureRightDegree( initialSize,
                     asList(
-                    create( RelType.TYPE1, Direction.OUTGOING, 5 ),
-                    create( RelType.TYPE1, Direction.INCOMING, 2 ),
-                    create( RelType.TYPE2, Direction.OUTGOING, 6 ),
-                    create( RelType.TYPE2, Direction.INCOMING, 7 ),
-                    create( RelType.TYPE2, Direction.BOTH, 3 ) ),
+                            create( RelType.TYPE1, Direction.OUTGOING, 5 ),
+                            create( RelType.TYPE1, Direction.INCOMING, 2 ),
+                            create( RelType.TYPE2, Direction.OUTGOING, 6 ),
+                            create( RelType.TYPE2, Direction.INCOMING, 7 ),
+                            create( RelType.TYPE2, Direction.BOTH, 3 ) ),
 
                     asList(
-                    delete( RelType.TYPE1, Direction.OUTGOING, 0 ),
-                    delete( RelType.TYPE1, Direction.INCOMING, 1 ),
-                    delete( RelType.TYPE2, Direction.OUTGOING, Integer.MAX_VALUE ),
-                    delete( RelType.TYPE2, Direction.INCOMING, 1 ),
-                    delete( RelType.TYPE2, Direction.BOTH, Integer.MAX_VALUE ) )/*null*/ );
-
-            ensureRightDegree( initialSize,
-                    asList(
-                    create( RelType.TYPE1, Direction.BOTH, 1 ),
-                    create( RelType.TYPE1, Direction.OUTGOING, 5 ),
-                    create( RelType.TYPE2, Direction.OUTGOING, 6 ),
-                    create( RelType.TYPE1, Direction.INCOMING, 2 ),
-                    create( RelType.TYPE2, Direction.BOTH, 3 ),
-                    create( RelType.TYPE2, Direction.INCOMING, 7 ),
-                    create( RelType.TYPE2, Direction.BOTH, 3 ) ), null );
+                            delete( RelType.TYPE1, Direction.OUTGOING, 0 ),
+                            delete( RelType.TYPE1, Direction.INCOMING, 1 ),
+                            delete( RelType.TYPE2, Direction.OUTGOING, Integer.MAX_VALUE ),
+                            delete( RelType.TYPE2, Direction.INCOMING, 1 ),
+                            delete( RelType.TYPE2, Direction.BOTH, Integer.MAX_VALUE ) )/*null*/ );
 
             ensureRightDegree( initialSize,
                     asList(
-                    create( RelType.TYPE1, Direction.BOTH, 2 ),
-                    create( RelType.TYPE2, Direction.BOTH, 1 ),
-                    create( RelType.TYPE1, Direction.OUTGOING, 1 ),
-                    create( RelType.TYPE2, Direction.OUTGOING, 10 ),
-                    create( RelType.TYPE1, Direction.INCOMING, 2 ),
-                    create( RelType.TYPE2, Direction.BOTH, 2 ),
-                    create( RelType.TYPE2, Direction.INCOMING, 7 ) ), null );
+                            create( RelType.TYPE1, Direction.BOTH, 1 ),
+                            create( RelType.TYPE1, Direction.OUTGOING, 5 ),
+                            create( RelType.TYPE2, Direction.OUTGOING, 6 ),
+                            create( RelType.TYPE1, Direction.INCOMING, 2 ),
+                            create( RelType.TYPE2, Direction.BOTH, 3 ),
+                            create( RelType.TYPE2, Direction.INCOMING, 7 ),
+                            create( RelType.TYPE2, Direction.BOTH, 3 ) ), null );
+
+            ensureRightDegree( initialSize,
+                    asList(
+                            create( RelType.TYPE1, Direction.BOTH, 2 ),
+                            create( RelType.TYPE2, Direction.BOTH, 1 ),
+                            create( RelType.TYPE1, Direction.OUTGOING, 1 ),
+                            create( RelType.TYPE2, Direction.OUTGOING, 10 ),
+                            create( RelType.TYPE1, Direction.INCOMING, 2 ),
+                            create( RelType.TYPE2, Direction.BOTH, 2 ),
+                            create( RelType.TYPE2, Direction.INCOMING, 7 ) ), null );
         }
     }
 

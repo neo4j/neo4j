@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.rest.web;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +35,7 @@ import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class DatabaseMetadataServiceTest
@@ -43,7 +43,7 @@ public class DatabaseMetadataServiceTest
     private GraphDatabaseFacade db;
     private long relId;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         db = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -57,7 +57,7 @@ public class DatabaseMetadataServiceTest
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         db.shutdown();

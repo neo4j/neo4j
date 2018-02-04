@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -28,17 +28,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.CapableIndexReference.NO_INDEX;
+import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -444,12 +445,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 switch ( indexOrder )
                 {
                 case ASCENDING:
-                    assertTrue( "Requested ordering " + indexOrder + " was not respected.",
-                            Values.COMPARATOR.compare( currentValue, storedValue ) <= 0 );
+                    assertTrue( COMPARATOR.compare( currentValue, storedValue ) <= 0,
+                            "Requested ordering " + indexOrder + " was not respected." );
                     break;
                 case DESCENDING:
-                    assertTrue( "Requested ordering " + indexOrder + " was not respected.",
-                            Values.COMPARATOR.compare( currentValue, storedValue ) >= 0 );
+                    assertTrue( COMPARATOR.compare( currentValue, storedValue ) >= 0,
+                            "Requested ordering " + indexOrder + " was not respected." );
                     break;
                 case NONE:
                     // Don't verify
@@ -468,14 +469,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         uniqueIds.clear();
         for ( int i = 0; i < nodes; i++ )
         {
-            assertTrue( "at least " + nodes + " nodes, was " + uniqueIds.size(), node.next() );
+            assertTrue( node.next(), "at least " + nodes + " nodes, was " + uniqueIds.size() );
             long nodeReference = node.nodeReference();
-            assertTrue( "all nodes are unique", uniqueIds.add( nodeReference ) );
+            assertTrue( uniqueIds.add( nodeReference ), "all nodes are unique" );
 
             // Assert has value capability
             if ( IndexValueCapability.YES.equals( expectValue ) )
             {
-                assertTrue( "has value", node.hasValue() );
+                assertTrue( node.hasValue(), "has value" );
             }
 
             // Assert has correct value
@@ -486,7 +487,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             }
         }
 
-        assertFalse( "no more than " + nodes + " nodes", node.next() );
+        assertFalse( node.next(), "no more than " + nodes + " nodes" );
     }
 
     private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
@@ -494,14 +495,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         uniqueIds.clear();
         for ( int i = 0; i < nodes; i++ )
         {
-            assertTrue( "at least " + nodes + " nodes, was " + uniqueIds.size(), node.next() );
+            assertTrue( node.next(), "at least " + nodes + " nodes, was " + uniqueIds.size() );
             long nodeReference = node.nodeReference();
-            assertTrue( "all nodes are unique", uniqueIds.add( nodeReference ) );
+            assertTrue( uniqueIds.add( nodeReference ), "all nodes are unique" );
 
             assertFalse( node.hasValue() );
         }
 
-        assertFalse( "no more than " + nodes + " nodes", node.next() );
+        assertFalse( node.next(), "no more than " + nodes + " nodes" );
     }
 
     private void assertFoundNodesAndValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds,
@@ -512,7 +513,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
         for ( long expectedNode : expected )
         {
-            assertTrue( "expected node " + expectedNode, uniqueIds.contains( expectedNode ) );
+            assertTrue( uniqueIds.contains( expectedNode ), "expected node " + expectedNode );
         }
     }
 
@@ -523,7 +524,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
         for ( long expectedNode : expected )
         {
-            assertTrue( "expected node " + expectedNode, uniqueIds.contains( expectedNode ) );
+            assertTrue( uniqueIds.contains( expectedNode ), "expected node " + expectedNode );
         }
     }
 
@@ -548,9 +549,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int badLabel = token.nodeLabel( "BAD_LABEL" );
         int badProp = token.propertyKey( "badProp" );
 
-        assertEquals( "bad label", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
-        assertEquals( "bad prop", CapableIndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
-        assertEquals( "just bad", CapableIndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+        assertEquals( NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test

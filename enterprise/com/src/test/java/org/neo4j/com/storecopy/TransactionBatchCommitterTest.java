@@ -19,7 +19,7 @@
  */
 package org.neo4j.com.storecopy;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.helpers.collection.Iterators;

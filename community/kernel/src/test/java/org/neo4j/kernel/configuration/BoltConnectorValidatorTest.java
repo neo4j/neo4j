@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
@@ -34,15 +35,15 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
 
-
+@EnableRuleMigrationSupport
 public class BoltConnectorValidatorTest
 {
     BoltConnectorValidator cv = new BoltConnectorValidator();
@@ -51,7 +52,7 @@ public class BoltConnectorValidatorTest
     public ExpectedException expected = ExpectedException.none();
     private Consumer<String> warningConsumer;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         warningConsumer = mock( Consumer.class );
@@ -293,7 +294,7 @@ public class BoltConnectorValidatorTest
 
         for ( Setting s : settings )
         {
-            assertTrue( "every setting should be deprecated: " + s.name(), s.deprecated() );
+            assertTrue( s.deprecated(), "every setting should be deprecated: " + s.name() );
             String[] parts = s.name().split( "\\." );
             if ( !"type".equals( parts[3] ) )
             {

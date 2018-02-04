@@ -19,11 +19,12 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -35,22 +36,24 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( {EmbeddedDatabaseExtension.class, RandomExtension.class} )
 public class NativeLabelScanStoreStartupIT
 {
     private static final Label LABEL = Label.label( "testLabel" );
 
-    @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
+    @Resource
+    public RandomRule random;
 
     private int labelId;
 
@@ -75,7 +78,7 @@ public class NativeLabelScanStoreStartupIT
 
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
-        assertEquals( "Label scan store see 1 label for node", 1, labels.length );
+        assertEquals( 1, labels.length, "Label scan store see 1 label for node" );
         labelScanStore.force( IOLimiter.unlimited() );
         labelScanStore.shutdown();
 
@@ -85,7 +88,7 @@ public class NativeLabelScanStoreStartupIT
         labelScanStore.start();
 
         long[] rebuildLabels = readNodesForLabel( labelScanStore );
-        assertArrayEquals( "Store should rebuild corrupted index", labels, rebuildLabels );
+        assertArrayEquals( labels, rebuildLabels, "Store should rebuild corrupted index" );
     }
 
     private LabelScanStore getLabelScanStore()

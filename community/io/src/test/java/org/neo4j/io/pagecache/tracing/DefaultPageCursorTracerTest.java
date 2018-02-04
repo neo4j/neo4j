@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DefaultPageCursorTracerTest
 {
@@ -37,7 +37,7 @@ public class DefaultPageCursorTracerTest
     private PageCursorTracer pageCursorTracer;
     private DefaultPageCacheTracer cacheTracer;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         cacheTracer = new DefaultPageCacheTracer();

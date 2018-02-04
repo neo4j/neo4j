@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
@@ -27,8 +27,8 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProtocolAtomicbroadcastTestUtil.ids;
 import static org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.ClusterProtocolAtomicbroadcastTestUtil.members;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

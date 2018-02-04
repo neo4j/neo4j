@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.io.fs.FileSystemAbstraction;

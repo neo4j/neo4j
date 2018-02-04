@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -27,9 +27,9 @@ import java.io.IOException;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;

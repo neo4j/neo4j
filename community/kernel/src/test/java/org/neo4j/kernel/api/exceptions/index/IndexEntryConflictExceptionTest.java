@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;

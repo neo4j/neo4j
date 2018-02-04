@@ -82,7 +82,7 @@ public class StoreUpgraderInterruptionTestIT
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory )
-                                          .around( fileSystemRule ).around( pageCacheRule );
+            .around( fileSystemRule ).around( pageCacheRule );
 
     @Parameterized.Parameter
     public String version;

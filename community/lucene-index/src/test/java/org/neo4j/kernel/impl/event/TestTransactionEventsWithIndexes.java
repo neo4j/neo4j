@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +32,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.Index;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class TestTransactionEventsWithIndexes extends TestTransactionEvents

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,8 +63,8 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**
@@ -213,8 +213,9 @@ public class LogTruncationTest
             writer.serialize( new PhysicalTransactionRepresentation( singletonList( cmd ) ) );
             inMemoryChannel.truncateTo( bytesSuccessfullyWritten );
             LogEntry deserialized = logEntryReader.readLogEntry( inMemoryChannel );
-            assertNull( "Deserialization did not detect log truncation!" +
-                    "Record: " + cmd + ", deserialized: " + deserialized, deserialized );
+            assertNull( deserialized,
+                    "Deserialization did not detect log truncation!" + "Record: " + cmd + ", deserialized: " +
+                            deserialized );
         }
     }
 

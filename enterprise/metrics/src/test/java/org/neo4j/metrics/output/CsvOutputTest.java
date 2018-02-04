@@ -56,7 +56,6 @@ public class CsvOutputTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( life );
-
     private KernelContext kernelContext;
 
     @Before

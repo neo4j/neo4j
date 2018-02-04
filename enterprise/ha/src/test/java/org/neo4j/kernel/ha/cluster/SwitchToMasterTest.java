@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -52,7 +52,7 @@ public class SwitchToMasterTest
         URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://192.168.1.99:6001?serverId=1", result.toString() );
+        assertEquals( "ha://192.168.1.99:6001?serverId=1", result.toString(), "Wrong address" );
     }
 
     @Test
@@ -71,7 +71,7 @@ public class SwitchToMasterTest
         URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://[fe80::1]:6001?serverId=1", result.toString() );
+        assertEquals( "ha://[fe80::1]:6001?serverId=1", result.toString(), "Wrong address" );
     }
 
     @Test
@@ -92,7 +92,7 @@ public class SwitchToMasterTest
         URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://192.168.1.1:6001?serverId=1", result.toString() );
+        assertEquals( "ha://192.168.1.1:6001?serverId=1", result.toString(), "Wrong address" );
 
         // when masterServer is 0.0.0.0
         when( masterServer.getSocketAddress() ).thenReturn( new InetSocketAddress( 6001 ) );
@@ -100,7 +100,7 @@ public class SwitchToMasterTest
         result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://127.0.0.1:6001?serverId=1", result.toString() );
+        assertEquals( "ha://127.0.0.1:6001?serverId=1", result.toString(), "Wrong address" );
     }
 
     @Test
@@ -121,7 +121,7 @@ public class SwitchToMasterTest
         URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://[fe80:0:0:0:0:0:0:1]:6001?serverId=1", result.toString() );
+        assertEquals( "ha://[fe80:0:0:0:0:0:0:1]:6001?serverId=1", result.toString(), "Wrong address" );
 
         // when masterServer is 0.0.0.0
         when( masterServer.getSocketAddress() ).thenReturn( new InetSocketAddress( 6001 ) );
@@ -129,7 +129,7 @@ public class SwitchToMasterTest
         result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://[::1]:6001?serverId=1", result.toString() );
+        assertEquals( "ha://[::1]:6001?serverId=1", result.toString(), "Wrong address" );
     }
 
     @Test
@@ -147,7 +147,7 @@ public class SwitchToMasterTest
         URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://192.168.1.1:6001?serverId=1", result.toString() );
+        assertEquals( "ha://192.168.1.1:6001?serverId=1", result.toString(), "Wrong address" );
 
         // when masterServer is 0.0.0.0
         when( masterServer.getSocketAddress() ).thenReturn( new InetSocketAddress( 6001 ) );
@@ -155,6 +155,6 @@ public class SwitchToMasterTest
         result = SwitchToMaster.getMasterUri( me, masterServer, config );
 
         // then
-        assertEquals( "Wrong address", "ha://127.0.0.1:6001?serverId=1", result.toString() );
+        assertEquals( "ha://127.0.0.1:6001?serverId=1", result.toString(), "Wrong address" );
     }
 }

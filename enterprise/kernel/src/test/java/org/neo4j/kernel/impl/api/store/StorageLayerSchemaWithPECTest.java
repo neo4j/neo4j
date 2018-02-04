@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
@@ -35,7 +35,7 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class StorageLayerSchemaWithPECTest extends StorageLayerTest

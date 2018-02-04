@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.backup.TheBackupInterface;
 import org.neo4j.backup.impl.BackupClient.BackupRequestType;
@@ -40,7 +40,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 
 import static org.jboss.netty.buffer.ChannelBuffers.EMPTY_BUFFER;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;

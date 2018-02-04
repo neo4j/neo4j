@@ -1035,7 +1035,7 @@ public class NeoStoresTest
     {
         int count = 0;
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
+                Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
 
@@ -1119,7 +1119,7 @@ public class NeoStoresTest
         count = 0;
 
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
+                Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
@@ -1413,7 +1413,7 @@ public class NeoStoresTest
     private void assertHasRelationships( long node )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
+                Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( node ) )
         {
             nodeCursor.next();
             NodeItem nodeItem = nodeCursor.get();
@@ -1536,7 +1536,7 @@ public class NeoStoresTest
     private void deleteRelationships( long nodeId )
     {
         try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
-              Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )
+                Cursor<NodeItem> nodeCursor = statement.getStoreStatement().acquireSingleNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
             NodeItem nodeItem = nodeCursor.get();

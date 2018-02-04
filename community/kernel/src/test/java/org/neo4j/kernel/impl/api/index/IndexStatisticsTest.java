@@ -483,15 +483,15 @@ public class IndexStatisticsTest
     private long indexSize( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor.schema() ).readSecond();
+                .resolveDependency( IndexingService.class )
+                .indexUpdatesAndSize( descriptor.schema() ).readSecond();
     }
 
     private long indexUpdates( IndexDescriptor descriptor ) throws KernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( descriptor.schema() ).readFirst();
+                .resolveDependency( IndexingService.class )
+                .indexUpdatesAndSize( descriptor.schema() ).readFirst();
     }
 
     private double indexSelectivity( IndexDescriptor descriptor ) throws KernelException
@@ -581,31 +581,31 @@ public class IndexStatisticsTest
     }
 
     private UpdatesTracker executeCreationsAndDeletions( long[] nodes,
-                                                         IndexDescriptor index,
-                                                         int numberOfCreations ) throws KernelException
+            IndexDescriptor index,
+            int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, true, false );
     }
 
     private UpdatesTracker executeCreationsAndUpdates( long[] nodes,
-                                                       IndexDescriptor index,
-                                                       int numberOfCreations ) throws KernelException
+            IndexDescriptor index,
+            int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, false, true );
     }
 
     private UpdatesTracker executeCreationsDeletionsAndUpdates( long[] nodes,
-                                                                IndexDescriptor index,
-                                                                int numberOfCreations ) throws KernelException
+            IndexDescriptor index,
+            int numberOfCreations ) throws KernelException
     {
         return internalExecuteCreationsDeletionsAndUpdates( nodes, index, numberOfCreations, true, true );
     }
 
     private UpdatesTracker internalExecuteCreationsDeletionsAndUpdates( long[] nodes,
-                                                                        IndexDescriptor index,
-                                                                        int numberOfCreations,
-                                                                        boolean allowDeletions,
-                                                                        boolean allowUpdates ) throws KernelException
+            IndexDescriptor index,
+            int numberOfCreations,
+            boolean allowDeletions,
+            boolean allowUpdates ) throws KernelException
     {
         Random random = ThreadLocalRandom.current();
         UpdatesTracker updatesTracker = new UpdatesTracker();
@@ -671,7 +671,7 @@ public class IndexStatisticsTest
     }
 
     private void assertDoubleLongEquals( long expectedUniqueValue, long expectedSampledSize,
-                                         DoubleLongRegister register )
+            DoubleLongRegister register )
     {
         assertEquals( expectedUniqueValue, register.readFirst() );
         assertEquals( expectedSampledSize, register.readSecond() );

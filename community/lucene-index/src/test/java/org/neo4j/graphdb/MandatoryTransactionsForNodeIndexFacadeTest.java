@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.index.Index;
 
 import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_METHODS;

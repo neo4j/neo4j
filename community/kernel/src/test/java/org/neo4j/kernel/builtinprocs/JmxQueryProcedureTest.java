@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.management.ManagementFactory;
 import javax.management.MBeanAttributeInfo;
@@ -170,7 +170,7 @@ public class JmxQueryProcedureTest
         assertThat( asList( result ).size(), equalTo( jmxServer.getMBeanCount() ));
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws Throwable
     {
         jmxServer = mock( MBeanServer.class );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;

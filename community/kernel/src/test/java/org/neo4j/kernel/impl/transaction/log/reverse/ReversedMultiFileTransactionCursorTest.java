@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.copyOfRange;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

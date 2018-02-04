@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -80,7 +80,7 @@ public class IndexTxStateUpdaterTest
     private List<IndexDescriptor> indexes =
             Arrays.asList( indexOn1_1, indexOn2_new, uniqueOn1_2, indexOn1_1_new, uniqueOn2_2_3 );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         state = mock( KernelStatement.class );

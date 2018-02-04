@@ -48,7 +48,7 @@ import static java.lang.Thread.sleep;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
 import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
 import static org.neo4j.ha.upgrade.Utils.execJava;

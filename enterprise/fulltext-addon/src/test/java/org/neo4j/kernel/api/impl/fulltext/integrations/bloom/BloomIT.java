@@ -90,7 +90,7 @@ public class BloomIT
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
-                         .setConfig( bloom_enabled, "true" );
+                .setConfig( bloom_enabled, "true" );
     }
 
     @After

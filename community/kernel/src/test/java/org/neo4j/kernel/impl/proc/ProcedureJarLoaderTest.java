@@ -21,16 +21,19 @@ package org.neo4j.kernel.impl.proc;
 
 import org.hamcrest.core.IsEqual;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
+import javax.annotation.Resource;
 
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
@@ -47,14 +50,16 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
@@ -65,10 +70,12 @@ import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ResourceInjectionTest.notAvailableMessage;
 
 @SuppressWarnings( "WeakerAccess" )
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class ProcedureJarLoaderTest
 {
-    @Rule
-    public TemporaryFolder tmpdir = new TemporaryFolder();
+    @Resource
+    public TestDirectory tmpdir;
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
@@ -163,7 +170,7 @@ public class ProcedureJarLoaderTest
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.directory() ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -263,7 +270,9 @@ public class ProcedureJarLoaderTest
 
     public URL createJarFor( Class<?> ... targets ) throws IOException
     {
-        return new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + ".jar" ), targets );
+        File file = tmpdir.file( new Random().nextInt() + ".jar" );
+        assert file.createNewFile();
+        return new JarBuilder().createJarFor( file, targets );
     }
 
     public static class Output

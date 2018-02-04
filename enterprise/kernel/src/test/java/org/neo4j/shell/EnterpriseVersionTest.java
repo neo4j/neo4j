@@ -19,24 +19,27 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class EnterpriseVersionTest
 {
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory dir;
 
     @Test
     public void shouldPrintVersionAndExit()

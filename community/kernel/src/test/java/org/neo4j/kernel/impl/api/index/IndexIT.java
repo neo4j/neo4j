@@ -19,22 +19,19 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -51,15 +48,22 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static java.time.Duration.ofMillis;
 import static java.util.Collections.emptySet;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class IndexIT extends KernelIntegrationTest
 {
@@ -73,20 +77,20 @@ public class IndexIT extends KernelIntegrationTest
     private LabelSchemaDescriptor descriptor2;
     private ExecutorService executorService;
 
-    @Before
+    @BeforeEach
     public void createLabelAndProperty() throws Exception
     {
         TokenWriteOperations tokenWrites = tokenWriteOperationsInNewTransaction();
         labelId = tokenWrites.labelGetOrCreateForName( LABEL );
         propertyKeyId = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY );
         int propertyKeyId2 = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY2 );
-        descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
-        descriptor2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
+        descriptor = forLabel( labelId, propertyKeyId );
+        descriptor2 = forLabel( labelId, propertyKeyId2 );
         commit();
-        executorService = Executors.newCachedThreadPool();
+        executorService = newCachedThreadPool();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         executorService.shutdown();
@@ -106,18 +110,20 @@ public class IndexIT extends KernelIntegrationTest
         commit();
     }
 
-    @Test( timeout = 10_000 )
+    @Test
     public void createIndexesForDifferentLabelsConcurrently() throws Throwable
     {
-        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
-        int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
+        assertTimeout( ofMillis( 10_000 ), () -> {
+            TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+            int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
 
-        LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptorFactory.forLabel( label2, propertyKeyId );
-        schemaWriteOperationsInNewTransaction().indexCreate( anotherLabelDescriptor );
+            LabelSchemaDescriptor anotherLabelDescriptor = forLabel( label2, propertyKeyId );
+            schemaWriteOperationsInNewTransaction().indexCreate( anotherLabelDescriptor );
 
-        Future<?> indexFuture = executorService.submit( createIndex( db, Label.label( LABEL ), PROPERTY_KEY ) );
-        indexFuture.get();
-        commit();
+            Future<?> indexFuture = executorService.submit( createIndex( db, label( LABEL ), PROPERTY_KEY ) );
+            indexFuture.get();
+            commit();
+        } );
     }
 
     @Test
@@ -178,7 +184,8 @@ public class IndexIT extends KernelIntegrationTest
     {
         // given
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, new Monitors() );
+        ConstraintIndexCreator creator =
+                new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, new Monitors() );
 
         IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
         // then
@@ -224,7 +231,7 @@ public class IndexIT extends KernelIntegrationTest
         catch ( SchemaKernelException e )
         {
             assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
-                          "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
+                    "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         }
         commit();
     }
@@ -252,7 +259,7 @@ public class IndexIT extends KernelIntegrationTest
         catch ( SchemaKernelException e )
         {
             assertEquals( "Label '" + LABEL + "' and property '" + PROPERTY_KEY + "' have a unique constraint defined" +
-                          " on them, so an index is already created that matches this.", e.getMessage() );
+                    " on them, so an index is already created that matches this.", e.getMessage() );
         }
         commit();
     }
@@ -281,7 +288,7 @@ public class IndexIT extends KernelIntegrationTest
             index = indexes.iterator().next();
             assertEquals( "Label1", index.getLabel().name() );
             assertEquals( asSet( "property1" ), Iterables.asSet( index.getPropertyKeys() ) );
-            assertTrue( "index should be a constraint index", index.isConstraintIndex() );
+            assertTrue( index.isConstraintIndex(), "index should be a constraint index" );
 
             // when
             try
@@ -305,21 +312,19 @@ public class IndexIT extends KernelIntegrationTest
         // given
         SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
         IndexDescriptor index1 = schemaWriteOperations.indexCreate( descriptor );
-        IndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 )
-                                                            .ownedIndexDescriptor();
+        IndexDescriptor index2 = schemaWriteOperations.uniquePropertyConstraintCreate( descriptor2 ).ownedIndexDescriptor();
         commit();
 
         // then/when
         ReadOperations readOperations = readOperationsInNewTransaction();
-        List<IndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
+        List<IndexDescriptor> indexes = asList( readOperations.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
         commit();
     }
 
     private Runnable createIndex( GraphDatabaseAPI db, Label label, String propertyKey )
     {
-        return () ->
-        {
+        return () -> {
             try ( Transaction transaction = db.beginTx() )
             {
                 db.schema().indexFor( label ).on( propertyKey ).create();
@@ -328,7 +333,7 @@ public class IndexIT extends KernelIntegrationTest
 
             try ( Transaction transaction = db.beginTx() )
             {
-                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                db.schema().awaitIndexesOnline( 1, MINUTES );
                 transaction.success();
             }
         };

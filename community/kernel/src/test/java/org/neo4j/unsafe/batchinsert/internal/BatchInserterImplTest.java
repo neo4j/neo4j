@@ -20,12 +20,14 @@
 package org.neo4j.unsafe.batchinsert.internal;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -36,29 +38,31 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.ReflectionUtil;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {TestDirectoryExtension.class} )
 public class BatchInserterImplTest
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final ExpectedException expected = ExpectedException.none();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-                                                .around( expected ).around( fileSystemRule );
+    public final ExpectedException expected = ExpectedException.none();
+    @Rule
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void testHonorsPassedInParams() throws Exception

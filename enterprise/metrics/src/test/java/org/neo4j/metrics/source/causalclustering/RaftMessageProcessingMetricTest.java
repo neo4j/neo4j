@@ -20,13 +20,13 @@
 package org.neo4j.metrics.source.causalclustering;
 
 import com.codahale.metrics.SlidingWindowReservoir;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RaftMessageProcessingMetricTest
 {
@@ -54,12 +54,12 @@ public class RaftMessageProcessingMetricTest
         {
             metric.updateTimer( type, Duration.ofNanos( durationNanos ) );
             assertEquals( 1, metric.timer( type ).getCount() );
-            assertEquals( durationNanos, metric.timer( type ).getSnapshot().getMean(), delta );
+            assertEquals( metric.timer( type ).getSnapshot().getMean(), delta, durationNanos );
         }
 
         // then
         assertEquals( RaftMessages.Type.values().length, metric.timer().getCount() );
-        assertEquals( durationNanos, metric.timer().getSnapshot().getMean(), delta );
+        assertEquals( metric.timer().getSnapshot().getMean(), delta, durationNanos );
     }
 
     @Test

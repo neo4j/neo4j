@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.state;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,9 +47,9 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.emptySet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.core.consensus.roles.Role.CANDIDATE;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;

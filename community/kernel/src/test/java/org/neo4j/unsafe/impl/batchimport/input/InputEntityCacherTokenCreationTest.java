@@ -20,34 +20,38 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Resource;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.test.Randoms;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Math.abs;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
+@ExtendWith( RandomExtension.class )
 public class InputEntityCacherTokenCreationTest
 {
-
     private static final int SUPPORTED_NUMBER_OF_TOKENS = 10;
     private static final int UNSUPPORTED_NUMER_OF_TOKENS = SUPPORTED_NUMBER_OF_TOKENS + 1;
     private static final AtomicInteger uniqueIdGenerator = new AtomicInteger( 10 );
-    private final ExpectedException expectedException = ExpectedException.none();
-    private final RandomRule randomRule = new RandomRule();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( expectedException );
+    public final ExpectedException expectedException = ExpectedException.none();
+    @Resource
+    public RandomRule randomRule;
 
     @Test
     public void notAllowCreationOfUnsupportedNumberOfProperties() throws IOException

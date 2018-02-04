@@ -102,7 +102,7 @@ public class MultipleIndexPopulationStressIT
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( random ).around( repeat ).around( directory )
-                                                .around( cleanup ).around( fileSystemRule );
+            .around( cleanup ).around( fileSystemRule );
 
     @Test
     public void populateMultipleIndexWithSeveralNodesSingleThreaded() throws Exception

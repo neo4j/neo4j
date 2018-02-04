@@ -20,8 +20,6 @@
 package org.neo4j.tooling.procedure.validators;
 
 import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,6 +34,8 @@ import javax.lang.model.util.Types;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
 
 import static javax.lang.model.type.TypeKind.BOOLEAN;
 import static javax.lang.model.type.TypeKind.DOUBLE;

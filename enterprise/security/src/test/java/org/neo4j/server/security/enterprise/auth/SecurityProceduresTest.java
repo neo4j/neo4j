@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +42,7 @@ public class SecurityProceduresTest
 
     private SecurityProcedures procedures;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         AuthSubject subject = mock( AuthSubject.class );

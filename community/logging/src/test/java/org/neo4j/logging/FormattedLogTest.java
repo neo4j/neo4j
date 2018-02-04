@@ -26,7 +26,7 @@ import java.time.ZonedDateTime;
 import java.util.IllegalFormatException;
 import java.util.function.Supplier;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.function.Suppliers;
 
@@ -34,7 +34,7 @@ import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class FormattedLogTest
 {

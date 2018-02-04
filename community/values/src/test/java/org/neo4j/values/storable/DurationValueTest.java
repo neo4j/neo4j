@@ -26,10 +26,11 @@ import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.collection.Pair;
 
+import static java.time.LocalDate.of;
 import static java.time.ZoneOffset.UTC;
 import static java.time.ZoneOffset.ofHours;
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -41,9 +42,9 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static java.time.temporal.ChronoUnit.WEEKS;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.date;
@@ -70,15 +71,15 @@ public class DurationValueTest
         DurationValue neg = duration( 0, 0, 0, -1_400_000_000 );
 
         // then
-        assertEquals( "+nanos", 500_000_000, pos.get( NANOS ) );
-        assertEquals( "+seconds", 1, pos.get( SECONDS ) );
-        assertEquals( "-nanos", -400_000_000, neg.get( NANOS ) );
-        assertEquals( "-seconds", -1, neg.get( SECONDS ) );
+        assertEquals( 500_000_000, pos.get( NANOS ), "+nanos" );
+        assertEquals( 1, pos.get( SECONDS ), "+seconds" );
+        assertEquals( -400_000_000, neg.get( NANOS ), "-nanos" );
+        assertEquals( -1, neg.get( SECONDS ), "-seconds" );
 
-        assertEquals( "+nanos", 0, evenPos.get( NANOS ) );
-        assertEquals( "+seconds", 1, evenPos.get( SECONDS ) );
-        assertEquals( "-nanos", 0, evenNeg.get( NANOS ) );
-        assertEquals( "-seconds", -1, evenNeg.get( SECONDS ) );
+        assertEquals( 0, evenPos.get( NANOS ), "+nanos" );
+        assertEquals( 1, evenPos.get( SECONDS ), "+seconds" );
+        assertEquals( 0, evenNeg.get( NANOS ), "-nanos" );
+        assertEquals( -1, evenNeg.get( SECONDS ), "-seconds" );
     }
 
     @Test
@@ -90,12 +91,12 @@ public class DurationValueTest
         DurationValue x = duration( 0, 0, 1, -1_400_000_000 );
 
         // then
-        assertEquals( "+nanos", 600_000_000, pos.get( NANOS ) );
-        assertEquals( "+seconds", 3, pos.get( SECONDS ) );
-        assertEquals( "-nanos", -500_000_000, neg.get( NANOS ) );
-        assertEquals( "-seconds", -3, neg.get( SECONDS ) );
-        assertEquals( "-nanos", -400_000_000, x.get( NANOS ) );
-        assertEquals( "-seconds", 0, x.get( SECONDS ) );
+        assertEquals( 600_000_000, pos.get( NANOS ), "+nanos" );
+        assertEquals( 3, pos.get( SECONDS ), "+seconds" );
+        assertEquals( -500_000_000, neg.get( NANOS ), "-nanos" );
+        assertEquals( -3, neg.get( SECONDS ), "-seconds" );
+        assertEquals( -400_000_000, x.get( NANOS ), "-nanos" );
+        assertEquals( 0, x.get( SECONDS ), "-seconds" );
     }
 
     @Test
@@ -256,15 +257,12 @@ public class DurationValueTest
     @Test
     public void shouldAddToLocalDate()
     {
-        assertEquals( "seconds", LocalDate.of( 2017, 12, 5 ), LocalDate.of( 2017, 12, 4 ).plus( parse( "PT24H" ) ) );
-        assertEquals( "seconds", LocalDate.of( 2017, 12, 3 ), LocalDate.of( 2017, 12, 4 ).minus( parse( "PT24H" ) ) );
-        assertEquals( "seconds", LocalDate.of( 2017, 12, 4 ), LocalDate.of( 2017, 12, 4 ).plus( parse( "PT24H-1S" ) ) );
-        assertEquals(
-                "seconds",
-                LocalDate.of( 2017, 12, 4 ),
-                LocalDate.of( 2017, 12, 4 ).minus( parse( "PT24H-1S" ) ) );
-        assertEquals( "days", LocalDate.of( 2017, 12, 5 ), LocalDate.of( 2017, 12, 4 ).plus( parse( "P1D" ) ) );
-        assertEquals( "days", LocalDate.of( 2017, 12, 3 ), LocalDate.of( 2017, 12, 4 ).minus( parse( "P1D" ) ) );
+        assertEquals( of( 2017, 12, 5 ), of( 2017, 12, 4 ).plus( parse( "PT24H" ) ), "seconds" );
+        assertEquals( of( 2017, 12, 3 ), of( 2017, 12, 4 ).minus( parse( "PT24H" ) ), "seconds" );
+        assertEquals( of( 2017, 12, 4 ), of( 2017, 12, 4 ).plus( parse( "PT24H-1S" ) ), "seconds" );
+        assertEquals( of( 2017, 12, 4 ), of( 2017, 12, 4 ).minus( parse( "PT24H-1S" ) ), "seconds" );
+        assertEquals( of( 2017, 12, 5 ), of( 2017, 12, 4 ).plus( parse( "P1D" ) ), "days" );
+        assertEquals( of( 2017, 12, 3 ), of( 2017, 12, 4 ).minus( parse( "P1D" ) ), "days" );
     }
 
     @Test
@@ -481,10 +479,10 @@ public class DurationValueTest
             DurationValue diffBAs = between( SECONDS, b, a );
 
             // then
-            assertEquals( diffAB.prettyPrint(), b, a.plus( diffAB ) );
-            assertEquals( diffBA.prettyPrint(), a, b.plus( diffBA ) );
-            assertEquals( diffABs.prettyPrint(), b, a.plus( diffABs ) );
-            assertEquals( diffBAs.prettyPrint(), a, b.plus( diffBAs ) );
+            assertEquals( b, a.plus( diffAB ), diffAB.prettyPrint() );
+            assertEquals( a, b.plus( diffBA ), diffBA.prettyPrint() );
+            assertEquals( b, a.plus( diffABs ), diffABs.prettyPrint() );
+            assertEquals( a, b.plus( diffBAs ), diffBAs.prettyPrint() );
         }
     }
 

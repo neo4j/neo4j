@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -33,7 +33,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -43,7 +43,7 @@ public class SegmentedRaftLogRotationTruncationPruneTest
 
     private FileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         fileSystem.close();

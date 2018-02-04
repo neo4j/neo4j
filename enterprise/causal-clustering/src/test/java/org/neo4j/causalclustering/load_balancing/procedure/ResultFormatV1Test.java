@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.procedure;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -30,7 +30,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ResultFormatV1Test
 {

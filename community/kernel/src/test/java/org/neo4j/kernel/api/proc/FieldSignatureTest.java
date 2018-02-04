@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.api.proc.FieldSignature.inputField;
 import static org.neo4j.kernel.api.proc.FieldSignature.outputField;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTString;
 import static org.neo4j.kernel.impl.proc.DefaultParameterValue.ntString;
 
 public class FieldSignatureTest
@@ -33,41 +34,30 @@ public class FieldSignatureTest
     @Test
     public void equalsShouldConsiderName()
     {
-        assertEquals(
-                "input without default",
+        assertEquals( inputField( "name", NTString ), inputField( "name", NTString ), "input without default" );
+        assertNotEquals(
                 inputField( "name", Neo4jTypes.NTString ),
-                inputField( "name", Neo4jTypes.NTString ) );
-        assertNotEquals(
-                "input without default",
-                inputField( "name", Neo4jTypes.NTString ),
-                inputField( "other", Neo4jTypes.NTString ) );
+                inputField( "other", Neo4jTypes.NTString ),
+                "input without default" );
 
-        assertEquals(
-                "input with default",
+        assertEquals( inputField( "name", NTString, ntString( "hello" ) ), inputField( "name", NTString, ntString( "hello" ) ), "input with default" );
+        assertNotEquals(
                 inputField( "name", Neo4jTypes.NTString, ntString( "hello" ) ),
-                inputField( "name", Neo4jTypes.NTString, ntString( "hello" ) ) );
-        assertNotEquals(
-                "input with default",
-                inputField( "name", Neo4jTypes.NTString, ntString( "hello" ) ),
-                inputField( "other", Neo4jTypes.NTString, ntString( "hello" ) ) );
+                inputField( "other", Neo4jTypes.NTString, ntString( "hello" ) ),
+                "input with default" );
 
-        assertEquals(
-                "output",
-                outputField( "name", Neo4jTypes.NTString, false ),
-                outputField( "name", Neo4jTypes.NTString, false ) );
+        assertEquals( outputField( "name", NTString, false ), outputField( "name", NTString, false ), "output" );
         assertNotEquals(
-                "output",
                 outputField( "name", Neo4jTypes.NTString, false ),
-                outputField( "other", Neo4jTypes.NTString, false ) );
+                outputField( "other", Neo4jTypes.NTString, false ),
+                "output" );
 
-        assertEquals(
-                "deprecated output",
-                outputField( "name", Neo4jTypes.NTString, true ),
-                outputField( "name", Neo4jTypes.NTString, true ) );
+        assertEquals( outputField( "name", NTString, true ),
+                outputField( "name", NTString, true ), "deprecated output" );
         assertNotEquals(
-                "deprecated output",
                 outputField( "name", Neo4jTypes.NTString, true ),
-                outputField( "other", Neo4jTypes.NTString, true ) );
+                outputField( "other", Neo4jTypes.NTString, true ),
+                "deprecated output" );
     }
 
     @Test
@@ -91,32 +81,24 @@ public class FieldSignatureTest
     @Test
     public void equalsShouldConsiderType()
     {
-        assertEquals(
-                "input without default",
+        assertEquals( inputField( "name", NTString ), inputField( "name", NTString ), "input without default" );
+        assertNotEquals(
                 inputField( "name", Neo4jTypes.NTString ),
-                inputField( "name", Neo4jTypes.NTString ) );
-        assertNotEquals(
-                "input without default",
-                inputField( "name", Neo4jTypes.NTString ),
-                inputField( "name", Neo4jTypes.NTInteger ) );
+                inputField( "name", Neo4jTypes.NTInteger ),
+                "input without default" );
 
-        assertEquals(
-                "output",
-                outputField( "name", Neo4jTypes.NTString, false ),
-                outputField( "name", Neo4jTypes.NTString, false ) );
+        assertEquals( outputField( "name", NTString, false ), outputField( "name", NTString, false ), "output" );
         assertNotEquals(
-                "output",
                 outputField( "name", Neo4jTypes.NTString, false ),
-                outputField( "name", Neo4jTypes.NTInteger, false ) );
+                outputField( "name", Neo4jTypes.NTInteger, false ),
+                "output" );
 
-        assertEquals(
-                "deprecated output",
-                outputField( "name", Neo4jTypes.NTString, true ),
-                outputField( "name", Neo4jTypes.NTString, true ) );
+        assertEquals( outputField( "name", NTString, true ),
+                outputField( "name", NTString, true ), "deprecated output" );
         assertNotEquals(
-                "deprecated output",
                 outputField( "name", Neo4jTypes.NTString, true ),
-                outputField( "name", Neo4jTypes.NTInteger, true ) );
+                outputField( "name", Neo4jTypes.NTInteger, true ),
+                "deprecated output" );
     }
 
     @Test

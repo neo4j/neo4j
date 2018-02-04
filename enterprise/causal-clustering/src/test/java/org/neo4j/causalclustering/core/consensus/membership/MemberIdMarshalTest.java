@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.core.consensus.membership;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -30,8 +30,8 @@ import org.neo4j.causalclustering.messaging.NetworkReadableClosableChannelNetty4
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.identity.MemberId;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class MemberIdMarshalTest
 {

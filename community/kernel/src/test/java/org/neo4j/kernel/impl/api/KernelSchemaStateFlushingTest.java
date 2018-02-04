@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.locks.LockSupport;
+import javax.annotation.Resource;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -37,16 +38,18 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class KernelSchemaStateFlushingTest
 {
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
 
     private GraphDatabaseAPI db;
     private InwardKernel kernel;
@@ -220,14 +223,14 @@ public class KernelSchemaStateFlushingTest
         }
     }
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         db = dbRule.getGraphDatabaseAPI();
         kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

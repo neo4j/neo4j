@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.neo4j.graphdb.GraphDatabaseServiceFacadeMethods.ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS;
 

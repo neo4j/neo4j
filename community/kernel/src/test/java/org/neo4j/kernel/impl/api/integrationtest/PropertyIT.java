@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,10 +37,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -212,7 +212,7 @@ public class PropertyIT extends KernelIntegrationTest
             Value result = statement.nodeRemoveProperty( nodeId, propertyId );
 
             // THEN
-            assertTrue( "Return no property if removing missing", result == NO_VALUE );
+            assertTrue( result == NO_VALUE, "Return no property if removing missing" );
             commit();
         }
     }

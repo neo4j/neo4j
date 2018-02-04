@@ -19,10 +19,10 @@
  */
 package org.neo4j.concurrent;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,25 +40,27 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class WorkSyncTest
 {
     private static ExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void startExecutor()
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopExecutor()
     {
         executor.shutdownNow();
@@ -158,7 +160,7 @@ public class WorkSyncTest
     private WorkSync<Adder,AddWork> sync = new WorkSync<>( adder );
     private Semaphore semaphore = new Semaphore( Integer.MAX_VALUE );
 
-    @After
+    @AfterEach
     public void refillSemaphore()
     {
         // This ensures that no threads end up stuck
@@ -196,44 +198,47 @@ public class WorkSyncTest
         assertThat( sum.sum(), is( 30L ) );
     }
 
-    @Test ( timeout = 10000 )
+    @Test
     public void mustCombineWork() throws Exception
     {
-        BinaryLatch startLatch = new BinaryLatch();
-        BinaryLatch blockLatch = new BinaryLatch();
-        FutureTask<Void> blocker = new FutureTask<>( new CallableWork( new AddWork( 1 )
+        assertTimeout( ofSeconds( 10 ), () ->
         {
-            @Override
-            public void apply( Adder adder )
+            BinaryLatch startLatch = new BinaryLatch();
+            BinaryLatch blockLatch = new BinaryLatch();
+            FutureTask<Void> blocker = new FutureTask<>( new CallableWork( new AddWork( 1 )
             {
-                super.apply( adder );
-                startLatch.release();
-                blockLatch.await();
-            }
-        } ) );
-        new Thread( blocker ).start();
-        startLatch.await();
-        Collection<FutureTask<Void>> tasks = new ArrayList<>();
-        tasks.add( blocker );
-        for ( int i = 0; i < 20; i++ )
-        {
+                @Override
+                public void apply( Adder adder )
+                {
+                    super.apply( adder );
+                    startLatch.release();
+                    blockLatch.await();
+                }
+            } ) );
+            new Thread( blocker ).start();
+            startLatch.await();
+            Collection<FutureTask<Void>> tasks = new ArrayList<>();
+            tasks.add( blocker );
+            for ( int i = 0; i < 20; i++ )
+            {
 
-            CallableWork task = new CallableWork( new AddWork( 1 ) );
-            FutureTask<Void> futureTask = new FutureTask<>( task );
-            tasks.add( futureTask );
-            Thread thread = new Thread( futureTask );
-            thread.start();
-            //wait for the thread to reach the lock
-            while ( thread.getState() != Thread.State.TIMED_WAITING )
-            {
+                CallableWork task = new CallableWork( new AddWork( 1 ) );
+                FutureTask<Void> futureTask = new FutureTask<>( task );
+                tasks.add( futureTask );
+                Thread thread = new Thread( futureTask );
+                thread.start();
+                //wait for the thread to reach the lock
+                while ( thread.getState() != Thread.State.TIMED_WAITING )
+                {
+                }
             }
-        }
-        blockLatch.release();
-        for ( FutureTask<Void> task : tasks )
-        {
-            task.get();
-        }
-        assertThat( count.sum(), lessThan( sum.sum() ) );
+            blockLatch.release();
+            for ( FutureTask<Void> task : tasks )
+            {
+                task.get();
+            }
+            assertThat( count.sum(), lessThan( sum.sum() ) );
+        } );
     }
 
     @Test
@@ -247,45 +252,48 @@ public class WorkSyncTest
         assertTrue( Thread.interrupted() );
     }
 
-    @Test( timeout = 1000 )
+    @Test
     public void mustRecoverFromExceptions() throws Exception
     {
-        final AtomicBoolean broken = new AtomicBoolean( true );
-        Adder adder = new Adder()
+        assertTimeout( ofSeconds( 1 ), () ->
         {
-            @Override
-            public void add( int delta )
+            final AtomicBoolean broken = new AtomicBoolean( true );
+            Adder adder = new Adder()
             {
-                if ( broken.get() )
+                @Override
+                public void add( int delta )
                 {
-                    throw new IllegalStateException( "boom!" );
+                    if ( broken.get() )
+                    {
+                        throw new IllegalStateException( "boom!" );
+                    }
+                    super.add( delta );
                 }
-                super.add( delta );
+            };
+            sync = new WorkSync<>( adder );
+
+            try
+            {
+                // Run this in a different thread to account for reentrant locks.
+                executor.submit( new CallableWork( new AddWork( 10 ) ) ).get();
+                fail( "Should have thrown" );
             }
-        };
-        sync = new WorkSync<>( adder );
+            catch ( ExecutionException exception )
+            {
+                // Outermost ExecutionException from the ExecutorService
+                assertThat( exception.getCause(), instanceOf( ExecutionException.class ) );
 
-        try
-        {
-            // Run this in a different thread to account for reentrant locks.
-            executor.submit( new CallableWork( new AddWork( 10 ) ) ).get();
-            fail( "Should have thrown" );
-        }
-        catch ( ExecutionException exception )
-        {
-            // Outermost ExecutionException from the ExecutorService
-            assertThat( exception.getCause(), instanceOf( ExecutionException.class ) );
+                // Inner ExecutionException from the WorkSync
+                exception = (ExecutionException) exception.getCause();
+                assertThat( exception.getCause(), instanceOf( IllegalStateException.class ) );
+            }
 
-            // Inner ExecutionException from the WorkSync
-            exception = (ExecutionException) exception.getCause();
-            assertThat( exception.getCause(), instanceOf( IllegalStateException.class ) );
-        }
+            broken.set( false );
+            sync.apply( new AddWork( 20 ) );
 
-        broken.set( false );
-        sync.apply( new AddWork( 20 ) );
-
-        assertThat( sum.sum(), is( 20L ) );
-        assertThat( count.sum(), is( 1L ) );
+            assertThat( sum.sum(), is( 20L ) );
+            assertThat( count.sum(), is( 1L ) );
+        } );
     }
 
     @Test

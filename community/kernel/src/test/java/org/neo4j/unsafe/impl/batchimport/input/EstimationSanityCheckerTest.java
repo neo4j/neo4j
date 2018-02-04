@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;

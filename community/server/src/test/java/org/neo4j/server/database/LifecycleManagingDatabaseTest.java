@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.database;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -60,7 +60,7 @@ public class LifecycleManagingDatabaseTest
         // Then the database should still start up as normal, without bubbling the exception up
         db.init();
         db.start();
-        assertTrue( "the database should be running", db.isRunning() );
+        assertTrue( db.isRunning(), "the database should be running" );
         db.stop();
         db.shutdown();
     }

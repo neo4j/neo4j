@@ -19,14 +19,14 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.kernel.configuration.Config;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.impl.BackupSupportingClassesFactoryProvider.getProvidersByPriority;

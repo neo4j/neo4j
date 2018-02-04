@@ -20,7 +20,8 @@
 package org.neo4j.values.storable;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import static java.lang.String.format;
@@ -33,6 +34,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 
+@EnableRuleMigrationSupport
 public class UTF8StringValueTest
 {
     @Rule

@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.extension.MockitoExtension;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class DefaultConversationSPITest
 {
 

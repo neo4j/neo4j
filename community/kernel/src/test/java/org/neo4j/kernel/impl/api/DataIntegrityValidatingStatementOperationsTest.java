@@ -19,33 +19,35 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBelongsToConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.rules.ExpectedException.none;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -53,21 +55,26 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.uniqueForLabel;
+import static org.neo4j.kernel.impl.api.StatementOperationsTestHelper.mockedState;
 
+@EnableRuleMigrationSupport
 public class DataIntegrityValidatingStatementOperationsTest
 {
     @Rule
-    public ExpectedException exception = ExpectedException.none();
+    public ExpectedException exception = none();
 
-    LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 7 );
+    LabelSchemaDescriptor descriptor = forLabel( 0, 7 );
     IndexDescriptor index = IndexDescriptorFactory.forLabel( 0, 7 );
-    IndexDescriptor uniqueIndex = IndexDescriptorFactory.uniqueForLabel( 0, 7 );
+    IndexDescriptor uniqueIndex = uniqueForLabel( 0, 7 );
     private SchemaReadOperations innerRead;
     private SchemaWriteOperations innerWrite;
     private KeyWriteOperations innerKeyWrite;
     private DataIntegrityValidatingStatementOperations ops;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         innerKeyWrite = mock( KeyWriteOperations.class );
@@ -132,7 +139,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
         catch ( DropIndexFailureException e )
         {
-            assertThat(e.getCause(), instanceOf( NoSuchIndexException.class) );
+            assertThat( e.getCause(), instanceOf( NoSuchIndexException.class ) );
         }
 
         // THEN
@@ -153,7 +160,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
         catch ( DropIndexFailureException e )
         {
-            assertThat(e.getCause(), instanceOf( IndexBelongsToConstraintException.class) );
+            assertThat( e.getCause(), instanceOf( IndexBelongsToConstraintException.class ) );
         }
 
         // THEN
@@ -174,7 +181,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
         catch ( DropIndexFailureException e )
         {
-            assertThat(e.getCause(), instanceOf( IndexBelongsToConstraintException.class) );
+            assertThat( e.getCause(), instanceOf( IndexBelongsToConstraintException.class ) );
         }
 
         // THEN
@@ -195,7 +202,7 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
         catch ( DropIndexFailureException e )
         {
-            assertThat(e.getCause(), instanceOf( IndexBelongsToConstraintException.class) );
+            assertThat( e.getCause(), instanceOf( IndexBelongsToConstraintException.class ) );
         }
 
         // THEN
@@ -246,40 +253,52 @@ public class DataIntegrityValidatingStatementOperationsTest
         }
     }
 
-    @Test( expected = SchemaKernelException.class )
-    public void shouldFailInvalidLabelNames() throws Exception
+    @Test
+    public void shouldFailInvalidLabelNames()
     {
-        ops.labelGetOrCreateForName( state, "" );
+        assertThrows( SchemaKernelException.class, () -> {
+            ops.labelGetOrCreateForName( state, "" );
+        } );
     }
 
-    @Test( expected = SchemaKernelException.class )
-    public void shouldFailOnNullLabel() throws Exception
+    @Test
+    public void shouldFailOnNullLabel()
     {
-        ops.labelGetOrCreateForName( state, null );
+        assertThrows( SchemaKernelException.class, () -> {
+            ops.labelGetOrCreateForName( state, null );
+        } );
     }
 
-    @Test( expected = RepeatedPropertyInCompositeSchemaException.class )
-    public void shouldFailIndexCreateOnRepeatedPropertyId() throws Exception
+    @Test
+    public void shouldFailIndexCreateOnRepeatedPropertyId()
     {
-        ops.indexCreate( state, SchemaDescriptorFactory.forLabel( 0, 1, 1 ) );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
+            ops.indexCreate( state, forLabel( 0, 1, 1 ) );
+        } );
     }
 
-    @Test( expected = RepeatedPropertyInCompositeSchemaException.class )
-    public void shouldFailNodeExistenceCreateOnRepeatedPropertyId() throws Exception
+    @Test
+    public void shouldFailNodeExistenceCreateOnRepeatedPropertyId()
     {
-        ops.nodePropertyExistenceConstraintCreate( state, SchemaDescriptorFactory.forLabel( 0, 1, 1 ) );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
+            ops.nodePropertyExistenceConstraintCreate( state, forLabel( 0, 1, 1 ) );
+        } );
     }
 
-    @Test( expected = RepeatedPropertyInCompositeSchemaException.class )
-    public void shouldFailRelExistenceCreateOnRepeatedPropertyId() throws Exception
+    @Test
+    public void shouldFailRelExistenceCreateOnRepeatedPropertyId()
     {
-        ops.relationshipPropertyExistenceConstraintCreate( state, SchemaDescriptorFactory.forRelType( 0, 1, 1 ) );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
+            ops.relationshipPropertyExistenceConstraintCreate( state, forRelType( 0, 1, 1 ) );
+        } );
     }
 
-    @Test( expected = RepeatedPropertyInCompositeSchemaException.class )
-    public void shouldFailUniquenessCreateOnRepeatedPropertyId() throws Exception
+    @Test
+    public void shouldFailUniquenessCreateOnRepeatedPropertyId()
     {
-        ops.uniquePropertyConstraintCreate( state, SchemaDescriptorFactory.forLabel( 0, 1, 1 ) );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
+            ops.uniquePropertyConstraintCreate( state, forLabel( 0, 1, 1 ) );
+        } );
     }
 
     @SafeVarargs
@@ -288,5 +307,5 @@ public class DataIntegrityValidatingStatementOperationsTest
         return invocationOnMock -> iterator( content );
     }
 
-    private final KernelStatement state = StatementOperationsTestHelper.mockedState();
+    private final KernelStatement state = mockedState();
 }

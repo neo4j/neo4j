@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipField;
 import org.neo4j.consistency.checking.RelationshipRecordCheck.RelationshipTypeField;

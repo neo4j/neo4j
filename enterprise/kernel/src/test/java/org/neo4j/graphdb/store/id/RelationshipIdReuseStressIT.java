@@ -54,9 +54,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
-import static org.junit.Assert.assertThat;
-
 import static java.lang.System.currentTimeMillis;
+import static org.junit.Assert.assertThat;
 
 public class RelationshipIdReuseStressIT
 {
@@ -109,7 +108,7 @@ public class RelationshipIdReuseStressIT
 
         long highestPossibleIdInUse = getHighestUsedIdForRelationships();
         assertThat( "Number of created relationships should be higher then highest possible id, since those are " +
-                    "reused.", relationshipsCreator.getCreatedRelationships(),
+                        "reused.", relationshipsCreator.getCreatedRelationships(),
                 Matchers.greaterThan( highestPossibleIdInUse ) );
     }
 

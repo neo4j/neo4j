@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -31,8 +31,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -107,9 +107,9 @@ public class RecoveryProgressIndicatorTest
 
         public void verify()
         {
-            assertTrue( "Progress reporting was not completed.", completed );
-            assertEquals( "Number of max recovered transactions is different.", expectedMax, max );
-            assertEquals( "Number of recovered transactions is different.", expectedMax, recoveredTransactions );
+            assertTrue( completed, "Progress reporting was not completed." );
+            assertEquals( expectedMax, max, "Number of max recovered transactions is different." );
+            assertEquals( expectedMax, recoveredTransactions, "Number of recovered transactions is different." );
         }
     }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell.impl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;

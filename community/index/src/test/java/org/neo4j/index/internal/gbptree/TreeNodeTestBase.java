@@ -19,22 +19,25 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.contains;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
@@ -44,6 +47,7 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
+@ExtendWith( RandomExtension.class )
 public abstract class TreeNodeTestBase<KEY,VALUE>
 {
     static final int STABLE_GENERATION = 1;
@@ -56,10 +60,10 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
     private TestLayout<KEY,VALUE> layout;
     TreeNode<KEY,VALUE> node;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
-    @Before
+    @BeforeEach
     public void prepareCursor() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
@@ -226,8 +230,8 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
         // WHEN
         VALUE overwriteValue = value( 666 );
-        assertTrue( String.format( "Could not overwrite value, oldValue=%s, newValue=%s", firstValue, overwriteValue ),
-                node.setValueAt( cursor, overwriteValue, 0 ) );
+        assertTrue( node.setValueAt( cursor, overwriteValue, 0 ),
+                format( "Could not overwrite value, oldValue=%s, newValue=%s", firstValue, overwriteValue ) );
 
         // THEN
         assertKeyEquals( firstKey, node.keyAt( cursor, readKey, 0, LEAF ) );
@@ -571,10 +575,11 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
                     node.removeKeyValueAt( cursor, position, expectedKeyCount );
                     KEY expectedKey = expectedKeys.remove( position );
                     VALUE expectedValue = expectedValues.remove( position );
-                    assertTrue( String.format( "Key differ with expected%n    readKey=%s %nexpectedKey=%s%n", readKey, expectedKey ),
-                            layout.compare( expectedKey, readKey ) == 0 );
-                    assertTrue( "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue,
-                            layout.compareValue( expectedValue, readValue ) == 0 );
+                    assertTrue( layout.compare( expectedKey, readKey ) == 0,
+                            format( "Key differ with expected%n    readKey=%s %nexpectedKey=%s%n", readKey,
+                                    expectedKey ) );
+                    assertTrue( layout.compareValue( expectedValue, readValue ) == 0,
+                            "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue );
 
                     TreeNode.setKeyCount( cursor, --expectedKeyCount );
                 }
@@ -594,13 +599,13 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
         {
             KEY expectedKey = expectedKeys.get( i );
             node.keyAt( cursor, actualKey, i, LEAF );
-            assertTrue( "Key differ with expected, actualKey=" + actualKey + ", expectedKey=" + expectedKey,
-                    layout.compare( expectedKey, actualKey ) == 0 );
+            assertTrue( layout.compare( expectedKey, actualKey ) == 0,
+                    "Key differ with expected, actualKey=" + actualKey + ", expectedKey=" + expectedKey );
 
             VALUE expectedValue = expectedValues.get( i );
             node.valueAt( cursor, actualValue, i );
-            assertTrue( "Value differ with expected, actualValue=" + actualValue + ", expectedValue=" + expectedValue,
-                    layout.compareValue( expectedValue, actualValue ) == 0 );
+            assertTrue( layout.compareValue( expectedValue, actualValue ) == 0,
+                    "Value differ with expected, actualValue=" + actualValue + ", expectedValue=" + expectedValue );
         }
     }
 
@@ -790,14 +795,14 @@ public abstract class TreeNodeTestBase<KEY,VALUE>
 
     private void assertKeyEquals( KEY expectedKey, KEY actualKey )
     {
-        assertTrue( String.format( "expectedKey=%s, actualKey=%s", expectedKey, actualKey ),
-                layout.compare( expectedKey, actualKey ) == 0 );
+        assertTrue( layout.compare( expectedKey, actualKey ) == 0,
+                format( "expectedKey=%s, actualKey=%s", expectedKey, actualKey ) );
     }
 
     private void assertValueEquals( VALUE expectedValue, VALUE actualValue )
     {
-        assertTrue( String.format( "expectedValue=%s, actualKey=%s", expectedValue, actualValue ),
-                layout.compareValue( expectedValue, actualValue ) == 0 );
+        assertTrue( layout.compareValue( expectedValue, actualValue ) == 0,
+                format( "expectedValue=%s, actualKey=%s", expectedValue, actualValue ) );
     }
 
     private void assertKeysAndChildren( long stable, long unstable, long... keysAndChildren )

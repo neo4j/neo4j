@@ -19,11 +19,12 @@
  */
 package org.neo4j.ha;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -31,26 +32,28 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 import static org.neo4j.kernel.ha.HaSettings.state_switch_timeout;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class ForeignStoreIdIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     private GraphDatabaseService firstInstance;
     private GraphDatabaseService foreignInstance;
 
-    @After
+    @AfterEach
     public void after()
     {
         if ( foreignInstance != null )

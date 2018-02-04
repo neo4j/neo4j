@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,10 +32,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -117,9 +117,9 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
                 read.singleRelationship( id, relationships );
 
                 // then
-                assertTrue( "should access defined relationship", relationships.next() );
-                assertEquals( "should access the correct relationship", id, relationships.relationshipReference() );
-                assertFalse( "should only access a single relationship", relationships.next() );
+                assertTrue( relationships.next(), "should access defined relationship" );
+                assertEquals( id, relationships.relationshipReference(), "should access the correct relationship" );
+                assertFalse( relationships.next(), "should only access a single relationship" );
             }
         }
     }
@@ -134,7 +134,7 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
             read.singleRelationship( none, relationships );
 
             // then
-            assertFalse( "should not access deleted relationship", relationships.next() );
+            assertFalse( relationships.next(), "should not access deleted relationship" );
         }
     }
 

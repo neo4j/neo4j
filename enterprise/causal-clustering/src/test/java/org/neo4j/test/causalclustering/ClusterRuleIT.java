@@ -20,7 +20,7 @@
 package org.neo4j.test.causalclustering;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,7 +35,7 @@ import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ClusterRuleIT
 {

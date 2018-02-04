@@ -119,7 +119,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
                 current = levels.pop();
             }
             assertTrue( "Should not contain node (" + nodeName
-                    + ") at level " + (3 - levels.size()),
+                            + ") at level " + (3 - levels.size()),
                     current.remove( nodeName ) );
         }
 
@@ -176,8 +176,8 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         public String represent( Relationship item )
         {
             return nodes.represent( item.getStartNode() ) + " "
-                   + rel.represent( item ) + " "
-                   + nodes.represent( item.getEndNode() );
+                    + rel.represent( item ) + " "
+                    + nodes.represent( item.getEndNode() );
         }
     }
 
@@ -273,7 +273,7 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         if ( !expectation.isEmpty() )
         {
             fail( "the expected elements <" + expectation
-                  + "> were not contained" );
+                    + "> were not contained" );
         }
     }
 

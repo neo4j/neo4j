@@ -19,14 +19,14 @@
  */
 package org.neo4j.graphalgo.impl.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphalgo.impl.util.PriorityMap.Entry;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestPriorityMap
 {
@@ -92,7 +92,7 @@ public class TestPriorityMap
         Entry<Integer, Double> top = map.pop();
         assertNull( map.peek() );
         assertEquals( 1, top.getEntity().intValue() );
-        assertEquals( 1.5d, top.getPriority(), 0d );
+        assertEquals( top.getPriority(), 0d, 1.5d );
     }
 
     @Test

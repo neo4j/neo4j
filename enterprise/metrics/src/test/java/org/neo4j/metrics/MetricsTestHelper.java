@@ -28,8 +28,8 @@ import java.util.function.Function;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class MetricsTestHelper
@@ -139,8 +139,8 @@ public class MetricsTestHelper
             {
                 String[] fields = line.split( "," );
                 T newValue = parser.apply( fields[metricsValue.ordinal()] );
-                assertTrue( "assertion failed on " + newValue + " " + currentValue,
-                        assumption.test( newValue, currentValue ) );
+                assertTrue( assumption.test( newValue, currentValue ),
+                        "assertion failed on " + newValue + " " + currentValue );
                 currentValue = newValue;
             }
             return currentValue;

@@ -19,25 +19,28 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SessionTest
 {
     private Session session;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    public void setUp() throws Exception
     {
         session = new Session( 1 );
     }
 
-    @Test( expected = ShellException.class )
-    public void cannotSetInvalidVariableName() throws ShellException
+    @Test
+    public void cannotSetInvalidVariableName()
     {
-        session.set( "foo bar", 42 );
+        assertThrows( ShellException.class, () -> {
+            session.set( "foo bar", 42 );
+        } );
     }
 
     @Test
@@ -46,43 +49,47 @@ public class SessionTest
         session.set( "_foobar", 42 );
     }
 
-    @Test( expected = ShellException.class )
-    public void cannotGetInvalidVariableName() throws ShellException
+    @Test
+    public void cannotGetInvalidVariableName()
     {
-        session.get( "foo bar" );
+        assertThrows( ShellException.class, () -> {
+            session.get( "foo bar" );
+        } );
     }
 
     @Test
     public void canGetVariableName() throws ShellException
     {
-        session.set( "_foobar", 42);
-        assertEquals( 42, session.get( "_foobar" ));
+        session.set( "_foobar", 42 );
+        assertEquals( 42, session.get( "_foobar" ) );
     }
 
-    @Test( expected = ShellException.class )
-    public void cannotRemoveInvalidVariableName() throws ShellException
+    @Test
+    public void cannotRemoveInvalidVariableName()
     {
-        session.remove( "foo bar" );
+        assertThrows( ShellException.class, () -> {
+            session.remove( "foo bar" );
+        } );
     }
 
     @Test
     public void canRemoveVariableName() throws ShellException
     {
-        session.set( "_foobar", 42);
-        assertEquals( 42, session.remove( "_foobar" ));
+        session.set( "_foobar", 42 );
+        assertEquals( 42, session.remove( "_foobar" ) );
     }
 
     @Test
     public void canCheckInvalidVariableName()
     {
-        assertEquals( false, session.has( "foo bar" ));
+        assertEquals( false, session.has( "foo bar" ) );
     }
 
     @Test
     public void canCheckVariableName() throws ShellException
     {
-        assertEquals( false, session.has( "_foobar" ));
+        assertEquals( false, session.has( "_foobar" ) );
         session.set( "_foobar", 42 );
-        assertEquals( true, session.has( "_foobar" ));
+        assertEquals( true, session.has( "_foobar" ) );
     }
 }

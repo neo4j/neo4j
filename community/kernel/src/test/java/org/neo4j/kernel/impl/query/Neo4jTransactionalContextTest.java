@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.query;
 
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsDeepStubs;
@@ -47,11 +47,11 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -69,7 +69,7 @@ public class Neo4jTransactionalContextTest
     private ConfiguredPageCursorTracer tracer;
     private ThreadToStatementContextBridge txBridge;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         setUpMocks();
@@ -288,8 +288,10 @@ public class Neo4jTransactionalContextTest
 
         StatisticProvider statisticProvider = transactionalContext.kernelStatisticProvider();
 
-        assertEquals( "Expect to see accumulated number of page cache misses.",6, statisticProvider.getPageCacheMisses() );
-        assertEquals( "Expected to see accumulated number of page cache hits.", 15, statisticProvider.getPageCacheHits() );
+        assertEquals( 6, statisticProvider.getPageCacheMisses(),
+                "Expect to see accumulated number of page cache misses." );
+        assertEquals( 15, statisticProvider.getPageCacheHits(),
+                "Expected to see accumulated number of page cache hits." );
     }
 
     @Test

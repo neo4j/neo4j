@@ -20,9 +20,10 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -30,13 +31,14 @@ import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.DummyPageSwapper;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@EnableRuleMigrationSupport
 public class SwapperSetTest
 {
     @Rule
@@ -44,7 +46,7 @@ public class SwapperSetTest
 
     SwapperSet set;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         set = new SwapperSet();

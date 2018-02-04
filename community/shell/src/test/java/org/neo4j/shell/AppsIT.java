@@ -20,7 +20,7 @@
 package org.neo4j.shell;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,12 +52,12 @@ import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -589,8 +589,8 @@ public class AppsIT extends AbstractShellIT
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, false,
-                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertEquals( false, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ),
+                "Shows welcome message: " + outString );
     }
 
     @Test
@@ -601,8 +601,8 @@ public class AppsIT extends AbstractShellIT
         ShellClient client = new SameJvmClient( values, shellServer, out );
         client.shutdown();
         final String outString = out.asString();
-        assertEquals( "Shows welcome message: " + outString, true,
-                outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ) );
+        assertEquals( true, outString.contains( "Welcome to the Neo4j Shell! Enter 'help' for a list of commands" ),
+                "Shows welcome message: " + outString );
     }
 
     @Test

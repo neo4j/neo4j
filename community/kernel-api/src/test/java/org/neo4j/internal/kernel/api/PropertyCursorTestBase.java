@@ -24,19 +24,20 @@ import java.util.Set;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -169,16 +170,16 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         {
             // when
             read.singleNode( bare, node );
-            assertTrue( "node by reference", node.next() );
-            assertFalse( "no properties", node.hasProperties() );
+            assertTrue( node.next(), "node by reference" );
+            assertFalse( node.hasProperties(), "no properties" );
 
             node.properties( props );
-            assertFalse( "no properties by direct method", props.next() );
+            assertFalse( props.next(), "no properties by direct method" );
 
             read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
-            assertFalse( "no properties via property ref", props.next() );
+            assertFalse( props.next(), "no properties via property ref" );
 
-            assertFalse( "only one node", node.next() );
+            assertFalse( node.next(), "only one node" );
         }
     }
 
@@ -218,8 +219,8 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         {
             // when
             read.singleNode( allProps, node );
-            assertTrue( "node by reference", node.next() );
-            assertTrue( "has properties", node.hasProperties() );
+            assertTrue( node.next(), "node by reference" );
+            assertTrue( node.hasProperties(), "has properties" );
 
             node.properties( props );
             Set<Object> values = new HashSet<>();
@@ -228,27 +229,27 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
                 values.add( props.propertyValue().asObject() );
             }
 
-            assertTrue( "byteProp", values.contains( (byte) 13 ) );
-            assertTrue( "shortProp", values.contains( (short) 13 ) );
-            assertTrue( "intProp", values.contains( 13 ) );
-            assertTrue( "inlineLongProp", values.contains( 13L ) );
-            assertTrue( "longProp", values.contains( Long.MAX_VALUE ) );
-            assertTrue( "floatProp", values.contains( 13.0f ) );
-            assertTrue( "doubleProp", values.contains( 13.0 ) );
-            assertTrue( "trueProp", values.contains( true ) );
-            assertTrue( "falseProp", values.contains( false ) );
-            assertTrue( "charProp", values.contains( 'x' ) );
-            assertTrue( "emptyStringProp", values.contains( "" ) );
-            assertTrue( "shortStringProp", values.contains( "hello" ) );
-            assertTrue( "utf8Prop", values.contains( chinese ) );
+            assertTrue( values.contains( (byte) 13 ), "byteProp" );
+            assertTrue( values.contains( (short) 13 ), "shortProp" );
+            assertTrue( values.contains( 13 ), "intProp" );
+            assertTrue( values.contains( 13L ), "inlineLongProp" );
+            assertTrue( values.contains( MAX_VALUE ), "longProp" );
+            assertTrue( values.contains( 13.0f ), "floatProp" );
+            assertTrue( values.contains( 13.0 ), "doubleProp" );
+            assertTrue( values.contains( true ), "trueProp" );
+            assertTrue( values.contains( false ), "falseProp" );
+            assertTrue( values.contains( 'x' ), "charProp" );
+            assertTrue( values.contains( "" ), "emptyStringProp" );
+            assertTrue( values.contains( "hello" ), "shortStringProp" );
+            assertTrue( values.contains( chinese ), "utf8Prop" );
             if ( supportsBigProperties() )
             {
-                assertTrue( "longStringProp", values.contains( LONG_STRING ) );
+                assertTrue( values.contains( LONG_STRING ), "longStringProp" );
                 assertThat( "smallArray", values, hasItem( intArray( 1, 2, 3, 4 ) ) );
                 assertThat( "bigArray", values, hasItem( arrayContaining( LONG_STRING ) ) );
             }
             int expected = supportsBigProperties() ? 16 : 13;
-            assertEquals( "number of values", expected, values.size() );
+            assertEquals( expected, values.size(), "number of values" );
         }
     }
 
@@ -260,18 +261,18 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
         {
             // when
             read.singleNode( nodeId, node );
-            assertTrue( "node by reference", node.next() );
-            assertTrue( "has properties", node.hasProperties() );
+            assertTrue( node.next(), "node by reference" );
+            assertTrue( node.hasProperties(), "has properties" );
 
             node.properties( props );
-            assertTrue( "has properties by direct method", props.next() );
-            assertEquals( "correct value", expectedValue, props.propertyValue() );
-            assertFalse( "single property", props.next() );
+            assertTrue( props.next(), "has properties by direct method" );
+            assertEquals( expectedValue, props.propertyValue(), "correct value" );
+            assertFalse( props.next(), "single property" );
 
             read.nodeProperties( node.nodeReference(), node.propertiesReference(), props );
-            assertTrue( "has properties via property ref", props.next() );
-            assertEquals( "correct value", expectedValue, props.propertyValue() );
-            assertFalse( "single property", props.next() );
+            assertTrue( props.next(), "has properties via property ref" );
+            assertEquals( expectedValue, props.propertyValue(), "correct value" );
+            assertFalse( props.next(), "single property" );
         }
     }
 

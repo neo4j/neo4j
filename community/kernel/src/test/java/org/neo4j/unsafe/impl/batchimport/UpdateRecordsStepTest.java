@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -35,7 +35,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 import org.neo4j.unsafe.impl.batchimport.store.StorePrepareIdSequence;
 
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;

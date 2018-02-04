@@ -19,25 +19,31 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import static org.neo4j.kernel.impl.transaction.command.NeoCommandType.NODE_COMMAND;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.COMMAND;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURRENT;
 
 public class LogEntryParserDispatcherV6Test
 {
-    private final LogEntryVersion version = LogEntryVersion.CURRENT;
+    private final LogEntryVersion version = CURRENT;
     private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
@@ -59,7 +65,7 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_START );
+        final LogEntryParser parser = version.entryParser( TX_START );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -80,7 +86,7 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.TX_COMMIT );
+        final LogEntryParser parser = version.entryParser( TX_COMMIT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -94,12 +100,12 @@ public class LogEntryParserDispatcherV6Test
         // given
         // The record, it will be used as before and after
         NodeRecord theRecord = new NodeRecord( 1 );
-        Command.NodeCommand nodeCommand = new Command.NodeCommand( theRecord, theRecord );
+        NodeCommand nodeCommand = new NodeCommand( theRecord, theRecord );
 
         final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
-        channel.put( NeoCommandType.NODE_COMMAND );
+        channel.put( NODE_COMMAND );
         channel.putLong( theRecord.getId() );
 
         // record image before
@@ -112,7 +118,7 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.COMMAND );
+        final LogEntryParser parser = version.entryParser( COMMAND );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -133,7 +139,7 @@ public class LogEntryParserDispatcherV6Test
         channel.getCurrentPosition( marker );
 
         // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.CHECK_POINT );
+        final LogEntryParser parser = version.entryParser( CHECK_POINT );
         final LogEntry logEntry = parser.parse( version, channel, marker, commandReader );
 
         // then
@@ -141,13 +147,16 @@ public class LogEntryParserDispatcherV6Test
         assertFalse( parser.skip() );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldThrowWhenParsingUnknownEntry()
     {
-        // when
-        version.entryParser( (byte)42 ); // unused, at lest for now
+        assertThrows( IllegalArgumentException.class, () -> {
+            // when
+            version.entryParser( (byte) 42 ); // unused, at lest for now
 
-        // then
-        // it should throw exception
+            // then
+            // it should throw exception
+
+        } );
     }
 }

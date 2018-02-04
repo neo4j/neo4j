@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -37,14 +38,16 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class CommitContentionTest
 {
-    @Rule
-    public final TestDirectory storeLocation = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory storeLocation;
 
     final Semaphore semaphore1 = new Semaphore( 1 );
     final Semaphore semaphore2 = new Semaphore( 1 );
@@ -52,7 +55,7 @@ public class CommitContentionTest
 
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         semaphore1.acquire();
@@ -60,7 +63,7 @@ public class CommitContentionTest
         db = createDb();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

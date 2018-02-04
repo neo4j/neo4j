@@ -45,55 +45,55 @@ public class QueryExecutionTypeTest
     {
         return Arrays.asList(
                 verify( that( query( READ_ONLY ) )
-                                .canContainResults() ),
+                        .canContainResults() ),
                 verify( that( query( READ_WRITE ) )
-                                .canContainResults()
-                                .canUpdateData() ),
+                        .canContainResults()
+                        .canUpdateData() ),
                 verify( that( query( WRITE ) )
-                                .canUpdateData() ),
+                        .canUpdateData() ),
                 verify( that( query( SCHEMA_WRITE ) )
-                                .canUpdateSchema() ),
+                        .canUpdateSchema() ),
                 // PROFILE
                 verify( that( profiled( READ_ONLY ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canContainResults() ),
+                        .isExplained()
+                        .isProfiled()
+                        .canContainResults() ),
                 verify( that( profiled( READ_WRITE ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canContainResults()
-                                .canUpdateData() ),
+                        .isExplained()
+                        .isProfiled()
+                        .canContainResults()
+                        .canUpdateData() ),
                 verify( that( profiled( WRITE ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canUpdateData() ),
+                        .isExplained()
+                        .isProfiled()
+                        .canUpdateData() ),
                 verify( that( profiled( SCHEMA_WRITE ) )
-                                .isExplained()
-                                .isProfiled()
-                                .canUpdateSchema() ),
+                        .isExplained()
+                        .isProfiled()
+                        .canUpdateSchema() ),
                 // EXPLAIN
                 verify( that( explained( READ_ONLY ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                        .isExplained()
+                        .isOnlyExplained() ),
                 verify( that( explained( READ_WRITE ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                        .isExplained()
+                        .isOnlyExplained() ),
                 verify( that( explained( WRITE ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                        .isExplained()
+                        .isOnlyExplained() ),
                 verify( that( explained( SCHEMA_WRITE ) )
-                                .isExplained()
-                                .isOnlyExplained() ),
+                        .isExplained()
+                        .isOnlyExplained() ),
                 // query of EXPLAIN
                 verify( thatQueryOf( explained( READ_ONLY ) )
-                                .canContainResults() ),
+                        .canContainResults() ),
                 verify( thatQueryOf( explained( READ_WRITE ) )
-                                .canContainResults()
-                                .canUpdateData() ),
+                        .canContainResults()
+                        .canUpdateData() ),
                 verify( thatQueryOf( explained( WRITE ) )
-                                .canUpdateData() ),
+                        .canUpdateData() ),
                 verify( thatQueryOf( explained( SCHEMA_WRITE ) )
-                                .canUpdateSchema() )
+                        .canUpdateSchema() )
         );
     }
 
@@ -125,11 +125,11 @@ public class QueryExecutionTypeTest
                     assertFalse(
                             expected.type().toString(),
                             expected.isProfiled == type.isProfiled() &&
-                            expected.requestedExecutionPlanDescription == type.requestedExecutionPlanDescription() &&
-                            expected.isExplained == type.isExplained() &&
-                            expected.canContainResults == type.canContainResults() &&
-                            expected.canUpdateData == type.canUpdateData() &&
-                            expected.canUpdateSchema == type.canUpdateSchema() );
+                                    expected.requestedExecutionPlanDescription == type.requestedExecutionPlanDescription() &&
+                                    expected.isExplained == type.isExplained() &&
+                                    expected.canContainResults == type.canContainResults() &&
+                                    expected.canUpdateData == type.canUpdateData() &&
+                                    expected.canUpdateSchema == type.canUpdateSchema() );
                 }
             }
         }

@@ -31,7 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
@@ -54,7 +54,7 @@ public class TestStoreId
                 storeIds.add( doReadStoreId( coreStoreDir, pageCache ) );
             }
         }
-        assertEquals( "Store Ids " + storeIds, 1, storeIds.size() );
+        assertEquals( 1, storeIds.size(), "Store Ids " + storeIds );
     }
 
     private static StoreId doReadStoreId( File coreStoreDir, PageCache pageCache ) throws IOException

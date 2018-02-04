@@ -73,7 +73,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     public void makeSureNodesAreTraversedInCorrectOrder()
     {
         PathExpander expander =
-            new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
+                new OrderedByTypeExpander().add( firstComment ).add( comment ).add( next );
         Iterator<Node> itr = getGraphDb().traversalDescription().depthFirst().expand(
                 expander ).traverse( node( "A1" ) ).nodes().iterator();
         assertOrder( itr, "A1", "C1", "C2", "C3", "A2", "C4", "C5", "C6", "A3", "C7", "C8", "C9" );

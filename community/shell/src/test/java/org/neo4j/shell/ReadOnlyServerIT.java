@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.rmi.RemoteException;
 

@@ -19,8 +19,8 @@
  */
 package common;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -32,20 +32,20 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractTestBase
 {
     private static GraphDatabaseService graphdb;
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeSuite()
     {
         graphdb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @AfterClass
+    @AfterAll
     public static void afterSuite()
     {
         graphdb.shutdown();
@@ -103,7 +103,7 @@ public abstract class AbstractTestBase
             for ( T item : items )
             {
                 String repr = representation.represent( item );
-                assertTrue( repr + " not expected ", expected.remove( repr ) );
+                assertTrue( expected.remove( repr ), repr + " not expected " );
             }
             tx.success();
         }

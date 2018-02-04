@@ -45,7 +45,7 @@ import org.junit.runners.model.Statement;
 import static java.time.ZoneOffset.UTC;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FrozenClockRule extends Clock implements TestRule, Function<String,Clock>, Supplier<ZoneId>
 {

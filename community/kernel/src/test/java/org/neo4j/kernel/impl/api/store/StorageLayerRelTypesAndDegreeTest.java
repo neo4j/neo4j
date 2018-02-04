@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,13 +47,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.mapToSet;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -66,12 +68,13 @@ import static org.neo4j.storageengine.api.Direction.BOTH;
 import static org.neo4j.storageengine.api.Direction.INCOMING;
 import static org.neo4j.storageengine.api.Direction.OUTGOING;
 
+@ExtendWith( RandomExtension.class )
 public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
 {
     private static final int RELATIONSHIPS_COUNT = 20;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
     @Override
     protected GraphDatabaseService createGraphDatabase()

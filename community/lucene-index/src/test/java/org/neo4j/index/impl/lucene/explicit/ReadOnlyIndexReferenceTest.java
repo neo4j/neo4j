@@ -20,18 +20,20 @@
 package org.neo4j.index.impl.lucene.explicit;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
 public class ReadOnlyIndexReferenceTest
 {
 
@@ -42,7 +44,7 @@ public class ReadOnlyIndexReferenceTest
     private CloseTrackingIndexReader reader = new CloseTrackingIndexReader();
     private ReadOnlyIndexReference indexReference = new ReadOnlyIndexReference( identifier, searcher );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( searcher.getIndexReader() ).thenReturn( reader );
@@ -85,7 +87,7 @@ public class ReadOnlyIndexReferenceTest
         indexReference.incRef();
         indexReference.detachOrClose();
 
-        assertTrue( "Should leave index in detached state.", indexReference.isDetached() );
+        assertTrue( indexReference.isDetached(), "Should leave index in detached state." );
     }
 
     @Test
@@ -93,7 +95,7 @@ public class ReadOnlyIndexReferenceTest
     {
         indexReference.detachOrClose();
 
-        assertFalse( "Should leave index in closed state.", indexReference.isDetached() );
+        assertFalse( indexReference.isDetached(), "Should leave index in closed state." );
         assertTrue( reader.isClosed() );
         assertTrue( indexReference.isClosed() );
     }
@@ -113,7 +115,7 @@ public class ReadOnlyIndexReferenceTest
         indexReference.incRef();
         indexReference.detachOrClose();
 
-        assertTrue( "Should leave index in detached state.", indexReference.isDetached() );
+        assertTrue( indexReference.isDetached(), "Should leave index in detached state." );
 
         assertTrue( indexReference.close() );
         assertTrue( reader.isClosed() );
@@ -127,7 +129,7 @@ public class ReadOnlyIndexReferenceTest
         indexReference.incRef();
         indexReference.detachOrClose();
 
-        assertTrue( "Should leave index in detached state.", indexReference.isDetached() );
+        assertTrue( indexReference.isDetached(), "Should leave index in detached state." );
 
         assertFalse( indexReference.close() );
     }

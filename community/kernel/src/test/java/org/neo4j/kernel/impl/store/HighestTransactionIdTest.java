@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,9 +27,9 @@ import org.neo4j.test.Race;
 
 import static java.lang.Math.max;
 import static java.lang.Runtime.getRuntime;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HighestTransactionIdTest
 {

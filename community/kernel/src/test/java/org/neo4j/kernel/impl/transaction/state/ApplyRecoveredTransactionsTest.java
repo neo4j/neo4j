@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Arrays;
@@ -50,7 +50,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -109,7 +109,7 @@ public class ApplyRecoveredTransactionsTest
     public final PageCacheRule pageCacheRule = new PageCacheRule();
     private NeoStores neoStores;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         FileSystemAbstraction fs = fsr.get();
@@ -119,7 +119,7 @@ public class ApplyRecoveredTransactionsTest
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         neoStores.close();

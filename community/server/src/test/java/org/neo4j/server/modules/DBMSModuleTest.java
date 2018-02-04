@@ -20,7 +20,7 @@
 package org.neo4j.server.modules;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 
 import java.net.URI;

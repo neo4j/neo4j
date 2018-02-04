@@ -49,7 +49,7 @@ public class ReadOnlyIndexReferenceFactoryTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( cleanupRule ).around( expectedException )
-                                          .around( testDirectory ).around( fileSystemRule );
+            .around( testDirectory ).around( fileSystemRule );
 
     private static final String INDEX_NAME = "testIndex";
     private LuceneDataSource.LuceneFilesystemFacade filesystemFacade = LuceneDataSource.LuceneFilesystemFacade.FS;

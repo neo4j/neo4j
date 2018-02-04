@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -31,7 +31,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
@@ -49,7 +49,7 @@ public class EntryCursorTest
         fsa.mkdir( bam );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         fsa.close();

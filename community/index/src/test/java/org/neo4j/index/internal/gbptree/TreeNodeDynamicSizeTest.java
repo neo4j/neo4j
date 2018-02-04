@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
 {
@@ -48,7 +48,7 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes,RawBytes>
         int currentAllocSpace = ((TreeNodeDynamicSize) node).getAllocOffset( cursor );
 
         // Then
-        assertEquals("allocSpace point to end of page", pageSize, currentAllocSpace );
+        assertEquals( pageSize, currentAllocSpace, "allocSpace point to end of page" );
     }
 
     @Test

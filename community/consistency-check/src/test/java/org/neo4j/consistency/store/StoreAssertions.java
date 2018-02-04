@@ -29,7 +29,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StoreAssertions
 {
@@ -44,7 +44,7 @@ public class StoreAssertions
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                 storeDir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
 
-        assertTrue( "Consistency check for " + storeDir + " found inconsistencies:\n\n" + logger.serialize(),
-                result.isSuccessful() );
+        assertTrue( result.isSuccessful(),
+                "Consistency check for " + storeDir + " found inconsistencies:\n\n" + logger.serialize() );
     }
 }

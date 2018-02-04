@@ -19,12 +19,13 @@
  */
 package slavetest;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
@@ -38,9 +39,10 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -48,10 +50,11 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * This test case ensures that instances with the same store id but very old txids
  * will successfully join with a full version of the store.
  */
+@ExtendWith( TestDirectoryExtension.class )
 public class InstanceJoinIT
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void makeSureSlaveCanJoinEvenIfTooFarBackComparedToMaster() throws Exception
@@ -115,8 +118,8 @@ public class InstanceJoinIT
 
             try ( Transaction ignore = slave.beginTx() )
             {
-                assertEquals( "store contents differ", importantNodeCount + 1,
-                        nodesHavingProperty( slave, key, value ) );
+                assertEquals( importantNodeCount + 1, nodesHavingProperty( slave, key, value ),
+                        "store contents differ" );
             }
         }
         finally

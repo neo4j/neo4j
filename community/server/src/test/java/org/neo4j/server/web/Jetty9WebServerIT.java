@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -76,7 +76,7 @@ public class Jetty9WebServerIT extends ExclusiveServerTestBase
         new Jetty9WebServer( NullLogProvider.getInstance(), null ).stop();
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( webServer != null )

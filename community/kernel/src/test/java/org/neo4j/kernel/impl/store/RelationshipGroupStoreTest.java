@@ -339,8 +339,8 @@ public class RelationshipGroupStoreTest
         while ( true )
         {
             long nextId = record.getFirstNode() == nodeId ?
-                    record.getFirstNextRel() :
-                    record.getSecondNextRel();
+                          record.getFirstNextRel() :
+                          record.getSecondNextRel();
             if ( nextId == -1 )
             {
                 break;

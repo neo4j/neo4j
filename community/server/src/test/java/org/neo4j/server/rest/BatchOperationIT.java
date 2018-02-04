@@ -47,23 +47,23 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
 {
 
     @Documented( "Execute multiple operations in batch.\n" +
-                 "\n" +
-                 "The batch service expects an array of job descriptions as input, each job\n" +
-                 "description describing an action to be performed via the normal server\n" +
-                 "API.\n" +
-                 "\n" +
-                 "Each job description should contain a +to+ attribute, with a value\n" +
-                 "relative to the data API root (so http://localhost:7474/db/data/node becomes\n" +
-                 "just /node), and a +method+ attribute containing HTTP verb to use.\n" +
-                 "\n" +
-                 "Optionally you may provide a +body+ attribute, and an +id+ attribute to\n" +
-                 "help you keep track of responses, although responses are guaranteed to be\n" +
-                 "returned in the same order the job descriptions are received.\n" +
-                 "\n" +
-                 "The following figure outlines the different parts of the job\n" +
-                 "descriptions:\n" +
-                 "\n" +
-                 "image::batch-request-api.png[]" )
+            "\n" +
+            "The batch service expects an array of job descriptions as input, each job\n" +
+            "description describing an action to be performed via the normal server\n" +
+            "API.\n" +
+            "\n" +
+            "Each job description should contain a +to+ attribute, with a value\n" +
+            "relative to the data API root (so http://localhost:7474/db/data/node becomes\n" +
+            "just /node), and a +method+ attribute containing HTTP verb to use.\n" +
+            "\n" +
+            "Optionally you may provide a +body+ attribute, and an +id+ attribute to\n" +
+            "help you keep track of responses, although responses are guaranteed to be\n" +
+            "returned in the same order the job descriptions are received.\n" +
+            "\n" +
+            "The following figure outlines the different parts of the job\n" +
+            "descriptions:\n" +
+            "\n" +
+            "image::batch-request-api.png[]" )
     @SuppressWarnings( "unchecked" )
     @Test
     @Graph( "Joe knows John" )
@@ -71,45 +71,45 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     {
         long idJoe = data.get().get( "Joe" ).getId();
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("PUT")
-                    .key("to")      .value("/node/" + idJoe + "/properties")
-                    .key("body")
-                        .object()
-                            .key("age").value(1)
-                        .endObject()
-                    .key("id")      .value(0)
+                .key("method")  .value("PUT")
+                .key("to")      .value("/node/" + idJoe + "/properties")
+                .key("body")
+                .object()
+                .key("age").value(1)
+                .endObject()
+                .key("id")      .value(0)
                 .endObject()
                 .object()
-                    .key("method")  .value("GET")
-                    .key("to")      .value("/node/" + idJoe)
-                    .key("id")      .value(1)
+                .key("method")  .value("GET")
+                .key("to")      .value("/node/" + idJoe)
+                .key("id")      .value(1)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("body")
-                        .object()
-                            .key("age").value(1)
-                        .endObject()
-                    .key("id")      .value(2)
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("body")
+                .object()
+                .key("age").value(1)
+                .endObject()
+                .key("id")      .value(2)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("body")
-                        .object()
-                            .key("age").value(1)
-                        .endObject()
-                    .key("id")      .value(3)
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("body")
+                .object()
+                .key("age").value(1)
                 .endObject()
-            .endArray().toString();
+                .key("id")      .value(3)
+                .endObject()
+                .endArray().toString();
 
         String entity = gen.get()
-        .payload(jsonString)
-        .expectedStatus(200)
-        .post(batchUri()).entity();
+                .payload(jsonString)
+                .expectedStatus(200)
+                .post(batchUri()).entity();
 
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
 
@@ -142,68 +142,68 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Documented( "Refer to items created earlier in the same batch job.\n" +
-                 "\n" +
-                 "The batch operation API allows you to refer to the URI returned from a\n" +
-                 "created resource in subsequent job descriptions, within the same batch\n" +
-                 "call.\n" +
-                 "\n" +
-                 "Use the +{[JOB ID]}+ special syntax to inject URIs from created resources\n" +
-                 "into JSON strings in subsequent job descriptions." )
+            "\n" +
+            "The batch operation API allows you to refer to the URI returned from a\n" +
+            "created resource in subsequent job descriptions, within the same batch\n" +
+            "call.\n" +
+            "\n" +
+            "Use the +{[JOB ID]}+ special syntax to inject URIs from created resources\n" +
+            "into JSON strings in subsequent job descriptions." )
     @Test
     public void shouldBeAbleToReferToCreatedResource() throws Exception
     {
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("id")      .value(0)
-                    .key("body")
-                        .object()
-                            .key("name").value("bob")
-                        .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("id")      .value(0)
+                .key("body")
+                .object()
+                .key("name").value("bob")
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("id")      .value(1)
-                    .key("body")
-                        .object()
-                            .key("age").value(12)
-                        .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("id")      .value(1)
+                .key("body")
+                .object()
+                .key("age").value(12)
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("{0}/relationships")
-                    .key("id")      .value(3)
-                    .key("body")
-                        .object()
-                            .key("to").value("{1}")
-                            .key("data")
-                                .object()
-                                    .key("since").value("2010")
-                                .endObject()
-                            .key("type").value("KNOWS")
-                        .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("{0}/relationships")
+                .key("id")      .value(3)
+                .key("body")
+                .object()
+                .key("to").value("{1}")
+                .key("data")
+                .object()
+                .key("since").value("2010")
+                .endObject()
+                .key("type").value("KNOWS")
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/relationship/my_rels")
-                    .key("id")      .value(4)
-                    .key("body")
-                        .object()
-                            .key("key").value("since")
-                            .key("value").value("2010")
-                            .key("uri").value("{3}")
-                        .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/relationship/my_rels")
+                .key("id")      .value(4)
+                .key("body")
+                .object()
+                .key("key").value("since")
+                .key("value").value("2010")
+                .key("uri").value("{3}")
                 .endObject()
-            .endArray().toString();
+                .endObject()
+                .endArray().toString();
 
         String entity = gen.get()
-        .expectedStatus( 200 )
-        .payload( jsonString )
-        .post( batchUri() )
-        .entity();
+                .expectedStatus( 200 )
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
 
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
 
@@ -225,16 +225,16 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         int originalNodeCount = countNodes();
 
         final String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method").value("POST")
-                    .key("to").value("/node")
-                    .key("body")
-                        .object()
-                            .key("age").value(1)
-                        .endObject()
+                .key("method").value("POST")
+                .key("to").value("/node")
+                .key("body")
+                .object()
+                .key("age").value(1)
                 .endObject()
-            .endArray().toString();
+                .endObject()
+                .endArray().toString();
 
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
@@ -253,21 +253,21 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     public void shouldForwardUnderlyingErrors() throws Exception
     {
         JaxRsResponse response = RestRequest.req().post(batchUri(), new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
-                    .key("body")
-                        .object()
-                            .key("age")
-                                .array()
-                                    .value(true)
-                                    .value("hello")
-                                .endArray()
-                        .endObject()
+                .key("method") .value("POST")
+                .key("to")     .value("/node")
+                .key("body")
+                .object()
+                .key("age")
+                .array()
+                .value(true)
+                .value("hello")
+                .endArray()
                 .endObject()
-            .endArray()
-            .toString());
+                .endObject()
+                .endArray()
+                .toString());
         assertEquals(500, response.getStatus());
         Map<String, Object> res = JsonHelper.jsonToMap(response.getEntity());
 
@@ -280,26 +280,26 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     {
 
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
-                    .key("body")
-                        .object()
-                            .key("age").value("1")
-                        .endObject()
+                .key("method") .value("POST")
+                .key("to")     .value("/node")
+                .key("body")
+                .object()
+                .key("age").value("1")
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
-                    .key("body")
-                        .array()
-                            .value("a_list")
-                            .value("this_makes_no_sense")
-                        .endArray()
+                .key("method") .value("POST")
+                .key("to")     .value("/node")
+                .key("body")
+                .array()
+                .value("a_list")
+                .value("this_makes_no_sense")
+                .endArray()
                 .endObject()
-            .endArray()
-            .toString();
+                .endArray()
+                .toString();
 
         int originalNodeCount = countNodes();
 
@@ -319,16 +319,16 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         String complicatedString = asianText + germanText;
 
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
-                    .key("body")   .object()
-                                       .key(complicatedString).value(complicatedString)
-                                   .endObject()
+                .key("method") .value("POST")
+                .key("to")     .value("/node")
+                .key("body")   .object()
+                .key(complicatedString).value(complicatedString)
                 .endObject()
-            .endArray()
-            .toString();
+                .endObject()
+                .endArray()
+                .toString();
 
         String entity = gen.get()
                 .expectedStatus( 200 )
@@ -349,21 +349,21 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     public void shouldHandleFailingCypherStatementCorrectly() throws Exception
     {
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/cypher")
-                    .key("body")   .object()
-                                       .key("query").value("create (n) set n.foo = {maps:'not welcome'} return n")
-                                       .key("params").object().key("id").value("0").endObject()
-                                   .endObject()
+                .key("method") .value("POST")
+                .key("to")     .value("/cypher")
+                .key("body")   .object()
+                .key("query").value("create (n) set n.foo = {maps:'not welcome'} return n")
+                .key("params").object().key("id").value("0").endObject()
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
+                .key("method") .value("POST")
+                .key("to")     .value("/node")
                 .endObject()
-            .endArray()
-            .toString();
+                .endArray()
+                .toString();
 
         String entity = gen.get()
                 .expectedStatus( 500 )
@@ -391,36 +391,36 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         String name = "string\\ and \"test\"";
 
         String jsonString = new PrettyJSON()
-        .array()
-            .object()
+                .array()
+                .object()
                 .key("method") .value("PUT")
                 .key("to")     .value("/node/" + gnode.getId() + "/properties")
                 .key("body")
-                    .object()
-                        .key("name").value(name)
-                    .endObject()
-            .endObject()
-        .endArray()
-        .toString();
+                .object()
+                .key("name").value(name)
+                .endObject()
+                .endObject()
+                .endArray()
+                .toString();
         gen.get()
-            .expectedStatus( 200 )
-            .payload( jsonString )
-            .post( batchUri() )
-            .entity();
+                .expectedStatus( 200 )
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
 
         jsonString = new PrettyJSON()
-        .array()
-            .object()
+                .array()
+                .object()
                 .key("method") .value("GET")
                 .key("to")     .value("/node/" + gnode.getId() + "/properties/name")
-            .endObject()
-        .endArray()
-        .toString();
+                .endObject()
+                .endArray()
+                .toString();
         String entity = gen.get()
-            .expectedStatus( 200 )
-            .payload( jsonString )
-            .post( batchUri() )
-            .entity();
+                .expectedStatus( 200 )
+                .payload( jsonString )
+                .post( batchUri() )
+                .entity();
 
         List<Map<String, Object>> results = JsonHelper.jsonToList(entity);
         assertEquals(results.get(0).get("body"), name);
@@ -432,29 +432,29 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     {
 
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("body")
-                        .object()
-                            .key("age").value(1)
-                        .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("body")
+                .object()
+                .key("age").value(1)
+                .endObject()
                 .endObject()
 
                 .object()
-                    .key("method").value("POST")
-                    .key("to").value("/node")
-                    .key("body")
-                        .object()
-                            .key("age")
-                                .object()
-                                    .key("age").value(1)
-                                .endObject()
-                        .endObject()
+                .key("method").value("POST")
+                .key("to").value("/node")
+                .key("body")
+                .object()
+                .key("age")
+                .object()
+                .key("age").value(1)
+                .endObject()
+                .endObject()
                 .endObject()
 
-            .endArray().toString();
+                .endArray().toString();
 
         int originalNodeCount = countNodes();
 
@@ -471,21 +471,21 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     {
 
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("body")
-                        .object()
-                            .key("age").value(1)
-                        .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("body")
+                .object()
+                .key("age").value(1)
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("www.google.com")
+                .key("method")  .value("POST")
+                .key("to")      .value("www.google.com")
                 .endObject()
 
-            .endArray().toString();
+                .endArray().toString();
 
         int originalNodeCount = countNodes();
 
@@ -499,37 +499,37 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     public void shouldBeAbleToReferToUniquelyCreatedEntities() throws Exception
     {
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/node/Cultures?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("ID")
-                            .key("value").value("fra")
-                            .key("properties")
-                                .object()
-                                    .key("ID").value("fra")
-                                .endObject()
-                        .endObject()
-                    .key("id")      .value(0)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/node/Cultures?unique")
+                .key("body")
+                .object()
+                .key("key").value("ID")
+                .key("value").value("fra")
+                .key("properties")
+                .object()
+                .key("ID").value("fra")
+                .endObject()
+                .endObject()
+                .key("id")      .value(0)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/node")
-                    .key("id")      .value(1)
+                .key("method")  .value("POST")
+                .key("to")      .value("/node")
+                .key("id")      .value(1)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("{1}/relationships")
-                    .key("body")
-                        .object()
-                            .key("to").value("{0}")
-                            .key("type").value("has")
-                        .endObject()
-                    .key("id")      .value(2)
+                .key("method")  .value("POST")
+                .key("to")      .value("{1}/relationships")
+                .key("body")
+                .object()
+                .key("to").value("{0}")
+                .key("type").value("has")
                 .endObject()
-            .endArray().toString();
+                .key("id")      .value(2)
+                .endObject()
+                .endArray().toString();
 
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 
@@ -552,38 +552,38 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
         */
 
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("node")
-                    .key("id")      .value(0)
-                    .key("body")
-                    .object()
-                        .key("key").value("name")
-                        .key("value").value("Alice")
-                    .endObject()
+                .key("method")  .value("POST")
+                .key("to")      .value("node")
+                .key("id")      .value(0)
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("Alice")
+                .endObject()
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("{0}/labels")
-                    .key("id")      .value(1)
-                    .key("body")
-                    .array()
-                        .value( "expert" )
-                        .value( "coder" )
-                    .endArray()
+                .key("method")  .value("POST")
+                .key("to")      .value("{0}/labels")
+                .key("id")      .value(1)
+                .key("body")
+                .array()
+                .value( "expert" )
+                .value( "coder" )
+                .endArray()
                 .endObject()
                 .object()
-                    .key("method")  .value("PUT")
-                    .key("to")      .value("{0}/labels")
-                    .key("id")      .value(2)
-                    .key("body")
-                    .array()
-                        .value( "novice" )
-                        .value( "chef" )
-                    .endArray()
+                .key("method")  .value("PUT")
+                .key("to")      .value("{0}/labels")
+                .key("id")      .value(2)
+                .key("body")
+                .array()
+                .value( "novice" )
+                .value( "chef" )
+                .endArray()
                 .endObject()
-             .endArray().toString();
+                .endArray().toString();
 
         // when
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
@@ -598,89 +598,89 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     public void shouldBeAbleToReferToNotCreatedUniqueEntities() throws Exception
     {
         String jsonString = new PrettyJSON()
-            .array()
+                .array()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/node/Cultures?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("name")
-                            .key("value").value("tobias")
-                            .key("properties")
-                                .object()
-                                    .key("name").value("Tobias Tester")
-                                .endObject()
-                        .endObject()
-                    .key("id")      .value(0)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/node/Cultures?unique")
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("tobias")
+                .key("properties")
+                .object()
+                .key("name").value("Tobias Tester")
+                .endObject()
+                .endObject()
+                .key("id")      .value(0)
                 .endObject()
                 .object()                       // Creates Andres, hence 201 Create
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/node/Cultures?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("name")
-                            .key("value").value("andres")
-                            .key("properties")
-                                .object()
-                                    .key("name").value("Andres Tester")
-                                .endObject()
-                        .endObject()
-                    .key("id")      .value(1)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/node/Cultures?unique")
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("andres")
+                .key("properties")
+                .object()
+                .key("name").value("Andres Tester")
+                .endObject()
+                .endObject()
+                .key("id")      .value(1)
                 .endObject()
                 .object()                       // Duplicated to ID.1, hence 200 OK
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/node/Cultures?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("name")
-                            .key("value").value("andres")
-                            .key("properties")
-                                .object()
-                                    .key("name").value("Andres Tester")
-                                .endObject()
-                        .endObject()
-                    .key("id")      .value(2)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/node/Cultures?unique")
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("andres")
+                .key("properties")
+                .object()
+                .key("name").value("Andres Tester")
+                .endObject()
+                .endObject()
+                .key("id")      .value(2)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/relationship/my_rels/?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("name")
-                            .key("value").value("tobias-andres")
-                            .key("start").value("{0}")
-                            .key("end").value("{1}")
-                            .key("type").value("FRIENDS")
-                        .endObject()
-                    .key("id")      .value(3)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/relationship/my_rels/?unique")
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("tobias-andres")
+                .key("start").value("{0}")
+                .key("end").value("{1}")
+                .key("type").value("FRIENDS")
+                .endObject()
+                .key("id")      .value(3)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/relationship/my_rels/?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("name")
-                            .key("value").value("andres-tobias")
-                            .key("start").value("{2}")          // Not-created entity here
-                            .key("end").value("{0}")
-                            .key("type").value("FRIENDS")
-                        .endObject()
-                    .key("id")      .value(4)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/relationship/my_rels/?unique")
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("andres-tobias")
+                .key("start").value("{2}")          // Not-created entity here
+                .key("end").value("{0}")
+                .key("type").value("FRIENDS")
+                .endObject()
+                .key("id")      .value(4)
                 .endObject()
                 .object()
-                    .key("method")  .value("POST")
-                    .key("to")      .value("/index/relationship/my_rels/?unique")
-                    .key("body")
-                        .object()
-                            .key("key").value("name")
-                            .key("value").value("andres-tobias")
-                            .key("start").value("{1}")          // Relationship should not be created
-                            .key("end").value("{0}")
-                            .key("type").value("FRIENDS")
-                        .endObject()
-                    .key("id")      .value(5)
+                .key("method")  .value("POST")
+                .key("to")      .value("/index/relationship/my_rels/?unique")
+                .key("body")
+                .object()
+                .key("key").value("name")
+                .key("value").value("andres-tobias")
+                .key("start").value("{1}")          // Relationship should not be created
+                .key("end").value("{0}")
+                .key("type").value("FRIENDS")
                 .endObject()
-            .endArray().toString();
+                .key("id")      .value(5)
+                .endObject()
+                .endArray().toString();
 
         JaxRsResponse response = RestRequest.req().post(batchUri(), jsonString);
 

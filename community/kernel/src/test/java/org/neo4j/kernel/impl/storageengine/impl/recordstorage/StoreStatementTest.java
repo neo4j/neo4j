@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.MockedNeoStores;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;

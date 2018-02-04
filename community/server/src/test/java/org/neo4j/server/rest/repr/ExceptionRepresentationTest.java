@@ -20,7 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -33,7 +33,7 @@ import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.exceptions.Status.General.UnknownError;
 

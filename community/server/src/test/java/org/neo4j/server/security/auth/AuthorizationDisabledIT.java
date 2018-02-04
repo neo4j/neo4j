@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
@@ -29,7 +29,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AuthorizationDisabledIT extends ExclusiveServerTestBase
@@ -56,7 +56,7 @@ public class AuthorizationDisabledIT extends ExclusiveServerTestBase
         assertThat( HTTP.GET( node ).status(), equalTo( 200 ) );
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( server != null )

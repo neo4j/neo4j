@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,8 +71,8 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -261,8 +261,8 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( orphanedConstraintIndexId, indexId );
-        assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
-                kernel.statements.size() );
+        assertEquals( 0, kernel.statements.size(),
+                "There should have been no need to acquire a statement to create the constraint index" );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetCommittedId( state, index );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetForSchema( state, descriptor );
@@ -312,8 +312,8 @@ public class ConstraintIndexCreatorTest
         }
 
         // then
-        assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
-                kernel.statements.size() );
+        assertEquals( 0, kernel.statements.size(),
+                "There should have been no need to acquire a statement to create the constraint index" );
         verifyNoMoreInteractions( indexCreationContext.schemaWriteOperations() );
         verify( constraintCreationContext.schemaReadOperations() ).indexGetForSchema( state, descriptor );
         verify( constraintCreationContext.schemaReadOperations() )

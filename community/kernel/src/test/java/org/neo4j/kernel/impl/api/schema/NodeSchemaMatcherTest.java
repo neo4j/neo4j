@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.schema;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,7 +69,7 @@ public class NodeSchemaMatcherTest
 
     private NodeSchemaMatcher nodeSchemaMatcher;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         state = mock( KernelStatement.class );

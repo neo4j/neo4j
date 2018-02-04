@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -30,14 +32,15 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -46,6 +49,7 @@ import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptorFactory.forLabel;
 
+@ExtendWith( RandomExtension.class )
 public class FusionSchemaIndexProviderTest
 {
     private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "test-fusion", "1" );
@@ -55,7 +59,10 @@ public class FusionSchemaIndexProviderTest
     private SchemaIndexProvider temporalProvider;
     private SchemaIndexProvider luceneProvider;
 
-    @Before
+    @Resource
+    public RandomRule random;
+
+    @BeforeEach
     public void setup()
     {
         nativeProvider = mock( SchemaIndexProvider.class );
@@ -67,9 +74,6 @@ public class FusionSchemaIndexProviderTest
         when( temporalProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "temporal", "1" ) );
         when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
     }
-
-    @Rule
-    public RandomRule random = new RandomRule();
 
     @Test
     public void mustSelectCorrectTargetForAllGivenValueCombinations()

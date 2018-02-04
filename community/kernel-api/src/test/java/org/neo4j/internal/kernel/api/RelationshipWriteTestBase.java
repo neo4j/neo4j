@@ -20,7 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -32,12 +32,12 @@ import org.neo4j.helpers.collection.Iterables;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -134,7 +134,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             tx.success();
         }
 

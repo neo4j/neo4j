@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
 import java.net.URI;
@@ -45,8 +45,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -58,7 +58,7 @@ public class DiscoveryServiceTest
     private URI managementUri;
     private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS );
 
-    @Before
+    @BeforeEach
     public void setUp() throws URISyntaxException
     {
         baseUri = "http://www.example.com";

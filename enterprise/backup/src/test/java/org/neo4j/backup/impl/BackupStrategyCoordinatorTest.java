@@ -19,9 +19,10 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.nio.file.Path;
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.ExceptionMatchers.exceptionContainsSuppressedThrowable;
 
+@EnableRuleMigrationSupport
 public class BackupStrategyCoordinatorTest
 {
     @Rule
@@ -71,7 +73,7 @@ public class BackupStrategyCoordinatorTest
     private final Path reportDir = mock( Path.class );
     private final ConsistencyCheckService.Result consistencyCheckResult = mock( ConsistencyCheckService.Result.class );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystem );

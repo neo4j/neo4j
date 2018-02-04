@@ -19,11 +19,11 @@
  */
 package org.neo4j.graphalgo.shortestpath;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.impl.shortestpath.SingleSourceShortestPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;

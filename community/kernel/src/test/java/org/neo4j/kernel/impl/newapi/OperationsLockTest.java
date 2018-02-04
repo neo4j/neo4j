@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -87,7 +87,7 @@ public class OperationsLockTest
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private StoreReadLayer storeReadLayer;
 
-    @Before
+    @BeforeEach
     public void setUp() throws InvalidTransactionTypeKernelException
     {
         txState = Mockito.spy( new TxState() );
@@ -123,7 +123,7 @@ public class OperationsLockTest
         this.order = inOrder( locks, txState, storeReadLayer );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         operations.release();

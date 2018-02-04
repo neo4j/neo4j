@@ -100,8 +100,8 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         File file = directory.file( "index" );
         {
             try ( PageCache pageCache = createPageCache();
-                  GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
-                  Writer<KEY,VALUE> writer = index.writer() )
+                    GBPTree<KEY,VALUE> index = createIndex( pageCache, file );
+                    Writer<KEY,VALUE> writer = index.writer() )
             {
                 writer.put( key, value );
                 pageCache.flushAndForce();
@@ -111,7 +111,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
         // WHEN
         try ( PageCache pageCache = createPageCache();
-              GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
+                GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
         {
             try ( Writer<KEY,VALUE> writer = index.writer() )
             {
@@ -124,7 +124,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
 
             // ... containing all the stuff load says
             try ( RawCursor<Hit<KEY,VALUE>,IOException> cursor =
-                          index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
+                    index.seek( key( Long.MIN_VALUE ), key( Long.MAX_VALUE ) ) )
             {
                 assertTrue( cursor.next() );
                 Hit<KEY,VALUE> hit = cursor.get();
@@ -226,7 +226,7 @@ public abstract class GBPTreeRecoveryITBase<KEY,VALUE>
         for ( int i = 0; i < numberOfCrashesDuringRecovery; i++ )
         {
             try ( PageCache pageCache = createPageCache();
-                  GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
+                    GBPTree<KEY,VALUE> index = createIndex( pageCache, file ) )
             {
                 int numberOfActionsToRecoverBeforeCrashing = random.intBetween( 1, recoveryActions.size() );
                 recover( recoveryActions.subList( 0, numberOfActionsToRecoverBeforeCrashing ), index );

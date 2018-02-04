@@ -20,32 +20,38 @@
 package org.neo4j.unsafe.batchinsert;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class BatchInsertersTest
 {
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
 

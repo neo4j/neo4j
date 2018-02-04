@@ -20,16 +20,18 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.fromExternalString;
 import static org.neo4j.kernel.enterprise.builtinprocs.QueryId.ofInternalId;
 
+@EnableRuleMigrationSupport
 public class QueryIdTest
 {
     @Rule

@@ -19,7 +19,7 @@
  */
 package org.neo4j.test.server;
 
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -39,7 +39,7 @@ public class ExclusiveServerTestBase
     @Rule
     public TestName name = new TestName();
 
-    @BeforeClass
+    @BeforeAll
     public static void ensureServerNotRunning() throws Exception
     {
         System.setProperty( "org.neo4j.useInsecureCertificateGeneration", "true" );

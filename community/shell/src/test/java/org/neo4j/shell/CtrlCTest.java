@@ -19,17 +19,17 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Test;
-
 import java.rmi.RemoteException;
 import java.util.HashMap;
+
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.Cancelable;
 import org.neo4j.shell.impl.AbstractClient;
 import org.neo4j.shell.impl.CollectingOutput;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CtrlCTest
 {
@@ -80,18 +80,18 @@ public class CtrlCTest
             @Override
             public String readLine( String ignored )
             {
-                assertFalse( "handler installed, expected it to not be there", handler.installed );
+                assertFalse( handler.installed, "handler installed, expected it to not be there" );
                 return "CYPHER 2.1 RETURN 42;";
             }
 
             @Override
             public void evaluate( String output )
             {
-                assertTrue( "handler not installed, but expected to be there", handler.installed );
+                assertTrue( handler.installed, "handler not installed, but expected to be there" );
                 end();
             }
         };
         client.grabPrompt();
-        assertFalse( "handler installed, expected it to not be there", handler.installed );
+        assertFalse( handler.installed, "handler installed, expected it to not be there" );
     }
 }

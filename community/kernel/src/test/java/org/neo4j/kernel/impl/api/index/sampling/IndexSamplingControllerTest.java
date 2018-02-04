@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;

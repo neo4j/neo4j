@@ -36,7 +36,7 @@ import org.neo4j.io.pagecache.TinyLockManager;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static org.hamcrest.Matchers.isOneOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 class CommandPrimer
 {

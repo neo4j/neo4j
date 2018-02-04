@@ -20,7 +20,8 @@
 package org.neo4j.kernel.api.index;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -31,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 
+@EnableRuleMigrationSupport
 public class IndexEntryUpdateTest
 {
     private final Value[] multiValue = new Value[]{Values.of( "value" ), Values.of( "value2" )};

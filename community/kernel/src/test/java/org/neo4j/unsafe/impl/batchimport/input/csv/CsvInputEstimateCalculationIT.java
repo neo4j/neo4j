@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,6 +32,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -55,6 +56,8 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -74,9 +77,9 @@ import static java.lang.Integer.parseInt;
 import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -90,16 +93,17 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 
+@ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
 public class CsvInputEstimateCalculationIT
 {
     private static final long NODE_COUNT = 600_000;
     private static final long RELATIONSHIP_COUNT = 600_000;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void shouldCalculateCorrectEstimates() throws Exception

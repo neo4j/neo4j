@@ -115,14 +115,14 @@ public class StoreUpgradeIT
                     selectivities(),
                     indexCounts(),
                     HighLimit.NAME
-                    )},
+            )},
             new Store[]{new Store( "E.H.0-data.zip",
                     174 /* node count */,
                     30 /* last txId */,
                     selectivities( 1.0, 1.0, 1.0 ),
                     indexCounts( counts( 0, 38, 38, 38 ), counts( 0, 1, 1, 1 ), counts( 0, 133, 133, 133 ) ),
                     HighLimit.NAME
-                    )} );
+            )} );
 
     @RunWith( Parameterized.class )
     public static class StoreUpgradeTest
@@ -423,7 +423,7 @@ public class StoreUpgradeIT
     {
         InwardKernel kernel = db.getDependencyResolver().resolveDependency( InwardKernel.class );
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
-              Statement statement = tx.acquireStatement() )
+                Statement statement = tx.acquireStatement() )
         {
             Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( statement ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();

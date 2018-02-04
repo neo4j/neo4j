@@ -23,6 +23,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -89,5 +90,23 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     public TestDirectory getTestDirectory()
     {
         return testDirectory;
+    }
+
+    public void prepareDirectory( Class<?> clazz, String test ) throws IOException
+    {
+        testDirectory.prepareDirectory( clazz, test );
+    }
+
+    @Override
+    protected void deleteResources()
+    {
+        try
+        {
+            testDirectory.complete( true );
+        }
+        catch ( IOException e )
+        {
+            // ignore
+        }
     }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.IntFunction;
+import javax.annotation.Resource;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
@@ -38,21 +39,23 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
+@ExtendWith( RandomExtension.class )
 public class NativeAllEntriesLabelScanReaderTest
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
     @Test
     public void shouldSeeNonOverlappingRanges() throws Exception
@@ -137,7 +140,7 @@ public class NativeAllEntriesLabelScanReaderTest
             SortedMap<Long/*nodeId*/,List<Long>/*labelIds*/> expected = rangeOf( data, rangeId );
             if ( expected != null )
             {
-                assertTrue( "Was expecting range " + expected, iterator.hasNext() );
+                assertTrue( iterator.hasNext(), "Was expecting range " + expected );
                 NodeLabelRange range = iterator.next();
 
                 assertEquals( rangeId, range.id() );

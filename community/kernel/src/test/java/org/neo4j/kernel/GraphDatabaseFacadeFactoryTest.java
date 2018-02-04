@@ -19,15 +19,17 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Collections;
 import java.util.function.Supplier;
+import javax.annotation.Resource;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
@@ -41,12 +43,13 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doAnswer;
@@ -54,20 +57,20 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class GraphDatabaseFacadeFactoryTest
 {
-
-    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory( fileSystemRule.get() );
-
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( dir ).around( fileSystemRule );
+    public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    @Resource
+    public TestDirectory dir;
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
     private final GraphDatabaseFacadeFactory.Dependencies deps =
             mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         when( deps.monitors() ).thenReturn( new Monitors() );

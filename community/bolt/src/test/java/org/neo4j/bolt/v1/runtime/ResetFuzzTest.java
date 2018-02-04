@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Collections;
@@ -33,6 +29,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
@@ -111,7 +111,7 @@ public class ResetFuzzTest
 
     private final List<RequestMessage> sent = new LinkedList<>();
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         boltChannel = mock( BoltChannel.class );
@@ -201,7 +201,7 @@ public class ResetFuzzTest
         return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         life.shutdown();

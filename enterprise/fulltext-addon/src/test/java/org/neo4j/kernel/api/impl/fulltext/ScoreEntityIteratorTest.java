@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.ScoreEntry;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ScoreEntityIteratorTest
 {
@@ -47,7 +47,7 @@ public class ScoreEntityIteratorTest
             assertTrue( concat.hasNext() );
             ScoreEntry entry = concat.next();
             assertEquals( i, entry.entityId() );
-            assertEquals( 13 - i, entry.score(), 0.001 );
+            assertEquals( entry.score(), 0.001, 13 - i );
         }
         assertFalse( concat.hasNext() );
     }
@@ -71,7 +71,7 @@ public class ScoreEntityIteratorTest
             assertTrue( concat.hasNext() );
             ScoreEntry entry = concat.next();
             assertEquals( i, entry.entityId() );
-            assertEquals( 6 - i, entry.score(), 0.001 );
+            assertEquals( entry.score(), 0.001, 6 - i );
         }
         assertFalse( concat.hasNext() );
     }

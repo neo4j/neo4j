@@ -19,23 +19,27 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.commandline.Util;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.commandline.Util.isSameOrChildFile;
 import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.neo4jVersion;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class UtilTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void canonicalPath()
@@ -46,7 +50,7 @@ public class UtilTest
     @Test
     public void returnsAVersion()
     {
-        assertNotNull( "A version should be returned", neo4jVersion() );
+        assertNotNull( neo4jVersion(), "A version should be returned" );
     }
 
     @Test

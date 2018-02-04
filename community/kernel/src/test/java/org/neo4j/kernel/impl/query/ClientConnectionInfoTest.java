@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.query;
 
 import java.net.InetSocketAddress;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ClientConnectionInfoTest
 {

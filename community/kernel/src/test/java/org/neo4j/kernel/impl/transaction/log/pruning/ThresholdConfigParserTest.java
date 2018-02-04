@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.KEEP_LAST_FILE;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING;
@@ -44,10 +45,12 @@ public class ThresholdConfigParserTest
         assertEquals( KEEP_LAST_FILE, configValue );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void parseGarbage()
     {
-        parse( "davide" );
-        fail( "Expected IllegalArgumentException" );
+        assertThrows( IllegalArgumentException.class, () -> {
+            parse( "davide" );
+            fail( "Expected IllegalArgumentException" );
+        } );
     }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.SortedSet;
@@ -37,7 +37,7 @@ public class RoleSerializationTest
     private SortedSet<String> steveBob;
     private SortedSet<String> kellyMarie;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         steveBob = new TreeSet<>();

@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class PageCacheByteArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest
 {

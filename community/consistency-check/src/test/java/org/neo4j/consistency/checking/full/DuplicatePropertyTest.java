@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;

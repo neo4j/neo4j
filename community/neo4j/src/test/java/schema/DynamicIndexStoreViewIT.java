@@ -20,9 +20,8 @@
 package schema;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Resource;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -42,18 +42,20 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class DynamicIndexStoreViewIT
 {
-    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( suppressOutput );
+    @Resource
+    public SuppressOutput suppressOutput;
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void populateDbWithConcurrentUpdates() throws Exception

@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Supplier;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -36,17 +37,18 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class CompositeCountsTest
 {
-    @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
 
     @Test
     public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
@@ -384,7 +386,7 @@ public class CompositeCountsTest
 
         public void shouldBe( long expected )
         {
-            assertEquals( message, expected, count );
+            assertEquals( expected, count, message );
         }
     }
 
@@ -444,7 +446,7 @@ public class CompositeCountsTest
 
     private Supplier<KernelTransaction> transactionSupplier;
 
-    @Before
+    @BeforeEach
     public void exposeGuts()
     {
         transactionSupplier = () -> db.getGraphDatabaseAPI().getDependencyResolver()

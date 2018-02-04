@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,10 +36,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.time.Clocks;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -69,7 +69,7 @@ public class SegmentFileTest
 
     private ReaderPool readerPool = spy( new ReaderPool( 0, logProvider, fileNames, fsRule.get(), Clocks.fakeClock() ) );
 
-    @Before
+    @BeforeEach
     public void before()
     {
         fsRule.get().mkdirs( baseDir );
@@ -293,7 +293,7 @@ public class SegmentFileTest
             try
             {
                 cursor.next();
-                fail();
+                fail("Failure was expected");
             }
             catch ( IOException e )
             {

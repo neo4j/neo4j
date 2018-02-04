@@ -28,9 +28,10 @@ import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
 import org.apache.shiro.realm.ldap.LdapContextFactory;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 import org.mockito.internal.matchers.Any;
 
@@ -56,7 +57,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -66,6 +67,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.assertion.Assert.assertException;
 
+@EnableRuleMigrationSupport
 public class LdapRealmTest
 {
     Config config = mock( Config.class );
@@ -75,7 +77,7 @@ public class LdapRealmTest
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         // Some dummy settings to pass validation

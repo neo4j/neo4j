@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
@@ -27,7 +27,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test the implementation of the {@link org.neo4j.kernel.extension.KernelExtensionFactory} framework. Treats the

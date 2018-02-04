@@ -20,9 +20,9 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -33,7 +33,7 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class ReadOnlyIT extends ExclusiveServerTestBase
@@ -41,7 +41,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
     private NeoServer readOnlyServer;
     private HTTP.Builder http;
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException
     {
         ServerHelper.cleanTheDatabase( readOnlyServer );
@@ -49,7 +49,7 @@ public class ReadOnlyIT extends ExclusiveServerTestBase
         http = HTTP.withBaseUri( readOnlyServer.baseUri() );
     }
 
-    @After
+    @AfterEach
     public void teardown()
     {
         if ( readOnlyServer != null )

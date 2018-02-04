@@ -53,7 +53,7 @@ public abstract class PropertyContainerProxyTest
         properties.put( "boolean", true );
         properties.put( "short_string", "abc" );
         properties.put( "string", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW" +
-                                  "XYZabcdefghijklmnopqrstuvwxyz" );
+                "XYZabcdefghijklmnopqrstuvwxyz" );
         properties.put( "long", Long.MAX_VALUE );
         properties.put( "short_array", new long[]{1, 2, 3, 4} );
         properties.put( "array", new long[]{Long.MAX_VALUE - 1, Long.MAX_VALUE - 2, Long.MAX_VALUE - 3,

@@ -409,41 +409,41 @@ public class RecoveryIT
             }
         } );
         new TestGraphDatabaseFactory()
+        {
+            // This nested constructing is done purely to be able to fish out PlatformModule
+            // (and its PageCache inside it). It would be great if this could be done in a prettier way.
+
+            @Override
+            protected DatabaseCreator createImpermanentDatabaseCreator( File storeDir, TestGraphDatabaseFactoryState state )
+            {
+                return new GraphDatabaseBuilder.DatabaseCreator()
                 {
-                    // This nested constructing is done purely to be able to fish out PlatformModule
-                    // (and its PageCache inside it). It would be great if this could be done in a prettier way.
+                    @Override
+                    public GraphDatabaseService newDatabase( Map<String,String> config )
+                    {
+                        return newDatabase( Config.defaults( config ) );
+                    }
 
                     @Override
-                    protected DatabaseCreator createImpermanentDatabaseCreator( File storeDir, TestGraphDatabaseFactoryState state )
+                    public GraphDatabaseService newDatabase( @Nonnull Config config )
                     {
-                        return new GraphDatabaseBuilder.DatabaseCreator()
+                        TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
                         {
                             @Override
-                            public GraphDatabaseService newDatabase( Map<String,String> config )
+                            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                                    GraphDatabaseFacade graphDatabaseFacade )
                             {
-                                return newDatabase( Config.defaults( config ) );
-                            }
-
-                            @Override
-                            public GraphDatabaseService newDatabase( @Nonnull Config config )
-                            {
-                                TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
-                                {
-                                    @Override
-                                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
-                                            GraphDatabaseFacade graphDatabaseFacade )
-                                    {
-                                        PlatformModule platform = super.createPlatform( storeDir, config, dependencies, graphDatabaseFacade );
-                                        // nice way of getting the page cache dependency before db is created, huh?
-                                        pageCache.set( platform.pageCache );
-                                        return platform;
-                                    }
-                                };
-                                return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) );
+                                PlatformModule platform = super.createPlatform( storeDir, config, dependencies, graphDatabaseFacade );
+                                // nice way of getting the page cache dependency before db is created, huh?
+                                pageCache.set( platform.pageCache );
+                                return platform;
                             }
                         };
+                        return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) );
                     }
-                }
+                };
+            }
+        }
                 .setFileSystem( crashedFs )
                 .setMonitors( monitors )
                 .newImpermanentDatabase( storeDir )

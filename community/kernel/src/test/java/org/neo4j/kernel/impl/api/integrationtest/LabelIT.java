@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
 
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 
 public class LabelIT extends KernelIntegrationTest

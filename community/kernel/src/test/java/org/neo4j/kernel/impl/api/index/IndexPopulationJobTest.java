@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
@@ -80,7 +80,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -119,7 +119,7 @@ public class IndexPopulationJobTest
     private DatabaseSchemaState stateHolder;
     private int labelId;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
@@ -137,7 +137,7 @@ public class IndexPopulationJobTest
         }
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

@@ -1527,7 +1527,7 @@ public class GBPTreeTest
 
             // a tree state pointing to root with valid successor
             try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
-                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+                    PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 Pair<TreeState,TreeState> treeStates =
                         TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );

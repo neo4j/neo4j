@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Map;
@@ -30,11 +30,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.UniqueFactory.UniqueEntity;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -116,7 +116,7 @@ public class UniqueFactoryTest
         verify( index ).putIfAbsent( indexedNode, "key1", "value1" );
         verify( graphdb, times( 1 ) ).createNode();
         verify( tx ).success();
-        assertTrue( "Node not initialized", initializeCalled.get() );
+        assertTrue( initializeCalled.get(), "Node not initialized" );
     }
 
     @Test
@@ -156,7 +156,7 @@ public class UniqueFactoryTest
         verify( index ).putIfAbsent( indexedNode, "key1", "value1" );
         verify( graphdb, times( 1 ) ).createNode();
         verify( tx ).success();
-        assertTrue( "Node not initialized", initializeCalled.get() );
+        assertTrue( initializeCalled.get(), "Node not initialized" );
     }
 
     @Test

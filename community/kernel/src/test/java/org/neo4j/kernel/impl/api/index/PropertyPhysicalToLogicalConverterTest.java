@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -45,7 +45,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class PropertyPhysicalToLogicalConverterTest
@@ -221,7 +221,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private final long[] none = new long[0];
     private final long[] labels = new long[]{11};
 
-    @Before
+    @BeforeEach
     public void before()
     {
         File storeDir = new File( "dir" );
@@ -234,7 +234,7 @@ public class PropertyPhysicalToLogicalConverterTest
         converter = new PropertyPhysicalToLogicalConverter( store );
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         neoStores.close();

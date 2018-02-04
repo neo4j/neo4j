@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;

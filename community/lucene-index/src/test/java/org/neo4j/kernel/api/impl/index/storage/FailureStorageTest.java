@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index.storage;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -31,10 +31,10 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FailureStorageTest
 {
@@ -42,7 +42,7 @@ public class FailureStorageTest
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private IndexFolderLayout indexFolderLayout;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         File rootDirectory = new File( "dir" );

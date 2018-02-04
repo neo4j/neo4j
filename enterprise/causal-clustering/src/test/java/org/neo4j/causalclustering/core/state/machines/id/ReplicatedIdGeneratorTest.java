@@ -87,7 +87,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     protected IdGenerator openIdGenerator( int grabSize )
     {
         ReplicatedIdGenerator replicatedIdGenerator =
-            new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, stubAcquirer(), logProvider, grabSize, true );
+                new ReplicatedIdGenerator( fs, file, IdType.NODE, () -> 0L, stubAcquirer(), logProvider, grabSize, true );
         return new FreeIdFilteredIdGenerator( replicatedIdGenerator, idReusabilityCondition );
     }
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -35,8 +35,8 @@ import org.neo4j.commandline.arguments.Arguments;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,7 +45,7 @@ public class HelpCommandTest
     @Mock
     private Consumer<String> out;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         MockitoAnnotations.initMocks( this );
@@ -64,7 +64,7 @@ public class HelpCommandTest
         try
         {
             helpCommand.execute( "foobar" );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IncorrectUsage e )
         {
@@ -90,7 +90,7 @@ public class HelpCommandTest
         try
         {
             helpCommand.execute( "foobar" );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IncorrectUsage e )
         {

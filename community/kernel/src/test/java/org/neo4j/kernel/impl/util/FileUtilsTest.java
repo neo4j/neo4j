@@ -20,43 +20,48 @@
 package org.neo4j.kernel.impl.util;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
+import javax.annotation.Resource;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
 import static org.neo4j.io.fs.FileUtils.size;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class FileUtilsTest
 {
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    public ExpectedException expected = ExpectedException.none();
-    public FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
+    @Resource
+    public TestDirectory testDirectory;
     @Rule
-    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( expected );
+    public ExpectedException expected = ExpectedException.none();
+    @Rule
+    public FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     private File path;
 
-    @Before
+    @BeforeEach
     public void doBefore()
     {
         path = testDirectory.directory( "path" );
@@ -237,7 +242,6 @@ public class FileUtilsTest
     @Test
     public void windowsNeverHaveHighIO()
     {
-        // Future work: Maybe we should do like on Mac and assume true on Windows as well?
         assumeTrue( SystemUtils.IS_OS_WINDOWS );
         assertFalse( FileUtils.highIODevice( Paths.get( "." ), false ) );
     }

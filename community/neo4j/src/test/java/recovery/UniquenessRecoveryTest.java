@@ -49,12 +49,10 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.Boolean.getBoolean;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
-
-import static java.lang.Boolean.getBoolean;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.rule.SuppressOutput.suppress;
 
@@ -361,10 +359,10 @@ public class UniquenessRecoveryTest
         public String toString()
         {
             return "Configuration{" +
-                   "use_cypher=" + USE_CYPHER +
-                   ", force_create_constraint=" + force_create_constraint +
-                   ", kill_signal=" + kill_signal +
-                   '}';
+                    "use_cypher=" + USE_CYPHER +
+                    ", force_create_constraint=" + force_create_constraint +
+                    ", kill_signal=" + kill_signal +
+                    '}';
         }
     }
 
