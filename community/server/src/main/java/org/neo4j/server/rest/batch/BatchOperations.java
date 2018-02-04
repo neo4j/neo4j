@@ -211,7 +211,6 @@ public abstract class BatchOperations
 
         InternalJettyServletResponse res = new InternalJettyServletResponse();
         InternalJettyServletRequest req = new InternalJettyServletRequest( method, targetUri.toString(), body, res, requestData );
-        req.setScheme( targetUri.getScheme() );
         addHeaders( req, httpHeaders );
 
         invoke( method, path, body, id, targetUri, req, res );
