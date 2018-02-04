@@ -19,31 +19,34 @@
  */
 package org.neo4j.index;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class IndexFreshDataReadIT
 {
-    @Rule
-    public EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule databaseRule;
 
     private ExecutorService executor = Executors.newCachedThreadPool();
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         executor.shutdown();

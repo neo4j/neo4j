@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Clock;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.Thres
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.getThresholdByType;
 
 public class LogPruneStrategyFactoryTest

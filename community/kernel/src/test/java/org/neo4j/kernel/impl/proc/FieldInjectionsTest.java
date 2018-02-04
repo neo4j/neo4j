@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.List;
@@ -28,8 +29,9 @@ import java.util.List;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@EnableRuleMigrationSupport
 public class FieldInjectionsTest
 {
     @Rule

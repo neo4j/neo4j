@@ -21,7 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,9 +79,9 @@ import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
@@ -162,7 +162,7 @@ public class SchemaIndexHaIT
         HighlyAvailableGraphDatabase newMaster = cluster.getMaster();
 
         // THEN
-        assertEquals( "Unexpected new master", aSlave, newMaster );
+        assertEquals( aSlave, newMaster, "Unexpected new master" );
         try ( Transaction tx = newMaster.beginTx() )
         {
             IndexDefinition index = Iterables.single( newMaster.schema().getIndexes() );
@@ -463,7 +463,7 @@ public class SchemaIndexHaIT
         public void close( boolean populationCompletedSuccessfully ) throws IOException
         {
             delegate.close(populationCompletedSuccessfully);
-            assertTrue( "Expected population to succeed :(", populationCompletedSuccessfully );
+            assertTrue( populationCompletedSuccessfully, "Expected population to succeed :(" );
             latch.finish();
         }
 

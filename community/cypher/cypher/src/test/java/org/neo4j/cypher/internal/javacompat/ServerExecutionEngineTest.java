@@ -19,19 +19,23 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class ServerExecutionEngineTest
 {
-    @Rule
-    public EmbeddedDatabaseRule rule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule rule;
 
     @Test
     public void shouldDetectPeriodicCommitQueries()
@@ -44,7 +48,7 @@ public class ServerExecutionEngineTest
         boolean result = engine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
 
         // THEN
-        assertTrue( "Did not detect periodic commit query", result );
+        assertTrue( result, "Did not detect periodic commit query" );
     }
 
     @Test
@@ -58,7 +62,7 @@ public class ServerExecutionEngineTest
         boolean result = engine.isPeriodicCommit("CREATE ()");
 
         // THEN
-        assertFalse( "Did detect non-periodic commit query as periodic commit query", result );
+        assertFalse( result, "Did detect non-periodic commit query as periodic commit query" );
     }
 
     @Test
@@ -72,6 +76,6 @@ public class ServerExecutionEngineTest
         boolean result = engine.isPeriodicCommit("MATCH n RETURN m");
 
         // THEN
-        assertFalse( "Did detect an invalid query as periodic commit query", result );
+        assertFalse( result, "Did detect an invalid query as periodic commit query" );
     }
 }

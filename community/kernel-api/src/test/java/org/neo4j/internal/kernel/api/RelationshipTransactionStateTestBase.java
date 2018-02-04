@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,9 +27,9 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -64,14 +64,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( r, relationship );
-                assertTrue( "should find relationship", relationship.next() );
+                assertTrue( relationship.next(), "should find relationship" );
 
                 assertEquals( label, relationship.label() );
                 assertEquals( n1, relationship.sourceNodeReference() );
                 assertEquals( n2, relationship.targetNodeReference() );
                 assertEquals( r, relationship.relationshipReference() );
 
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
             tx.success();
         }
@@ -97,11 +97,11 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( r, relationship );
-                assertFalse( "should not find relationship", relationship.next() );
+                assertFalse( relationship.next(), "should not find relationship" );
             }
             tx.success();
         }
@@ -160,7 +160,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( Transaction tx = session.beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
             {
                 tx.dataRead().allRelationshipsScan( relationship );
@@ -189,13 +189,13 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.allRelationships( relationship );
-                assertTrue( "should find relationship", relationship.next() );
+                assertTrue( relationship.next(), "should find relationship" );
                 assertEquals( r, relationship.relationshipReference() );
 
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
             tx.success();
         }
@@ -223,10 +223,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.allRelationships( relationship );
-                assertFalse( "should not find relationship", relationship.next() );
+                assertFalse( relationship.next(), "should not find relationship" );
             }
             tx.success();
         }
@@ -251,14 +251,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.allRelationships( relationship );
-                assertTrue( "should find relationship", relationship.next() );
+                assertTrue( relationship.next(), "should find relationship" );
                 assertEquals( r, relationship.relationshipReference() );
 
                 tx.dataWrite().relationshipCreate( n1, label, n2 ); // should not be seen
-                assertFalse( "should not find relationship added after cursor init", relationship.next() );
+                assertFalse( relationship.next(), "should not find relationship added after cursor init" );
             }
             tx.success();
         }
@@ -325,7 +325,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 // when
                 tx.dataRead().singleNode( start.id, node );
 
-                assertTrue( "access node", node.next() );
+                assertTrue( node.next(), "access node" );
                 if ( detached )
                 {
                     tx.dataRead().relationships( start.id, node.allRelationshipsReference(), relationship );
@@ -359,7 +359,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 // when
                 read.singleNode( start.id, node );
-                assertTrue( "access node", node.next() );
+                assertTrue( node.next(), "access node" );
                 if ( detached )
                 {
                     read.relationshipGroups( start.id, node.relationshipGroupReference(), group );

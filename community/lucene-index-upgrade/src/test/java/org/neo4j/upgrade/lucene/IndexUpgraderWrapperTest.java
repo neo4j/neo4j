@@ -19,7 +19,7 @@
  */
 package org.neo4j.upgrade.lucene;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.nio.file.Paths;
 
 import org.neo4j.upgrade.loader.EmbeddedJarLoader;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

@@ -19,9 +19,9 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
 
@@ -35,7 +35,7 @@ public class ArbiterEntryPointTest
     private PrintStream realSystemOut;
     private PrintStream fakeSystemOut;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         realSystemOut = System.out;
@@ -43,7 +43,7 @@ public class ArbiterEntryPointTest
         System.setOut( fakeSystemOut );
     }
 
-    @After
+    @AfterEach
     public void teardown()
     {
         System.setOut( realSystemOut );

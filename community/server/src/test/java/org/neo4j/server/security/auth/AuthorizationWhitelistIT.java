@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -31,7 +31,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
@@ -84,7 +84,7 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
         assertThat( response.status(), equalTo( 401 ) );
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( server != null )

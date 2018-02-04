@@ -20,7 +20,7 @@
 package org.neo4j.server.security.enterprise.auth.plugin;
 
 import org.apache.shiro.crypto.hash.SimpleHash;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

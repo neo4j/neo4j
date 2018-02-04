@@ -19,7 +19,9 @@
  */
 package org.neo4j.server.rest;
 
-import org.junit.Test;
+import javax.servlet.http.HttpServletRequest;
+
+import org.junit.jupiter.api.Test;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -33,7 +35,7 @@ import org.neo4j.server.rest.management.console.CypherSession;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

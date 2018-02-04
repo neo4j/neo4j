@@ -97,11 +97,11 @@ interface TimeoutTests
                 name = "example",
                 suffix = "dc=example,dc=com",
                 contextEntry = @ContextEntry( entryLdif = "dn: dc=example,dc=com\n" +
-                                                          "dc: example\n" +
-                                                          "o: example\n" +
-                                                          "objectClass: top\n" +
-                                                          "objectClass: dcObject\n" +
-                                                          "objectClass: organization\n\n" ) ),
+                        "dc: example\n" +
+                        "o: example\n" +
+                        "objectClass: top\n" +
+                        "objectClass: dcObject\n" +
+                        "objectClass: organization\n\n" ) ),
         },
         loadedSchemas = {
                 @LoadSchema( name = "nis", enabled = true ),
@@ -1359,7 +1359,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
             break;
         default:
             throw new IllegalArgumentException( "Invalid group name '" + group +
-                                                "', expected one of none, reader, publisher, architect, or admin" );
+                    "', expected one of none, reader, publisher, architect, or admin" );
         }
         modifyLDAPAttribute( username, credentials, "gidnumber", gid );
     }
@@ -1468,9 +1468,9 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "memberOf" );
         settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
                 "'CN=Neo4j Read Only,CN=Users,DC=neo4j,DC=com'=reader;" +
-                "CN=Neo4j Read-Write,CN=Users,DC=neo4j,DC=com=publisher;" +
-                "CN=Neo4j Schema Manager,CN=Users,DC=neo4j,DC=com=architect;" +
-                "CN=Neo4j Administrator,CN=Users,DC=neo4j,DC=com=admin"
+                        "CN=Neo4j Read-Write,CN=Users,DC=neo4j,DC=com=publisher;" +
+                        "CN=Neo4j Schema Manager,CN=Users,DC=neo4j,DC=com=architect;" +
+                        "CN=Neo4j Administrator,CN=Users,DC=neo4j,DC=com=admin"
         );
     };
 

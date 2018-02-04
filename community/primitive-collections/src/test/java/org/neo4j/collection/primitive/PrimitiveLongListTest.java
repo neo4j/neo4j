@@ -19,11 +19,12 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PrimitiveLongListTest
 {
@@ -74,11 +75,14 @@ public class PrimitiveLongListTest
         assertEquals( 1L, longList.get( 0 ) );
     }
 
-    @Test( expected = IndexOutOfBoundsException.class )
+    @Test
     public void throwExceptionOnAccessingNonExistentElement()
     {
-        PrimitiveLongList longList = new PrimitiveLongList();
-        longList.get( 0 );
+        assertThrows( IndexOutOfBoundsException.class, () ->
+        {
+            PrimitiveLongList longList = new PrimitiveLongList();
+            longList.get( 0 );
+        } );
     }
 
     @Test

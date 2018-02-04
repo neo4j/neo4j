@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
 import org.neo4j.test.rule.NeoStoresRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 
 public class HighIdTransactionApplierTest
@@ -86,21 +86,22 @@ public class HighIdTransactionApplierTest
         tracker.close();
 
         // THEN
-        assertEquals( "NodeStore", 20 + 1, neoStores.getNodeStore().getHighId() );
-        assertEquals( "DynamicNodeLabelStore", 5 + 1, neoStores.getNodeStore().getDynamicLabelStore().getHighId() );
-        assertEquals( "RelationshipStore", 45 + 1, neoStores.getRelationshipStore().getHighId() );
-        assertEquals( "RelationshipTypeStore", 5 + 1, neoStores.getRelationshipTypeTokenStore().getHighId() );
-        assertEquals( "RelationshipType NameStore", 1 + 1,
-                neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId() );
-        assertEquals( "PropertyKeyStore", 5 + 1, neoStores.getPropertyKeyTokenStore().getHighId() );
-        assertEquals( "PropertyKey NameStore", 1 + 1,
-                neoStores.getPropertyKeyTokenStore().getNameStore().getHighId() );
-        assertEquals( "LabelStore", 5 + 1, neoStores.getLabelTokenStore().getHighId() );
-        assertEquals( "Label NameStore", 1 + 1, neoStores.getLabelTokenStore().getNameStore().getHighId() );
-        assertEquals( "PropertyStore", 20 + 1, neoStores.getPropertyStore().getHighId() );
-        assertEquals( "PropertyStore DynamicStringStore", 7 + 1, neoStores.getPropertyStore().getStringStore().getHighId() );
-        assertEquals( "PropertyStore DynamicArrayStore", 9 + 1, neoStores.getPropertyStore().getArrayStore().getHighId() );
-        assertEquals( "SchemaStore", 20 + 1, neoStores.getSchemaStore().getHighId() );
+        assertEquals( 20 + 1, neoStores.getNodeStore().getHighId(), "NodeStore" );
+        assertEquals( 5 + 1, neoStores.getNodeStore().getDynamicLabelStore().getHighId(), "DynamicNodeLabelStore" );
+        assertEquals( 45 + 1, neoStores.getRelationshipStore().getHighId(), "RelationshipStore" );
+        assertEquals( 5 + 1, neoStores.getRelationshipTypeTokenStore().getHighId(), "RelationshipTypeStore" );
+        assertEquals( 1 + 1, neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId(),
+                "RelationshipType NameStore" );
+        assertEquals( 5 + 1, neoStores.getPropertyKeyTokenStore().getHighId(), "PropertyKeyStore" );
+        assertEquals( 1 + 1, neoStores.getPropertyKeyTokenStore().getNameStore().getHighId(), "PropertyKey NameStore" );
+        assertEquals( 5 + 1, neoStores.getLabelTokenStore().getHighId(), "LabelStore" );
+        assertEquals( 1 + 1, neoStores.getLabelTokenStore().getNameStore().getHighId(), "Label NameStore" );
+        assertEquals( 20 + 1, neoStores.getPropertyStore().getHighId(), "PropertyStore" );
+        assertEquals( 7 + 1, neoStores.getPropertyStore().getStringStore().getHighId(),
+                "PropertyStore DynamicStringStore" );
+        assertEquals( 9 + 1, neoStores.getPropertyStore().getArrayStore().getHighId(),
+                "PropertyStore DynamicArrayStore" );
+        assertEquals( 20 + 1, neoStores.getSchemaStore().getHighId(), "SchemaStore" );
     }
 
     @Test

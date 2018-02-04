@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.Flushable;
 import java.util.Map;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigurableIOLimiterTest

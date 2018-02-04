@@ -178,7 +178,7 @@ public class HaCountsIT
             throws KernelException
     {
         try ( Transaction tx = db.beginTx();
-              Statement statement = statement( db ) )
+                Statement statement = statement( db ) )
         {
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
@@ -190,10 +190,10 @@ public class HaCountsIT
     }
 
     private void assertOnNodeCounts( int expectedTotalNodes, int expectedLabelledNodes,
-                                     Label label, HighlyAvailableGraphDatabase db )
+            Label label, HighlyAvailableGraphDatabase db )
     {
         try ( Transaction ignored = db.beginTx();
-              Statement statement = statement( db ) )
+                Statement statement = statement( db ) )
         {
             final int labelId = statement.readOperations().labelGetForName( label.name() );
             assertEquals( expectedTotalNodes, statement.readOperations().countsForNode( -1 ) );
@@ -202,8 +202,8 @@ public class HaCountsIT
     }
 
     private void assertOnIndexCounts( int expectedIndexUpdates, int expectedIndexSize,
-                                      int expectedUniqueValues, int expectedSampleSize,
-                                      long indexId, HighlyAvailableGraphDatabase db )
+            int expectedUniqueValues, int expectedSampleSize,
+            long indexId, HighlyAvailableGraphDatabase db )
     {
         CountsTracker counts = counts( db );
         assertDoubleLongEquals( expectedIndexUpdates, expectedIndexSize,
@@ -228,8 +228,8 @@ public class HaCountsIT
     private Statement statement( HighlyAvailableGraphDatabase db )
     {
         return db.getDependencyResolver()
-                 .resolveDependency( ThreadToStatementContextBridge.class )
-                 .get();
+                .resolveDependency( ThreadToStatementContextBridge.class )
+                .get();
     }
 
     private IndexingService indexingService( HighlyAvailableGraphDatabase db )
@@ -245,7 +245,7 @@ public class HaCountsIT
         while ( System.currentTimeMillis() < end )
         {
             try ( Transaction tx = db.beginTx();
-                  Statement statement = statement( db ) )
+                    Statement statement = statement( db ) )
             {
                 switch ( statement.readOperations().indexGetState( index ) )
                 {

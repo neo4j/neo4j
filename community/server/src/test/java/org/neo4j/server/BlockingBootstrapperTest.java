@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Collections;
@@ -29,17 +29,20 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class BlockingBootstrapperTest
 {
-    @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory homeDir;
 
     @Test
     public void shouldBlockUntilStoppedIfTheWrappedStartIsSuccessful() throws Throwable

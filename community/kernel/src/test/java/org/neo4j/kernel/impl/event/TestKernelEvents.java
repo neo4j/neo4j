@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 public class TestKernelEvents
@@ -39,7 +39,7 @@ public class TestKernelEvents
     private static final Object RESOURCE1 = new Object();
     private static final Object RESOURCE2 = new Object();
 
-    @BeforeClass
+    @BeforeAll
     public static void doBefore()
     {
         deleteFileOrDirectory( PATH );

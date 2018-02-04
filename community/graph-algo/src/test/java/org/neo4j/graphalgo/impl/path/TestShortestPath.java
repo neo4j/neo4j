@@ -21,7 +21,7 @@ package org.neo4j.graphalgo.impl.path;
 
 import common.Neo4jAlgoTestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,10 +51,10 @@ import org.neo4j.helpers.collection.Iterables;
 import static common.Neo4jAlgoTestCase.MyRelTypes.R1;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphalgo.GraphAlgoFactory.shortestPath;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -98,10 +98,9 @@ public class TestShortestPath extends Neo4jAlgoTestCase
                 shortestPath.findAllPaths( a, f );
             }
         }
-        assertEquals(
+        assertEquals( 1250, countingPathExpander.nodesVisited.intValue(),
                 "There are 625 different end nodes. The algorithm should start one traversal for each such node. " +
-                        "That is 625*2 visited nodes if traversal is interrupted correctly.", 1250,
-                countingPathExpander.nodesVisited.intValue() );
+                        "That is 625*2 visited nodes if traversal is interrupted correctly." );
     }
 
     private Node getNodeByLabel( Label label )
@@ -287,9 +286,9 @@ public class TestShortestPath extends Neo4jAlgoTestCase
 
         List<Node> nodes = Iterables.asList( path.nodes() );
         List<Node> intermediateNodes = nodes.subList( 1, nodes.size() - 1 );
-        assertTrue( "touchedByFilter: " + touchedByFilter, touchedByFilter.containsAll( intermediateNodes ) );
-        assertTrue( "startNode was not filtered", !touchedByFilter.contains( a ) );
-        assertTrue( "endNode was not filtered", !touchedByFilter.contains( d ) );
+        assertTrue( touchedByFilter.containsAll( intermediateNodes ), "touchedByFilter: " + touchedByFilter );
+        assertTrue( !touchedByFilter.contains( a ), "startNode was not filtered" );
+        assertTrue( !touchedByFilter.contains( d ), "endNode was not filtered" );
     }
 
     @Test
@@ -349,7 +348,7 @@ public class TestShortestPath extends Neo4jAlgoTestCase
             Path aToBToC = paths.next();
             assertPath( aToBToC, a, b, c );
         }
-        assertFalse( "should only have contained four paths", paths.hasNext() );
+        assertFalse( paths.hasNext(), "should only have contained four paths" );
     }
 
     @Test
@@ -528,11 +527,11 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         {
             if ( path.startNode().equals( path.endNode() ) )
             {
-                assertTrue( "Path length must be zero", path.length() == 0 );
+                assertTrue( path.length() == 0, "Path length must be zero" );
             }
             else
             {
-                assertTrue( "Path length must be positive", path.length() > 0 );
+                assertTrue( path.length() > 0, "Path length must be positive" );
             }
             return expander.expand( path, state );
         }

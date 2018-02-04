@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.state.machines.dummy.DummyRequest;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConsecutiveInFlightCacheTest
 {

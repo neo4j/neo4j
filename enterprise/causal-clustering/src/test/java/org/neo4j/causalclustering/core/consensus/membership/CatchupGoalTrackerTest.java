@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.membership;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -30,8 +30,8 @@ import org.neo4j.causalclustering.core.consensus.roles.follower.FollowerState;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CatchupGoalTrackerTest
 {

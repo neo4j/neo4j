@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
@@ -27,8 +27,8 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Pair.of;
 
 public class DbStructureCollectorTest
@@ -80,8 +80,8 @@ public class DbStructureCollectorTest
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );
         assertEquals( 30, lookup.nodesWithLabelCardinality( 2 ) );
         assertEquals( 500, lookup.cardinalityByLabelsAndRelationshipType( 1, 2, -1 ) );
-        assertEquals( 1.0d, lookup.indexSelectivity( 1, 1 ), 0.01d );
-        assertEquals( 0.2d, lookup.indexSelectivity( 2, 2 ), 0.01d );
+        assertEquals( lookup.indexSelectivity( 1, 1 ), 0.01d, 1.0d );
+        assertEquals( lookup.indexSelectivity( 2, 2 ), 0.01d, 0.2d );
     }
 
     @Test
@@ -130,7 +130,7 @@ public class DbStructureCollectorTest
         assertEquals( 20, lookup.nodesWithLabelCardinality( 1 ) );
         assertEquals( 30, lookup.nodesWithLabelCardinality( 2 ) );
         assertEquals( 500, lookup.cardinalityByLabelsAndRelationshipType( 1, 2, -1 ) );
-        assertEquals( 1.0d, lookup.indexSelectivity( 1, 1, 3 ), 0.01d );
-        assertEquals( 0.2d, lookup.indexSelectivity( 2, 2, 4 ), 0.01d );
+        assertEquals( lookup.indexSelectivity( 1, 1, 3 ), 0.01d, 1.0d );
+        assertEquals( lookup.indexSelectivity( 2, 2, 4 ), 0.01d, 0.2d );
     }
 }

@@ -19,9 +19,9 @@
  */
 package org.neo4j.graphdb.mockfs;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,23 +40,23 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class EphemeralFileSystemAbstractionTest
 {
 
     private EphemeralFileSystemAbstraction fs;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         fs = new EphemeralFileSystemAbstraction();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws IOException
     {
         fs.close();

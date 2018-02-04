@@ -20,14 +20,14 @@
 package org.neo4j.shell;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.shell.impl.SystemOutput;
 
 public class OutputAsWriterTest
@@ -38,7 +38,7 @@ public class OutputAsWriterTest
     private SystemOutput output;
     private OutputAsWriter writer;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         out = System.out;
@@ -48,7 +48,7 @@ public class OutputAsWriterTest
         writer = new OutputAsWriter( output );
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         System.setOut( out );

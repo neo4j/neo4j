@@ -20,7 +20,9 @@
 package org.neo4j.io;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -28,12 +30,14 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 
+import org.neo4j.test.extension.MockitoExtension;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
+@EnableRuleMigrationSupport
 public class IOUtilsTest
 {
     @Rule

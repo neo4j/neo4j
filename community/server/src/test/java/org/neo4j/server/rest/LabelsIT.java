@@ -65,9 +65,9 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
-            .expectedStatus( 204 )
-            .payload( createJsonFrom( "Person" ) )
-            .post( nodeUri + "/labels"  );
+                .expectedStatus( 204 )
+                .payload( createJsonFrom( "Person" ) )
+                .post( nodeUri + "/labels"  );
     }
 
     @Documented( "Adding multiple labels to a node." )
@@ -88,9 +88,9 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Adding a label with an invalid name.\n" +
-                 "\n" +
-                 "Labels with empty names are not allowed, however, all other valid strings are accepted as label names.\n" +
-                 "Adding an invalid label to a node will lead to a HTTP 400 response." )
+            "\n" +
+            "Labels with empty names are not allowed, however, all other valid strings are accepted as label names.\n" +
+            "Adding an invalid label to a node will lead to a HTTP 400 response." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true ) } )
     public void adding_an_invalid_label_to_a_node()
@@ -99,15 +99,15 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         gen.get()
-            .expectedStatus( 400 )
-            .payload( createJsonFrom( "" ) )
-            .post( nodeUri + "/labels"  );
+                .expectedStatus( 400 )
+                .payload( createJsonFrom( "" ) )
+                .post( nodeUri + "/labels"  );
     }
 
     @Documented( "Replacing labels on a node.\n" +
-                 "\n" +
-                 "This removes any labels currently on a node, and replaces them with the labels passed in as the\n" +
-                 "request body." )
+            "\n" +
+            "This removes any labels currently on a node, and replaces them with the labels passed in as the\n" +
+            "request body." )
     @Test
     @GraphDescription.Graph( nodes = { @NODE( name = "Clint Eastwood", setNameProperty = true,
             labels = {@LABEL( "Person" )} )} )
@@ -136,9 +136,9 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
         String nodeUri = getNodeUri( nodes.get( "Clint Eastwood" ) );
 
         String body = gen.get()
-            .expectedStatus( 200 )
-            .get( nodeUri + "/labels"  )
-            .entity();
+                .expectedStatus( 200 )
+                .get( nodeUri + "/labels"  )
+                .entity();
         @SuppressWarnings( "unchecked" )
         List<String> labels = (List<String>) readJson( body );
         assertEquals( asSet( "Actor", "Director" ), Iterables.asSet( labels ) );
@@ -155,8 +155,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
         String labelName = "Person";
         gen.get()
-            .expectedStatus( 204 )
-            .delete( nodeUri + "/labels/" + labelName );
+                .expectedStatus( 204 )
+                .delete( nodeUri + "/labels/" + labelName );
 
         assertThat( node, inTx( graphdb(), not( hasLabel( label( labelName ) ) ) ) );
     }
@@ -172,8 +172,8 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
         String labelName = "Person";
         gen.get()
-            .expectedStatus( 204 )
-            .delete( nodeUri + "/labels/" + labelName );
+                .expectedStatus( 204 )
+                .delete( nodeUri + "/labels/" + labelName );
 
         assertThat( node, inTx( graphdb(), not( hasLabel( label( labelName ) ) ) ) );
     }
@@ -184,15 +184,15 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
             @NODE( name = "Clint Eastwood", setNameProperty = true, labels = { @LABEL( "Actor" ), @LABEL( "Director" ) } ),
             @NODE( name = "Donald Sutherland", setNameProperty = true, labels = { @LABEL( "Actor" ) } ),
             @NODE( name = "Steven Spielberg", setNameProperty = true, labels = { @LABEL( "Director" ) } )
-            } )
+    } )
     public void get_all_nodes_with_label() throws JsonParseException
     {
         data.get();
         String uri = getNodesWithLabelUri( "Actor" );
         String body = gen.get()
-            .expectedStatus( 200 )
-            .get( uri )
-            .entity();
+                .expectedStatus( 200 )
+                .get( uri )
+                .entity();
 
         List<?> parsed = (List<?>) readJson( body );
         assertEquals( asSet( "Clint Eastwood", "Donald Sutherland" ), Iterables
@@ -201,14 +201,14 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     @Test
     @Documented( "Get nodes by label and property.\n" +
-                 "\n" +
-                 "You can retrieve all nodes with a given label and property by passing one property as a query parameter.\n" +
-                 "Notice that the property value is JSON-encoded and then URL-encoded.\n" +
-                 "\n" +
-                 "If there is an index available on the label/property combination you send, that index will be used. If no\n" +
-                 "index is available, all nodes with the given label will be filtered through to find matching nodes.\n" +
-                 "\n" +
-                 "Currently, it is not possible to search using multiple properties." )
+            "\n" +
+            "You can retrieve all nodes with a given label and property by passing one property as a query parameter.\n" +
+            "Notice that the property value is JSON-encoded and then URL-encoded.\n" +
+            "\n" +
+            "If there is an index available on the label/property combination you send, that index will be used. If no\n" +
+            "index is available, all nodes with the given label will be filtered through to find matching nodes.\n" +
+            "\n" +
+            "Currently, it is not possible to search using multiple properties." )
     @GraphDescription.Graph( nodes = {@NODE( name = "Donald Sutherland", labels = {@LABEL( "Person" )} ),
             @NODE( name = "Clint Eastwood", labels = {@LABEL( "Person" )}, properties = {
                     @PROP( key = "name", value = "Clint Eastwood" )} ),
@@ -259,9 +259,9 @@ public class LabelsIT extends AbstractRestFunctionalTestBase
 
     @Test
     @Documented( "List all labels.\n" +
-                 " \n" +
-                 "By default, the server will return labels in use only. If you also want to return labels not in use,\n" +
-                 "append the \"in_use=0\" query parameter." )
+            " \n" +
+            "By default, the server will return labels in use only. If you also want to return labels not in use,\n" +
+            "append the \"in_use=0\" query parameter." )
     @GraphDescription.Graph( nodes = {
             @NODE( name = "Clint Eastwood", setNameProperty = true,
                     labels = { @LABEL( "Person" ), @LABEL( "Actor" ), @LABEL( "Director" ) } ),

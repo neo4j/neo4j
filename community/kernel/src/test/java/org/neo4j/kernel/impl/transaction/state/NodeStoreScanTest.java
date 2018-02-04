@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.state.storeview.NodeStoreScan;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -80,7 +80,7 @@ public class NodeStoreScanTest
                 read++;
                 float expected = (float) read / total;
                 float actual = percentageSupplier.get();
-                assertEquals( String.format( "%f==%f",  expected, actual ), expected, actual, 0.0 );
+                assertEquals( expected, actual, 0.001, String.format( "%f==%f",  expected, actual ) );
             }
         };
         percentageSupplier.setStoreScan( scan );

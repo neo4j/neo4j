@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
@@ -54,9 +54,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -190,7 +190,7 @@ public class HighAvailabilitySlavesTest
                 slavesCount++;
             }
         }
-        assertEquals( "Unexpected number of slaves", 1000 - 1, slavesCount ); // One instance is master
+        assertEquals( 1000 - 1, slavesCount, "Unexpected number of slaves" ); // One instance is master
     }
 
     private static ClusterMembers clusterMembersOfSize( int size )

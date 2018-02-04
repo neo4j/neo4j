@@ -19,24 +19,28 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
-import org.neo4j.causalclustering.protocol.Protocol;
-
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.causalclustering.protocol.Protocol.Identifier.RAFT;
+import static org.neo4j.causalclustering.protocol.handshake.ApplicationProtocolResponse.NO_PROTOCOL;
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.FAILURE;
 import static org.neo4j.causalclustering.protocol.handshake.StatusCode.SUCCESS;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.CATCHUP_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.RAFT_3;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class HandshakeServerTest
@@ -44,7 +48,7 @@ public class HandshakeServerTest
     private ProtocolHandshakeTest.FakeChannelWrapper channel = mock( ProtocolHandshakeTest.FakeChannelWrapper.class );
     private ProtocolRepository protocolRepository = new ProtocolRepository( TestProtocols.values() );
 
-    private HandshakeServer server = new HandshakeServer( channel, protocolRepository, Protocol.Identifier.RAFT );
+    private HandshakeServer server = new HandshakeServer( channel, protocolRepository, RAFT );
 
     @Test
     public void shouldDeclineUnallowedProtocol()
@@ -53,7 +57,7 @@ public class HandshakeServerTest
         server.handle( new InitialMagicMessage() );
 
         // when
-        server.handle( new ApplicationProtocolRequest( TestProtocols.CATCHUP_1.identifier(), asSet( TestProtocols.CATCHUP_1.version() ) ) );
+        server.handle( new ApplicationProtocolRequest( CATCHUP_1.identifier(), asSet( CATCHUP_1.version() ) ) );
 
         // then
         verify( channel ).dispose();
@@ -87,10 +91,10 @@ public class HandshakeServerTest
         server.handle( new InitialMagicMessage() );
 
         // when
-        server.handle( new ApplicationProtocolRequest( TestProtocols.Identifier.RAFT.canonicalName(), versions ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), versions ) );
 
         // then
-        verify( channel ).writeAndFlush( new ApplicationProtocolResponse( SUCCESS, TestProtocols.RAFT_3.identifier(), TestProtocols.RAFT_3.version() ) );
+        verify( channel ).writeAndFlush( new ApplicationProtocolResponse( SUCCESS, RAFT_3.identifier(), RAFT_3.version() ) );
     }
 
     @Test
@@ -101,7 +105,7 @@ public class HandshakeServerTest
         server.handle( new InitialMagicMessage() );
 
         // when
-        server.handle( new ApplicationProtocolRequest( TestProtocols.Identifier.RAFT.canonicalName(), versions ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), versions ) );
 
         // then
         verify( channel, never() ).dispose();
@@ -118,31 +122,33 @@ public class HandshakeServerTest
         server.handle( new ApplicationProtocolRequest( "UNKNOWN", versions ) );
 
         // then
-        InOrder inOrder = Mockito.inOrder( channel );
-        inOrder.verify( channel ).writeAndFlush( ApplicationProtocolResponse.NO_PROTOCOL );
+        InOrder inOrder = inOrder( channel );
+        inOrder.verify( channel ).writeAndFlush( NO_PROTOCOL );
         inOrder.verify( channel ).dispose();
     }
 
-    @Test( expected = ServerHandshakeException.class )
-    public void shouldNotSetProtocolStackForUnknownProtocol() throws Throwable
+    @Test
+    public void shouldNotSetProtocolStackForUnknownProtocol()
     {
-        // given
-        Set<Integer> versions = asSet( 1, 2, 3 );
-        server.handle( new InitialMagicMessage() );
+        assertThrows( ServerHandshakeException.class, () -> {
+            // given
+            Set<Integer> versions = asSet( 1, 2, 3 );
+            server.handle( new InitialMagicMessage() );
 
-        // when
-        server.handle( new ApplicationProtocolRequest( "UNKNOWN", versions ) );
+            // when
+            server.handle( new ApplicationProtocolRequest( "UNKNOWN", versions ) );
 
-        // then
-        try
-        {
-            server.protocolStackFuture().get();
-            fail( "Expected failure" );
-        }
-        catch ( ExecutionException ex )
-        {
-            throw ex.getCause();
-        }
+            // then
+            try
+            {
+                server.protocolStackFuture().get();
+                fail( "Expected failure" );
+            }
+            catch ( ExecutionException ex )
+            {
+                throw ex.getCause();
+            }
+        } );
     }
 
     @Test
@@ -158,7 +164,7 @@ public class HandshakeServerTest
         server.handle( new SwitchOverRequest( unknownProtocolName, version ) );
 
         // then
-        InOrder inOrder = Mockito.inOrder( channel );
+        InOrder inOrder = inOrder( channel );
         inOrder.verify( channel ).writeAndFlush( new SwitchOverResponse( FAILURE ) );
         inOrder.verify( channel ).dispose();
     }
@@ -169,14 +175,14 @@ public class HandshakeServerTest
         // given
         int version = 1;
         server.handle( new InitialMagicMessage() );
-        server.handle( new ApplicationProtocolRequest( TestProtocols.Identifier.RAFT.canonicalName(), asSet( version ) ) );
+        server.handle( new ApplicationProtocolRequest( RAFT.canonicalName(), asSet( version ) ) );
 
         // when
-        server.handle( new SwitchOverRequest( TestProtocols.RAFT_1.identifier(), version ) );
+        server.handle( new SwitchOverRequest( RAFT_1.identifier(), version ) );
 
         // then
         verify( channel ).writeAndFlush( new InitialMagicMessage() );
         verify( channel ).writeAndFlush( new SwitchOverResponse( SUCCESS ) );
-        assertThat( server.protocolStackFuture().get( 1, TimeUnit.SECONDS ), equalTo( new ProtocolStack( TestProtocols.RAFT_1 ) ) );
+        assertThat( server.protocolStackFuture().get( 1, SECONDS ), equalTo( new ProtocolStack( RAFT_1 ) ) );
     }
 }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,18 +30,25 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.Args.Option;
-import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validator;
 
+import static java.lang.String.valueOf;
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.helpers.Args.parse;
+import static org.neo4j.helpers.Args.withFlags;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.util.Converters.mandatory;
+import static org.neo4j.kernel.impl.util.Converters.optional;
+import static org.neo4j.kernel.impl.util.Converters.toInt;
 
 public class TestArgs
 {
@@ -49,7 +56,7 @@ public class TestArgs
     public void testInterleavedParametersWithValuesAndNot()
     {
         String[] line = { "-host", "machine.foo.com", "-port", "1234", "-v", "-name", "othershell" };
-        Args args = Args.parse( line );
+        Args args = parse( line );
         assertEquals( "machine.foo.com", args.get( "host", null ) );
         assertEquals( "1234", args.get( "port", null ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
@@ -62,7 +69,7 @@ public class TestArgs
     public void testInterleavedEqualsArgsAndSplitKeyValue()
     {
         String[] line = { "-host=localhost", "-v", "--port", "1234", "param1", "-name=Something", "param2" };
-        Args args = Args.parse( line );
+        Args args = parse( line );
         assertEquals( "localhost", args.get( "host", null ) );
         assertTrue( args.has( "v" ) );
         assertEquals( 1234, args.getNumber( "port", null ).intValue() );
@@ -77,7 +84,7 @@ public class TestArgs
     public void testParameterWithDashValue()
     {
         String [] line = { "-file", "-" };
-        Args args = Args.parse( line );
+        Args args = parse( line );
         assertEquals( 1, args.asMap().size() );
         assertEquals( "-", args.get( "file", null ) );
         assertTrue( args.orphans().isEmpty() );
@@ -87,7 +94,7 @@ public class TestArgs
     public void testEnum()
     {
         String[] line = { "--enum=" + MyEnum.second.name() };
-        Args args = Args.parse( line );
+        Args args = parse( line );
         Enum<MyEnum> result = args.getEnum( MyEnum.class, "enum", MyEnum.first );
         assertEquals( MyEnum.second, result );
     }
@@ -96,17 +103,19 @@ public class TestArgs
     public void testEnumWithDefault()
     {
         String[] line = {};
-        Args args = Args.parse( line );
+        Args args = parse( line );
         MyEnum result = args.getEnum( MyEnum.class, "enum", MyEnum.third );
         assertEquals( MyEnum.third, result );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void testEnumWithInvalidValue()
     {
-        String[] line = { "--myenum=something" };
-        Args args = Args.parse( line );
-        args.getEnum( MyEnum.class, "myenum", MyEnum.third );
+        assertThrows( IllegalArgumentException.class, () -> {
+            String[] line = {"--myenum=something"};
+            Args args = parse( line );
+            args.getEnum( MyEnum.class, "myenum", MyEnum.third );
+        } );
     }
 
     @Test
@@ -114,12 +123,12 @@ public class TestArgs
     {
         // GIVEN
         int expectedValue = 42;
-        Args args = Args.parse( "--arg", String.valueOf( expectedValue ));
+        Args args = parse( "--arg", valueOf( expectedValue ));
         @SuppressWarnings( "unchecked" )
         Validator<Integer> validator = mock( Validator.class );
 
         // WHEN
-        int value = args.interpretOption( "arg", Converters.mandatory(), Converters.toInt(), validator );
+        int value = args.interpretOption( "arg", mandatory(), toInt(), validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -131,12 +140,12 @@ public class TestArgs
     {
         // GIVEN
         int expectedValue = 42;
-        Args args = Args.parse( String.valueOf( expectedValue ) );
+        Args args = parse( valueOf( expectedValue ) );
         @SuppressWarnings( "unchecked" )
         Validator<Integer> validator = mock( Validator.class );
 
         // WHEN
-        int value = args.interpretOrphan( 0, Converters.mandatory(), Converters.toInt(), validator );
+        int value = args.interpretOrphan( 0, mandatory(), toInt(), validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -147,15 +156,15 @@ public class TestArgs
     public void shouldInterpretMultipleOptionValues()
     {
         // GIVEN
-        Collection<Integer> expectedValues = Arrays.asList( 12, 34, 56 );
+        Collection<Integer> expectedValues = asList( 12, 34, 56 );
         List<String> argList = new ArrayList<>();
         String key = "number";
         for ( int value : expectedValues )
         {
             argList.add( "--" + key );
-            argList.add( String.valueOf( value ) );
+            argList.add( valueOf( value ) );
         }
-        Args args = Args.parse( argList.toArray( new String[argList.size()] ) );
+        Args args = parse( argList.toArray( new String[argList.size()] ) );
 
         // WHEN
         try
@@ -167,8 +176,8 @@ public class TestArgs
         {   // Good
         }
 
-        Collection<Integer> numbers = args.interpretOptions( key, Converters.optional(),
-                Converters.toInt() );
+        Collection<Integer> numbers = args.interpretOptions( key, optional(),
+                toInt() );
 
         // THEN
         assertEquals( expectedValues, numbers );
@@ -178,7 +187,7 @@ public class TestArgs
     public void testBooleanWithDefault()
     {
         // Given
-        Args args = Args.parse( "--no_value" );
+        Args args = parse( "--no_value" );
 
         // When & then
         assertThat(args.getBoolean( "not_set", true, true ), equalTo(true));
@@ -196,7 +205,7 @@ public class TestArgs
     public void shouldGetAsMap()
     {
         // GIVEN
-        Args args = Args.parse( "--with-value", "value", "--without-value" );
+        Args args = parse( "--with-value", "value", "--without-value" );
 
         // WHEN
         Map<String,String> map = args.asMap();
@@ -209,11 +218,11 @@ public class TestArgs
     public void shouldInterpretOptionMetadata()
     {
         // GIVEN
-        Args args = Args.parse( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
+        Args args = parse( "--my-option:Meta", "my value", "--my-option:Other", "other value" );
 
         // WHEN
         Collection<Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
-                Converters.mandatory(), value -> value );
+                mandatory(), value -> value );
 
         // THEN
         assertEquals( 2, options.size() );
@@ -230,20 +239,20 @@ public class TestArgs
     public void shouldHandleLastOrphanParam()
     {
         // Given
-        Args args = Args.withFlags("recovery").parse( "--recovery", "/tmp/graph.db" );
+        Args args = withFlags("recovery").parse( "--recovery", "/tmp/graph.db" );
 
         // When
         List<String> orphans = args.orphans();
 
         // Then
-        assertEquals( Arrays.asList( "/tmp/graph.db" ), orphans );
+        assertEquals( asList( "/tmp/graph.db" ), orphans );
     }
 
     @Test
     public void shouldHandleOnlyFlagsAndNoArgs()
     {
         // Given
-        Args args = Args.withFlags( "foo", "bar" ).parse("-foo", "--bar");
+        Args args = withFlags( "foo", "bar" ).parse("-foo", "--bar");
 
         // When
         List<String> orphans = args.orphans();
@@ -258,7 +267,7 @@ public class TestArgs
     public void shouldStillAllowExplicitValuesForFlags()
     {
         // Given
-        Args args = Args.withFlags( "foo", "bar" ).parse("-foo=false", "--bar");
+        Args args = withFlags( "foo", "bar" ).parse("-foo=false", "--bar");
 
         // When
         List<String> orphans = args.orphans();
@@ -273,14 +282,14 @@ public class TestArgs
     public void shouldHandleMixtureOfFlagsAndOrphanParams()
     {
         // Given
-        Args args = Args.withFlags( "big", "soft", "saysMeow" ).parse(
+        Args args = withFlags( "big", "soft", "saysMeow" ).parse(
                 "-big", "-size=120", "-soft=true", "withStripes", "-saysMeow=false", "-name=ShereKhan", "badTiger" );
 
         // When
         List<String> orphans = args.orphans();
 
         // Then
-        assertEquals( Arrays.asList( "withStripes", "badTiger" ), orphans );
+        assertEquals( asList( "withStripes", "badTiger" ), orphans );
 
         assertEquals( 120, args.getNumber( "size", 0 ).intValue() );
         assertEquals( "ShereKhan", args.get( "name" ) );
@@ -294,32 +303,32 @@ public class TestArgs
     public void shouldHandleFlagSpecifiedAsLastArgument()
     {
         // Given
-        Args args = Args.withFlags( "flag1", "flag2" ).parse(
+        Args args = withFlags( "flag1", "flag2" ).parse(
                 "-key=Foo", "-flag1", "false", "-value", "Bar", "-flag2", "false" );
 
         // When
         List<String> orphans = args.orphans();
 
         // Then
-        assertTrue( "Orphan args expected to be empty, but were: " + orphans, orphans.isEmpty() );
+        assertTrue( orphans.isEmpty(), "Orphan args expected to be empty, but were: " + orphans );
         assertEquals( "Foo", args.get( "key" ) );
         assertEquals( "Bar", args.get( "value" ) );
-        assertFalse( "flag1", args.getBoolean( "flag1", true ) );
-        assertFalse( "flag1", args.getBoolean( "flag2", true ) );
+        assertFalse( args.getBoolean( "flag1", true ), "flag1" );
+        assertFalse( args.getBoolean( "flag2", true ), "flag1" );
     }
 
     @Test
     public void shouldRecognizeFlagsOfAnyForm()
     {
         // Given
-        Args args = Args.withFlags( "flag1", "flag2", "flag3" ).parse(
+        Args args = withFlags( "flag1", "flag2", "flag3" ).parse(
                 "-key1=Foo", "-flag1", "-key1", "Bar", "-flag2=true", "-key3=Baz", "-flag3", "true" );
 
         // When
         List<String> orphans = args.orphans();
 
         // Then
-        assertTrue( "Orphan args expected to be empty, but were: " + orphans, orphans.isEmpty() );
+        assertTrue( orphans.isEmpty(), "Orphan args expected to be empty, but were: " + orphans );
         assertTrue( args.getBoolean( "flag1", false, true ) );
         assertTrue( args.getBoolean( "flag2", false, false ) );
         assertTrue( args.getBoolean( "flag3", false, false ) );
@@ -329,10 +338,10 @@ public class TestArgs
     public void shouldReturnEmptyCollectionForOptionalMissingOption()
     {
         // Given
-        Args args = Args.withFlags().parse();
+        Args args = withFlags().parse();
 
         // When
-        Collection<String> interpreted = args.interpretOptions( "something", Converters.optional(),
+        Collection<String> interpreted = args.interpretOptions( "something", optional(),
                 value -> value );
 
         // Then

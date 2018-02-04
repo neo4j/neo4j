@@ -19,36 +19,39 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.function.Predicates.await;
 
 /**
  * Tests that the shell port is freed on database shutdown
  */
+@ExtendWith( TestDirectoryExtension.class )
 public class FreePortIT
 {
     private static final String HOST = "localhost";
     private static final int PORT = 13463;
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @Resource
+    public TestDirectory temporaryFolder;
 
     public GraphDatabaseService initialize() throws IOException
     {
         GraphDatabaseService db;
-        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temporaryFolder.newFolder() )
+        db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( temporaryFolder.directory() )
                 .setConfig( ShellSettings.remote_shell_enabled, "true" )
                 .setConfig( ShellSettings.remote_shell_host, HOST )
                 .setConfig( ShellSettings.remote_shell_port, Integer.toString( PORT ) ).newGraphDatabase();

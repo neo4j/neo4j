@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -38,7 +38,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class TracersTest
@@ -50,7 +50,7 @@ public class TracersTest
 
     private Log log;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         log = logProvider.getLog( getClass() );

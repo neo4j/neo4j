@@ -225,7 +225,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         private Exception error;
 
         StressThread( String name, int numberOfIterations, int depthCount,
-            float readWriteRatio, long nodeId, CountDownLatch startSignal )
+                float readWriteRatio, long nodeId, CountDownLatch startSignal )
         {
             super();
             this.nodeId = nodeId;

@@ -19,29 +19,32 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.NamedThreadFactory.named;
+import static org.neo4j.helpers.collection.Iterables.asArray;
+import static org.neo4j.helpers.collection.Iterables.asList;
 
 public class ListenersTest
 {
-    @Test( expected = NullPointerException.class )
+    @Test
     public void copyConstructorWithNull()
     {
-        new Listeners<>( null );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<>( null );
+        } );
     }
 
     @Test
@@ -51,13 +54,15 @@ public class ListenersTest
 
         Listeners<Listener> copy = new Listeners<>( original );
 
-        assertEquals( Iterables.asList( original ), Iterables.asList( copy ) );
+        assertEquals( asList( original ), asList( copy ) );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void addNull()
     {
-        new Listeners<>().add( null );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<>().add( null );
+        } );
     }
 
     @Test
@@ -67,13 +72,15 @@ public class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listenersArray );
 
-        assertArrayEquals( listenersArray, Iterables.asArray( Listener.class, listeners ) );
+        assertArrayEquals( listenersArray, asArray( Listener.class, listeners ) );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void removeNull()
     {
-        new Listeners<>().remove( null );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<>().remove( null );
+        } );
     }
 
     @Test
@@ -85,19 +92,21 @@ public class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
-        assertEquals( Arrays.asList( listener1, listener2, listener3 ), Iterables.asList( listeners ) );
+        assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
 
         listeners.remove( listener1 );
-        assertEquals( Arrays.asList( listener2, listener3 ), Iterables.asList( listeners ) );
+        assertEquals( Arrays.asList( listener2, listener3 ), asList( listeners ) );
 
         listeners.remove( listener3 );
-        assertEquals( singletonList( listener2 ), Iterables.asList( listeners ) );
+        assertEquals( singletonList( listener2 ), asList( listeners ) );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void notifyWithNullNotification()
     {
-        new Listeners<>().notify( null );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<>().notify( null );
+        } );
     }
 
     @Test
@@ -118,22 +127,28 @@ public class ListenersTest
         assertEquals( currentThread().getName(), listener2.threadName );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void notifyWithNullExecutorAndNullNotification()
     {
-        new Listeners<>().notify( null, null );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<>().notify( null, null );
+        } );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void notifyWithNullExecutorAndNotification()
     {
-        new Listeners<Listener>().notify( null, listener -> listener.process( "foo" ) );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<Listener>().notify( null, listener -> listener.process( "foo" ) );
+        } );
     }
 
-    @Test( expected = NullPointerException.class )
+    @Test
     public void notifyWithExecutorAndNullNotification()
     {
-        new Listeners<Listener>().notify( newSingleThreadExecutor(), null );
+        assertThrows( NullPointerException.class, () -> {
+            new Listeners<Listener>().notify( newSingleThreadExecutor(), null );
+        } );
     }
 
     @Test
@@ -149,7 +164,7 @@ public class ListenersTest
         ExecutorService executor = newSingleThreadExecutor( named( threadNamePrefix ) );
         listeners.notify( executor, listener -> listener.process( message ) );
         executor.shutdown();
-        executor.awaitTermination( 1, TimeUnit.MINUTES );
+        executor.awaitTermination( 1, MINUTES );
 
         assertEquals( message, listener1.message );
         assertThat( listener1.threadName, startsWith( threadNamePrefix ) );
@@ -167,7 +182,7 @@ public class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
-        assertEquals( Arrays.asList( listener1, listener2, listener3 ), Iterables.asList( listeners ) );
+        assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
     }
 
     @SafeVarargs

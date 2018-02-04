@@ -22,16 +22,16 @@ package org.neo4j.bolt.logging;
 import io.netty.channel.Channel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.Attribute;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetSocketAddress;
 
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.test.extension.MockitoExtension;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -41,7 +41,7 @@ import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 
-@RunWith( MockitoJUnitRunner.class )
+@ExtendWith( MockitoExtension.class )
 public class BoltMessageLoggerImplTest
 {
 
@@ -59,7 +59,7 @@ public class BoltMessageLoggerImplTest
 
     BoltMessageLoggerImpl boltMessageLogger;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( channel.remoteAddress() ).thenReturn( new InetSocketAddress( "localhost", 60297 ) );

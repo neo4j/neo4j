@@ -19,9 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 
@@ -33,28 +32,26 @@ import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.endList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.endMap;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeRelationship;
-import static org.neo4j.values.BufferAnyValueWriter.Specials.writeRelationshipReference;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNode;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.writeNodeReference;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.writePath;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeRelationship;
+import static org.neo4j.values.BufferAnyValueWriter.Specials.writeRelationshipReference;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.relationship;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationship;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
-@RunWith( value = Parameterized.class )
 public class VirtualValueWriteToTest
 {
 
-    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<WriteTest> data()
     {
         return Arrays.asList(
@@ -147,20 +144,14 @@ public class VirtualValueWriteToTest
         );
     }
 
-    private WriteTest currentTest;
-
-    public VirtualValueWriteToTest( WriteTest currentTest )
-    {
-        this.currentTest = currentTest;
-    }
-
     private static WriteTest shouldWrite( AnyValue value, Object... expected )
     {
         return new WriteTest( value, expected );
     }
 
-    @Test
-    public void runTest()
+    @ParameterizedTest
+    @MethodSource( "data" )
+    public void runTest( WriteTest currentTest )
     {
         currentTest.verifyWriteTo();
     }

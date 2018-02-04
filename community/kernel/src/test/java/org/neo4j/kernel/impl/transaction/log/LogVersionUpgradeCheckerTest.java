@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
 public class LogVersionUpgradeCheckerTest
 {
     private LogTailScanner tailScanner = mock( LogTailScanner.class );

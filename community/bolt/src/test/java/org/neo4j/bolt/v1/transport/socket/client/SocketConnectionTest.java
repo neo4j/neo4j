@@ -20,7 +20,8 @@
 package org.neo4j.bolt.v1.transport.socket.client;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
@@ -36,10 +37,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
+@EnableRuleMigrationSupport
 public class SocketConnectionTest
 {
-
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 

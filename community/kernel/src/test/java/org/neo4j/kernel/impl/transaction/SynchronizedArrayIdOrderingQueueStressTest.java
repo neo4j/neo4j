@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class SynchronizedArrayIdOrderingQueueStressTest
@@ -71,8 +71,9 @@ public class SynchronizedArrayIdOrderingQueueStressTest
 
         // THEN there should have been at least a few ids processed. The order of those
         // are verified as they go, by the VerifyingIdOrderingQueue
-        assertTrue( "Would have wanted at least a few ids to be processed, but only saw " +
-                queue.getNumberOfOrderlyRemovedIds(), queue.getNumberOfOrderlyRemovedIds() >= THRESHOLD );
+        assertTrue( queue.getNumberOfOrderlyRemovedIds() >= THRESHOLD,
+                "Would have wanted at least a few ids to be processed, but only saw " +
+                        queue.getNumberOfOrderlyRemovedIds() );
     }
 
     private static class VerifyingIdOrderingQueue implements IdOrderingQueue
@@ -91,8 +92,8 @@ public class SynchronizedArrayIdOrderingQueueStressTest
         {
             if ( expectedValue < previousId )
             {   // Just to bypass the string creation every check
-                assertTrue( "Expected to remove head " + expectedValue +
-                        ", which should have been greater than previously seen id " + previousId, expectedValue > previousId );
+                assertTrue( expectedValue > previousId, "Expected to remove head " + expectedValue +
+                        ", which should have been greater than previously seen id " + previousId );
             }
             previousId = expectedValue;
             delegate.removeChecked( expectedValue );

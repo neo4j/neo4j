@@ -89,7 +89,7 @@ public class TestUniqueness extends TraversalTestBase
             Node c = getNodeWithName( "c" );
             Iterator<Path> path =
                     getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( NODE_GLOBAL ).evaluator(
-                    includeWhereEndNodeIs( c ) ).traverse( a ).iterator();
+                            includeWhereEndNodeIs( c ) ).traverse( a ).iterator();
             Path thePath = path.next();
             assertFalse( path.hasNext() );
             NodePathRepresentation pathRepresentation = new NodePathRepresentation( NAME_PROPERTY_REPRESENTATION );
@@ -117,7 +117,7 @@ public class TestUniqueness extends TraversalTestBase
 
             Iterator<Path> paths =
                     getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( Uniqueness.NONE ).evaluator(
-                    includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
+                            includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
             int count = 0;
             while ( paths.hasNext() )
             {
@@ -137,9 +137,9 @@ public class TestUniqueness extends TraversalTestBase
             }
             assertEquals( "wrong number of paths calculated with relationship level uniqueness", 2, count );
             /*
-            *  And yet again, but this time with global uniqueness, it should present only one path, since
-            *  c TO d is contained on all paths.
-            */
+             *  And yet again, but this time with global uniqueness, it should present only one path, since
+             *  c TO d is contained on all paths.
+             */
             paths = getGraphDb().traversalDescription().relationships( to, OUTGOING ).uniqueness( RELATIONSHIP_GLOBAL ).evaluator(
                     includeWhereEndNodeIs( d ) ).traverse( a ).iterator();
             count = 0;

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.Map;
 
@@ -62,7 +62,7 @@ public abstract class StorageLayerTest
     protected StoreReadLayer disk;
 
     @SuppressWarnings( "deprecation" )
-    @Before
+    @BeforeEach
     public void before()
     {
         db = (GraphDatabaseAPI) createGraphDatabase();
@@ -77,7 +77,7 @@ public abstract class StorageLayerTest
         return new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         db.shutdown();

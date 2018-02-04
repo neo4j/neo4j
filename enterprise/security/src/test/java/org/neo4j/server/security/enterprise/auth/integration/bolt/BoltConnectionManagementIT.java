@@ -22,8 +22,8 @@ package org.neo4j.server.security.enterprise.auth.integration.bolt;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
 import org.junit.runners.Parameterized;
 
@@ -58,8 +58,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -96,7 +96,7 @@ public class BoltConnectionManagementIT
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
         this.admin = cf.newInstance();
@@ -108,7 +108,7 @@ public class BoltConnectionManagementIT
         createNewUser( admin, "Igor", "123" );
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception
     {
         if ( admin != null )

@@ -27,14 +27,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -46,14 +47,15 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -62,18 +64,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.valueTupleList;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class SimpleUniquenessVerifierTest
 {
     private static final int[] PROPERTY_KEY_IDS = new int[]{42};
 
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDir;
 
     private DirectoryFactory dirFactory;
     private IndexWriter writer;
     private SearcherManager searcherManager;
 
-    @Before
+    @BeforeEach
     public void initLuceneResources() throws Exception
     {
         dirFactory = new DirectoryFactory.InMemoryDirectoryFactory();
@@ -82,7 +85,7 @@ public class SimpleUniquenessVerifierTest
         searcherManager = new SearcherManager( writer, true, new SearcherFactory() );
     }
 
-    @After
+    @AfterEach
     public void closeLuceneResources() throws Exception
     {
         IOUtils.closeAll( searcherManager, writer, dirFactory );

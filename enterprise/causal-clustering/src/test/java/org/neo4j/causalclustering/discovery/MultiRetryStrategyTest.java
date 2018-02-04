@@ -19,17 +19,15 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiRetryStrategyTest
 {
@@ -63,7 +61,7 @@ public class MultiRetryStrategyTest
 
         // then
         assertEquals( 0, countingSleeper.invocationCount() );
-        assertEquals( "Function identity should be used to retrieve the expected value", 3, result.intValue() );
+        assertEquals( 3, result.intValue(), "Function identity should be used to retrieve the expected value" );
     }
 
     @Test

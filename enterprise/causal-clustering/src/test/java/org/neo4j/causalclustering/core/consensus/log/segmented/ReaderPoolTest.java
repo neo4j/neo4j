@@ -20,9 +20,9 @@
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -33,7 +33,7 @@ import org.neo4j.time.FakeClock;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -51,13 +51,13 @@ public class ReaderPoolTest
 
     private ReaderPool pool = new ReaderPool( 2, getInstance(), fileNames, fsa, clock );
 
-    @Before
+    @BeforeEach
     public void before()
     {
         fsa.mkdirs( base );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         fsa.close();

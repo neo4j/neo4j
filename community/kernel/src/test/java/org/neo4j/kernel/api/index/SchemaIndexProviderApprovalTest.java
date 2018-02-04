@@ -192,7 +192,7 @@ public abstract class SchemaIndexProviderApprovalTest
     }
 
     private static void addToResults( GraphDatabaseService db, HashMap<TestValue, Set<Object>> results,
-                                      TestValue value )
+            TestValue value )
     {
         ResourceIterator<Node> foundNodes = db.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
         Set<Object> propertyValues = asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) );

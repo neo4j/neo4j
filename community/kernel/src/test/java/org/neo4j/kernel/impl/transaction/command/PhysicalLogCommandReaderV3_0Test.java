@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PhysicalLogCommandReaderV3_0Test
 {
@@ -461,9 +461,9 @@ public class PhysicalLogCommandReaderV3_0Test
 
     private <T extends AbstractBaseRecord> void verifySecondaryUnit( T record, T commandRecord )
     {
-        assertEquals( "Secondary unit requirements should be the same",  record.requiresSecondaryUnit(),
-                commandRecord.requiresSecondaryUnit() );
-        assertEquals( "Secondary unit ids should be the same", record.getSecondaryUnitId(),
-                commandRecord.getSecondaryUnitId() );
+        assertEquals( record.requiresSecondaryUnit(), commandRecord.requiresSecondaryUnit(),
+                "Secondary unit requirements should be the same" );
+        assertEquals( record.getSecondaryUnitId(), commandRecord.getSecondaryUnitId(),
+                "Secondary unit ids should be the same" );
     }
 }

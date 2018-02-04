@@ -389,7 +389,7 @@ public class SchemaStorageTest
     private static int labelId( String labelName )
     {
         try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+                Statement statement = getStatement() )
         {
             return statement.readOperations().labelGetForName( labelName );
         }
@@ -398,7 +398,7 @@ public class SchemaStorageTest
     private int propId( String propName )
     {
         try ( Transaction ignore = db.beginTx();
-              Statement statement = getStatement() )
+                Statement statement = getStatement() )
         {
             return statement.readOperations().propertyKeyGetForName( propName );
         }

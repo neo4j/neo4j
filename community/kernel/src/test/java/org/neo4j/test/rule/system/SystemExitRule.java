@@ -23,8 +23,9 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SystemExitRule extends ExternalResource
 {
@@ -76,8 +77,9 @@ public class SystemExitRule extends ExternalResource
                     if ( exitWasExpected() )
                     {
                         int expectedCode = expectedExitStatusCode;
-                        assertEquals( String.format( "Expected system exit code:%d but was: %d.",
-                                expectedCode, exceptionStatusCode ), expectedCode, exceptionStatusCode );
+                        assertEquals( expectedCode, exceptionStatusCode,
+                                format( "Expected system exit code:%d but was: %d.", expectedCode,
+                                        exceptionStatusCode ) );
                     }
                     else
                     {

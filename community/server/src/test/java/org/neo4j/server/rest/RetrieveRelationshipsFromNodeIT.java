@@ -188,9 +188,9 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
     }
 
     @Documented( "Get typed relationships.\n" +
-                 "\n" +
-                 "Note that the \"+&+\" needs to be encoded like \"+%26+\" for example when\n" +
-                 "using http://curl.haxx.se/[cURL] from the terminal." )
+            "\n" +
+            "Note that the \"+&+\" needs to be encoded like \"+%26+\" for example when\n" +
+            "using http://curl.haxx.se/[cURL] from the terminal." )
     @Test
     public void shouldRespondWith200AndListOfRelationshipRepresentationsWhenGettingAllTypedRelationshipsForANode()
             throws JsonParseException

@@ -20,9 +20,9 @@
 package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.core.HazelcastInstance;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,7 +55,7 @@ public class RobustHazelcastWrapperTest
             {
                 throw new com.hazelcast.core.HazelcastInstanceNotActiveException();
             } );
-            fail();
+            fail("Failure was expected");
         }
         catch ( HazelcastInstanceNotActiveException e )
         {

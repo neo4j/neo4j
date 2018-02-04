@@ -19,26 +19,29 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashSet;
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class TestConcurrentIteratorModification
 {
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
     @Test
     public void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()

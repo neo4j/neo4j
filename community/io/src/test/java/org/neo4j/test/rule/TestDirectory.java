@@ -21,7 +21,7 @@ package org.neo4j.test.rule;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Rule;
-import org.junit.rules.TestRule;
+import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
@@ -56,7 +56,7 @@ import static java.lang.String.format;
  *   }
  * </pre>
  */
-public class TestDirectory implements TestRule
+public class TestDirectory extends ExternalResource
 {
     public static final String DATABASE_DIRECTORY = "graph-db";
 
@@ -197,7 +197,7 @@ public class TestDirectory implements TestRule
         return dir;
     }
 
-    private void complete( boolean success ) throws IOException
+    public void complete( boolean success ) throws IOException
     {
         try
         {
@@ -228,16 +228,21 @@ public class TestDirectory implements TestRule
 
     private File directoryForDescription( Description description ) throws IOException
     {
+        return prepareDirectory( description.getTestClass(), description.getMethodName() );
+    }
+
+    public File prepareDirectory( Class<?> testClass, String test ) throws IOException
+    {
         if ( owningTest == null )
         {
-            owningTest = description.getTestClass();
+            owningTest = testClass;
         }
-        String test = description.getMethodName();
         if ( test == null )
         {
             test = "static";
         }
-        return prepareDirectoryForTest( test );
+        testDirectory = prepareDirectoryForTest( test );
+        return testDirectory;
     }
 
     public File prepareDirectoryForTest( String test ) throws IOException

@@ -20,7 +20,8 @@
 package org.neo4j.kernel.configuration;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -38,13 +39,13 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
@@ -62,6 +63,7 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
+@EnableRuleMigrationSupport
 public class SettingsTest
 {
     @Rule
@@ -189,7 +191,7 @@ public class SettingsTest
         try
         {
             setting.apply( map( stringMap( "foo", "1" ) ) );
-            fail();
+            fail("Failure was expected");
         }
         catch ( InvalidSettingException e )
         {
@@ -199,7 +201,7 @@ public class SettingsTest
         try
         {
             setting.apply( map( stringMap( "foo", "6" ) ) );
-            fail();
+            fail("Failure was expected");
         }
         catch ( InvalidSettingException e )
         {

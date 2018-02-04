@@ -23,13 +23,13 @@ import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonNode;
 import org.hamcrest.MatcherAssert;
-import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 
 import org.neo4j.cypher.internal.javacompat.MapRow;
+import org.junit.jupiter.api.Test;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Arrays.asList;

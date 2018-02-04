@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.File;

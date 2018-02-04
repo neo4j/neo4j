@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -33,16 +34,18 @@ import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class ConstraintCreationIT
 {
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
     private static final Label LABEL = Label.label( "label1" );
     private static final long indexId = 1;

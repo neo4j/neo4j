@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 public class CountsOracle
@@ -91,7 +91,7 @@ public class CountsOracle
             public void visitNodeCount( int labelId, long count )
             {
                 long expected = tracker.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
-                assertEquals( "Should be able to read visited state.", expected, count );
+                assertEquals( expected, count, "Should be able to read visited state." );
             }
 
             @Override
@@ -99,7 +99,7 @@ public class CountsOracle
             {
                 long expected = tracker.relationshipCount(
                         startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
-                assertEquals( "Should be able to read visited state.", expected, count );
+                assertEquals( expected, count, "Should be able to read visited state." );
             }
 
             @Override
@@ -107,8 +107,8 @@ public class CountsOracle
             {
                 Register.DoubleLongRegister output =
                         tracker.indexUpdatesAndSize( indexId, newDoubleLongRegister() );
-                assertEquals( "Should be able to read visited state.", output.readFirst(), updates );
-                assertEquals( "Should be able to read visited state.", output.readSecond(), size );
+                assertEquals( output.readFirst(), updates, "Should be able to read visited state." );
+                assertEquals( output.readSecond(), size, "Should be able to read visited state." );
             }
 
             @Override
@@ -116,8 +116,8 @@ public class CountsOracle
             {
                 Register.DoubleLongRegister output =
                         tracker.indexSample( indexId, newDoubleLongRegister() );
-                assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
-                assertEquals( "Should be able to read visited state.", output.readSecond(), size );
+                assertEquals( output.readFirst(), unique, "Should be able to read visited state." );
+                assertEquals( output.readSecond(), size, "Should be able to read visited state." );
             }
         } );
         if ( !differences.isEmpty() )

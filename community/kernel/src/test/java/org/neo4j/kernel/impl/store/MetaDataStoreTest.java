@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -44,26 +42,46 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.logging.NullLogger;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.lang.Runtime.getRuntime;
 import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.MetaDataStore.FIELD_NOT_INITIALIZED;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.FIRST_GRAPH_PROPERTY;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_CHECKSUM;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
+import static org.neo4j.kernel.impl.store.MetaDataStore.setRecord;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
+import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.logging.NullLogger.getInstance;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -82,7 +100,7 @@ public class MetaDataStoreTest
     private boolean fakePageCursorOverflow;
     private PageCache pageCacheWithFakeOverflow;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         fs = fsRule.get();
@@ -414,30 +432,27 @@ public class MetaDataStoreTest
             long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             Race race = new Race();
-            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
-                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
-            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
-                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
-                    currentTimeMillis() >= endTime );
+            race.withEndCondition( () -> writeCount.get() >= upperLimit && fileReadCount.get() >= upperLimit &&
+                    apiReadCount.get() >= upperLimit );
+            race.withEndCondition( () -> writeCount.get() >= lowerLimit && fileReadCount.get() >= lowerLimit &&
+                    apiReadCount.get() >= lowerLimit && currentTimeMillis() >= endTime );
             // writers
-            race.addContestants( 3, () ->
-            {
+            race.addContestants( 3, () -> {
                 long count = writeCount.incrementAndGet();
                 store.setUpgradeTransaction( count, count, count );
             } );
 
             // file readers
-            race.addContestants( 3, throwing( () ->
-            {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+            race.addContestants( 3, throwing( () -> {
+                try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
                     long id;
                     long checksum;
                     do
                     {
-                        id = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_ID );
-                        checksum = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_CHECKSUM );
+                        id = store.getRecordValue( cursor, UPGRADE_TRANSACTION_ID );
+                        checksum = store.getRecordValue( cursor, UPGRADE_TRANSACTION_CHECKSUM );
                     }
                     while ( cursor.shouldRetry() );
                     assertIdEqualsChecksum( id, checksum, "file" );
@@ -445,8 +460,7 @@ public class MetaDataStoreTest
                 }
             } ) );
 
-            race.addContestants( 3, () ->
-            {
+            race.addContestants( 3, () -> {
                 TransactionId transaction = store.getUpgradeTransaction();
                 assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
                 apiReadCount.incrementAndGet();
@@ -470,11 +484,10 @@ public class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             long initialVersion = store.incrementAndGetVersion();
-            int threads = Runtime.getRuntime().availableProcessors();
+            int threads = getRuntime().availableProcessors();
             int iterations = 500;
             Race race = new Race();
-            race.addContestants( threads, () ->
-            {
+            race.addContestants( threads, () -> {
                 for ( int i = 0; i < iterations; i++ )
                 {
                     store.incrementAndGetVersion();
@@ -500,28 +513,25 @@ public class MetaDataStoreTest
             long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             Race race = new Race();
-            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
-                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
-            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
-                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
-                    currentTimeMillis() >= endTime );
-            race.addContestants( 3, () ->
-            {
+            race.withEndCondition( () -> writeCount.get() >= upperLimit && fileReadCount.get() >= upperLimit &&
+                    apiReadCount.get() >= upperLimit );
+            race.withEndCondition( () -> writeCount.get() >= lowerLimit && fileReadCount.get() >= lowerLimit &&
+                    apiReadCount.get() >= lowerLimit && currentTimeMillis() >= endTime );
+            race.addContestants( 3, () -> {
                 long count = writeCount.incrementAndGet();
                 store.transactionCommitted( count, count, count );
             } );
 
-            race.addContestants( 3, throwing( () ->
-            {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+            race.addContestants( 3, throwing( () -> {
+                try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
                     long id;
                     long checksum;
                     do
                     {
-                        id = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_ID );
-                        checksum = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM );
+                        id = store.getRecordValue( cursor, LAST_TRANSACTION_ID );
+                        checksum = store.getRecordValue( cursor, LAST_TRANSACTION_CHECKSUM );
                     }
                     while ( cursor.shouldRetry() );
                     assertIdEqualsChecksum( id, checksum, "file" );
@@ -529,8 +539,7 @@ public class MetaDataStoreTest
                 }
             } ) );
 
-            race.addContestants( 3, () ->
-            {
+            race.addContestants( 3, () -> {
                 TransactionId transaction = store.getLastCommittedTransaction();
                 assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
                 apiReadCount.incrementAndGet();
@@ -556,20 +565,17 @@ public class MetaDataStoreTest
             long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
 
             Race race = new Race();
-            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
-                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
-            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
-                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
-                    currentTimeMillis() >= endTime );
-            race.addContestants( 3, () ->
-            {
+            race.withEndCondition( () -> writeCount.get() >= upperLimit && fileReadCount.get() >= upperLimit &&
+                    apiReadCount.get() >= upperLimit );
+            race.withEndCondition( () -> writeCount.get() >= lowerLimit && fileReadCount.get() >= lowerLimit &&
+                    apiReadCount.get() >= lowerLimit && currentTimeMillis() >= endTime );
+            race.addContestants( 3, () -> {
                 long count = writeCount.incrementAndGet();
                 store.transactionCommitted( count, count, count );
             } );
 
-            race.addContestants( 3, throwing( () ->
-            {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK ) )
+            race.addContestants( 3, throwing( () -> {
+                try ( PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     assertTrue( cursor.next() );
                     long logVersion;
@@ -577,9 +583,9 @@ public class MetaDataStoreTest
                     do
                     {
                         logVersion = store.getRecordValue( cursor,
-                                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
+                                LAST_CLOSED_TRANSACTION_LOG_VERSION );
                         byteOffset = store.getRecordValue( cursor,
-                                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
+                                LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
                     }
                     while ( cursor.shouldRetry() );
                     assertLogVersionEqualsByteOffset( logVersion, byteOffset, "file" );
@@ -587,8 +593,7 @@ public class MetaDataStoreTest
                 }
             } ) );
 
-            race.addContestants( 3, () ->
-            {
+            race.addContestants( 3, () -> {
                 long[] transaction = store.getLastClosedTransaction();
                 assertLogVersionEqualsByteOffset( transaction[0], transaction[1], "API" );
                 apiReadCount.incrementAndGet();
@@ -603,7 +608,7 @@ public class MetaDataStoreTest
         {
             throw new AssertionError(
                     "logVersion (" + logVersion + ") and byteOffset (" + byteOffset + ") from " + source +
-                    " should be identical" );
+                            " should be identical" );
         }
     }
 
@@ -611,23 +616,21 @@ public class MetaDataStoreTest
     public void mustSupportScanningAllRecords() throws Exception
     {
         File file = createMetaDataFile();
-        MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion());
+        Position[] positions = Position.values();
+        long storeVersion = versionStringToLong( LATEST_RECORD_FORMATS.storeVersion() );
         writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            store.scanAllRecords( record ->
-            {
+            store.scanAllRecords( record -> {
                 actualValues.add( record.getValue() );
                 return false;
             } );
         }
 
-        List<Long> expectedValues = Arrays.stream( positions ).map( p ->
-        {
-            if ( p == MetaDataStore.Position.STORE_VERSION )
+        List<Long> expectedValues = stream( positions ).map( p -> {
+            if ( p == STORE_VERSION )
             {
                 return storeVersion;
             }
@@ -635,14 +638,14 @@ public class MetaDataStoreTest
             {
                 return p.ordinal() + 1L;
             }
-        } ).collect( Collectors.toList() );
+        } ).collect( toList() );
 
         assertThat( actualValues, is( expectedValues ) );
     }
 
     private File createMetaDataFile() throws IOException
     {
-        File file = new File( STORE_DIR, MetaDataStore.DEFAULT_NAME );
+        File file = new File( STORE_DIR, DEFAULT_NAME );
         fs.mkdir( STORE_DIR );
         fs.create( file ).close();
         return file;
@@ -652,8 +655,8 @@ public class MetaDataStoreTest
     public void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
     {
         File file = createMetaDataFile();
-        MetaDataStore.Position[] positions = MetaDataStore.Position.values();
-        long storeVersion = versionStringToLong( Standard.LATEST_RECORD_FORMATS.storeVersion());
+        Position[] positions = Position.values();
+        long storeVersion = versionStringToLong( LATEST_RECORD_FORMATS.storeVersion() );
         writeCorrectMetaDataRecord( file, positions, storeVersion );
 
         List<Long> actualValues = new ArrayList<>();
@@ -662,7 +665,7 @@ public class MetaDataStoreTest
             MetaDataRecord record = store.newRecord();
             try ( RecordCursor<MetaDataRecord> cursor = store.newRecordCursor( record ) )
             {
-                cursor.acquire( 0, RecordLoad.NORMAL );
+                cursor.acquire( 0, NORMAL );
                 long highId = store.getHighId();
                 for ( long id = 0; id < highId; id++ )
                 {
@@ -674,9 +677,8 @@ public class MetaDataStoreTest
             }
         }
 
-        List<Long> expectedValues = Arrays.stream( positions ).map( p ->
-        {
-            if ( p == MetaDataStore.Position.STORE_VERSION )
+        List<Long> expectedValues = stream( positions ).map( p -> {
+            if ( p == STORE_VERSION )
             {
                 return storeVersion;
             }
@@ -684,54 +686,59 @@ public class MetaDataStoreTest
             {
                 return p.ordinal() + 1L;
             }
-        } ).collect( Collectors.toList() );
+        } ).collect( toList() );
 
         assertThat( actualValues, is( expectedValues ) );
     }
 
-    private void writeCorrectMetaDataRecord( File file, MetaDataStore.Position[] positions, long storeVersion )
+    private void writeCorrectMetaDataRecord( File file, Position[] positions, long storeVersion )
             throws IOException
     {
-        for ( MetaDataStore.Position position : positions )
+        for ( Position position : positions )
         {
-            if ( position == MetaDataStore.Position.STORE_VERSION )
+            if ( position == STORE_VERSION )
             {
-                MetaDataStore.setRecord( pageCache, file, position, storeVersion );
+                setRecord( pageCache, file, position, storeVersion );
             }
             else
             {
-                MetaDataStore.setRecord( pageCache, file, position, position.ordinal() + 1 );
+                setRecord( pageCache, file, position, position.ordinal() + 1 );
             }
         }
     }
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void staticSetRecordMustThrowOnPageOverflow() throws Exception
+    @Test
+    public void staticSetRecordMustThrowOnPageOverflow()
+{
+    assertThrows( UnderlyingStorageException.class, () ->
     {
         fakePageCursorOverflow = true;
-        MetaDataStore.setRecord(
-                pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
-    }
+        setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), FIRST_GRAPH_PROPERTY, 4242 );
+    } );
+}
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void staticGetRecordMustThrowOnPageOverflow() throws Exception
+    @Test
+    public void staticGetRecordMustThrowOnPageOverflow()
+{
+    assertThrows( UnderlyingStorageException.class, () ->
     {
         File metaDataFile = createMetaDataFile();
-        MetaDataStore.setRecord(
-                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
+        setRecord( pageCacheWithFakeOverflow, metaDataFile, FIRST_GRAPH_PROPERTY, 4242 );
         fakePageCursorOverflow = true;
-        MetaDataStore.getRecord(
-                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY );
-    }
+        getRecord( pageCacheWithFakeOverflow, metaDataFile, FIRST_GRAPH_PROPERTY );
+    } );
+}
 
-    @Test( expected = UnderlyingStorageException.class )
+    @Test
     public void incrementVersionMustThrowOnPageOverflow()
     {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            fakePageCursorOverflow = true;
-            store.incrementAndGetVersion();
-        }
+        assertThrows( UnderlyingStorageException.class, () -> {
+            try ( MetaDataStore store = newMetaDataStore() )
+            {
+                fakePageCursorOverflow = true;
+                store.incrementAndGetVersion();
+            }
+        } );
     }
 
     @Test
@@ -740,32 +747,36 @@ public class MetaDataStoreTest
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
             long timestamp = metaDataStore.getLastCommittedTransaction().commitTimestamp();
-            assertThat( timestamp, equalTo( TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP ) );
+            assertThat( timestamp, equalTo( BASE_TX_COMMIT_TIMESTAMP ) );
         }
     }
 
-    @Test( expected = UnderlyingStorageException.class )
+    @Test
     public void readAllFieldsMustThrowOnPageOverflow()
     {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            // Apparently this is possible, and will trick MetaDataStore into thinking the field is not initialised.
-            // Thus it will reload all fields from the file, even though this ends up being the actual value in the
-            // file. We do this because creating a proper MetaDataStore automatically initialises all fields.
-            store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED );
-            fakePageCursorOverflow = true;
-            store.getUpgradeTime();
-        }
+        assertThrows( UnderlyingStorageException.class, () -> {
+            try ( MetaDataStore store = newMetaDataStore() )
+            {
+                // Apparently this is possible, and will trick MetaDataStore into thinking the field is not initialised.
+                // Thus it will reload all fields from the file, even though this ends up being the actual value in the
+                // file. We do this because creating a proper MetaDataStore automatically initialises all fields.
+                store.setUpgradeTime( FIELD_NOT_INITIALIZED );
+                fakePageCursorOverflow = true;
+                store.getUpgradeTime();
+            }
+        } );
     }
 
-    @Test( expected = UnderlyingStorageException.class )
+    @Test
     public void setRecordMustThrowOnPageOverflow()
     {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            fakePageCursorOverflow = true;
-            store.setUpgradeTransaction( 13, 42, 42 );
-        }
+        assertThrows( UnderlyingStorageException.class, () -> {
+            try ( MetaDataStore store = newMetaDataStore() )
+            {
+                fakePageCursorOverflow = true;
+                store.setUpgradeTransaction( 13, 42, 42 );
+            }
+        } );
     }
 
     @Test
@@ -774,7 +785,7 @@ public class MetaDataStoreTest
         try ( MetaDataStore store = newMetaDataStore() )
         {
             fakePageCursorOverflow = true;
-            store.logRecords( NullLogger.getInstance() );
+            store.logRecords( getInstance() );
         }
     }
 

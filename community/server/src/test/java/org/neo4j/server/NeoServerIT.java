@@ -19,10 +19,10 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-
-import org.junit.Test;
 
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.server.HTTP;

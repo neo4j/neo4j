@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
 import java.io.File;
@@ -85,9 +85,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -610,7 +610,7 @@ public class HighAvailabilityMemberStateMachineTest
 
         // Then
         latch.await();
-        assertTrue( "mode switch failed", switchedSuccessfully.get() );
+        assertTrue( switchedSuccessfully.get(), "mode switch failed" );
         Master actual = ref.get();
         // let's test the toString()s since there are too many wrappers of proxies
         assertEquals( masterClient.toString(), actual.toString() );

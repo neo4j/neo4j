@@ -20,7 +20,7 @@
 package org.neo4j.bolt.v1.messaging;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;

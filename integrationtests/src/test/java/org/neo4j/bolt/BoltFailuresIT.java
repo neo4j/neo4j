@@ -183,7 +183,7 @@ public class BoltFailuresIT
             if ( shouldBeAbleToBeginTransaction )
             {
                 try ( Session session = driver.session();
-                      Transaction tx = session.beginTransaction() )
+                        Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "CREATE ()" ).consume();
                 }

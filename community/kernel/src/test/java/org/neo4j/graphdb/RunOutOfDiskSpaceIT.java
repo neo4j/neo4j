@@ -64,7 +64,7 @@ public class RunOutOfDiskSpaceIT
         }
 
         long logVersion = db.getDependencyResolver().resolveDependency( LogVersionRepository.class )
-                            .getCurrentLogVersion();
+                .getCurrentLogVersion();
 
         db.runOutOfDiskSpaceNao();
 

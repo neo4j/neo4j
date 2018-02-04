@@ -88,7 +88,7 @@ import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
 @RunWith( Suite.class )
 @Suite.SuiteClasses( {ConsistencyReporterTest.TestAllReportMessages.class,
-                      ConsistencyReporterTest.TestReportLifecycle.class} )
+        ConsistencyReporterTest.TestReportLifecycle.class} )
 public class ConsistencyReporterTest
 {
     public static class TestReportLifecycle
@@ -225,13 +225,13 @@ public class ConsistencyReporterTest
                 if ( reportMethod.getName().endsWith( "Change" ) )
                 {
                     verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
-                                            argThat( hasExpectedFormat() ), any( Object[].class ) );
+                            any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
+                            argThat( hasExpectedFormat() ), any( Object[].class ) );
                 }
                 else
                 {
                     verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ), argThat( hasExpectedFormat() ), nullSafeAny() );
+                            any( AbstractBaseRecord.class ), argThat( hasExpectedFormat() ), nullSafeAny() );
                 }
             }
             else
@@ -239,14 +239,14 @@ public class ConsistencyReporterTest
                 if ( reportMethod.getName().endsWith( "Change" ) )
                 {
                     verify( report ).warning( any( RecordType.class ),
-                                              any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
-                                              argThat( hasExpectedFormat() ), any( Object[].class ) );
+                            any( AbstractBaseRecord.class ), any( AbstractBaseRecord.class ),
+                            argThat( hasExpectedFormat() ), any( Object[].class ) );
                 }
                 else
                 {
                     verify( report ).warning( any( RecordType.class ),
-                                              any( AbstractBaseRecord.class ),
-                                              argThat( hasExpectedFormat() ), nullSafeAny() );
+                            any( AbstractBaseRecord.class ),
+                            argThat( hasExpectedFormat() ), nullSafeAny() );
                 }
             }
         }
@@ -299,7 +299,7 @@ public class ConsistencyReporterTest
         public String toString()
         {
             return format( "report.%s( %s{ reporter.%s(); } )",
-                           reportMethod.getName(), signatureOf( reportMethod ), method.getName() );
+                    reportMethod.getName(), signatureOf( reportMethod ), method.getName() );
         }
 
         private static String signatureOf( Method reportMethod )
@@ -434,8 +434,8 @@ public class ConsistencyReporterTest
         {
             RecordCheck checker = mock( RecordCheck.class );
             doAnswer( this ).when( checker ).check( any( AbstractBaseRecord.class ),
-                                                    any( CheckerEngine.class ),
-                                                    any( RecordAccess.class ) );
+                    any( CheckerEngine.class ),
+                    any( RecordAccess.class ) );
             return checker;
         }
 

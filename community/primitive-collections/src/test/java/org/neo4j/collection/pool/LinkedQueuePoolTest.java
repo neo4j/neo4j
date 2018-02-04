@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.pool;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -27,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LinkedQueuePoolTest
 {
@@ -260,8 +260,8 @@ public class LinkedQueuePoolTest
 
         // then
         // currentPeakSize should be at MIN_SIZE / 5
-        assertTrue( "Expected " + stateMonitor.currentPeakSize.get() + " <= " + BELOW_MIN_SIZE,
-                stateMonitor.currentPeakSize.get() <= BELOW_MIN_SIZE );
+        assertTrue( stateMonitor.currentPeakSize.get() <= BELOW_MIN_SIZE,
+                "Expected " + stateMonitor.currentPeakSize.get() + " <= " + BELOW_MIN_SIZE );
         // target size should remain at MIN_SIZE
         assertEquals( MIN_SIZE, stateMonitor.targetSize.get() );
         // only the excess from the MAX_SIZE down to min size must have been disposed

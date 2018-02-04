@@ -20,7 +20,7 @@
 package org.neo4j.kernel.extension;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -32,10 +32,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Base class for testing a {@link org.neo4j.kernel.extension.KernelExtensionFactory}. The base test cases in this
@@ -113,9 +113,9 @@ public abstract class KernelExtensionFactoryContractTest
             fail( "Loaded instance does not match the extension class (Exception in stderr)" );
         }
 
-        assertNotNull( "Could not load the kernel extension with the provided key", instance );
-        assertTrue( "Class of the loaded instance is a subclass of the extension class",
-                instance.getClass() == extClass );
+        assertNotNull( instance, "Could not load the kernel extension with the provided key" );
+        assertTrue( instance.getClass() == extClass,
+                "Class of the loaded instance is a subclass of the extension class" );
     }
 
     @Test
@@ -123,18 +123,18 @@ public abstract class KernelExtensionFactoryContractTest
     {
         KernelExtensionFactory<?> one = newInstance();
         KernelExtensionFactory<?> two = newInstance();
-        assertEquals( "new instances have different hash codes", one.hashCode(), two.hashCode() );
-        assertEquals( "new instances are not equals", one, two );
+        assertEquals( one.hashCode(), two.hashCode(), "new instances have different hash codes" );
+        assertEquals( one, two, "new instances are not equals" );
 
         one = loadInstance();
         two = loadInstance();
-        assertEquals( "loaded instances have different hash codes", one.hashCode(), two.hashCode() );
-        assertEquals( "loaded instances are not equals", one, two );
+        assertEquals( one.hashCode(), two.hashCode(), "loaded instances have different hash codes" );
+        assertEquals( one, two, "loaded instances are not equals" );
 
         one = loadInstance();
         two = newInstance();
-        assertEquals( "loaded instance and new instance have different hash codes", one.hashCode(), two.hashCode() );
-        assertEquals( "loaded instance and new instance are not equals", one, two );
+        assertEquals( one.hashCode(), two.hashCode(), "loaded instance and new instance have different hash codes" );
+        assertEquals( one, two, "loaded instance and new instance are not equals" );
     }
 
     @Test
@@ -143,7 +143,7 @@ public abstract class KernelExtensionFactoryContractTest
         GraphDatabaseService graphdb = graphdb( 0 );
         try
         {
-            assertTrue( "Failed to load extension", getExtensions( graphdb ).isRegistered( extClass ) );
+            assertTrue( getExtensions( graphdb ).isRegistered( extClass ), "Failed to load extension" );
         }
         finally
         {

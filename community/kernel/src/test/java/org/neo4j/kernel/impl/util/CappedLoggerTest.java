@@ -265,11 +265,11 @@ public class CappedLoggerTest
     public void mustAllowConfigurationChaining()
     {
         logger.setCountLimit( 1 )
-              .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
-              .setDuplicateFilterEnabled( true )
-              .unsetCountLimit()
-              .unsetTimeLimit()
-              .setCountLimit( 1 );
+                .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
+                .setDuplicateFilterEnabled( true )
+                .unsetCountLimit()
+                .unsetTimeLimit()
+                .setCountLimit( 1 );
     }
 
     @Test

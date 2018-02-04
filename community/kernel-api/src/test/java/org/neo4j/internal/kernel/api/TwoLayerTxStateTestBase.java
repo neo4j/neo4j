@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Assume;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
@@ -32,13 +32,15 @@ import java.util.stream.Collectors;
 
 import org.neo4j.values.storable.Value;
 
-import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
+@EnableRuleMigrationSupport
 public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Rule
@@ -47,7 +49,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldNotSeeCreatedNodeInStableState() throws Exception
     {
-        Assume.assumeTrue( modes.twoLayerTransactionState() );
+        assumeTrue( modes.twoLayerTransactionState() );
 
         long node;
         try ( Transaction tx = session.beginTransaction() )
@@ -57,13 +59,13 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
             try ( NodeCursor cursor = cursors.allocateNodeCursor() )
             {
                 tx.stableDataRead().singleNode( node, cursor );
-                assertFalse( "not in stable tx state", cursor.next() );
+                assertFalse( cursor.next(), "not in stable tx state" );
 
                 tx.dataRead().singleNode( node, cursor );
-                assertTrue( "in active tx state", cursor.next() );
+                assertTrue( cursor.next(), "in active tx state" );
                 assertEquals( node, cursor.nodeReference() );
 
-                assertFalse( "only single node in active tx state", cursor.next() );
+                assertFalse( cursor.next(), "only single node in active tx state" );
             }
         }
     }
@@ -71,7 +73,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldSeeStabilizedCreatedNodeInStableState() throws Exception
     {
-        Assume.assumeTrue( modes.twoLayerTransactionState() );
+        assumeTrue( modes.twoLayerTransactionState() );
 
         long node;
         try ( Transaction tx = session.beginTransaction() )
@@ -83,13 +85,13 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
             try ( NodeCursor cursor = cursors.allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( node, cursor );
-                assertTrue( "in active tx state", cursor.next() );
+                assertTrue( cursor.next(), "in active tx state" );
 
                 tx.stableDataRead().singleNode( node, cursor );
-                assertTrue( "in stable tx state", cursor.next() );
+                assertTrue( cursor.next(), "in stable tx state" );
                 assertEquals( node, cursor.nodeReference() );
 
-                assertFalse( "only single node in stable tx state", cursor.next() );
+                assertFalse( cursor.next(), "only single node in stable tx state" );
             }
         }
     }
@@ -97,7 +99,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldNotSeeRemovedNodeInActiveState() throws Exception
     {
-        Assume.assumeTrue( modes.twoLayerTransactionState() );
+        assumeTrue( modes.twoLayerTransactionState() );
 
         long n1;
         // given
@@ -126,7 +128,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldSeparateRelationshipWritesIntoLayers() throws Exception
     {
-        Assume.assumeTrue( modes.twoLayerTransactionState() );
+        assumeTrue( modes.twoLayerTransactionState() );
 
         final int TYPE = 0;
         long n1, n2, r1, r2;
@@ -161,7 +163,7 @@ public abstract class TwoLayerTxStateTestBase<G extends KernelAPIWriteTestSuppor
     @Test
     public void shouldSeparatePropertyWritesIntoLayers() throws Exception
     {
-        Assume.assumeTrue( modes.twoLayerTransactionState() );
+        assumeTrue( modes.twoLayerTransactionState() );
 
         final int prop1 = 0;
         final int prop2 = 1;

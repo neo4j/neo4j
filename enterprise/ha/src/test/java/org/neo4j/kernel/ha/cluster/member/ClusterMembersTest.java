@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster.member;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,10 +32,11 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.impl.store.StoreId;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class ClusterMembersTest
 {
@@ -69,7 +70,7 @@ public class ClusterMembersTest
 
         Iterable<ClusterMember> currentMembers = clusterMembers.getAliveMembers();
 
-        assertEquals( "Only active members should be available", 2, Iterables.count( currentMembers ) );
+        assertEquals( 2, count( currentMembers ), "Only active members should be available" );
         assertEquals( 1, countInstancesWithRole( currentMembers, HighAvailabilityModeSwitcher.MASTER ) );
         assertEquals( 1, countInstancesWithRole( currentMembers, HighAvailabilityModeSwitcher.SLAVE ) );
     }
@@ -102,7 +103,7 @@ public class ClusterMembersTest
 
         Iterable<ClusterMember> currentMembers = clusterMembers.getMembers();
 
-        assertEquals( "All members should be available", 2, Iterables.count( currentMembers ) );
+        assertEquals( 2, count( currentMembers ), "All members should be available" );
         assertEquals( 2, countInstancesWithRole( currentMembers, HighAvailabilityModeSwitcher.MASTER ) );
     }
 

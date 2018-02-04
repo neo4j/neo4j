@@ -52,8 +52,8 @@ public class UsersIT extends ExclusiveServerTestBase
 
     @Test
     @Documented( "User status\n" +
-                 "\n" +
-                 "Given that you know the current password, you can ask the server for the user status." )
+            "\n" +
+            "Given that you know the current password, you can ask the server for the user status." )
     public void user_status() throws JsonParseException, IOException
     {
         // Given
@@ -74,9 +74,9 @@ public class UsersIT extends ExclusiveServerTestBase
 
     @Test
     @Documented( "User status on first access\n" +
-                 "\n" +
-                 "On first access, and using the default password, the user status will indicate " +
-                 "that the users password requires changing." )
+            "\n" +
+            "On first access, and using the default password, the user status will indicate " +
+            "that the users password requires changing." )
     public void user_status_first_access() throws JsonParseException, IOException
     {
         // Given

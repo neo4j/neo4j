@@ -106,11 +106,11 @@ public class KernelTransactionTestBase
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
                 .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
-            .when( storageEngine ).createCommands(
-                    anyCollection(),
-                    any( ReadableTransactionState.class ),
-                    any( StorageStatement.class ), any( ResourceLocker.class ),
-                    anyLong() );
+                .when( storageEngine ).createCommands(
+                anyCollection(),
+                any( ReadableTransactionState.class ),
+                any( StorageStatement.class ), any( ResourceLocker.class ),
+                anyLong() );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

@@ -161,18 +161,18 @@ public class FileUserRepositoryTest
         // Given
         final IOException exception = new IOException( "simulated IO Exception on create" );
         FileSystemAbstraction craschingFileSystem =
-            new DelegatingFileSystemAbstraction( fs )
-            {
-                @Override
-                public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
+                new DelegatingFileSystemAbstraction( fs )
                 {
-                    if ( authFile.getName().equals( newLocation.getName() ) )
+                    @Override
+                    public void renameFile( File oldLocation, File newLocation, CopyOption... copyOptions ) throws IOException
                     {
-                        throw exception;
+                        if ( authFile.getName().equals( newLocation.getName() ) )
+                        {
+                            throw exception;
+                        }
+                        super.renameFile( oldLocation, newLocation, copyOptions );
                     }
-                    super.renameFile( oldLocation, newLocation, copyOptions );
-                }
-            };
+                };
 
         FileUserRepository users = new FileUserRepository( craschingFileSystem, authFile, logProvider );
         users.start();
@@ -249,7 +249,7 @@ public class FileUserRepositoryTest
         // First line is correctly formatted, second line has an extra field
         FileRepositorySerializer.writeToFile( fs, authFile, UTF8.encode(
                 "admin:SHA-256,A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" +
-                "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
+                        "neo4j:fc4c600b43ffe4d5857b4439c35df88f:SHA-256," +
                         "A42E541F276CF17036DB7818F8B09B1C229AAD52A17F69F4029617F3A554640F,FB7E8AE08A6A7C741F678AD22217808F:\n" ) );
 
         // When
@@ -286,10 +286,10 @@ public class FileUserRepositoryTest
 
         // When
         Future<Object> setUsers = threading.execute( o ->
-            {
-                users.setUsers( new HangingListSnapshot( latch, 10L, Collections.emptyList() ) );
-                return null;
-            }, null );
+        {
+            users.setUsers( new HangingListSnapshot( latch, 10L, Collections.emptyList() ) );
+            return null;
+        }, null );
 
         latch.startAndWaitForAllToStart();
 

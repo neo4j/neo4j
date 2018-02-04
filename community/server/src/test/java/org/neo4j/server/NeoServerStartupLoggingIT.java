@@ -20,10 +20,10 @@
 package org.neo4j.server;
 
 import com.sun.jersey.api.client.Client;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
 public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
@@ -45,20 +45,20 @@ public class NeoServerStartupLoggingIT extends ExclusiveServerTestBase
     private static ByteArrayOutputStream out;
     private static NeoServer server;
 
-    @BeforeClass
+    @BeforeAll
     public static void setupServer() throws IOException
     {
         out = new ByteArrayOutputStream();
         server = ServerHelper.createNonPersistentServer( FormattedLogProvider.toOutputStream( out ) );
     }
 
-    @Before
+    @BeforeEach
     public void cleanTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer()
     {
         server.stop();

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.schema;
 
 import org.hamcrest.Matchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;

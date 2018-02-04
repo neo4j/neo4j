@@ -19,16 +19,16 @@
  */
 package org.neo4j.commandline.admin;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Neo4jAdminUsageTest
 {
     private Usage usageCmd;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         usageCmd = new Usage( AdminTool.scriptName, CommandLocator.fromServiceLocator() );

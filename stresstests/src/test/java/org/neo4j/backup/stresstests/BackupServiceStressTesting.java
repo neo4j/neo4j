@@ -19,7 +19,7 @@
  */
 package org.neo4j.backup.stresstests;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -47,7 +47,7 @@ import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.DatabaseConfiguration.configureBackup;
 import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;

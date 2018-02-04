@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -30,9 +30,9 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -54,7 +54,7 @@ public class IndexUpdaterMapTest
 
     private IndexUpdaterMap updaterMap;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         indexMap = new IndexMap();
@@ -130,7 +130,7 @@ public class IndexUpdaterMapTest
 
         // then
         assertNull( updater );
-        assertTrue( "updater map must be empty", updaterMap.isEmpty() );
+        assertTrue( updaterMap.isEmpty(), "updater map must be empty" );
     }
 
     @Test
@@ -150,6 +150,6 @@ public class IndexUpdaterMapTest
         verify( updater1 ).close();
         verify( updater2 ).close();
 
-        assertTrue( "updater map must be empty", updaterMap.isEmpty() );
+        assertTrue( updaterMap.isEmpty(), "updater map must be empty" );
     }
 }

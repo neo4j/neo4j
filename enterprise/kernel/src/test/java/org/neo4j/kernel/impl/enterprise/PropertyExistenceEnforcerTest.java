@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -55,12 +55,12 @@ public class PropertyExistenceEnforcerTest
 
         PropertyExistenceEnforcer.getOrCreatePropertyExistenceEnforcerFrom( storeReadLayer );
 
-        assertArrayEquals( "Property ids should remain untouched.", new int[]{1, 70, 8},
-                uniquenessConstraint.schema().getPropertyIds() );
-        assertArrayEquals( "Property ids should remain untouched.", new int[]{12, 7, 13},
-                nodeKeyConstraint.schema().getPropertyIds() );
-        assertArrayEquals( "Property ids should remain untouched.", new int[]{5, 13, 8},
-                relTypeConstraint.schema().getPropertyIds() );
+        assertArrayEquals( new int[]{1, 70, 8}, uniquenessConstraint.schema().getPropertyIds(),
+                "Property ids should remain untouched." );
+        assertArrayEquals( new int[]{12, 7, 13}, nodeKeyConstraint.schema().getPropertyIds(),
+                "Property ids should remain untouched." );
+        assertArrayEquals( new int[]{5, 13, 8}, relTypeConstraint.schema().getPropertyIds(),
+                "Property ids should remain untouched." );
     }
 
     @SuppressWarnings( "unchecked" )

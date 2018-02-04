@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -36,25 +39,26 @@ import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
+@ExtendWith( TestDirectoryExtension.class )
 public abstract class KernelIntegrationTest
 {
-    protected final TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDir;
+    @Rule
     protected final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( fileSystemRule );
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
@@ -142,13 +146,13 @@ public abstract class KernelIntegrationTest
         }
     }
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         startDb();
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws Exception
     {
         stopDb();

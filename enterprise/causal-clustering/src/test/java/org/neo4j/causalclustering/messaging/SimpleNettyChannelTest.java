@@ -20,16 +20,16 @@
 package org.neo4j.causalclustering.messaging;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.logging.NullLog;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.logging.NullLog.getInstance;
 
 public class SimpleNettyChannelTest
 {
@@ -39,7 +39,7 @@ public class SimpleNettyChannelTest
     public void shouldWriteOnNettyChannel()
     {
         // given
-        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
+        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, getInstance() );
 
         // when
         Object msg = new Object();
@@ -61,7 +61,7 @@ public class SimpleNettyChannelTest
     public void shouldWriteAndFlushOnNettyChannel()
     {
         // given
-        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
+        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, getInstance() );
 
         // when
         Object msg = new Object();
@@ -72,29 +72,36 @@ public class SimpleNettyChannelTest
         assertEquals( msg, nettyChannel.readOutbound() );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowWhenWritingOnDisposedChannel()
+{
+    assertThrows( IllegalStateException.class, () ->
     {
         // given
-        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
+        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, getInstance() );
         channel.dispose();
 
         // when
         channel.write( new Object() );
 
         // then expected to throw
-    }
 
-    @Test( expected = IllegalStateException.class )
+    } );
+}
+
+    @Test
     public void shouldThrowWhenWriteAndFlushingOnDisposedChannel()
     {
-        // given
-        SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, NullLog.getInstance() );
-        channel.dispose();
+        assertThrows( IllegalStateException.class, () -> {
+            // given
+            SimpleNettyChannel channel = new SimpleNettyChannel( nettyChannel, getInstance() );
+            channel.dispose();
 
-        // when
-        channel.writeAndFlush( new Object() );
+            // when
+            channel.writeAndFlush( new Object() );
 
-        // then expected to throw
+            // then expected to throw
+
+        } );
     }
 }

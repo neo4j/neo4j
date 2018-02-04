@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -28,11 +30,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Testing on database level that creating and deleting relationships over the the same two nodes
@@ -40,12 +43,13 @@ import static org.junit.Assert.assertTrue;
  *
  * Also test that relationship chains are consistently read during concurrent updates.
  */
+@ExtendWith( {ImpermanentDatabaseExtension.class, RandomExtension.class} )
 public class RelationshipCreateDeleteIT
 {
-    @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
+    @Resource
+    public RandomRule random;
 
     @Test
     public void shouldNotDeadlockOrCrashFromInconsistency() throws Throwable

@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 import java.util.UUID;
@@ -31,9 +31,9 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -72,7 +72,7 @@ public class PoliciesTest
         {
             // when
             policies.selectFor( stringMap( Policies.POLICY_KEY, "unknown-policy" ) );
-            fail();
+            fail("Failure was expected");
         }
         catch ( ProcedureException e )
         {
@@ -90,7 +90,7 @@ public class PoliciesTest
         {
             // when
             policies.selectFor( stringMap( Policies.POLICY_KEY, Policies.DEFAULT_POLICY_NAME ) );
-            fail();
+            fail("Failure was expected");
         }
         catch ( ProcedureException e )
         {

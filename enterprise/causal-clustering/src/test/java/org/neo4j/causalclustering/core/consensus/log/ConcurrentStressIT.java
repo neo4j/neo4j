@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,22 +31,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.causalclustering.core.consensus.ReplicatedString;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith( TestDirectoryExtension.class )
 public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
 {
     private static final int MAX_CONTENT_SIZE = 2048;
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory dir;
 
     protected abstract T createRaftLog( FileSystemAbstraction fsa, File dir );
 

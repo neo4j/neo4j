@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.layout;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class IndexFolderLayoutTest
 {

@@ -20,8 +20,8 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,13 +36,14 @@ import java.util.function.Supplier;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -83,7 +84,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private long rootId;
     private int numberOfRootSplits;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
@@ -325,7 +326,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
             // THEN
             assertRangeInSingleLeaf( fromInclusive, toExclusive, cursor );
         }
-        assertFalse( "Cursor continued to next leaf even though end of range is within first leaf", nextCalled.get() );
+        assertFalse( nextCalled.get(), "Cursor continued to next leaf even though end of range is within first leaf" );
     }
 
     @Test
@@ -2243,14 +2244,14 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
     private void assertEqualsKey( KEY expected, KEY actual )
     {
-        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
-                layout.compare( expected, actual ) == 0 );
+        assertTrue( layout.compare( expected, actual ) == 0,
+                format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
     }
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
-        assertTrue( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ),
-                layout.compareValue( expected, actual ) == 0 );
+        assertTrue( layout.compareValue( expected, actual ) == 0,
+                format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ) );
     }
 
     private void insertKeysAndValues( int keyCount )

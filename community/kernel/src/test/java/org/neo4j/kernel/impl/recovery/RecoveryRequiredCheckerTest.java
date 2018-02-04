@@ -159,10 +159,10 @@ public class RecoveryRequiredCheckerTest
             Config config )
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                        .setFileSystem( fileSystem )
-                        .newImpermanentDatabaseBuilder( store )
-                        .setConfig( config.getRaw() )
-                        .newGraphDatabase();
+                .setFileSystem( fileSystem )
+                .newImpermanentDatabaseBuilder( store )
+                .setConfig( config.getRaw() )
+                .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {

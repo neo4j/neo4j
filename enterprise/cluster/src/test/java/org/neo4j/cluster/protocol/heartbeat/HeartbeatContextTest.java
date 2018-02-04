@@ -20,8 +20,8 @@
 package org.neo4j.cluster.protocol.heartbeat;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.net.URI;
@@ -47,10 +47,10 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,7 +75,7 @@ public class HeartbeatContextTest
     private HeartbeatContext toTest;
     private ClusterContext context;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         Map<InstanceId, URI> members = new HashMap<>();
@@ -170,7 +170,7 @@ public class HeartbeatContextTest
 
         // Suspicions of a failed instance should be ignored
         toTest.suspicions( suspect, Collections.singleton( newSuspiciousBastard ) );
-        assertTrue( "Suspicions should have been ignored", toTest.getSuspicionsOf( newSuspiciousBastard ).isEmpty() );
+        assertTrue( toTest.getSuspicionsOf( newSuspiciousBastard ).isEmpty(), "Suspicions should have been ignored" );
     }
 
     @Test

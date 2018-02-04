@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Set;
@@ -36,11 +36,11 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropA
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -59,7 +59,7 @@ public class FusionIndexAccessorTest
     private final long indexId = 10;
     private final DropAction dropAction = mock( DropAction.class );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         nativeAccessor = mock( IndexAccessor.class );
@@ -430,7 +430,7 @@ public class FusionIndexAccessorTest
     {
         for ( long nativeEntry : nativeEntries )
         {
-            assertTrue( "Expected to contain " + nativeEntry + ", but was " + result, result.contains( nativeEntry ) );
+            assertTrue( result.contains( nativeEntry ), "Expected to contain " + nativeEntry + ", but was " + result );
         }
     }
 

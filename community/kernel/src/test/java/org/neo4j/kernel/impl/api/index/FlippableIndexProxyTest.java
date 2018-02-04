@@ -20,7 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.Callable;
@@ -31,17 +32,16 @@ import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelExcept
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.CleanupRule;
 
-import static org.junit.Assert.assertTrue;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitFuture;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.awaitLatch;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexProxy;
 
+@EnableRuleMigrationSupport
 public class FlippableIndexProxyTest
 {
     @Rule

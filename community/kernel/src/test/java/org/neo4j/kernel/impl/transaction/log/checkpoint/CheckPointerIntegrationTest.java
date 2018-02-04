@@ -19,14 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -49,29 +52,32 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class CheckPointerIntegrationTest
 {
     @Rule
     public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private GraphDatabaseBuilder builder;
     private FileSystemAbstraction fs;
     private File storeDir;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         fs = fsRule.get();
@@ -122,7 +128,7 @@ public class CheckPointerIntegrationTest
         while ( !checkPointInTxLog( db ) )
         {
             Thread.sleep( millis );
-            assertTrue( "Took too long to produce a checkpoint", currentTimeMillis() < endTime );
+            assertTrue( currentTimeMillis() < endTime, "Took too long to produce a checkpoint" );
         }
 
         db.shutdown();
@@ -130,8 +136,9 @@ public class CheckPointerIntegrationTest
         // then - 2 check points have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( storeDir, fs ).find( 0 );
 
-        assertTrue( "Expected at least two (at least one for time interval and one for shutdown), was " +
-                checkPoints.toString(), checkPoints.size() >= 2 );
+        assertTrue( checkPoints.size() >= 2,
+                "Expected at least two (at least one for time interval and one for shutdown), was " +
+                        checkPoints.toString() );
     }
 
     private boolean checkPointInTxLog( GraphDatabaseService db ) throws IOException

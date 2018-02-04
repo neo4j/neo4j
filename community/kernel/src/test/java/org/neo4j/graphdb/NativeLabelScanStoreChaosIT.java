@@ -19,33 +19,36 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * Tests functionality around missing or corrupted lucene label scan store index, and that
  * the database should repair (i.e. rebuild) that automatically and just work.
  */
+@ExtendWith( {EmbeddedDatabaseExtension.class, RandomExtension.class} )
 public class NativeLabelScanStoreChaosIT
 {
-    private final DatabaseRule dbRule = new EmbeddedDatabaseRule();
-    private final RandomRule randomRule = new RandomRule();
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( dbRule );
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
+    @Resource
+    public RandomRule randomRule;
 
     @Test
     public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception

@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses.ConnectorUri;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.http;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.https;

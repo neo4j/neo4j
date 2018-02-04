@@ -19,11 +19,12 @@
  */
 package org.neo4j.tools.migration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -31,17 +32,20 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.Unzip;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+@ExtendWith( {SuppressOutputExtension.class, TestDirectoryExtension.class} )
 public class StoreMigrationTest
 {
-    @Rule
-    public final SuppressOutput mute = SuppressOutput.suppressAll();
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
+    @Resource
+    public SuppressOutput mute;
+    @Resource
+    public TestDirectory testDir;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException
     {
         Unzip.unzip( getClass(), "2.3-store.zip", testDir.graphDbDir() );

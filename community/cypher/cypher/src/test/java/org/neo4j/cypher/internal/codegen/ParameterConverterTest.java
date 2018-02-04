@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -83,7 +83,7 @@ public class ParameterConverterTest
 {
     private ParameterConverter converter = new ParameterConverter( mock( EmbeddedProxySPI.class ) );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         EmbeddedProxySPI manager = mock( EmbeddedProxySPI.class );

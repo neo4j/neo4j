@@ -21,9 +21,9 @@ package org.neo4j.server;
 
 import java.io.PrintStream;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,7 +35,7 @@ public class CommunityEntryPointTest
     private PrintStream realSystemOut;
     private PrintStream fakeSystemOut;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         realSystemOut = System.out;
@@ -43,7 +43,7 @@ public class CommunityEntryPointTest
         System.setOut( fakeSystemOut );
     }
 
-    @After
+    @AfterEach
     public void teardown()
     {
         System.setOut( realSystemOut );

@@ -19,18 +19,19 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Set;
 
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.Log;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
@@ -41,6 +42,7 @@ import org.neo4j.server.security.enterprise.log.SecurityLog;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+@EnableRuleMigrationSupport
 public class PersonalUserManagerTest
 {
     @Rule
@@ -66,7 +68,7 @@ public class PersonalUserManagerTest
                 "hewhoshallnotbenamed", "newUserException" );
     }
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         evilUserManager = new EvilUserManager(

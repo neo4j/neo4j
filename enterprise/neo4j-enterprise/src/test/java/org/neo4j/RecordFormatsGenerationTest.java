@@ -19,7 +19,7 @@
  */
 package org.neo4j;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RecordFormatsGenerationTest
 {
@@ -58,8 +58,8 @@ public class RecordFormatsGenerationTest
         assertEquals( 2, generationsForFamilies.size() );
         for ( Map.Entry<FormatFamily,List<Integer>> familyListGeneration : generationsForFamilies.entrySet() )
         {
-            assertEquals(  "Generation inside format family should be unique.",
-                    familyListGeneration.getValue(), distinct( familyListGeneration.getValue() ) );
+            assertEquals( familyListGeneration.getValue(), distinct( familyListGeneration.getValue() ),
+                    "Generation inside format family should be unique." );
         }
     }
 
@@ -69,8 +69,8 @@ public class RecordFormatsGenerationTest
         Map<FormatFamily,List<Integer>> familyGenerations = allFamilyGenerations();
         for ( Map.Entry<FormatFamily,List<Integer>> familyEntry : familyGenerations.entrySet() )
         {
-            assertEquals( "Generation inside format family should be unique.",
-                    familyEntry.getValue(), distinct( familyEntry.getValue() ) );
+            assertEquals( familyEntry.getValue(), distinct( familyEntry.getValue() ),
+                    "Generation inside format family should be unique." );
         }
     }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 

@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.core.consensus.term;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftTermMonitor;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MonitoredTermStateStorageTest
 {

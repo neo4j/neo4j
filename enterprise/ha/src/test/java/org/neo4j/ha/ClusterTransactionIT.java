@@ -54,9 +54,9 @@ public class ClusterTransactionIT
     public void setUp()
     {
         cluster = clusterRule.withCluster( clusterOfSize( 3 ) )
-                             .withSharedSetting( HaSettings.tx_push_factor, "2" )
-                             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
-                             .startCluster();
+                .withSharedSetting( HaSettings.tx_push_factor, "2" )
+                .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .startCluster();
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
     }
@@ -96,7 +96,7 @@ public class ClusterTransactionIT
                 .addLifecycleListener( ( instance, from, to ) ->
                 {
                     if ( instance.getClass().getName().contains( "DatabaseAvailability" ) &&
-                         to == LifecycleStatus.STOPPED )
+                            to == LifecycleStatus.STOPPED )
                     {
                         result.run();
                     }

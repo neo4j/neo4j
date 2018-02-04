@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -33,10 +33,10 @@ import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.Monitor;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -94,9 +94,9 @@ public class PrimitiveLongSetTest
         boolean existedBefore = set.contains( 679990875 );
         boolean added = set.add( 679990875 );
         boolean existsAfter = set.contains( 679990875 );
-        assertFalse( "679990875 should not exist before adding here", existedBefore );
-        assertTrue( "679990875 should be reported as added here", added );
-        assertTrue( "679990875 should exist", existsAfter );
+        assertFalse( existedBefore, "679990875 should not exist before adding here" );
+        assertTrue( added, "679990875 should be reported as added here" );
+        assertTrue( existsAfter, "679990875 should exist" );
         expectedValues.add( 679990875L );
 
         final Set<Long> visitedKeys = new HashSet<>();
@@ -136,9 +136,9 @@ public class PrimitiveLongSetTest
         boolean existedBefore = set.contains( 2095121629 );
         boolean added = set.add( 2095121629 );
         boolean existsAfter = set.contains( 2095121629 );
-        assertFalse( "2095121629 should not exist before adding here", existedBefore );
-        assertTrue( "2095121629 should be reported as added here", added );
-        assertTrue( "2095121629 should exist", existsAfter );
+        assertFalse( existedBefore, "2095121629 should not exist before adding here" );
+        assertTrue( added, "2095121629 should be reported as added here" );
+        assertTrue( existsAfter, "2095121629 should exist" );
     }
 
     @Test
@@ -154,9 +154,9 @@ public class PrimitiveLongSetTest
         boolean existedBefore = set.contains( 783754072 );
         boolean added = set.add( 783754072 );
         boolean existsAfter = set.contains( 783754072 );
-        assertTrue( "783754072 should exist before adding here", existedBefore );
-        assertFalse( "783754072 should not be reported as added here", added );
-        assertTrue( "783754072 should exist", existsAfter );
+        assertTrue( existedBefore, "783754072 should exist before adding here" );
+        assertFalse( added, "783754072 should not be reported as added here" );
+        assertTrue( existsAfter, "783754072 should exist" );
     }
 
     @Test
@@ -199,9 +199,9 @@ public class PrimitiveLongSetTest
         boolean existedBefore = set.contains( 1739617766 );
         boolean added = set.add( 1739617766 );
         boolean existsAfter = set.contains( 1739617766 );
-        assertTrue( "1739617766 should exist before adding here", existedBefore );
-        assertFalse( "1739617766 should not be reported as added here", added );
-        assertTrue( "1739617766 should exist", existsAfter );
+        assertTrue( existedBefore, "1739617766 should exist before adding here" );
+        assertFalse( added, "1739617766 should not be reported as added here" );
+        assertTrue( existsAfter, "1739617766 should exist" );
     }
 
     @Test
@@ -215,9 +215,9 @@ public class PrimitiveLongSetTest
         boolean existedBefore = set.contains( 7620037383187366331L );
         boolean added = set.add( 7620037383187366331L );
         boolean existsAfter = set.contains( 7620037383187366331L );
-        assertFalse( "7620037383187366331 should not exist before adding here", existedBefore );
-        assertTrue( "7620037383187366331 should be reported as added here", added );
-        assertTrue( "7620037383187366331 should exist", existsAfter );
+        assertFalse( existedBefore, "7620037383187366331 should not exist before adding here" );
+        assertTrue( added, "7620037383187366331 should be reported as added here" );
+        assertTrue( existsAfter, "7620037383187366331 should exist" );
     }
 
     @Test
@@ -347,9 +347,9 @@ public class PrimitiveLongSetTest
         boolean existedBefore = set.contains( 1103190229303827372L );
         boolean added = set.add( 1103190229303827372L );
         boolean existsAfter = set.contains( 1103190229303827372L );
-        assertFalse( "1103190229303827372 should not exist before adding here", existedBefore );
-        assertTrue( "1103190229303827372 should be reported as added here", added );
-        assertTrue( "1103190229303827372 should exist", existsAfter );
+        assertFalse( existedBefore, "1103190229303827372 should not exist before adding here" );
+        assertTrue( added, "1103190229303827372 should be reported as added here" );
+        assertTrue( existsAfter, "1103190229303827372 should exist" );
     }
 
     @SuppressWarnings( "unchecked" )

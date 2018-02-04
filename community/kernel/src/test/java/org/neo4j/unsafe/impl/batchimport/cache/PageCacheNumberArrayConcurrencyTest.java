@@ -20,15 +20,20 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.util.function.BiFunction;
+import javax.annotation.Resource;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -37,19 +42,23 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 
+@EnableRuleMigrationSupport
+@ExtendWith( {RandomExtension.class, TestDirectoryExtension.class} )
 public abstract class PageCacheNumberArrayConcurrencyTest
 {
     protected static final int COUNT = 100;
     protected static final int LAPS = 2_000;
     protected static final int CONTESTANTS = 10;
 
+    @Resource
+    public TestDirectory dir;
+    @Resource
+    public RandomRule random;
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory();
-    protected final RandomRule random = new RandomRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( dir ).around( random ).around( pageCacheRule );
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( pageCacheRule );
 
     @Test
     public void shouldHandleConcurrentAccessToSameData() throws Throwable

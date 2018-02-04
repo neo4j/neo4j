@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.security;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URL;
@@ -31,8 +31,8 @@ import org.neo4j.kernel.configuration.Config;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.Assume.assumeFalse;
 
 public class FileURLAccessRuleTest

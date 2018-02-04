@@ -613,7 +613,7 @@ public abstract class LabelScanStoreTest
     public static void scrambleFile( Random random, File file ) throws IOException
     {
         try ( RandomAccessFile fileAccess = new RandomAccessFile( file, "rw" );
-              FileChannel channel = fileAccess.getChannel() )
+                FileChannel channel = fileAccess.getChannel() )
         {
             // The files will be small, so OK to allocate a buffer for the full size
             byte[] bytes = new byte[(int) channel.size()];

@@ -19,29 +19,33 @@
  */
 package org.neo4j.shell.impl;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
+import javax.annotation.Resource;
+
 import org.neo4j.shell.ShellClient;
+import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.rule.SuppressOutput;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( SuppressOutputExtension.class )
 public class JLineConsoleTest
 {
 
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Resource
+    public SuppressOutput suppressOutput;
 
     @Test
     public void createAndUseJLineConsole()
     {
         ShellClient shellClient = Mockito.mock( ShellClient.class );
         JLineConsole jLineConsole = JLineConsole.newConsoleOrNullIfNotFound( shellClient );
-        assertNotNull( "JLine should be available in classpath and it should be possible to use custom console.",
-                jLineConsole );
+        assertNotNull( jLineConsole,
+                "JLine should be available in classpath and it should be possible to use custom console." );
         String testMessage = "The quick brown fox jumps over the lazy dog";
         jLineConsole.format( testMessage );
         assertTrue( suppressOutput.getOutputVoice().containsMessage( testMessage ) );

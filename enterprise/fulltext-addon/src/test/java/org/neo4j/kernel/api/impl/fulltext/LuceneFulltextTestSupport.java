@@ -20,13 +20,14 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
+import javax.annotation.Resource;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -41,21 +42,23 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class LuceneFulltextTestSupport
 {
     protected static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
     protected static final Log LOG = NullLog.getInstance();
 
-    @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
     protected static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
@@ -67,8 +70,8 @@ public class LuceneFulltextTestSupport
     protected File storeDir;
     private TransactionIdStore transactionIdStore;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    public void setUp() throws Throwable
     {
         db = dbRule.getGraphDatabaseAPI();
         scheduler = dbRule.resolveDependency( JobScheduler.class );
@@ -155,9 +158,10 @@ public class LuceneFulltextTestSupport
         while ( result.hasNext() )
         {
             long next = result.next().entityId();
-            assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
+            assertTrue( set.remove( next ),
+                    format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ) );
         }
-        assertTrue( "Number of results differ from expected", set.isEmpty() );
+        assertTrue( set.isEmpty(), "Number of results differ from expected" );
     }
 
     protected void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
@@ -171,10 +175,10 @@ public class LuceneFulltextTestSupport
             float nextScore = scoredResult.score();
             assertThat( nextScore, lessThanOrEqualTo( score ) );
             score = nextScore;
-            assertEquals( String.format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
+            assertEquals( ids[num], nextId, format( "Result returned node id %d, expected %d", nextId, ids[num] ) );
             num++;
         }
-        assertEquals( "Number of results differ from expected", ids.length, num );
+        assertEquals( ids.length, num, "Number of results differ from expected" );
     }
 
     protected void setNodeProp( long nodeId, String value )

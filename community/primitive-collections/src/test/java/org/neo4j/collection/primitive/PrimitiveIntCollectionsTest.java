@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,12 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PrimitiveIntCollectionsTest
 {
@@ -210,7 +210,7 @@ public class PrimitiveIntCollectionsTest
 
     private void assertNoMoreItems( PrimitiveIntIterator iterator )
     {
-        assertFalse( iterator + " should have no more items", iterator.hasNext() );
+        assertFalse( iterator.hasNext(), iterator + " should have no more items" );
         try
         {
             iterator.next();
@@ -224,7 +224,7 @@ public class PrimitiveIntCollectionsTest
 
     private void assertNextEquals( long expected, PrimitiveIntIterator iterator )
     {
-        assertTrue( iterator + " should have had more items", iterator.hasNext() );
+        assertTrue( iterator.hasNext(), iterator + " should have had more items" );
         assertEquals( expected, iterator.next() );
     }
 

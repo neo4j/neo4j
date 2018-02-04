@@ -74,6 +74,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static java.lang.reflect.Array.getLength;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -361,9 +362,9 @@ public class ParallelBatchImporterTest
     {
         // Read all nodes, relationships and properties ad verify against the input data.
         try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups ).iterator();
-              InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
-                      config.batchSize(), inputIdGenerator, groups ).iterator();
-              ResourceIterator<Node> dbNodes = db.getAllNodes().iterator() )
+                InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
+                        config.batchSize(), inputIdGenerator, groups ).iterator();
+                ResourceIterator<Node> dbNodes = db.getAllNodes().iterator() )
         {
             // Nodes
             Map<String,Node> nodeByInputId = new HashMap<>( nodeCount );
@@ -415,7 +416,7 @@ public class ParallelBatchImporterTest
                 while ( chunk.next( input ) )
                 {
                     if ( !inputIdGenerator.isMiss( input.objectStartId ) &&
-                         !inputIdGenerator.isMiss( input.objectEndId ) )
+                            !inputIdGenerator.isMiss( input.objectEndId ) )
                     {
                         // A relationship referring to missing nodes. The InputIdGenerator is expected to generate
                         // some (very few) of those. Skip it.

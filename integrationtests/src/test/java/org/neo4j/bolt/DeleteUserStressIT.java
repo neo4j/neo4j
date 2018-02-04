@@ -58,7 +58,7 @@ public class DeleteUserStressIT
     {
         adminDriver = GraphDatabase.driver( db.boltURI(), basic( "neo4j", "neo4j" ) );
         try ( Session session = adminDriver.session();
-              Transaction tx = session.beginTransaction() )
+                Transaction tx = session.beginTransaction() )
         {
             tx.run( "CALL dbms.changePassword('abc')" ).consume();
             tx.success();
@@ -92,7 +92,7 @@ public class DeleteUserStressIT
             {
 
                 try ( Session session = driver.session();
-                      Transaction tx = session.beginTransaction() )
+                        Transaction tx = session.beginTransaction() )
                 {
                     tx.run( "UNWIND range(1, 100000) AS n RETURN n" ).consume();
                     tx.success();
@@ -115,7 +115,7 @@ public class DeleteUserStressIT
         for (; ; )
         {
             try ( Session session = adminDriver.session();
-                  Transaction tx = session.beginTransaction() )
+                    Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CALL dbms.security.deleteUser('pontus')" ).consume();
                 tx.success();
@@ -136,7 +136,7 @@ public class DeleteUserStressIT
         for (; ; )
         {
             try ( Session session = adminDriver.session();
-                  Transaction tx = session.beginTransaction() )
+                    Transaction tx = session.beginTransaction() )
             {
                 tx.run( "CALL dbms.security.createUser('pontus', 'sutnop', false)" ).consume();
                 tx.success();

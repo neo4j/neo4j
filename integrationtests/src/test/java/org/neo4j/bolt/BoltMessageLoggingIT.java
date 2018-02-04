@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Paths;
-
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Paths;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -51,7 +51,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_log_filename;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabled;

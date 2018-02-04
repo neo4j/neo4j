@@ -19,9 +19,10 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
@@ -39,11 +40,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
 public class OnlineBackupCommandTest
 {
     @Rule
@@ -71,7 +73,7 @@ public class OnlineBackupCommandTest
 
     private OnlineBackupCommand subject;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
         OnlineBackupContextBuilder contextBuilder = mock( OnlineBackupContextBuilder.class );

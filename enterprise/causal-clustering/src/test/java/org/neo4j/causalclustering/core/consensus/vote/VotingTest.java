@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.vote;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
@@ -28,8 +28,8 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VotingTest
 {

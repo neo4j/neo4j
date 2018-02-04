@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -36,15 +36,16 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
@@ -77,9 +78,9 @@ public class GraphDatabaseSettingsTest
             {
                 Setting<?> setting = (Setting<?>) field.get( null );
 
-                assertFalse(
-                        String.format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(),
-                                fields.get( setting.name() ) ), fields.containsKey( setting.name() ) );
+                assertFalse( fields.containsKey( setting.name() ),
+                        format( "'%s' in %s has already been defined in %s", setting.name(), field.getName(),
+                                fields.get( setting.name() ) ) );
                 fields.put( setting.name(), field.getName() );
             }
         }

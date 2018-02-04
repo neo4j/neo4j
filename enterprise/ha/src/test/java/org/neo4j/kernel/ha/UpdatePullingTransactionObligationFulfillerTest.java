@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Supplier;
 
@@ -45,7 +45,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
     private final HighAvailabilityMemberStateMachine machine = mock( HighAvailabilityMemberStateMachine.class );
     private final InstanceId serverId = new InstanceId( 42 );
 
-    @Before
+    @BeforeEach
     public void setup() throws Throwable
     {
         doAnswer( invocation -> ((UpdatePuller.Condition) invocation.getArgument( 0 )).evaluate( 33, 34 )

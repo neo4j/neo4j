@@ -84,9 +84,9 @@ public class StoreFilesTest
         hiddenFileSystemRule = new EphemeralFileSystemRule();
         pageCacheRule = new PageCacheRule();
         rules = RuleChain.outerRule( ephemeralFileSystemRule )
-                         .around( testDirectory )
-                         .around( hiddenFileSystemRule )
-                         .around( pageCacheRule );
+                .around( testDirectory )
+                .around( hiddenFileSystemRule )
+                .around( pageCacheRule );
     }
 
     @Before

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ServiceLoader;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CommunityCypherEngineProviderTest
 {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,7 +38,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.upgrade.lucene.ExplicitIndexMigrationException;
 import org.neo4j.upgrade.lucene.LuceneExplicitIndexUpgrader;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -57,7 +57,7 @@ public class ExplicitIndexMigratorTest
     private final File originalIndexStore = mock( File.class );
     private final File migratedIndexStore = new File( "." );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( originalIndexStore.getParentFile() ).thenReturn( storeDir );

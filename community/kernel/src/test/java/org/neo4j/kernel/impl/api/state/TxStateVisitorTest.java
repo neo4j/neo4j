@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +40,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TxStateVisitorTest
 {
@@ -77,7 +77,7 @@ public class TxStateVisitorTest
     private final Collection<StorageProperty> noProperty = Collections.emptySet();
     private final Collection<Integer> noRemoved = Collections.emptySet();
 
-    @Before
+    @BeforeEach
     public void before()
     {
         state = new TxState();

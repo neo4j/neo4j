@@ -101,7 +101,7 @@ public class BufferedCharSeekerTest
         // GIVEN
         seeker = seeker(
                 "1\t2\t3\n" +
-                "4\t5\t6\n" );
+                        "4\t5\t6\n" );
 
         // WHEN/THEN
         assertTrue( seeker.seek( mark, TAB ) );
@@ -152,8 +152,8 @@ public class BufferedCharSeekerTest
         // GIVEN
         seeker = seeker(
                 "here,comes,Windows\r\n" +
-                "and,it,has\r" +
-                "other,line,endings" );
+                        "and,it,has\r" +
+                        "other,line,endings" );
 
         // WHEN/THEN
         assertEquals( "here", seeker.seek( mark, COMMA ) ? seeker.extract( mark, extractors.string() ).value() : "" );
@@ -260,7 +260,7 @@ public class BufferedCharSeekerTest
         // GIVEN
         seeker = seeker(
                 "one,two,three,\n" +
-                "uno,dos,tres," );
+                        "uno,dos,tres," );
 
         // WHEN
         assertNextValue( seeker, mark, COMMA, "one" );
@@ -427,7 +427,7 @@ public class BufferedCharSeekerTest
         // GIVEN
         seeker = seeker(
                 "one,two\",th\"ree\n" +
-                "four,five,s\"ix" );
+                        "four,five,s\"ix" );
 
         // THEN
         assertNextValue( seeker, mark, COMMA, "one" );
@@ -447,7 +447,7 @@ public class BufferedCharSeekerTest
         // GIVEN
         CharReadable readable = new ControlledCharReadable(
                 "123,456,789\n" +
-                "abc,def,ghi", 5 );
+                        "abc,def,ghi", 5 );
         seeker = seeker( readable );
 
         // WHEN/THEN
@@ -506,9 +506,9 @@ public class BufferedCharSeekerTest
         // GIVEN
         String data =
                 "\"1\",\"ABBA\",\"1992\"\n" +
-                "\"2\",\"Roxette\",\"1986\"\n" +
-                "\"3\",\"Europe\",\"1979\"\n" +
-                "\"4\",\"The Cardigans\",\"1992\"";
+                        "\"2\",\"Roxette\",\"1986\"\n" +
+                        "\"3\",\"Europe\",\"1979\"\n" +
+                        "\"4\",\"The Cardigans\",\"1992\"";
         seeker = seeker( data );
 
         // WHEN

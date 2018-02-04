@@ -20,11 +20,6 @@
 package org.neo4j.tooling.procedure.visitors;
 
 import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
-import org.neo4j.tooling.procedure.visitors.examples.InvalidRecord;
-import org.neo4j.tooling.procedure.visitors.examples.ValidRecord;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +29,12 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
+
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
+import org.neo4j.tooling.procedure.visitors.examples.InvalidRecord;
+import org.neo4j.tooling.procedure.visitors.examples.ValidRecord;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;

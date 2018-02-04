@@ -19,24 +19,26 @@
  */
 package org.neo4j.io.mem;
 
-import org.junit.Test;
-
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.pageSize;
 
 public class MemoryAllocatorTest
 {
-    protected static final String ONE_PAGE = PageCache.PAGE_SIZE + "";
-    protected static final String EIGHT_PAGES = (8 * PageCache.PAGE_SIZE) + "";
+    protected static final String ONE_PAGE = PAGE_SIZE + "";
+    protected static final String EIGHT_PAGES = (8 * PAGE_SIZE) + "";
 
     protected MemoryAllocator createAllocator( String expectedMaxMemory )
     {
@@ -47,7 +49,7 @@ public class MemoryAllocatorTest
     public void allocatedPointerMustNotBeNull()
     {
         MemoryAllocator mman = createAllocator( EIGHT_PAGES );
-        long address = mman.allocateAligned( PageCache.PAGE_SIZE, 8 );
+        long address = mman.allocateAligned( PAGE_SIZE, 8 );
         assertThat( address, is( not( 0L ) ) );
     }
 
@@ -55,8 +57,8 @@ public class MemoryAllocatorTest
     public void allocatedPointerMustBePageAligned()
     {
         MemoryAllocator mman = createAllocator( EIGHT_PAGES );
-        long address = mman.allocateAligned( PageCache.PAGE_SIZE, UnsafeUtil.pageSize() );
-        assertThat( address % UnsafeUtil.pageSize(), is( 0L ) );
+        long address = mman.allocateAligned( PAGE_SIZE, pageSize() );
+        assertThat( address % pageSize(), is( 0L ) );
     }
 
     @Test
@@ -70,19 +72,19 @@ public class MemoryAllocatorTest
         // Also asserts that no OutOfMemoryError is thrown.
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void alignmentCannotBeZero()
     {
-        createAllocator( ONE_PAGE ).allocateAligned( 8, 0 );
+        assertThrows( IllegalArgumentException.class, () -> createAllocator( ONE_PAGE ).allocateAligned( 8, 0 ) );
     }
 
     @Test
     public void mustBeAbleToAllocateSlabsLargerThanGrabSize()
     {
         MemoryAllocator mman = createAllocator( "2 MiB" );
-        long page1 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
+        long page1 = mman.allocateAligned( pageSize(), 1 );
         long largeBlock = mman.allocateAligned( 1024 * 1024, 1 ); // 1 MiB
-        long page2 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
+        long page2 = mman.allocateAligned( pageSize(), 1 );
         assertThat( page1, is( not( 0L ) ) );
         assertThat( largeBlock, is( not( 0L ) ) );
         assertThat( page2, is( not( 0L ) ) );
@@ -95,18 +97,18 @@ public class MemoryAllocatorTest
         // We haven't allocated anything, so usedMemory should be zero, and the available memory should be the
         // initial capacity.
         assertThat( mman.usedMemory(), is( 0L ) );
-        assertThat( mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
+        assertThat( mman.availableMemory(), is( (long) PAGE_SIZE ) );
 
         // Allocate 32 bytes of unaligned memory. Ideally there would be no memory wasted on this allocation,
         // but in principle we cannot rule it out.
         mman.allocateAligned( 32, 1 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 32L ) ) );
-        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32L ) ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PAGE_SIZE - 32L ) ) );
 
         // Allocate another 32 bytes of unaligned memory.
         mman.allocateAligned( 32, 1 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 64L ) ) );
-        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 64L ) ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PAGE_SIZE - 64L ) ) );
 
         // Allocate 1 byte to throw off any subsequent accidental alignment.
         mman.allocateAligned( 1, 1 );
@@ -115,7 +117,7 @@ public class MemoryAllocatorTest
         mman.allocateAligned( 32, 16 );
         // Don't count the 16 byte alignment in our assertions since we might already be accidentally aligned.
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 97L ) ) );
-        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 97L ) ) );
+        assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PAGE_SIZE - 97L ) ) );
     }
 
     @Test

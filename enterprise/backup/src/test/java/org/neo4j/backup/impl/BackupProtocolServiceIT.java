@@ -155,10 +155,10 @@ public class BackupProtocolServiceIT
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule )
-                                                .around( target )
-                                                .around( dbRule )
-                                                .around( pageCacheRule )
-                                                .around( suppressOutput );
+            .around( target )
+            .around( dbRule )
+            .around( pageCacheRule )
+            .around( suppressOutput );
 
     @Before
     public void setup()
@@ -427,10 +427,10 @@ public class BackupProtocolServiceIT
         for ( final StoreFile storeFile : StoreFile.values() )
         {
             if ( storeFile == COUNTS_STORE_LEFT ||
-                 storeFile == COUNTS_STORE_RIGHT )
+                    storeFile == COUNTS_STORE_RIGHT )
             {
                 assertThat( files, anyOf( hasFile( COUNTS_STORE_LEFT.storeFileName() ),
-                                          hasFile( COUNTS_STORE_RIGHT.storeFileName() ) ) );
+                        hasFile( COUNTS_STORE_RIGHT.storeFileName() ) ) );
             }
             else
             {
@@ -543,10 +543,10 @@ public class BackupProtocolServiceIT
     public void shouldBeAbleToBackupEvenIfTransactionLogsAreIncomplete() throws Throwable
     {
         /*
-        * This test deletes the old persisted log file and expects backup to still be functional. It
-        * should not be assumed that the log files have any particular length of history. They could
-        * for example have been mangled during backups or removed during pruning.
-        */
+         * This test deletes the old persisted log file and expects backup to still be functional. It
+         * should not be assumed that the log files have any particular length of history. They could
+         * for example have been mangled during backups or removed during pruning.
+         */
 
         // given
         defaultBackupPortHostParams();
@@ -807,8 +807,8 @@ public class BackupProtocolServiceIT
         try ( ResourceIterator<StoreFileMetadata> files = dataSource.listStoreFiles( true ) )
         {
             files.stream().filter( StoreFileMetadata::isLogFile )
-                 .map( StoreFileMetadata::file )
-                 .forEach( logFiles::add );
+                    .map( StoreFileMetadata::file )
+                    .forEach( logFiles::add );
         }
         return dbRule.restartDatabase( ( fs, storeDirectory ) ->
         {
@@ -1109,7 +1109,7 @@ public class BackupProtocolServiceIT
                 pageCache, fileSystem, backupDir.toFile(), Config.defaults(), monitors ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
-                      transactionStore.getTransactions( txId ) )
+                transactionStore.getTransactions( txId ) )
         {
             assertTrue( cursor.next() );
             assertEquals( txId, cursor.get().getCommitEntry().getTxId() );

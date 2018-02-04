@@ -100,7 +100,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     }
 
     @Documented( "Get a specific node property existence constraint.\n" +
-                 "Get a specific node property existence constraint for a label and a property." )
+            "Get a specific node property existence constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getLabelPropertyExistenceConstraint() throws JsonParseException
@@ -125,7 +125,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     }
 
     @Documented( "Get a specific relationship property existence constraint.\n" +
-                 "Get a specific relationship property existence constraint for a label and a property." )
+            "Get a specific relationship property existence constraint for a label and a property." )
     @Test
     @GraphDescription.Graph( nodes = {} )
     public void getRelationshipTypePropertyExistenceConstraint() throws JsonParseException

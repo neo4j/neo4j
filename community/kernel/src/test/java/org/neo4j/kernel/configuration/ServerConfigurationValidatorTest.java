@@ -20,13 +20,15 @@
 package org.neo4j.kernel.configuration;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+@EnableRuleMigrationSupport
 public class ServerConfigurationValidatorTest
 {
     @Rule

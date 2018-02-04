@@ -641,7 +641,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
 
         assertEmpty( henrik, "CALL test.createNode()" );
         assertSuccess( henrik, "CALL test.numNodes() YIELD count as count RETURN count",
-                 r -> assertKeyIs( r, "count", "4" ) );
+                r -> assertKeyIs( r, "count", "4" ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
 
@@ -765,7 +765,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         {
             File securityLog = new File( AuthScenariosInteractionTestBase.this.securityLog.getAbsolutePath() );
             try ( FileSystemAbstraction fileSystem = neo.fileSystem();
-                  BufferedReader bufferedReader = new BufferedReader(
+                    BufferedReader bufferedReader = new BufferedReader(
                             fileSystem.openAsReader( securityLog, Charsets.UTF_8 ) ) )
             {
                 lines = bufferedReader.lines().collect( java.util.stream.Collectors.toList() );

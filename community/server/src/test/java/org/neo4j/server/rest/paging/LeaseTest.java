@@ -19,18 +19,19 @@
  */
 package org.neo4j.server.rest.paging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.server.rest.paging.HexMatcher.containsOnlyHex;
+import static org.neo4j.time.Clocks.fakeClock;
 
 public class LeaseTest
 {
@@ -39,15 +40,17 @@ public class LeaseTest
     @Test
     public void shouldReturnHexIdentifierString()
     {
-        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, Clocks.fakeClock() );
+        Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, fakeClock() );
         assertThat( lease.getId(), containsOnlyHex() );
     }
 
-    @Test( expected = LeaseAlreadyExpiredException.class )
+    @Test
     public void shouldNotAllowLeasesInThePast()
     {
-        FakeClock clock = Clocks.fakeClock();
-        new Lease( mock( PagedTraverser.class ), oneMinuteInThePast(), clock );
+        assertThrows( LeaseAlreadyExpiredException.class, () -> {
+            FakeClock clock = fakeClock();
+            new Lease( mock( PagedTraverser.class ), oneMinuteInThePast(), clock );
+        } );
     }
 
     private long oneMinuteInThePast()
@@ -58,27 +61,27 @@ public class LeaseTest
     @Test
     public void leasesShouldExpire()
     {
-        FakeClock clock = Clocks.fakeClock();
+        FakeClock clock = fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
-        clock.forward( 10, TimeUnit.MINUTES );
+        clock.forward( 10, MINUTES );
         assertTrue( lease.expired() );
     }
 
     @Test
     public void shouldRenewLeaseForSamePeriod()
     {
-        FakeClock clock = Clocks.fakeClock();
+        FakeClock clock = fakeClock();
         Lease lease = new Lease( mock( PagedTraverser.class ), SIXTY_SECONDS, clock );
 
-        clock.forward( 30, TimeUnit.SECONDS );
+        clock.forward( 30, SECONDS );
 
         lease.getLeasedItemAndRenewLease(); // has side effect of renewing the
                                             // lease
 
-        clock.forward( 30, TimeUnit.SECONDS );
+        clock.forward( 30, SECONDS );
         assertFalse( lease.expired() );
 
-        clock.forward( 10, TimeUnit.MINUTES );
+        clock.forward( 10, MINUTES );
         assertTrue( lease.expired() );
     }
 }

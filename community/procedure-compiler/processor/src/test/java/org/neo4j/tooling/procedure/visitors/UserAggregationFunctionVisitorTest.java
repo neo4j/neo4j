@@ -155,9 +155,9 @@ public class UserAggregationFunctionVisitorTest
 
         assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
                 .contains( tuple( Diagnostic.Kind.ERROR,
-                "Unsupported return type <java.lang.Thread> of function defined in " +
-                "<org.neo4j.tooling.procedure.visitors.examples.UserAggregationFunctionsExamples." +
-                "StringAggregatorWithWrongResultReturnType#result>." ) );
+                        "Unsupported return type <java.lang.Thread> of function defined in " +
+                                "<org.neo4j.tooling.procedure.visitors.examples.UserAggregationFunctionsExamples." +
+                                "StringAggregatorWithWrongResultReturnType#result>." ) );
     }
 
     @Test

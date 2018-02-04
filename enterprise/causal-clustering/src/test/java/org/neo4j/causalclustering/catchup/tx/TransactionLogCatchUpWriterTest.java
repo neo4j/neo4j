@@ -166,10 +166,10 @@ public class TransactionLogCatchUpWriterTest
         long expectedTxId = fromTxId;
         LogVersionedStoreChannel versionedStoreChannel = logFiles.openForVersion( 0 );
         try ( ReadableLogChannel channel =
-                      new ReadAheadLogChannel( versionedStoreChannel, LogVersionBridge.NO_MORE_CHANNELS, 1024 ) )
+                new ReadAheadLogChannel( versionedStoreChannel, LogVersionBridge.NO_MORE_CHANNELS, 1024 ) )
         {
             try ( PhysicalTransactionCursor<ReadableLogChannel> txCursor =
-                          new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
+                    new PhysicalTransactionCursor<>( channel, new VersionAwareLogEntryReader<>() ) )
             {
                 while ( txCursor.next() )
                 {

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,13 +32,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestShutdownSequence
 {
     private GraphDatabaseService graphDb;
 
-    @Before
+    @BeforeEach
     public void createGraphDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();

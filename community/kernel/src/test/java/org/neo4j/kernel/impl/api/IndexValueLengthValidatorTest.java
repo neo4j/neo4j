@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.api;
 
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import static org.neo4j.kernel.impl.api.IndexValueLengthValidator.INSTANCE;
 
+@EnableRuleMigrationSupport
 public class IndexValueLengthValidatorTest
 {
     @Rule

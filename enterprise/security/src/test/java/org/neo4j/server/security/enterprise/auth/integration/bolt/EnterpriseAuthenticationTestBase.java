@@ -161,7 +161,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
         client.send( util.chunk(
                 run( "CALL dbms.security.createUser( '" + username + "', '" + createdUserPassword + "', false ) " +
-                     "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
+                        "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
                 pullAll() ) );
 
         assertThat( client, util.eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( longValue( 0L ) ) ) ) ) );

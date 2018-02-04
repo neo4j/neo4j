@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.ha.cluster.modeswitch;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.lock.SlaveStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class StatementLocksFactorySwitcherTest

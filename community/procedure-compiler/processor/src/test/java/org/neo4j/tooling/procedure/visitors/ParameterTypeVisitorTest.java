@@ -20,14 +20,15 @@
 package org.neo4j.tooling.procedure.visitors;
 
 import com.google.testing.compile.CompilationRule;
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
 import org.junit.Before;
 import org.junit.Rule;
 
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.testutils.TypeMirrorTestUtils;
 
 public class ParameterTypeVisitorTest extends TypeValidationTestSuite
 {

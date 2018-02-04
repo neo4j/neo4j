@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.load_balancing.filters;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
 import static java.util.Collections.unmodifiableSet;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class IdentityFilterTest

@@ -20,6 +20,10 @@
 package org.neo4j.graphalgo.path;
 
 import common.Neo4jAlgoTestCase;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,6 +60,29 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 @RunWith( Parameterized.class )
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        setUpGraphDb();
+    }
+
+    @Before
+    public void setUp()
+    {
+        setUpTransaction();
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception
+    {
+        tearDownGraphDb();
+    }
+
+    @After
+    public void tearDownTransactionAndGraph()
+    {
+        super.tearDownTransactionAndGraph();
+    }
 
     @Test
     public void pathToSelfReturnsZero()
@@ -238,8 +265,8 @@ public class DijkstraTest extends Neo4jAlgoTestCase
          */
 
         Node nodeA = graph.makeNode( "A" );
-                     graph.makeNode( "B" );
-                     graph.makeNode( "C" );
+        graph.makeNode( "B" );
+        graph.makeNode( "C" );
         Node nodeD = graph.makeNode( "D" );
 
         // Path "1"

@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,22 +31,26 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Random;
+import javax.annotation.Resource;
 
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class PhysicalFlushableChannelTest
 {
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
     @Test
     public void shouldBeAbleToWriteSmallNumberOfBytes() throws IOException
@@ -172,8 +178,8 @@ public class PhysicalFlushableChannelTest
         assertEquals( intValue, firstFileContents.getInt() );
         assertEquals( longValue, firstFileContents.getLong() );
         ByteBuffer secondFileContents = readFile( secondFile );
-        assertEquals( floatValue, secondFileContents.getFloat(), 0.0f );
-        assertEquals( doubleValue, secondFileContents.getDouble(), 0.0d );
+        assertEquals( secondFileContents.getFloat(), 0.0f, floatValue );
+        assertEquals( secondFileContents.getDouble(), 0.0d, doubleValue );
 
         byte[] readByteArray = new byte[byteArrayValue.length];
         secondFileContents.get( readByteArray );

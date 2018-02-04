@@ -118,8 +118,8 @@ public class QueryLoggerIT
     {
         // turn on query logging
         final Map<String, String> config = stringMap(
-            logs_directory.name(), logsDirectory.getPath(),
-            log_queries.name(), Settings.TRUE );
+                logs_directory.name(), logsDirectory.getPath(),
+                log_queries.name(), Settings.TRUE );
         EmbeddedInteraction db = new EmbeddedInteraction( databaseBuilder, config );
 
         // create users
@@ -350,9 +350,9 @@ public class QueryLoggerIT
         assertThat( "Expect to have more then one query log file.", queryLogs.length, greaterThanOrEqualTo( 2 ) );
 
         List<String> loggedQueries = Arrays.stream( queryLogs )
-                                           .map( this::readAllLinesSilent )
-                                           .flatMap( Collection::stream )
-                                           .collect( Collectors.toList() );
+                .map( this::readAllLinesSilent )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
         assertThat( "Expected log file to have at least one log entry", loggedQueries, hasSize( 100 ) );
 
         database = databaseBuilder.newGraphDatabase();
@@ -370,9 +370,9 @@ public class QueryLoggerIT
         assertThat( "Expect to have more then one query log file.", queryLogs.length, lessThan( 100 ) );
 
         loggedQueries = Arrays.stream( queryLogs )
-                              .map( this::readAllLinesSilent )
-                              .flatMap( Collection::stream )
-                              .collect( Collectors.toList() );
+                .map( this::readAllLinesSilent )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
         assertThat( "Expected log file to have at least one log entry", loggedQueries.size(), lessThanOrEqualTo( 202 ) );
     }
 

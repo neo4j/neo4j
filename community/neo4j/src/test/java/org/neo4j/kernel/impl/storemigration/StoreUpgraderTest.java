@@ -100,9 +100,9 @@ public class StoreUpgraderTest
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
-                                                .around( fileSystemRule )
-                                                .around( pageCacheRule )
-                                                .around( directory );
+            .around( fileSystemRule )
+            .around( pageCacheRule )
+            .around( directory );
 
     private File dbDirectory;
     private final FileSystemAbstraction fileSystem = fileSystemRule.get();
@@ -407,8 +407,8 @@ public class StoreUpgraderTest
     private List<File> migrationHelperDirs()
     {
         File[] tmpDirs = dbDirectory.listFiles( ( file, name ) -> file.isDirectory() &&
-                                                          (name.equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
-                name.startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
+                (name.equals( StoreUpgrader.MIGRATION_DIRECTORY ) ||
+                        name.startsWith( StoreUpgrader.MIGRATION_LEFT_OVERS_DIRECTORY )) );
         assertNotNull( "Some IO errors occurred", tmpDirs );
         return Arrays.asList( tmpDirs );
     }

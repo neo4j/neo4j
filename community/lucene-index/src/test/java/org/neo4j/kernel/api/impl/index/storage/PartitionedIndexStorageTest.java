@@ -171,15 +171,15 @@ public class PartitionedIndexStorageTest
     {
         // GIVEN
         try ( FileSystemAbstraction scramblingFs = new DefaultFileSystemAbstraction()
-                {
-                    @Override
-                    public File[] listFiles( File directory )
-                    {
-                        List<File> files = asList( super.listFiles( directory ) );
-                        Collections.shuffle( files );
-                        return files.toArray( new File[files.size()] );
-                    }
-                } )
+        {
+            @Override
+            public File[] listFiles( File directory )
+            {
+                List<File> files = asList( super.listFiles( directory ) );
+                Collections.shuffle( files );
+                return files.toArray( new File[files.size()] );
+            }
+        } )
         {
             PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
                     scramblingFs, testDir.graphDbDir(), false );

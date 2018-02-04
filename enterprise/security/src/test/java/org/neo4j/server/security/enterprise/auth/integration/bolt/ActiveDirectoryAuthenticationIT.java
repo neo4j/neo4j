@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -64,7 +64,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
  * code. Testing against a real Active Directory is not possible during a build phase, and therefor
  * we keep this disabled by default.
  */
-@Ignore
+@Disabled
 public class ActiveDirectoryAuthenticationIT
 {
     @Rule
@@ -128,7 +128,7 @@ public class ActiveDirectoryAuthenticationIT
     private TransportConnection client;
     private TransportTestUtil util;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         this.client = cf.newInstance();
@@ -136,7 +136,7 @@ public class ActiveDirectoryAuthenticationIT
         this.util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
-    @After
+    @AfterEach
     public void teardown() throws Exception
     {
         if ( client != null )

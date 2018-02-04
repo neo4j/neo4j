@@ -153,7 +153,7 @@ public final class SuppressOutput implements TestRule
 
     public <T> T call( Callable<T> callable ) throws Exception
     {
-        voices = captureVoices();
+        captureVoices();
         boolean failure = true;
         try
         {
@@ -210,7 +210,7 @@ public final class SuppressOutput implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                voices = captureVoices();
+                captureVoices();
                 boolean failure = true;
                 try
                 {
@@ -273,7 +273,7 @@ public final class SuppressOutput implements TestRule
         abstract void restore( boolean failure ) throws IOException;
     }
 
-    Voice[] captureVoices()
+    public void captureVoices()
     {
         Voice[] voices = new Voice[suppressibles.length];
         boolean ok = false;
@@ -292,10 +292,15 @@ public final class SuppressOutput implements TestRule
                 releaseVoices( voices, false );
             }
         }
-        return voices;
+        this.voices = voices;
     }
 
-    void releaseVoices( Voice[] voices, boolean failure )
+    public void releaseVoices( boolean failure )
+    {
+        releaseVoices( voices, failure );
+    }
+
+    public void releaseVoices( Voice[] voices, boolean failure )
     {
         List<Throwable> failures = null;
         try

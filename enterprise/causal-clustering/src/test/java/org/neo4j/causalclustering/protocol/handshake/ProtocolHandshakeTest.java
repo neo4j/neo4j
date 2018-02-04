@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -29,9 +29,16 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.messaging.Channel;
 import org.neo4j.causalclustering.protocol.Protocol;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.causalclustering.protocol.Protocol.Identifier.CATCHUP;
+import static org.neo4j.causalclustering.protocol.Protocol.Identifier.RAFT;
+import static org.neo4j.causalclustering.protocol.Protocol.Protocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.RAFT_3;
 
 public class ProtocolHandshakeTest
 {
@@ -40,12 +47,12 @@ public class ProtocolHandshakeTest
     private HandshakeServer handshakeServer;
     private FakeChannelWrapper clientChannel;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         handshakeClient = new HandshakeClient();
         protocolRepository = new ProtocolRepository( TestProtocols.values() );
-        handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), protocolRepository, Protocol.Protocols.Identifier.RAFT );
+        handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), protocolRepository, RAFT );
         clientChannel = new FakeServerChannel( handshakeServer );
     }
 
@@ -53,7 +60,7 @@ public class ProtocolHandshakeTest
     public void shouldSuccessfullyHandshakeKnownProtocolOnClient() throws Exception
     {
         // when
-        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate( clientChannel, protocolRepository, TestProtocols.Identifier.RAFT );
+        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate( clientChannel, protocolRepository, RAFT );
         handshakeServer.protocolStackFuture();
 
         // then
@@ -66,7 +73,7 @@ public class ProtocolHandshakeTest
     public void shouldSuccessfullyHandshakeKnownProtocolOnServer() throws Exception
     {
         // when
-        handshakeClient.initiate( clientChannel, protocolRepository, TestProtocols.Identifier.RAFT );
+        handshakeClient.initiate( clientChannel, protocolRepository, RAFT );
         CompletableFuture<ProtocolStack> serverHandshakeFuture = handshakeServer.protocolStackFuture();
 
         // then
@@ -75,44 +82,48 @@ public class ProtocolHandshakeTest
         assertThat( serverProtocol, equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
-    @Test( expected = ClientHandshakeException.class )
-    public void shouldFailHandshakeForUnknownProtocolOnClient() throws Throwable
+    @Test
+    public void shouldFailHandshakeForUnknownProtocolOnClient()
     {
-        // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
-        CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( clientChannel, protocolRepository, TestProtocols.Identifier.CATCHUP );
+        assertThrows( ClientHandshakeException.class, () -> {
+            // when
+            protocolRepository = new ProtocolRepository( new Protocol[]{RAFT_1} );
+            CompletableFuture<ProtocolStack> clientHandshakeFuture =
+                    handshakeClient.initiate( clientChannel, protocolRepository, CATCHUP );
 
-        // then
-        try
-        {
-            clientHandshakeFuture.get( 1, TimeUnit.SECONDS );
-        }
-        catch ( ExecutionException ex )
-        {
-            throw ex.getCause();
-        }
+            // then
+            try
+            {
+                clientHandshakeFuture.get( 1, SECONDS );
+            }
+            catch ( ExecutionException ex )
+            {
+                throw ex.getCause();
+            }
+        } );
     }
 
-    @Test( expected = ServerHandshakeException.class )
-    public void shouldFailHandshakeForUnknownProtocolOnServer() throws Throwable
+    @Test
+    public void shouldFailHandshakeForUnknownProtocolOnServer()
     {
-        // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
-        handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), protocolRepository, Protocol.Protocols.Identifier.RAFT );
-        clientChannel = new FakeServerChannel( handshakeServer );
-        handshakeClient.initiate( clientChannel, protocolRepository, Protocol.Identifier.CATCHUP );
-        CompletableFuture<ProtocolStack> serverHandshakeFuture = handshakeServer.protocolStackFuture();
+        assertThrows( ServerHandshakeException.class, () -> {
+            // when
+            protocolRepository = new ProtocolRepository( new Protocol[]{RAFT_1} );
+            handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), protocolRepository, RAFT );
+            clientChannel = new FakeServerChannel( handshakeServer );
+            handshakeClient.initiate( clientChannel, protocolRepository, CATCHUP );
+            CompletableFuture<ProtocolStack> serverHandshakeFuture = handshakeServer.protocolStackFuture();
 
-        // then
-        try
-        {
-            serverHandshakeFuture.get( 1, TimeUnit.SECONDS );
-        }
-        catch ( ExecutionException ex )
-        {
-            throw ex.getCause();
-        }
+            // then
+            try
+            {
+                serverHandshakeFuture.get( 1, SECONDS );
+            }
+            catch ( ExecutionException ex )
+            {
+                throw ex.getCause();
+            }
+        } );
     }
 
     abstract class FakeChannelWrapper implements Channel
@@ -162,7 +173,7 @@ public class ProtocolHandshakeTest
         public CompletableFuture<Void> write( Object msg )
         {
             ((ClientMessage) msg).dispatch( handshakeClient );
-            return CompletableFuture.completedFuture( null );
+            return completedFuture( null );
         }
     }
 
@@ -180,7 +191,7 @@ public class ProtocolHandshakeTest
         public CompletableFuture<Void> write( Object msg )
         {
             ((ServerMessage) msg).dispatch( handshakeServer );
-            return CompletableFuture.completedFuture( null );
+            return completedFuture( null );
         }
     }
 }

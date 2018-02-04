@@ -20,10 +20,9 @@
 package org.neo4j.kernel.impl.core;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,35 +44,28 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.lang.Math.pow;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class BigStoreIT implements RelationshipType
 {
     private static final RelationshipType OTHER_TYPE = RelationshipType.withName( "OTHER" );
 
     private static final String PATH = "target/var/big";
     private GraphDatabaseService db;
-    @Rule
-    public TestName testName = new TestName()
-    {
-        @Override
-        public String getMethodName()
-        {
-            return BigStoreIT.this.getClass().getSimpleName() + "#" + super.getMethodName();
-        }
-    };
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
-    @Before
+    @BeforeEach
     public void doBefore()
     {
         // Delete before just to be sure

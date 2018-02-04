@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +37,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestStoreAccess
 {
@@ -54,13 +54,13 @@ public class TestStoreAccess
     {
         try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore() )
         {
-            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            assertTrue( isUnclean( snapshot ), "Store should be unclean" );
             File messages = new File( storeDir, "debug.log" );
             snapshot.deleteFile( messages );
 
             PageCache pageCache = pageCacheRule.getPageCache( snapshot );
             new StoreAccess( snapshot, pageCache, storeDir, Config.defaults() ).initialize().close();
-            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            assertTrue( isUnclean( snapshot ), "Store should be unclean" );
         }
     }
 

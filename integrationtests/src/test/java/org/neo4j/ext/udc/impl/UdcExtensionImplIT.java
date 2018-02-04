@@ -25,10 +25,10 @@ import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.localserver.LocalServerTestBase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +42,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import javax.annotation.Resource;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.concurrent.RecentK;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.mockito.matcher.RegexMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
@@ -63,11 +65,11 @@ import org.neo4j.udc.UsageDataKeys;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
@@ -85,21 +87,22 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  * GraphDatabase is instantiated, as part of
  * {@link org.neo4j.helpers.Service#load}.
  */
+@ExtendWith( TestDirectoryExtension.class )
 public class UdcExtensionImplIT extends LocalServerTestBase
 {
     private static final String VersionPattern = "(\\d\\.\\d+(([.-]).*)?)|(dev)";
     private static final Condition<Integer> IS_ZERO = value -> value == 0;
     private static final Condition<Integer> IS_GREATER_THAN_ZERO = value -> value > 0;
 
-    @Rule
-    public TestDirectory path = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory path;
 
     private PingerHandler handler;
     private Map<String,String> config;
     private GraphDatabaseService graphdb;
 
     @Override
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         super.setUp();
@@ -121,7 +124,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         blockUntilServerAvailable( new URL( "http", serviceHostName, servicePort, "/" ) );
     }
 
-    @After
+    @AfterEach
     public void cleanup() throws IOException
     {
         cleanup( graphdb );
@@ -485,7 +488,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
                 return;
             }
         }
-        fail();
+        fail("Failure was expected");
     }
 
     private GraphDatabaseService createDatabase()

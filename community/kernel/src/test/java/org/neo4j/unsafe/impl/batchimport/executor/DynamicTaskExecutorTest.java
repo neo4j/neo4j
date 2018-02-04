@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.executor;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
@@ -30,24 +30,19 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.rule.RepeatRule.Repeat;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy.Park;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class DynamicTaskExecutorTest
 {
     private static final Park PARK = new ParkStrategy.Park( 1, MILLISECONDS );
-
-    @Rule
-    public final RepeatRule repeater = new RepeatRule();
 
     @Test
     public void shouldExecuteTasksInParallel()
@@ -303,8 +298,7 @@ public class DynamicTaskExecutorTest
         executor.close();
     }
 
-    @Repeat( times = 10 )
-    @Test
+    @RepeatedTest( 10 )
     public void shouldCopeWithConcurrentIncrementOfProcessorsAndShutdown() throws Throwable
     {
         // GIVEN

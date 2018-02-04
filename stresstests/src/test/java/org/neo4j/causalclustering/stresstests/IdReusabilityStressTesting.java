@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.security.SecureRandom;
@@ -64,7 +64,7 @@ import static java.lang.Integer.parseInt;
 import static java.lang.Long.parseLong;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 import static org.neo4j.helper.StressTestingHelper.fromEnv;
@@ -84,7 +84,7 @@ public class IdReusabilityStressTesting
     private final DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
     private DefaultFileSystemAbstraction fs;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         fs = defaultFileSystemRule.get();

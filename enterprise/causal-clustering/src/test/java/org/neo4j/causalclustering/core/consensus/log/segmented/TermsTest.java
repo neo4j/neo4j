@@ -19,13 +19,13 @@
  */
 package org.neo4j.causalclustering.core.consensus.log.segmented;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.function.LongFunction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TermsTest
 {
@@ -92,7 +92,7 @@ public class TermsTest
         {
             // when
             terms.append( prevIndex, term );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {
@@ -107,7 +107,7 @@ public class TermsTest
         {
             // when
             terms.append( prevIndex + 5, term );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {
@@ -138,7 +138,7 @@ public class TermsTest
         try
         {
             terms.append( prevIndex + 7, term + 1 );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {
@@ -157,7 +157,7 @@ public class TermsTest
         try
         {
             terms.truncate( -1 );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {
@@ -175,7 +175,7 @@ public class TermsTest
         try
         {
             terms.truncate( 4 );
-            fail();
+            fail("Failure was expected");
         }
         catch ( IllegalStateException e )
         {
@@ -504,7 +504,7 @@ public class TermsTest
     {
         for ( long index = from; index < to; index++ )
         {
-            assertEquals( "For index: " + index, (long) expectedTermFunction.apply( index ), terms.get( index ) );
+            assertEquals( (long) expectedTermFunction.apply( index ), terms.get( index ), "For index: " + index );
         }
     }
 

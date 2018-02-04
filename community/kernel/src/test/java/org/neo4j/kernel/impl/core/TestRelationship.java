@@ -45,6 +45,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
 
 public class TestRelationship extends AbstractNeo4jTestCase
@@ -817,14 +818,14 @@ public class TestRelationship extends AbstractNeo4jTestCase
         int count = 0;
         for ( Relationship ignore : hub.getRelationships() )
         {
-            count += Iterables.count( hub.getRelationships() );
+            count += count( hub.getRelationships() );
         }
         assertEquals( 40000, count );
 
         count = 0;
         for ( @SuppressWarnings( "unused" ) Relationship r1 : hub.getRelationships() )
         {
-            count += Iterables.count( hub.getRelationships() );
+            count += count( hub.getRelationships() );
         }
         assertEquals( 40000, count );
         commit();
@@ -848,9 +849,9 @@ public class TestRelationship extends AbstractNeo4jTestCase
             node1.createRelationshipTo( node2, TEST );
             expectedCount++;
         }
-        assertEquals( expectedCount, Iterables.count( node1.getRelationships() ) );
+        assertEquals( expectedCount, count( node1.getRelationships() ) );
         newTransaction();
-        assertEquals( expectedCount, Iterables.count( node1.getRelationships() ) );
+        assertEquals( expectedCount, count( node1.getRelationships() ) );
     }
 
     @Test
@@ -886,7 +887,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
     {
         Node node = getGraphDb().createNode();
         node.createRelationshipTo( getGraphDb().createNode(), TEST );
-        assertEquals( 1, Iterables.count( node.getRelationships() ) );
+        assertEquals( 1, count( node.getRelationships() ) );
     }
 
     @Test
@@ -905,7 +906,7 @@ public class TestRelationship extends AbstractNeo4jTestCase
         node.createRelationshipTo( getGraphDb().createNode(), withName( "FOO" ) );
 
         // when
-        long relationships = Iterables.count( node.getRelationships( withName( "FOO" ), withName( "FOO" ) ) );
+        long relationships = count( node.getRelationships( withName( "FOO" ), withName( "FOO" ) ) );
 
         // then
         assertEquals( 1, relationships );
@@ -932,8 +933,8 @@ public class TestRelationship extends AbstractNeo4jTestCase
         long two;
         try ( Transaction tx = db.beginTx() )
         {
-            one = Iterables.count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
-            two = Iterables.count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+            one = count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
+            two = count( node.getRelationships( MyRelTypes.TEST, Direction.OUTGOING ) );
             tx.success();
         }
 

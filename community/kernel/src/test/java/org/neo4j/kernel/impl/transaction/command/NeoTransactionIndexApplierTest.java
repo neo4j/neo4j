@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Collections.singleton;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -63,7 +63,7 @@ public class NeoTransactionIndexApplierTest
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );

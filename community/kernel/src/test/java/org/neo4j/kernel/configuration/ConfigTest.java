@@ -20,19 +20,19 @@
 package org.neo4j.kernel.configuration;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 import org.mockito.InOrder;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
+import javax.annotation.Resource;
 
 import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Dynamic;
@@ -43,25 +43,48 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.empty;
+import static java.util.Optional.of;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.rules.ExpectedException.none;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Config.builder;
+import static org.neo4j.kernel.configuration.Config.fromFile;
+import static org.neo4j.kernel.configuration.Config.fromSettings;
+import static org.neo4j.kernel.configuration.ConfigTest.MyMigratingSettings.newer;
+import static org.neo4j.kernel.configuration.ConfigTest.MySettingsWithDefaults.boolSetting;
+import static org.neo4j.kernel.configuration.ConfigTest.MySettingsWithDefaults.hello;
+import static org.neo4j.kernel.configuration.ConfigTest.MySettingsWithDefaults.oldHello;
+import static org.neo4j.kernel.configuration.ConfigTest.MySettingsWithDefaults.oldSetting;
+import static org.neo4j.kernel.configuration.ConfigTest.MySettingsWithDefaults.secretSetting;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class ConfigTest
 {
     private static final String ORIGIN = "test";
@@ -91,11 +114,11 @@ public class ConfigTest
     {
         public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
 
         @Internal
         @DocumentedDefaultValue( "<documented default value>" )
-        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, TRUE );
 
         @Deprecated
         @ReplacedBy( "hello" )
@@ -110,12 +133,12 @@ public class ConfigTest
         @Override
         public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
         {
-            if ( !config.get( MySettingsWithDefaults.hello ).equals( "neo4j" ) )
+            if ( !config.get( hello ).equals( "neo4j" ) )
             {
                 throw new InvalidSettingException( "Setting hello has to set to neo4j" );
             }
 
-            return Collections.emptyMap();
+            return emptyMap();
         }
     }
 
@@ -124,27 +147,26 @@ public class ConfigTest
 
     private static Config Config()
     {
-        return Config( Collections.emptyMap() );
+        return Config( emptyMap() );
     }
 
     private static Config Config( Map<String,String> params )
     {
-        return Config.fromSettings( params )
-                     .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+        return fromSettings( params ).withConfigClasses( asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
     }
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     @Rule
-    public ExpectedException expect = ExpectedException.none();
+    public ExpectedException expect = none();
 
     @Test
     public void shouldApplyDefaults()
     {
         Config config = Config();
 
-        assertThat( config.get( MySettingsWithDefaults.hello ), is( "Hello, World!" ) );
+        assertThat( config.get( hello ), is( "Hello, World!" ) );
     }
 
     @Test
@@ -154,14 +176,16 @@ public class ConfigTest
         Config config = Config( stringMap( "old", "hello!" ) );
 
         // Then
-        assertThat( config.get( MyMigratingSettings.newer ), is( "hello!" ) );
+        assertThat( config.get( newer ), is( "hello!" ) );
     }
 
-    @Test( expected = InvalidSettingException.class )
+    @Test
     public void shouldNotAllowSettingInvalidValues()
     {
-        Config( stringMap( MySettingsWithDefaults.boolSetting.name(), "asd" ) );
-        fail( "Expected validation to fail." );
+        assertThrows( InvalidSettingException.class, () -> {
+            Config( stringMap( boolSetting.name(), "asd" ) );
+            fail( "Expected validation to fail." );
+        } );
     }
 
     @Test
@@ -171,28 +195,27 @@ public class ConfigTest
         Config config = Config();
 
         // When
-        config.augment( MySettingsWithDefaults.boolSetting, Settings.FALSE );
-        config.augment( MySettingsWithDefaults.hello, "Bye" );
+        config.augment( boolSetting, FALSE );
+        config.augment( hello, "Bye" );
 
         // Then
-        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
-        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
+        assertThat( config.get( boolSetting ), equalTo( false ) );
+        assertThat( config.get( hello ), equalTo( "Bye" ) );
     }
 
     @Test
     public void augmentAnotherConfig()
     {
         Config config = Config();
-        config.augment( MySettingsWithDefaults.hello, "Hi" );
+        config.augment( hello, "Hi" );
 
         Config anotherConfig = Config();
-        anotherConfig.augment( stringMap( MySettingsWithDefaults.boolSetting.name(),
-                Settings.FALSE, MySettingsWithDefaults.hello.name(), "Bye" ) );
+        anotherConfig.augment( stringMap( boolSetting.name(), FALSE, hello.name(), "Bye" ) );
 
         config.augment( anotherConfig );
 
-        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
-        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
+        assertThat( config.get( boolSetting ), equalTo( false ) );
+        assertThat( config.get( hello ), equalTo( "Bye" ) );
     }
 
     @Test
@@ -204,10 +227,8 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
-        Config config = Config.fromFile( confFile )
-                              .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                              .withSetting( "ha.jibberish", "baah" )
-                              .withSetting( "dbms.jibberish", "booh" ).build();
+        Config config = fromFile( confFile ).withSetting( strict_config_validation, "false" )
+                .withSetting( "ha.jibberish", "baah" ).withSetting( "dbms.jibberish", "booh" ).build();
 
         // When
         config.setLogger( log );
@@ -220,28 +241,23 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldLogDeprecationWarnings()
-            throws Exception
+    public void shouldLogDeprecationWarnings() throws Exception
     {
         // Given
         Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
-        Config config = Config.fromFile( confFile )
-                              .withSetting( MySettingsWithDefaults.oldHello, "baah" )
-                              .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
-                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings,
-                                      new GraphDatabaseSettings() ) )
-                              .build();
+        Config config = fromFile( confFile ).withSetting( oldHello, "baah" ).withSetting( oldSetting, "booh" )
+                .withConfigClasses( asList( mySettingsWithDefaults, myMigratingSettings, new GraphDatabaseSettings() ) )
+                .build();
 
         // When
         config.setLogger( log );
 
         // Then
-        verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
-                MySettingsWithDefaults.hello.name() );
-        verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
+        verify( log ).warn( "%s is deprecated. Replaced by %s", oldHello.name(), hello.name() );
+        verify( log ).warn( "%s is deprecated.", oldSetting.name() );
         verifyNoMoreInteractions( log );
     }
 
@@ -249,52 +265,40 @@ public class ConfigTest
     public void shouldSetInternalParameter()
     {
         // Given
-        Config config = Config.builder()
-                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
-                              .build();
+        Config config = builder().withSetting( secretSetting, "false" ).withSetting( hello, "ABC" )
+                .withConfigClasses( asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         // Then
-        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
-        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+        assertTrue( config.getConfigValues().get( secretSetting.name() ).internal() );
+        assertFalse( config.getConfigValues().get( hello.name() ).internal() );
     }
 
     @Test
     public void shouldSetDocumentedDefaultValue()
     {
         // Given
-        Config config = Config.builder()
-                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                              .withConfigClasses( Arrays.asList( new MySettingsWithDefaults(), myMigratingSettings ) )
-                              .build();
+        Config config = builder().withSetting( secretSetting, "false" ).withSetting( hello, "ABC" )
+                .withConfigClasses( asList( new MySettingsWithDefaults(), myMigratingSettings ) ).build();
 
         // Then
-        assertEquals( Optional.of( "<documented default value>" ),
-                config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() )
-                      .documentedDefaultValue() );
-        assertEquals( Optional.empty(),
-                config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).documentedDefaultValue() );
+        assertEquals( of( "<documented default value>" ),
+                config.getConfigValues().get( secretSetting.name() ).documentedDefaultValue() );
+        assertEquals( empty(), config.getConfigValues().get( hello.name() ).documentedDefaultValue() );
     }
 
     @Test
     public void validatorsShouldBeCalledWhenBuilding()
     {
         // Should not throw
-        Config.builder()
-              .withSetting( MySettingsWithDefaults.hello, "neo4j" )
-              .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
-              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+        builder().withSetting( hello, "neo4j" ).withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
+                .withConfigClasses( asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         expect.expect( InvalidSettingException.class );
         expect.expectMessage( "Setting hello has to set to neo4j" );
 
         // Should throw
-        Config.builder()
-              .withSetting( MySettingsWithDefaults.hello, "not-neo4j" )
-              .withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
-              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+        builder().withSetting( hello, "not-neo4j" ).withValidator( new HelloHasToBeNeo4jConfigurationValidator() )
+                .withConfigClasses( asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
     }
 
     @Group( "a.b.c" )
@@ -309,15 +313,12 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
-        Config config = Config.fromFile( confFile )
-                              .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                              .withSetting( "a.b.c.first.jibberish", "baah" )
-                              .withSetting( "a.b.c.second.jibberish", "baah" )
-                              .withSetting( "a.b.c.third.jibberish", "baah" )
-                              .withSetting( "a.b.c.forth.jibberish", "baah" ).build();
+        Config config = fromFile( confFile ).withSetting( strict_config_validation, "false" )
+                .withSetting( "a.b.c.first.jibberish", "baah" ).withSetting( "a.b.c.second.jibberish", "baah" )
+                .withSetting( "a.b.c.third.jibberish", "baah" ).withSetting( "a.b.c.forth.jibberish", "baah" ).build();
 
         Set<String> identifiers = config.identifiersFromGroup( GroupedSetting.class );
-        Set<String> expectedIdentifiers = new HashSet<>( Arrays.asList( "first", "second", "third", "forth" ) );
+        Set<String> expectedIdentifiers = new HashSet<>( asList( "first", "second", "third", "forth" ) );
 
         assertEquals( expectedIdentifiers, identifiers );
     }
@@ -326,17 +327,17 @@ public class ConfigTest
     public void isConfigured()
     {
         Config config = Config();
-        assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
-        config.augment( MySettingsWithDefaults.hello, "Hi" );
-        assertTrue( config.isConfigured( MySettingsWithDefaults.hello ) );
+        assertFalse( config.isConfigured( hello ) );
+        config.augment( hello, "Hi" );
+        assertTrue( config.isConfigured( hello ) );
     }
 
     @Test
     public void isConfiguredShouldNotReturnTrueEvenThoughDefaultValueExists()
     {
         Config config = Config();
-        assertFalse( config.isConfigured( MySettingsWithDefaults.hello ) );
-        assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
+        assertFalse( config.isConfigured( hello ) );
+        assertEquals( "Hello, World!", config.get( hello ) );
     }
 
     @Test
@@ -344,12 +345,8 @@ public class ConfigTest
     {
         Connector httpConnector = new HttpConnector();
         Connector boltConnector = new BoltConnector();
-        Config config = Config.builder()
-                              .withSetting( httpConnector.enabled, "true" )
-                              .withSetting( httpConnector.type, Connector.ConnectorType.HTTP.name() )
-                              .withSetting( boltConnector.enabled, "true" )
-                              .withSetting( boltConnector.type, Connector.ConnectorType.BOLT.name() )
-                              .withConnectorsDisabled().build();
+        Config config = builder().withSetting( httpConnector.enabled, "true" ).withSetting( httpConnector.type, HTTP.name() )
+                .withSetting( boltConnector.enabled, "true" ).withSetting( boltConnector.type, BOLT.name() ).withConnectorsDisabled().build();
         assertFalse( config.get( httpConnector.enabled ) );
         assertFalse( config.get( boltConnector.enabled ) );
     }
@@ -358,15 +355,15 @@ public class ConfigTest
     public void augmentDefaults()
     {
         Config config = Config();
-        assertEquals( "Hello, World!", config.get( MySettingsWithDefaults.hello ) );
-        config.augmentDefaults( MySettingsWithDefaults.hello, "new default" );
-        assertEquals( "new default", config.get( MySettingsWithDefaults.hello ) );
+        assertEquals( "Hello, World!", config.get( hello ) );
+        config.augmentDefaults( hello, "new default" );
+        assertEquals( "new default", config.get( hello ) );
     }
 
     public static class MyDynamicSettings implements LoadableConfig
     {
         @Dynamic
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, TRUE );
     }
 
     @Test
@@ -374,7 +371,7 @@ public class ConfigTest
     {
         String settingName = MyDynamicSettings.boolSetting.name();
         String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
 
         Log log = mock( Log.class );
         config.setLogger( log );
@@ -393,18 +390,17 @@ public class ConfigTest
     @Test
     public void updateDynamicShouldThrowIfSettingIsNotDynamic()
     {
-        Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
+        Config config = builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
-        config.updateDynamicSetting( MySettingsWithDefaults.hello.name(), "hello", ORIGIN );
+        config.updateDynamicSetting( hello.name(), "hello", ORIGIN );
     }
 
     @Test
     public void updateDynamicShouldInformRegisteredListeners()
     {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         AtomicInteger counter = new AtomicInteger( 0 );
-        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( previous, update ) ->
-        {
+        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( previous, update ) -> {
             counter.getAndIncrement();
             assertTrue( previous );
             assertFalse( update );
@@ -416,7 +412,7 @@ public class ConfigTest
     @Test
     public void updateDynamicShouldNotAllowInvalidSettings()
     {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         expect.expect( InvalidSettingException.class );
         config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "this is not a boolean", ORIGIN );
     }
@@ -424,18 +420,17 @@ public class ConfigTest
     @Test
     public void registeringUpdateListenerOnNonDynamicSettingMustThrow()
     {
-        Config config = Config.builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
+        Config config = builder().withConfigClasses( singletonList( mySettingsWithDefaults ) ).build();
         expect.expect( IllegalArgumentException.class );
-        config.registerDynamicUpdateListener( MySettingsWithDefaults.hello, ( a, b ) -> fail( "never called" ) );
+        config.registerDynamicUpdateListener( hello, ( a, b ) -> fail( "never called" ) );
     }
 
     @Test
     public void updateDynamicShouldLogExceptionsFromUpdateListeners()
     {
-        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        Config config = builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
         IllegalStateException exception = new IllegalStateException( "Boo" );
-        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( a, b ) ->
-        {
+        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, ( a, b ) -> {
             throw exception;
         } );
         Log log = mock( Log.class );
@@ -445,6 +440,6 @@ public class ConfigTest
         config.updateDynamicSetting( settingName, "", ORIGIN );
 
         verify( log ).error( "Failure when notifying listeners after dynamic setting change; " +
-                             "new setting might not have taken effect: Boo", exception );
+                "new setting might not have taken effect: Boo", exception );
     }
 }

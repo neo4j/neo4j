@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,9 +34,9 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.format.highlimit.BaseHighLimitRecordFormat.NULL;
 
 public class RelationshipGroupRecordFormatTest
@@ -46,7 +46,7 @@ public class RelationshipGroupRecordFormatTest
     private FixedLinkedStubPageCursor pageCursor;
     private ConstantIdSequence idSequence;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         recordFormat = new RelationshipGroupRecordFormat();
@@ -54,7 +54,7 @@ public class RelationshipGroupRecordFormatTest
         idSequence = new ConstantIdSequence();
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         pageCursor.close();
@@ -70,7 +70,7 @@ public class RelationshipGroupRecordFormatTest
 
         writeReadRecord( source, target );
 
-        assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+        assertTrue( target.isUseFixedReferences(), "Record should use fixed reference format." );
         verifySame( source, target);
     }
 
@@ -102,7 +102,8 @@ public class RelationshipGroupRecordFormatTest
 
         writeReadRecord( source, target, RelationshipGroupRecordFormat.FIXED_FORMAT_RECORD_SIZE - 1 );
 
-        assertFalse( "Record should use variable length reference if format record is too small.", target.isUseFixedReferences() );
+        assertFalse( target.isUseFixedReferences(),
+                "Record should use variable length reference if format record is too small." );
         verifySame( source, target);
     }
 
@@ -116,7 +117,7 @@ public class RelationshipGroupRecordFormatTest
 
         writeReadRecord( source, target, RelationshipGroupRecordFormat.FIXED_FORMAT_RECORD_SIZE );
 
-        assertTrue( "Record should use fixed reference if can fit in format record.", target.isUseFixedReferences() );
+        assertTrue( target.isUseFixedReferences(), "Record should use fixed reference if can fit in format record." );
         verifySame( source, target);
     }
 
@@ -138,11 +139,11 @@ public class RelationshipGroupRecordFormatTest
 
             if ( nullPoisoned )
             {
-                assertTrue( "Record should use fixed reference format.", target.isUseFixedReferences() );
+                assertTrue( target.isUseFixedReferences(), "Record should use fixed reference format." );
             }
             else
             {
-                assertFalse( "Record should use variable length reference format.", target.isUseFixedReferences() );
+                assertFalse( target.isUseFixedReferences(), "Record should use variable length reference format." );
             }
             verifySame( source, target );
             Collections.rotate( references, 1 );
@@ -162,13 +163,13 @@ public class RelationshipGroupRecordFormatTest
 
     private void verifySame( RelationshipGroupRecord recordA, RelationshipGroupRecord recordB )
     {
-        assertEquals( "Types should be equal.", recordA.getType(), recordB.getType() );
-        assertEquals( "First In references should be equal.", recordA.getFirstIn(), recordB.getFirstIn() );
-        assertEquals( "First Loop references should be equal.", recordA.getFirstLoop(), recordB.getFirstLoop() );
-        assertEquals( "First Out references should be equal.", recordA.getFirstOut(), recordB.getFirstOut() );
-        assertEquals( "Next references should be equal.", recordA.getNext(), recordB.getNext() );
-        assertEquals( "Prev references should be equal.", recordA.getPrev(), recordB.getPrev() );
-        assertEquals( "Owning node references should be equal.", recordA.getOwningNode(), recordB.getOwningNode() );
+        assertEquals( recordA.getType(), recordB.getType(), "Types should be equal." );
+        assertEquals( recordA.getFirstIn(), recordB.getFirstIn(), "First In references should be equal." );
+        assertEquals( recordA.getFirstLoop(), recordB.getFirstLoop(), "First Loop references should be equal." );
+        assertEquals( recordA.getFirstOut(), recordB.getFirstOut(), "First Out references should be equal." );
+        assertEquals( recordA.getNext(), recordB.getNext(), "Next references should be equal." );
+        assertEquals( recordA.getPrev(), recordB.getPrev(), "Prev references should be equal." );
+        assertEquals( recordA.getOwningNode(), recordB.getOwningNode(), "Owning node references should be equal." );
     }
 
     private void writeReadRecord( RelationshipGroupRecord source, RelationshipGroupRecord target ) throws java.io.IOException

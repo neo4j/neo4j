@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.causalclustering;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import javax.ws.rs.core.Response;
@@ -32,7 +32,7 @@ import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.OK;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +41,7 @@ public class CoreStatusTest
     private CoreGraphDatabase db;
     private CausalClusteringStatus status;
 
-    @Before
+    @BeforeEach
     public void setup() throws Exception
     {
         OutputFormat output = new OutputFormat( new JsonFormat(), new URI( "http://base.local:1234/" ), null );

@@ -19,13 +19,14 @@
  */
 package org.neo4j.server.rest.repr;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,22 +34,23 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class CypherResultRepresentationTest
 {
-    @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule database;
 
     @Test
     @SuppressWarnings( "unchecked" )
@@ -104,7 +106,7 @@ public class CypherResultRepresentationTest
                 /*includeStats=*/false, false ) );
 
         // Then
-        assertFalse( "Didn't expect to see a plan here", serialized.containsKey( "plan" ) );
+        assertFalse( serialized.containsKey( "plan" ), "Didn't expect to see a plan here" );
     }
 
     @Test

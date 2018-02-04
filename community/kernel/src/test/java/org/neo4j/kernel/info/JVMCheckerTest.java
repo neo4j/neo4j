@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.info;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.BufferingLog;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_VERSION_WARNING;
 import static org.neo4j.kernel.info.JvmChecker.INCOMPATIBLE_JVM_WARNING;
 

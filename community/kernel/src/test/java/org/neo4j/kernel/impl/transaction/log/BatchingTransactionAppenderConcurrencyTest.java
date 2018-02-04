@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
@@ -68,9 +68,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
@@ -84,13 +84,13 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private static ExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpExecutor()
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownExecutor()
     {
         executor.shutdown();
@@ -116,7 +116,7 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private final BlockingQueue<ChannelCommand> channelCommandQueue = new LinkedBlockingQueue<>( 2 );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );

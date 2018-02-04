@@ -19,13 +19,14 @@
  */
 package org.neo4j.collection.primitive;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PrimitiveLongArrayQueueTest
 {
@@ -70,10 +71,10 @@ public class PrimitiveLongArrayQueueTest
         }
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void failToRemoveElementFromNewEmptyQueue()
     {
-        createQueue().dequeue();
+        assertThrows( IllegalStateException.class, () -> createQueue().dequeue() );
     }
 
     @Test
@@ -176,10 +177,10 @@ public class PrimitiveLongArrayQueueTest
         assertFalse( iterator.hasNext() );
     }
 
-    @Test( expected = NoSuchElementException.class )
+    @Test
     public void failToGetNextOnEmptyQueueIterator()
     {
-        createQueue().iterator().next();
+        assertThrows( NoSuchElementException.class, () -> createQueue().iterator().next() );
     }
 
     @Test
@@ -203,10 +204,10 @@ public class PrimitiveLongArrayQueueTest
         assertTrue( queue.isEmpty() );
     }
 
-    @Test( expected = AssertionError.class )
+    @Test
     public void doNotAllowCreationOfQueueWithRandomCapacity()
     {
-        new PrimitiveLongArrayQueue( 7 );
+        assertThrows( AssertionError.class, () -> new PrimitiveLongArrayQueue( 7 ) );
     }
 
     private PrimitiveLongArrayQueue createQueue()

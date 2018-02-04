@@ -248,7 +248,7 @@ public class FileRoleRepositoryTest
         // First line is correctly formatted, second line has an extra field
         FileRepositorySerializer.writeToFile( fs, roleFile, UTF8.encode(
                 "neo4j:admin\n" +
-                "admin:admin:\n" ) );
+                        "admin:admin:\n" ) );
 
         // When
         roleRepository = new FileRoleRepository( fs, roleFile, logProvider );

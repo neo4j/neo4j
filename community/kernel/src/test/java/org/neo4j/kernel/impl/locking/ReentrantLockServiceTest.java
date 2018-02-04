@@ -78,11 +78,11 @@ public class ReentrantLockServiceTest
 
         // when
         threads.execute( lock1once, ready.await(), lockedOnce, lock1again,
-                         events.trigger( "Double Locked" ),
-                         lock1once.release, lock1again.release );
+                events.trigger( "Double Locked" ),
+                lock1once.release, lock1again.release );
         threads.execute( ready, lockedOnce.await(), lock1inOtherThread,
-                         events.trigger( "Other Thread" ),
-                         lock1inOtherThread.release );
+                events.trigger( "Other Thread" ),
+                lock1inOtherThread.release );
 
         // then
         events.assertInOrder( "Double Locked", "Other Thread" );

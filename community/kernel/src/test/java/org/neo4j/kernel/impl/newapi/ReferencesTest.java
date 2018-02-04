@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.FILTER_TX_STATE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.GROUP;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_INCOMING_OF_TYPE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_LOOP_OF_TYPE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_OUTGOING_OF_TYPE;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeGroup;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
 import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -88,7 +89,8 @@ public class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             assertNotEquals( FILTER, parseEncoding( reference ) );
             assertEquals( FILTER, parseEncoding( RelationshipReferenceEncoding.encodeForFiltering( reference ) ) );
-            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeForFiltering( reference ) < 0 );
+            assertTrue( RelationshipReferenceEncoding.encodeForFiltering( reference ) < 0,
+                    "encoded reference is negative" );
         }
     }
 
@@ -101,7 +103,8 @@ public class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             assertNotEquals( FILTER_TX_STATE, parseEncoding( reference ) );
             assertEquals( FILTER_TX_STATE, parseEncoding( RelationshipReferenceEncoding.encodeForTxStateFiltering( reference ) ) );
-            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeForTxStateFiltering( reference ) < 0 );
+            assertTrue( RelationshipReferenceEncoding.encodeForTxStateFiltering( reference ) < 0,
+                    "encoded reference is negative" );
         }
     }
 
@@ -114,7 +117,7 @@ public class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             assertNotEquals( GROUP, parseEncoding( reference ) );
             assertEquals( GROUP, parseEncoding( RelationshipReferenceEncoding.encodeGroup( reference ) ) );
-            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeGroup( reference ) < 0 );
+            assertTrue( encodeGroup( reference ) < 0, "encoded reference is negative" );
         }
     }
 
@@ -127,7 +130,8 @@ public class ReferencesTest
             int token = random.nextInt(Integer.MAX_VALUE);
             assertNotEquals( NO_INCOMING_OF_TYPE, parseEncoding( token ) );
             assertEquals( NO_INCOMING_OF_TYPE, parseEncoding( RelationshipReferenceEncoding.encodeNoIncomingRels( token ) ) );
-            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeNoIncomingRels( token ) < 0 );
+            assertTrue( RelationshipReferenceEncoding.encodeNoIncomingRels( token ) < 0,
+                    "encoded reference is negative" );
         }
     }
 
@@ -140,7 +144,8 @@ public class ReferencesTest
             int token = random.nextInt(Integer.MAX_VALUE);
             assertNotEquals( NO_OUTGOING_OF_TYPE, parseEncoding( token ) );
             assertEquals( NO_OUTGOING_OF_TYPE, parseEncoding( RelationshipReferenceEncoding.encodeNoOutgoingRels( token ) ) );
-            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeNoOutgoingRels( token ) < 0 );
+            assertTrue( RelationshipReferenceEncoding.encodeNoOutgoingRels( token ) < 0,
+                    "encoded reference is negative" );
         }
     }
 
@@ -153,7 +158,7 @@ public class ReferencesTest
             int token = random.nextInt(Integer.MAX_VALUE);
             assertNotEquals( NO_LOOP_OF_TYPE, parseEncoding( token ) );
             assertEquals( NO_LOOP_OF_TYPE, parseEncoding( RelationshipReferenceEncoding.encodeNoLoopRels( token ) ) );
-            assertTrue( "encoded reference is negative", RelationshipReferenceEncoding.encodeNoLoopRels( token ) < 0 );
+            assertTrue( RelationshipReferenceEncoding.encodeNoLoopRels( token ) < 0, "encoded reference is negative" );
         }
     }
 
@@ -168,7 +173,7 @@ public class ReferencesTest
             long reference = random.nextLong( MAX_ID_LIMIT );
             assertFalse( GroupReferenceEncoding.isRelationship( reference ) );
             assertTrue( GroupReferenceEncoding.isRelationship( GroupReferenceEncoding.encodeRelationship( reference ) ) );
-            assertTrue( "encoded reference is negative", GroupReferenceEncoding.encodeRelationship( reference ) < 0 );
+            assertTrue( GroupReferenceEncoding.encodeRelationship( reference ) < 0, "encoded reference is negative" );
         }
     }
 }

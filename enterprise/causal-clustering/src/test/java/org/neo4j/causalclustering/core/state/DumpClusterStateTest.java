@@ -19,9 +19,9 @@
  */
 package org.neo4j.causalclustering.core.state;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -44,7 +44,7 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.ReplicationModule.SESSION_TRACKER_NAME;
 import static org.neo4j.causalclustering.core.IdentityModule.CORE_MEMBER_ID_NAME;
 import static org.neo4j.causalclustering.core.consensus.ConsensusModule.RAFT_MEMBERSHIP_NAME;
@@ -61,7 +61,7 @@ public class DumpClusterStateTest
     private File dataDir = new File( "data" );
     private ClusterStateDirectory clusterStateDirectory = new ClusterStateDirectory( dataDir, false );
 
-    @Before
+    @BeforeEach
     public void setup() throws ClusterStateException
     {
         clusterStateDirectory.initialize( fsa.get() );

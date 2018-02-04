@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.junit.Ignore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

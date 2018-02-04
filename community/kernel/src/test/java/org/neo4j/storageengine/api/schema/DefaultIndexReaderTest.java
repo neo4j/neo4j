@@ -21,7 +21,8 @@ package org.neo4j.storageengine.api.schema;
 
 import org.hamcrest.Matchers;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
@@ -30,6 +31,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.values.storable.Value;
 
+@EnableRuleMigrationSupport
 public class DefaultIndexReaderTest
 {
     @Rule

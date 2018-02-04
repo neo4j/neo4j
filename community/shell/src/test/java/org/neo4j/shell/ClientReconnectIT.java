@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -29,11 +29,11 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.shell.impl.SimpleAppServer;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClientReconnectIT extends AbstractShellIT
 {
-    @Before
+    @BeforeEach
     public void setUp()
     {
         makeServerRemotelyAvailable();

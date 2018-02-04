@@ -19,33 +19,35 @@
  */
 package org.neo4j.server.scripting.javascript;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeJavaMethod;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.UniqueTag;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.server.scripting.UserScriptClassWhiteList;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mozilla.javascript.Context.enter;
+import static org.mozilla.javascript.Context.exit;
+import static org.mozilla.javascript.UniqueTag.NOT_FOUND;
+import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.server.scripting.UserScriptClassWhiteList.getWhiteList;
 
 public class TestWhiteListJavaWrapper
 {
 
-    @After
+    @AfterEach
     public void exitContext()
     {
         try
         {
-            Context.exit();
+            exit();
         }
         catch ( IllegalStateException e )
         {
@@ -53,14 +55,16 @@ public class TestWhiteListJavaWrapper
         }
     }
 
-    @Test( expected = SecurityException.class )
+    @Test
     public void shouldBlockAttemptsAtAccessingClassLoader()
     {
-        // Given
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<>() ) );
+        assertThrows( SecurityException.class, () -> {
+            // Given
+            WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( new HashSet<>() ) );
 
-        // When
-        wrapper.wrap( null, null, getClass().getClassLoader(), null );
+            // When
+            wrapper.wrap( null, null, getClass().getClassLoader(), null );
+        } );
     }
 
     @Test
@@ -72,7 +76,7 @@ public class TestWhiteListJavaWrapper
 
         WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
 
-        Context cx = Context.enter();
+        Context cx = enter();
         Scriptable scope = cx.initStandardObjects();
 
         // When
@@ -83,23 +87,25 @@ public class TestWhiteListJavaWrapper
         NativeJavaObject obj = (NativeJavaObject)wrapped;
 
         assertThat( obj.has( "aGetter", scope ), is( false ));
-        assertThat( obj.get( "aGetter", scope ), is( UniqueTag.NOT_FOUND ) );
+        assertThat( obj.get( "aGetter", scope ), is( NOT_FOUND ) );
     }
 
-    @Test( expected = SecurityException.class )
+    @Test
     public void shouldThrowSecurityExceptionWhenAccessingLockedClasses()
     {
-        // Given
-        Set<String> whiteList = new HashSet<>();
-        whiteList.add( Object.class.getName() );
+        assertThrows( SecurityException.class, () -> {
+            // Given
+            Set<String> whiteList = new HashSet<>();
+            whiteList.add( Object.class.getName() );
 
-        WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
+            WhiteListJavaWrapper wrapper = new WhiteListJavaWrapper( new WhiteListClassShutter( whiteList ) );
 
-        Context cx = Context.enter();
-        Scriptable scope = cx.initStandardObjects();
+            Context cx = enter();
+            Scriptable scope = cx.initStandardObjects();
 
-        // When
-        Object wrapped = wrapper.wrap( cx, scope, TestWhiteListJavaWrapper.class, null );
+            // When
+            Object wrapped = wrapper.wrap( cx, scope, TestWhiteListJavaWrapper.class, null );
+        } );
     }
 
     @Test
@@ -111,13 +117,13 @@ public class TestWhiteListJavaWrapper
 
         // Given
         WhiteListJavaWrapper wrapper =
-                new WhiteListJavaWrapper( new WhiteListClassShutter( UserScriptClassWhiteList.getWhiteList() ) );
+                new WhiteListJavaWrapper( new WhiteListClassShutter( getWhiteList() ) );
 
-        Context cx = Context.enter();
+        Context cx = enter();
         Scriptable scope = cx.initStandardObjects();
 
         // When
-        Object wrapped = wrapper.wrap( cx, scope, RelationshipType.withName( "blah" ), null );
+        Object wrapped = wrapper.wrap( cx, scope, withName( "blah" ), null );
 
         // Then
         assertThat( wrapped, is( instanceOf( NativeJavaObject.class ) ) );

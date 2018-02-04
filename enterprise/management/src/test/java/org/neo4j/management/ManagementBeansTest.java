@@ -19,29 +19,32 @@
  */
 package org.neo4j.management;
 
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class ManagementBeansTest
 {
-    @ClassRule
-    public static EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
     private static GraphDatabaseAPI graphDb;
 
-    @BeforeClass
-    public static synchronized void startGraphDb()
+    @BeforeEach
+    public void setUp()
     {
         graphDb = dbRule.getGraphDatabaseAPI();
     }
@@ -51,8 +54,8 @@ public class ManagementBeansTest
     {
         Kernel kernel = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Kernel.class );
-        assertNotNull( "kernel bean is null", kernel );
-        assertNotNull( "MBeanQuery of kernel bean is null", kernel.getMBeanQuery() );
+        assertNotNull( kernel, "kernel bean is null" );
+        assertNotNull( kernel.getMBeanQuery(), "MBeanQuery of kernel bean is null" );
     }
 
     @Test
@@ -60,7 +63,7 @@ public class ManagementBeansTest
     {
         Primitives primitives = graphDb.getDependencyResolver().resolveDependency( JmxKernelExtension.class )
                 .getSingleManagementBean( Primitives.class );
-        assertNotNull( "primitives bean is null", primitives );
+        assertNotNull( primitives, "primitives bean is null" );
         primitives.getNumberOfNodeIdsInUse();
     }
 
@@ -68,7 +71,7 @@ public class ManagementBeansTest
     public void canListAllBeans()
     {
         Neo4jManager manager = getManager();
-        assertTrue( "No beans returned", manager.allBeans().size() > 0 );
+        assertTrue( manager.allBeans().size() > 0, "No beans returned" );
     }
 
     @Test
@@ -76,7 +79,7 @@ public class ManagementBeansTest
     {
         Neo4jManager manager = getManager();
         Map<String, Object> configuration = manager.getConfiguration();
-        assertTrue( "No configuration returned", configuration.size() > 0 );
+        assertTrue( configuration.size() > 0, "No configuration returned" );
     }
 
     private Neo4jManager getManager()
@@ -130,6 +133,6 @@ public class ManagementBeansTest
     @Test
     public void canAccessMemoryMappingCompositData()
     {
-        assertNotNull( "MemoryPools is null", getManager().getMemoryMappingBean().getMemoryPools() );
+        assertNotNull( getManager().getMemoryMappingBean().getMemoryPools(), "MemoryPools is null" );
     }
 }

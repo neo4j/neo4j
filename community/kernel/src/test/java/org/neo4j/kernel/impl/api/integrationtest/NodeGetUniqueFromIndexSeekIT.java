@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -38,10 +37,18 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertTrue;
+import static java.lang.Thread.State.TIMED_WAITING;
+import static java.lang.Thread.State.WAITING;
+import static java.lang.Thread.yield;
+import static java.time.Duration.ofMillis;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.values.storable.Values.of;
 
 public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 {
@@ -49,7 +56,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     private int propertyId1;
     private int propertyId2;
 
-    @Before
+    @BeforeEach
     public void createKeys() throws Exception
     {
         TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
@@ -81,7 +88,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
-        Value value = Values.of( "value" );
+        Value value = of( "value" );
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
@@ -91,7 +98,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertTrue( "Created node was not found", nodeId == foundId );
+        assertTrue( nodeId == foundId, "Created node was not found" );
     }
 
     @Test
@@ -99,8 +106,8 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
-        Value value = Values.of( "value" );
-        createNodeWithValue( Values.of( "other_" + value ) );
+        Value value = of( "value" );
+        createNodeWithValue( of( "other_" + value ) );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
@@ -108,7 +115,7 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         commit();
 
         // then
-        assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+        assertTrue( isNoSuchNode( foundId ), "Non-matching created node was found" );
     }
 
     @Test
@@ -116,19 +123,18 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
-        Value value1 = Values.of( "value1" );
-        Value value2 = Values.of( "value2" );
+        Value value1 = of( "value1" );
+        Value value2 = of( "value2" );
         long nodeId = createNodeWithValues( value1, value2 );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
-        long foundId = readOperations.nodeGetFromUniqueIndexSeek( index,
-                                                                exact( propertyId1, value1 ),
-                                                                exact( propertyId2, value2 ) );
+        long foundId = readOperations
+                .nodeGetFromUniqueIndexSeek( index, exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
         commit();
 
         // then
-        assertTrue( "Created node was not found", nodeId == foundId );
+        assertTrue( nodeId == foundId, "Created node was not found" );
     }
 
     @Test
@@ -136,93 +142,94 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
     {
         // given
         IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1, propertyId2 );
-        Value value1 = Values.of( "value1" );
-        Value value2 = Values.of( "value2" );
-        createNodeWithValues( Values.of( "other_" + value1 ), Values.of( "other_" + value2 ) );
+        Value value1 = of( "value1" );
+        Value value2 = of( "value2" );
+        createNodeWithValues( of( "other_" + value1 ), of( "other_" + value2 ) );
 
         // when looking for it
         ReadOperations readOperations = readOperationsInNewTransaction();
-        long foundId = readOperations.nodeGetFromUniqueIndexSeek( index,
-                                                                exact( propertyId1, value1 ),
-                                                                exact( propertyId2, value2 ) );
+        long foundId = readOperations
+                .nodeGetFromUniqueIndexSeek( index, exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
         commit();
 
         // then
-        assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+        assertTrue( isNoSuchNode( foundId ), "Non-matching created node was found" );
     }
 
-    @Test( timeout = 10_000 )
-    public void shouldBlockUniqueIndexSeekFromCompetingTransaction() throws Exception
+    @Test
+    public void shouldBlockUniqueIndexSeekFromCompetingTransaction()
     {
-        // This is the interleaving that we are trying to verify works correctly:
-        // ----------------------------------------------------------------------
-        // Thread1 (main)        : Thread2
-        // create unique node    :
-        // lookup(node)          :
-        // open start latch ----->
-        //    |                  : lookup(node)
-        // wait for T2 to block  :      |
-        //                       :    *block*
-        // commit --------------->   *unblock*
-        // wait for T2 end latch :      |
-        //                       : finish transaction
-        //                       : open end latch
-        // *unblock* <-------------‘
-        // assert that we complete before timeout
-        final DoubleLatch latch = new DoubleLatch();
+        assertTimeout( ofMillis( 10_000 ), () -> {
+            //  This is the interleaving that we are trying to verify works correctly:
 
-        final IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
-        final Value value = Values.of( "value" );
+            // ----------------------------------------------------------------------
+            // Thread1 (main)        : Thread2
+            // create unique node    :
+            // lookup(node)          :
+            // open start latch ----->
+            //    |                  : lookup(node)
+            // wait for T2 to block  :      |
+            //                       :    *block*
+            // commit --------------->   *unblock*
+            // wait for T2 end latch :      |
+            //                       : finish transaction
+            //                       : open end latch
+            // *unblock* <-------------‘
+            // assert that we complete before timeout
+            final DoubleLatch latch = new DoubleLatch();
 
-        DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
-        long nodeId = dataStatement.nodeCreate();
-        dataStatement.nodeAddLabel( nodeId, labelId );
+            final IndexDescriptor index = createUniquenessConstraint( labelId, propertyId1 );
+            final Value value = of( "value" );
 
-        // This adds the node to the unique index and should take an index write lock
-        dataStatement.nodeSetProperty( nodeId, propertyId1, value );
+            DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
+            long nodeId = dataStatement.nodeCreate();
+            dataStatement.nodeAddLabel( nodeId, labelId );
 
-        Runnable runnableForThread2 = () ->
-        {
-            latch.waitForAllToStart();
-            try ( Transaction tx = db.beginTx() )
-            {
-                try ( Statement statement1 = statementContextSupplier.get() )
+            // This adds the node to the unique index and should take an index write lock
+            dataStatement.nodeSetProperty( nodeId, propertyId1, value );
+
+            Runnable runnableForThread2 = () -> {
+                latch.waitForAllToStart();
+                try ( Transaction tx = db.beginTx() )
                 {
-                    statement1.readOperations().nodeGetFromUniqueIndexSeek( index, exact( propertyId1, value ) );
+                    try ( Statement statement1 = statementContextSupplier.get() )
+                    {
+                        statement1.readOperations().nodeGetFromUniqueIndexSeek( index, exact( propertyId1, value ) );
+                    }
+                    tx.success();
                 }
-                tx.success();
-            }
-            catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException | IndexBrokenKernelException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                latch.finish();
-            }
-        };
-        Thread thread2 = new Thread( runnableForThread2, "Transaction Thread 2" );
-        thread2.start();
-        latch.startAndWaitForAllToStart();
+                catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException | IndexBrokenKernelException e )
+                {
+                    throw new RuntimeException( e );
+                }
+                finally
+                {
+                    latch.finish();
+                }
+            };
+            Thread thread2 = new Thread( runnableForThread2, "Transaction Thread 2" );
+            thread2.start();
+            latch.startAndWaitForAllToStart();
 
-        //noinspection UnusedLabel
-        spinUntilBlocking:
-        for (; ; )
-        {
-            if ( thread2.getState() == Thread.State.TIMED_WAITING || thread2.getState() == Thread.State.WAITING )
+            //noinspection UnusedLabel
+            spinUntilBlocking:
+            for ( ; ; )
             {
-                break;
+                if ( thread2.getState() == TIMED_WAITING || thread2.getState() == WAITING )
+                {
+                    break;
+                }
+                yield();
             }
-            Thread.yield();
-        }
 
-        commit();
-        latch.waitForAllToFinish();
+            commit();
+            latch.waitForAllToFinish();
+        } );
     }
 
     private boolean isNoSuchNode( long foundId )
     {
-        return StatementConstants.NO_SUCH_NODE == foundId;
+        return NO_SUCH_NODE == foundId;
     }
 
     private long createNodeWithValue( Value value ) throws KernelException

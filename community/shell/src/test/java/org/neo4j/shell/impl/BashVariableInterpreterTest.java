@@ -19,16 +19,16 @@
  */
 package org.neo4j.shell.impl;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.text.SimpleDateFormat;
 
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellServer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -73,7 +73,7 @@ public class BashVariableInterpreterTest
     private final Session session = new Session( 0 );
     private ShellServer server;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         server = mock( ShellServer.class );

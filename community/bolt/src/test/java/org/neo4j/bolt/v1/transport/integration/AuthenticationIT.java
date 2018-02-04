@@ -186,7 +186,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, the value associated with the key `principal` " +
-                "must be a String but was: ArrayList" ) ) );
+                        "must be a String but was: ArrayList" ) ) );
 
         assertThat( connection, eventuallyDisconnects() );
     }
@@ -516,7 +516,7 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
             Assert.assertThat( t, instanceOf( FailureMessage.class ) );
             FailureMessage msg = (FailureMessage) t;
             if ( !msg.status().equals( Status.Security.Unauthorized ) ||
-                 !msg.message().contains( "The client is unauthorized due to authentication failure." ) )
+                    !msg.message().contains( "The client is unauthorized due to authentication failure." ) )
             {
                 specialMessage = msg;
             }

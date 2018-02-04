@@ -152,7 +152,7 @@ public class TestIsolationBasic extends AbstractNeo4jTestCase
     }
 
     private void assertPropertyEqual( PropertyContainer primitive, String key,
-        String value )
+            String value )
     {
         try ( Transaction tx = getGraphDb().beginTx() )
         {

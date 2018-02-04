@@ -19,8 +19,8 @@
  */
 package org.neo4j.backup.impl;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.util.OptionalHostnamePort;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -69,7 +69,7 @@ public class BackupStrategyWrapperTest
     private LogProvider logProvider = mock( LogProvider.class );
     private Log log = mock( Log.class );
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );

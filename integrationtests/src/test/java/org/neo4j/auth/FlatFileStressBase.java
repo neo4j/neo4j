@@ -19,9 +19,9 @@
  */
 package org.neo4j.auth;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -55,7 +55,8 @@ import org.neo4j.server.security.enterprise.auth.RoleRepository;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.server.security.enterprise.auth.RoleRepository.validate;
 
 abstract class FlatFileStressBase
 {
@@ -71,7 +72,7 @@ abstract class FlatFileStressBase
     private volatile boolean keepRunning = true;
     final Set<Throwable> errors = ConcurrentHashMap.newKeySet();
 
-    @Before
+    @BeforeEach
     public void setup() throws Throwable
     {
         Config config = Config.defaults();
@@ -97,7 +98,7 @@ abstract class FlatFileStressBase
 
     abstract FileSystemAbstraction getFileSystem();
 
-    @After
+    @AfterEach
     public void teardown() throws Throwable
     {
         flatFileRealm.stop();
@@ -130,10 +131,7 @@ abstract class FlatFileStressBase
         // Assert that user and role repos are consistent
         ListSnapshot<User> users = userRepository.getPersistedSnapshot();
         ListSnapshot<RoleRecord> roles = roleRepository.getPersistedSnapshot();
-        assertTrue(
-                "User and role repositories are no longer consistent",
-                RoleRepository.validate( users.values(), roles.values() )
-            );
+        assertTrue( validate( users.values(), roles.values() ), "User and role repositories are no longer consistent" );
     }
 
     abstract ExecutorService setupWorkload( int n );

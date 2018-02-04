@@ -19,18 +19,21 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Rule;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Consumer;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public abstract class AbstractMandatoryTransactionsTest<T>
 {
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
     public T obtainEntity()
     {

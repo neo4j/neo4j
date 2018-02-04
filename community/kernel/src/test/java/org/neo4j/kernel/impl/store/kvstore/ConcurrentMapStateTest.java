@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,21 +32,21 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.kvstore.EntryUpdater.noUpdates;
 
 public class ConcurrentMapStateTest
 {
-
     private final ReadableState<String> store = mock( ReadableState.class );
     private final File file = mock( File.class );
     private final Lock lock = mock( Lock.class );
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         KeyFormat keyFormat = mock( KeyFormat.class );
@@ -161,8 +161,7 @@ public class ConcurrentMapStateTest
         EntryUpdater<?> updater = state.updater( initialVersion, lock );
 
         // expected
-        assertEquals( "Empty updater should be used for version less or equal to initial",
-                EntryUpdater.noUpdates(), updater );
+        assertEquals( noUpdates(), updater, "Empty updater should be used for version less or equal to initial" );
     }
 
     @Test

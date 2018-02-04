@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,11 +29,11 @@ import java.io.PrintStream;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ErrorsAndWarningsIT extends AbstractShellIT
 {
-    @Before
+    @BeforeEach
     public void setup()
     {
         makeServerRemotelyAvailable();

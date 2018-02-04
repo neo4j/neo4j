@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.lifecycle;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -28,9 +28,9 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -96,7 +96,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.init();
-            fail();
+            fail("Failure was expected");
         }
         catch ( LifecycleException throwable )
         {
@@ -124,7 +124,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.start();
-            fail();
+            fail("Failure was expected");
         }
         catch ( LifecycleException throwable )
         {
@@ -153,7 +153,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.start();
-            fail();
+            fail("Failure was expected");
         }
         catch ( LifecycleException throwable )
         {
@@ -188,7 +188,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.stop();
-            fail();
+            fail("Failure was expected");
         }
         catch ( LifecycleException throwable )
         {
@@ -219,7 +219,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.shutdown();
-            fail();
+            fail("Failure was expected");
         }
         catch ( LifecycleException throwable )
         {
@@ -473,7 +473,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.start();
-            fail();
+            fail("Failure was expected");
         }
         catch ( Exception e )
         {
@@ -499,7 +499,7 @@ public class LifeSupportTest
         try
         {
             lifeSupport.init();
-            fail();
+            fail("Failure was expected");
         }
         catch ( Exception e )
         {

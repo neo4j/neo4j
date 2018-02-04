@@ -23,7 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -32,7 +32,7 @@ import java.util.List;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,7 +70,7 @@ public class LuceneAllDocumentsReaderTest
         LuceneAllDocumentsReader allDocumentsReader = createAllDocumentsReader();
         List<Document> documents = Iterators.asList( allDocumentsReader.iterator() );
 
-        assertEquals( "Should have 1 document from first partition and 2 from second one.", 3, documents.size() );
+        assertEquals( 3, documents.size(), "Should have 1 document from first partition and 2 from second one." );
         assertEquals( "1", documents.get( 0 ).getField( "value" ).stringValue() );
         assertEquals( "3", documents.get( 1 ).getField( "value" ).stringValue() );
         assertEquals( "4", documents.get( 2 ).getField( "value" ).stringValue() );

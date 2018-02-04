@@ -19,8 +19,8 @@
  */
 package org.neo4j.configuration;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConfigOptionsTest
 {
@@ -75,7 +75,7 @@ public class ConfigOptionsTest
     };
     private ConfigOptions configOptions;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         this.configOptions = new ConfigOptions( setting );

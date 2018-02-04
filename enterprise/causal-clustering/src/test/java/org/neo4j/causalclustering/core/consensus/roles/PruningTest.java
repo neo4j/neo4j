@@ -19,12 +19,8 @@
  */
 package org.neo4j.causalclustering.core.consensus.roles;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Arrays;
-import java.util.Collection;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.log.InMemoryRaftLog;
@@ -35,29 +31,18 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.causalclustering.core.consensus.state.RaftStateBuilder.raftState;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
-@RunWith( Parameterized.class )
-public class PruningTest
+class PruningTest
 {
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> data()
-    {
-        return Arrays.asList( new Object[][]{
-                {Role.FOLLOWER}, {Role.LEADER}, {Role.CANDIDATE}
-        } );
-    }
-
-    @Parameterized.Parameter
-    public Role role;
-
     private MemberId myself = member( 0 );
 
-    @Test
-    public void shouldGeneratePruneCommandsOnRequest() throws Exception
+    @ParameterizedTest
+    @EnumSource( Role.class )
+    void shouldGeneratePruneCommandsOnRequest( Role role ) throws Exception
     {
         // given
         InMemoryRaftLog raftLog = new InMemoryRaftLog();

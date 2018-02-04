@@ -19,9 +19,9 @@
  */
 package org.neo4j.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -38,9 +38,9 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
 import static org.neo4j.helpers.collection.Iterables.single;
 
@@ -51,13 +51,13 @@ public class IndexConstraintsTest
 
     private GraphDatabaseService graphDb;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
+    @AfterEach
     public void shutdown()
     {
         graphDb.shutdown();
@@ -202,7 +202,7 @@ public class IndexConstraintsTest
                     tx.success();
                 }
                 // then
-                assertNotNull( "Index should exist", getIndex( LABEL, PROPERTY_KEY ) );
+                assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Index should exist" );
 
                 // when: DROP, CREATE => effect: <none>
                 try ( Transaction tx = graphDb.beginTx() )
@@ -211,7 +211,7 @@ public class IndexConstraintsTest
                     tx.success();
                 }
                 // then
-                assertNotNull( "Index should exist", getIndex( LABEL, PROPERTY_KEY ) );
+                assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Index should exist" );
 
                 // when: DROP, CREATE, DROP => effect: DROP
                 try ( Transaction tx = graphDb.beginTx() )
@@ -221,7 +221,7 @@ public class IndexConstraintsTest
                     tx.success();
                 }
                 // then
-                assertNull( "Index should be removed", getIndex( LABEL, PROPERTY_KEY ) );
+                assertNull( getIndex( LABEL, PROPERTY_KEY ), "Index should be removed" );
             }
             catch ( Throwable e )
             {
@@ -252,7 +252,7 @@ public class IndexConstraintsTest
             {
                 if ( propertyKey.equals( single( index.getPropertyKeys() ) ) )
                 {
-                    assertNull( "Found multiple indexes.", found );
+                    assertNull( found, "Found multiple indexes." );
                     found = index;
                 }
             }
@@ -275,7 +275,7 @@ public class IndexConstraintsTest
             tx.failure();
         }
         // then
-        assertNull( "Should not have constraint index", getIndex( LABEL, PROPERTY_KEY ) );
+        assertNull( getIndex( LABEL, PROPERTY_KEY ), "Should not have constraint index" );
     }
 
     @Test
@@ -293,8 +293,8 @@ public class IndexConstraintsTest
                     tx.success();
                 }
                 // then
-                assertNotNull( "Constraint should exist", getConstraint( LABEL, PROPERTY_KEY ) );
-                assertNotNull( "Should have constraint index", getIndex( LABEL, PROPERTY_KEY ) );
+                assertNotNull( getConstraint( LABEL, PROPERTY_KEY ), "Constraint should exist" );
+                assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Should have constraint index" );
 
                 // when: DROP, CREATE => effect: <none>
                 try ( Transaction tx = graphDb.beginTx() )
@@ -303,8 +303,8 @@ public class IndexConstraintsTest
                     tx.success();
                 }
                 // then
-                assertNotNull( "Constraint should exist", getConstraint( LABEL, PROPERTY_KEY ) );
-                assertNotNull( "Should have constraint index", getIndex( LABEL, PROPERTY_KEY ) );
+                assertNotNull( getConstraint( LABEL, PROPERTY_KEY ), "Constraint should exist" );
+                assertNotNull( getIndex( LABEL, PROPERTY_KEY ), "Should have constraint index" );
 
                 // when: DROP, CREATE, DROP => effect: DROP
                 try ( Transaction tx = graphDb.beginTx() )
@@ -314,8 +314,8 @@ public class IndexConstraintsTest
                     tx.success();
                 }
                 // then
-                assertNull( "Constraint should be removed", getConstraint( LABEL, PROPERTY_KEY ) );
-                assertNull( "Should not have constraint index", getIndex( LABEL, PROPERTY_KEY ) );
+                assertNull( getConstraint( LABEL, PROPERTY_KEY ), "Constraint should be removed" );
+                assertNull( getIndex( LABEL, PROPERTY_KEY ), "Should not have constraint index" );
             }
             catch ( Throwable e )
             {
@@ -346,7 +346,7 @@ public class IndexConstraintsTest
             {
                 if ( propertyKey.equals( single( constraint.getPropertyKeys() ) ) )
                 {
-                    assertNull( "Found multiple constraints.", found );
+                    assertNull( found, "Found multiple constraints." );
                     found = constraint;
                 }
             }

@@ -21,7 +21,7 @@ package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
 import common.SimpleGraphBuilder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
 {
@@ -66,8 +66,7 @@ public class DijkstraMultiplePathsTest extends Neo4jAlgoTestCase
                 int nrPaths = dijkstra.getPathsAsNodes().size();
                 if ( !node1.equals( node2 ) )
                 {
-                    assertTrue( "Number of paths (" + node1 + "->" + node2
-                        + "): " + nrPaths, nrPaths == 2 );
+                    assertTrue( nrPaths == 2, "Number of paths (" + node1 + "->" + node2 + "): " + nrPaths );
                 }
                 assertTrue( dijkstra.getCost() == 0.0 );
             }

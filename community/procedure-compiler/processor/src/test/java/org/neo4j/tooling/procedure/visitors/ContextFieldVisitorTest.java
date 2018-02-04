@@ -38,8 +38,8 @@ import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
 import org.neo4j.tooling.procedure.visitors.examples.FinalContextMisuse;
 import org.neo4j.tooling.procedure.visitors.examples.NonPublicContextMisuse;
-import org.neo4j.tooling.procedure.visitors.examples.StaticContextMisuse;
 import org.neo4j.tooling.procedure.visitors.examples.RestrictedContextTypes;
+import org.neo4j.tooling.procedure.visitors.examples.StaticContextMisuse;
 import org.neo4j.tooling.procedure.visitors.examples.UnknownContextType;
 
 import static org.assertj.core.api.Assertions.assertThat;

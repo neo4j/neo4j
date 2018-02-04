@@ -20,10 +20,10 @@
 package recovery;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -56,14 +57,16 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class RecoveryCleanupIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory testDirectory;
 
     private GraphDatabaseService db;
     private File storeDir;
@@ -73,14 +76,14 @@ public class RecoveryCleanupIT
     private final String propKey = "propKey";
     private Map<Setting,String> testSpecificConfig = new HashMap<>();
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         storeDir = testDirectory.graphDbDir();
         testSpecificConfig.clear();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws InterruptedException
     {
         executor.shutdown();

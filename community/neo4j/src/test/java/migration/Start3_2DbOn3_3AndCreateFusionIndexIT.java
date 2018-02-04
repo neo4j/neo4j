@@ -19,14 +19,15 @@
  */
 package migration;
 
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -46,15 +47,17 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.count;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.test.Unzip.unzip;
 
+@ExtendWith( {TestDirectoryExtension.class} )
 public class Start3_2DbOn3_3AndCreateFusionIndexIT
 {
     private static final String ZIP_FILE = "3_2-db.zip";
@@ -64,10 +67,10 @@ public class Start3_2DbOn3_3AndCreateFusionIndexIT
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Resource
+    public TestDirectory directory;
 
-    @Ignore( "Here as reference for how 3.2 db was created" )
+    @Disabled( "Here as reference for how 3.2 db was created" )
     @Test
     public void create3_2Database() throws Exception
     {

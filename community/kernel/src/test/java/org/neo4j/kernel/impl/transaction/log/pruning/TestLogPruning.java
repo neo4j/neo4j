@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -45,9 +45,9 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 
 public class TestLogPruning
@@ -63,7 +63,7 @@ public class TestLogPruning
     private int rotateEveryNTransactions;
     private int performedTransactions;
 
-    @After
+    @AfterEach
     public void after() throws Exception
     {
         if ( db != null )
@@ -86,8 +86,8 @@ public class TestLogPruning
         long currentVersion = files.getHighestLogVersion();
         for ( long version = 0; version < currentVersion; version++ )
         {
-            assertTrue( "Version " + version + " has been unexpectedly pruned",
-                    fs.fileExists( files.getLogFileForVersion( version ) ) );
+            assertTrue( fs.fileExists( files.getLogFileForVersion( version ) ),
+                    "Version " + version + " has been unexpectedly pruned" );
         }
     }
 
@@ -139,11 +139,10 @@ public class TestLogPruning
         }
 
         int transactionCount = transactionCount();
-        assertTrue( "Transaction count expected to be within " + transactionsToKeep + " <= txs <= " +
-                    (transactionsToKeep + transactionsPerLog) + ", but was " + transactionCount,
-
-                transactionCount >= transactionsToKeep &&
-                transactionCount <= (transactionsToKeep + transactionsPerLog) );
+        assertTrue(
+                transactionCount >= transactionsToKeep && transactionCount <= (transactionsToKeep + transactionsPerLog),
+                "Transaction count expected to be within " + transactionsToKeep + " <= txs <= " +
+                        (transactionsToKeep + transactionsPerLog) + ", but was " + transactionCount );
     }
 
     @Test

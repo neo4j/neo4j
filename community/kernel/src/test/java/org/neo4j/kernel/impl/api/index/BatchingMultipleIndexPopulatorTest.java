@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -46,8 +46,8 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -73,7 +73,7 @@ public class BatchingMultipleIndexPopulatorTest
     private final IndexDescriptor index1 = IndexDescriptorFactory.forLabel(1, 1);
     private final IndexDescriptor index42 = IndexDescriptorFactory.forLabel(42, 42);
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         clearProperty( QUEUE_THRESHOLD_NAME );

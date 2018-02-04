@@ -19,29 +19,34 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.ConstantRequestContextFactory;
 import org.neo4j.test.LongResponse;
 
+import static java.util.Collections.emptyList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 public class SlaveTransactionCommitProcessTest
 {
@@ -52,7 +57,7 @@ public class SlaveTransactionCommitProcessTest
     private PhysicalTransactionRepresentation tx;
     private SlaveTransactionCommitProcess commitProcess;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         lastSeenEventIdentifier = new AtomicInteger( -1 );
@@ -69,7 +74,7 @@ public class SlaveTransactionCommitProcessTest
         };
         response = new LongResponse( 42L );
         tx = new PhysicalTransactionRepresentation(
-                Collections.emptyList() );
+                emptyList() );
         tx.setHeader(new byte[]{}, 1, 1, 1, 1, 1, 1337);
 
         commitProcess = new SlaveTransactionCommitProcess( master, reqFactory );
@@ -82,19 +87,22 @@ public class SlaveTransactionCommitProcessTest
         when( master.commit( requestContext, tx ) ).thenReturn( response );
 
         // When
-        commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
+        commitProcess.commit( new TransactionToApply( tx ), NULL, INTERNAL );
 
         // Then
         assertThat( lastSeenEventIdentifier.get(), is( 1337 ) );
     }
 
-    @Test( expected = TransientTransactionFailureException.class )
-    public void mustTranslateComExceptionsToTransientTransactionFailures() throws Exception
+    @Test
+    public void mustTranslateComExceptionsToTransientTransactionFailures()
     {
-        when( master.commit( requestContext, tx ) ).thenThrow( new ComException() );
+        assertThrows( TransientTransactionFailureException.class, () -> {
+            when( master.commit( requestContext, tx ) ).thenThrow( new ComException() );
 
-        // When
-        commitProcess.commit( new TransactionToApply( tx ), CommitEvent.NULL, TransactionApplicationMode.INTERNAL );
-        // Then we assert that the right exception is thrown
+            // When
+            commitProcess.commit( new TransactionToApply( tx ), NULL, INTERNAL );
+            // Then we assert that the right exception is thrown
+
+        } );
     }
 }

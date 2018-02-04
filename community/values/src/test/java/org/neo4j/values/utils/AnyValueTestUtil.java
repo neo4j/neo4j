@@ -23,52 +23,49 @@ import java.util.function.Supplier;
 
 import org.neo4j.values.AnyValue;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AnyValueTestUtil
 {
     public static void assertEqual( AnyValue a, AnyValue b )
     {
-        assertTrue(
-                String.format( "%s should be equivalent to %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
-                a.equals( b ) );
-        assertTrue(
-                String.format( "%s should be equivalent to %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
-                b.equals( a ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
-                a.ternaryEquals( b ) );
-        assertTrue(
-                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
-                b.ternaryEquals( a ) );
-        assertTrue( String.format( "%s should have same hashcode as %s", a.getClass().getSimpleName(),
-                b.getClass().getSimpleName() ), a.hashCode() == b.hashCode() );
+        assertTrue( a.equals( b ), format( "%s should be equivalent to %s", a.getClass().getSimpleName(),
+                b.getClass().getSimpleName() ) );
+        assertTrue( b.equals( a ), format( "%s should be equivalent to %s", a.getClass().getSimpleName(),
+                b.getClass().getSimpleName() ) );
+        assertTrue( a.ternaryEquals( b ),
+                format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ) );
+        assertTrue( b.ternaryEquals( a ),
+                format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ) );
+        assertTrue( a.hashCode() == b.hashCode(), format( "%s should have same hashcode as %s", a.getClass().getSimpleName(),
+                b.getClass().getSimpleName() ) );
     }
 
     public static void assertEqualValues( AnyValue a, AnyValue b )
     {
-        assertTrue( a + " should be equivalent to " + b, a.equals( b ) );
-        assertTrue( a + " should be equivalent to " + b, b.equals( a ) );
-        assertTrue( a + " should be equal to " + b, a.ternaryEquals( b ) );
-        assertTrue( a + " should be equal to " + b, b.ternaryEquals( a ) );
+        assertTrue( a.equals( b ), a + " should be equivalent to " + b );
+        assertTrue( b.equals( a ), a + " should be equivalent to " + b );
+        assertTrue( a.ternaryEquals( b ), a + " should be equal to " + b );
+        assertTrue( b.ternaryEquals( a ), a + " should be equal to " + b );
     }
 
     public static void assertNotEqual( AnyValue a, AnyValue b )
     {
-        assertFalse( a + " should not be equivalent to " + b, a.equals( b ) );
-        assertFalse( b + " should not be equivalent to " + a, b.equals( a ) );
-        assertFalse( a + " should not equal " + b, a.ternaryEquals( b ) );
-        assertFalse( b + " should not equal " + a, b.ternaryEquals( a ) );
+        assertFalse( a.equals( b ), a + " should not be equivalent to " + b );
+        assertFalse( b.equals( a ), b + " should not be equivalent to " + a );
+        assertFalse( a.ternaryEquals( b ), a + " should not equal " + b );
+        assertFalse( b.ternaryEquals( a ), b + " should not equal " + a );
     }
 
     public static void assertIncomparable( AnyValue a, AnyValue b )
     {
-        assertFalse( a + " should not be equivalent to " + b, a.equals( b ) );
-        assertFalse( b + " should not be equivalent to " + a, b.equals( a ) );
-        assertNull( a + " should be incomparable to " + b, a.ternaryEquals( b ) );
-        assertNull( b + " should be incomparable to " + a, b.ternaryEquals( a ) );
+        assertFalse( a.equals( b ), a + " should not be equivalent to " + b );
+        assertFalse( b.equals( a ), b + " should not be equivalent to " + a );
+        assertNull( a.ternaryEquals( b ), a + " should be incomparable to " + b );
+        assertNull( b.ternaryEquals( a ), b + " should be incomparable to " + a );
     }
 
     public static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )

@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,8 +49,8 @@ import org.neo4j.logging.NullLogProvider;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -74,7 +74,7 @@ public class ReadReplicaStartupProcessTest
     private StoreId otherStoreId = new StoreId( 5, 6, 7, 8 );
     private File storeDir = new File( "store-dir" );
 
-    @Before
+    @BeforeEach
     public void commonMocking() throws IOException
     {
         Map<MemberId,CoreServerInfo> members = new HashMap<>();

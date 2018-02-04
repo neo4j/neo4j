@@ -22,8 +22,8 @@ package org.neo4j.logging.slf4j;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.neo4j.logging.Log;
 
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class Slf4jLogProviderTest
 {
     Slf4jLogProvider logProvider = new Slf4jLogProvider();
 
-    @Before
+    @BeforeEach
     public void clearLoggingEventsAccumulator()
     {
         getAccumulatingAppender().clearEventsList();

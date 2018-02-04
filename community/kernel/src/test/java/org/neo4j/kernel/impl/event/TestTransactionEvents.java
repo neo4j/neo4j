@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,19 +49,19 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
@@ -70,10 +71,11 @@ import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class TestTransactionEvents
 {
-    @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
     private static final TimeUnit AWAIT_INDEX_UNIT = TimeUnit.SECONDS;
     private static final int AWAIT_INDEX_DURATION = 60;
 
@@ -199,7 +201,7 @@ public class TestTransactionEvents
                 tx.success();
             }
 
-            assertTrue( "Should have been invoked", handler.hasBeenCalled() );
+            assertTrue( handler.hasBeenCalled(), "Should have been invoked" );
             Throwable failure = handler.failure();
             if ( failure != null )
             {
@@ -264,7 +266,7 @@ public class TestTransactionEvents
                 tx.success();
             }
 
-            assertTrue( "Should have been invoked", handler.hasBeenCalled() );
+            assertTrue( handler.hasBeenCalled(), "Should have been invoked" );
             Throwable failure = handler.failure();
             if ( failure != null )
             {
@@ -983,8 +985,8 @@ public class TestTransactionEvents
         }
 
         assertEquals( 1, changedRelationships.size() );
-        assertTrue( livesIn + " not in " + changedRelationships.toString(),
-                changedRelationships.contains( livesIn.name() ) );
+        assertTrue( changedRelationships.contains( livesIn.name() ),
+                livesIn + " not in " + changedRelationships.toString() );
     }
 
     @Test
@@ -1013,9 +1015,8 @@ public class TestTransactionEvents
             @Override
             public Void beforeCommit( TransactionData data )
             {
-                assertTrue( "Expected only transactions that had nodes or relationships created",
-                        data.createdNodes().iterator().hasNext() ||
-                        data.createdRelationships().iterator().hasNext() );
+                assertTrue( data.createdNodes().iterator().hasNext() || data.createdRelationships().iterator().hasNext(),
+                        "Expected only transactions that had nodes or relationships created" );
                 counter.incrementAndGet();
                 return null;
             }
@@ -1245,14 +1246,14 @@ public class TestTransactionEvents
                 Set<String> labels = expected.get(entry.node());
                 String message = String.format("':%s' should not be %s %s",
                         entry.label().name(), change, entry.node() );
-                assertNotNull( message, labels );
-                assertTrue( message, labels.remove( entry.label().name() ) );
+                assertNotNull( labels, message );
+                assertTrue( labels.remove( entry.label().name() ), message );
                 if ( labels.isEmpty() )
                 {
                     expected.remove( entry.node() );
                 }
             }
-            assertTrue(String.format("Expected more labels %s nodes: %s", change, expected), expected.isEmpty());
+            assertTrue( expected.isEmpty(), format( "Expected more labels %s nodes: %s", change, expected ) );
         }
 
         public boolean isEmpty()

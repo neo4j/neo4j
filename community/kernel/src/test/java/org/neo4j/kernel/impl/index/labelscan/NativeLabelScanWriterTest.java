@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import javax.annotation.Resource;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -37,25 +38,27 @@ import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Integer.max;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.nodesWithLabel;
 
+@ExtendWith( RandomExtension.class )
 public class NativeLabelScanWriterTest
 {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
     private static final Comparator<LabelScanKey> KEY_COMPARATOR = new LabelScanLayout();
 
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public RandomRule random;
 
     @Test
     public void shouldAddLabels() throws Exception
@@ -80,7 +83,7 @@ public class NativeLabelScanWriterTest
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
             long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>() ) );
-            assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
+            assertArrayEquals( expectedNodeIds, actualNodeIds, "For label " + i );
         }
     }
 

@@ -102,9 +102,9 @@ public class CountsRotationTest
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( threadingRule )
-                                          .around( pcRule )
-                                          .around( fsRule )
-                                          .around( testDir );
+            .around( pcRule )
+            .around( fsRule )
+            .around( testDir );
 
     private FileSystemAbstraction fs;
     private File dir;

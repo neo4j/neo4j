@@ -19,7 +19,7 @@
  */
 package org.neo4j.server;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
 {

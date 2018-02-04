@@ -20,24 +20,27 @@
 package org.neo4j.ssl;
 
 import org.apache.commons.lang.SystemUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class SelfSignedCertificatesIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
+    @Resource
+    public TestDirectory testDirectory;
 
     @Test
     public void createSelfSignedCertificateWithCorrectPermissions() throws Exception

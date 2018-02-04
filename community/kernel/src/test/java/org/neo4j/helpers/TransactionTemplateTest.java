@@ -19,42 +19,47 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasProperty;
-import static org.junit.Assert.assertThat;
 
+@EnableRuleMigrationSupport
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class TransactionTemplateTest
 {
-    @Rule
-    public EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
-
+    @Resource
+    public EmbeddedDatabaseRule databaseRule;
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
     private TransactionTemplate template;
     private CountingMonitor monitor;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         monitor = new CountingMonitor();

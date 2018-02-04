@@ -19,9 +19,9 @@
  */
 package org.neo4j.ha;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.test.ha.ClusterRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
@@ -64,7 +64,7 @@ public class HAClusterStartupIT
         private HighlyAvailableGraphDatabase oldSlave1;
         private HighlyAvailableGraphDatabase oldSlave2;
 
-        @Before
+        @BeforeEach
         public void setup() throws Throwable
         {
             // setup a cluster with some data and entries in log files in fully functional and shutdown state

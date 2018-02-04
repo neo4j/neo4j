@@ -19,12 +19,12 @@
  */
 package org.neo4j.gis.spatial.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EnvelopeTest
 {
@@ -133,7 +133,7 @@ public class EnvelopeTest
         assertThat("Expected area to be correct", env.getArea(), equalTo(area));
         assertThat("Expected copied area to be correct", env.getArea(), equalTo(copy.getArea()));
         assertThat("Expected intersected area to be correct", env.getArea(), equalTo(intersection.getArea()));
-        assertTrue("Expected copied envelope to intersect", env.intersects(copy));
+        assertTrue( env.intersects( copy ), "Expected copied envelope to intersect" );
         assertThat("Expected copied envelope to intersect completely", env.overlap(copy), equalTo(1.0));
     }
 }

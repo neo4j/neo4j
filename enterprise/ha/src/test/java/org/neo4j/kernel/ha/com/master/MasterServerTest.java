@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.neo4j.com.RequestContext;

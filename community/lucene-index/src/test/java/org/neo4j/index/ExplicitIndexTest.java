@@ -20,8 +20,12 @@
 package org.neo4j.index;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -33,19 +37,21 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@EnableRuleMigrationSupport
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ExplicitIndexTest
 {
     private static final RelationshipType TYPE = RelationshipType.withName( "TYPE" );
 
-    @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -303,8 +309,9 @@ public class ExplicitIndexTest
         }
 
         // Verify
-        assertTrue( "Find relationship by property", relationshipExistsByQuery( index, startNode, endNode, false ) );
-        assertTrue( "Find relationship by property and start node", relationshipExistsByQuery( index, startNode, endNode, true ) );
+        assertTrue( relationshipExistsByQuery( index, startNode, endNode, false ), "Find relationship by property" );
+        assertTrue( relationshipExistsByQuery( index, startNode, endNode, true ),
+                "Find relationship by property and start node" );
 
         // Reindex
         try ( Transaction tx = db.beginTx() )
@@ -315,8 +322,9 @@ public class ExplicitIndexTest
         }
 
         // Verify again
-        assertTrue( "Find relationship by property", relationshipExistsByQuery( index, startNode, endNode, false ) );
-        assertTrue( "Find relationship by property and start node", relationshipExistsByQuery( index, startNode, endNode, true ) );
+        assertTrue( relationshipExistsByQuery( index, startNode, endNode, false ), "Find relationship by property" );
+        assertTrue( relationshipExistsByQuery( index, startNode, endNode, true ),
+                "Find relationship by property and start node" );
     }
 
     @Test

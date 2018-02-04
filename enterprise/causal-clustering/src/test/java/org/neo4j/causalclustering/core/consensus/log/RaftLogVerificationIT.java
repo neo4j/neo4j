@@ -19,16 +19,16 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.causalclustering.core.consensus.ReplicatedInteger.valueOf;
 
 public abstract class RaftLogVerificationIT
@@ -42,13 +42,13 @@ public abstract class RaftLogVerificationIT
 
     protected abstract long operations();
 
-    @Before
+    @BeforeEach
     public void before() throws Throwable
     {
         raftLog = new VerifyingRaftLog( createRaftLog() );
     }
 
-    @After
+    @AfterEach
     public void after() throws Throwable
     {
         raftLog.verify();

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;

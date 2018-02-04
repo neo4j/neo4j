@@ -200,7 +200,7 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     {
         Traverser traverser = description.uniqueness(
                 Uniqueness.RELATIONSHIP_RECENT, THE_WORLD_AS_WE_KNOW_IT.length ).traverse(
-                        node( "1" ) );
+                node( "1" ) );
 
         expectRelationships( traverser, THE_WORLD_AS_WE_KNOW_IT );
     }

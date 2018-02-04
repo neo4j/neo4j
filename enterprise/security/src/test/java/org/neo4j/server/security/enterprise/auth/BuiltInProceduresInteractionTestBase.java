@@ -384,7 +384,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             {
                 String writeQuery = write.executeEarly( threading, writeSubject, KernelTransaction.Type.implicit,
                         format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line ", localPort ) +
-                        "CREATE (n:A {id: line[0], square: line[1]}) " + "RETURN count(*)" );
+                                "CREATE (n:A {id: line[0], square: line[1]}) " + "RETURN count(*)" );
                 latch.startAndWaitForAllToStart();
 
                 // Then
@@ -521,9 +521,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         // get the query id of query2 and kill it
         assertSuccess( adminSubject,
                 "CALL dbms.listQueries() YIELD query, queryId " +
-                "WITH query, queryId WHERE query = '" + query2 + "'" +
-                "CALL dbms.killQuery(queryId) YIELD queryId AS killedId " +
-                "RETURN 1",
+                        "WITH query, queryId WHERE query = '" + query2 + "'" +
+                        "CALL dbms.killQuery(queryId) YIELD queryId AS killedId " +
+                        "RETURN 1",
                 itr -> assertThat( itr.hasNext(), equalTo( true ) ) );
 
         tx2.closeAndAssertSomeTermination();
@@ -559,7 +559,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertSuccess(
                 killer,
                 "CALL dbms.killQuery('" + id1 + "') YIELD username " +
-                "RETURN count(username) AS count, username", r ->
+                        "RETURN count(username) AS count, username", r ->
                 {
                     List<Map<String,Object>> actual = collectResults( r );
                     @SuppressWarnings( "unchecked" )
@@ -585,8 +585,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String result = neo.executeQuery(
                 readSubject,
                 "WITH 'Hello' AS marker CALL dbms.listQueries() YIELD queryId AS id, query " +
-                "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
-                "RETURN count(username) AS count, username",
+                        "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
+                        "RETURN count(username) AS count, username",
                 emptyMap(),
                 r ->
                 {
@@ -658,7 +658,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             {
                 String writeQuery = write.executeEarly( threading, writeSubject, KernelTransaction.Type.implicit,
                         format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line ", localPort ) +
-                        "CREATE (n:A {id: line[0], square: line[1]}) RETURN count(*)" );
+                                "CREATE (n:A {id: line[0], square: line[1]}) RETURN count(*)" );
                 latch.startAndWaitForAllToStart();
 
                 // Then
@@ -667,7 +667,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 assertSuccess(
                         adminSubject,
                         "CALL dbms.killQuery('" + writeQueryId + "') YIELD username " +
-                        "RETURN count(username) AS count, username", r ->
+                                "RETURN count(username) AS count, username", r ->
                         {
                             List<Map<String,Object>> actual = collectResults( r );
                             Matcher<Map<String,Object>> mapMatcher = allOf(
@@ -719,7 +719,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         assertSuccess(
                 adminSubject,
                 "CALL dbms.killQueries(" + idParam + ") YIELD username " +
-                "RETURN count(username) AS count, username", r ->
+                        "RETURN count(username) AS count, username", r ->
                 {
                     List<Map<String,Object>> actual = collectResults( r );
                     Matcher<Map<String,Object>> mapMatcher = allOf(
@@ -825,7 +825,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             assertSuccess(
                     adminSubject,
                     "CALL dbms.killQuery('" + loopId + "') YIELD username " +
-                    "RETURN count(username) AS count, username", r ->
+                            "RETURN count(username) AS count, username", r ->
                     {
                         List<Map<String,Object>> actual = collectResults( r );
                         Matcher<Map<String,Object>> mapMatcher = allOf(

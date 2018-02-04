@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;

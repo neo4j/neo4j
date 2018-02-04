@@ -133,21 +133,21 @@ public class TreeStatePairTest
     enum SelectionUseCase
     {
         NEWEST
-        {
-            @Override
-            TreeState select( Pair<TreeState,TreeState> states )
-            {
-                return TreeStatePair.selectNewestValidState( states );
-            }
-        },
+                {
+                    @Override
+                    TreeState select( Pair<TreeState,TreeState> states )
+                    {
+                        return TreeStatePair.selectNewestValidState( states );
+                    }
+                },
         OLDEST
-        {
-            @Override
-            TreeState select( Pair<TreeState,TreeState> states )
-            {
-                return TreeStatePair.selectOldestOrInvalid( states );
-            }
-        };
+                {
+                    @Override
+                    TreeState select( Pair<TreeState,TreeState> states )
+                    {
+                        return TreeStatePair.selectOldestOrInvalid( states );
+                    }
+                };
 
         abstract TreeState select( Pair<TreeState,TreeState> states );
     }
@@ -155,89 +155,89 @@ public class TreeStatePairTest
     enum State
     {
         EMPTY
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                // Nothing to write
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        // Nothing to write
+                    }
+                },
         BROKEN
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9, true );
-                cursor.rewind();
-                // flip some of the bits as to break the checksum
-                long someOfTheBits = cursor.getLong( cursor.getOffset() );
-                cursor.putLong( cursor.getOffset(), ~someOfTheBits );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 1, 2, 3, 4, 5, 6, 7, 8, 9, true );
+                        cursor.rewind();
+                        // flip some of the bits as to break the checksum
+                        long someOfTheBits = cursor.getLong( cursor.getOffset() );
+                        cursor.putLong( cursor.getOffset(), ~someOfTheBits );
+                    }
+                },
         VALID // stableGeneration:5 and unstableGeneration:6
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, true );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, true );
+                    }
+                },
         CRASH_VALID // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, true );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, true );
+                    }
+                },
         WIDE_VALID // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, true );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, true );
+                    }
+                },
         OLD_VALID // stableGeneration:2 and unstableGeneration:3
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, true );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, true );
+                    }
+                },
         VALID_DIRTY // stableGeneration:5 and unstableGeneration:6
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, false );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 5, 6, 7, 8, 9, 10, 11, 12, 13, false );
+                    }
+                },
         CRASH_VALID_DIRTY // stableGeneration:5 and unstableGeneration:7, i.e. crashed from VALID state
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, false );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 5, 7, 7, 8, 9, 10, 11, 12, 13, false );
+                    }
+                },
         WIDE_VALID_DIRTY // stableGeneration:4 and unstableGeneration:8, i.e. crashed but wider gap between generations
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, false );
-            }
-        },
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 4, 8, 9, 10, 11, 12, 13, 14, 15, false );
+                    }
+                },
         OLD_VALID_DIRTY // stableGeneration:2 and unstableGeneration:3
-        {
-            @Override
-            void write( PageCursor cursor )
-            {
-                TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, false );
-            }
-        };
+                {
+                    @Override
+                    void write( PageCursor cursor )
+                    {
+                        TreeState.write( cursor, 2, 3, 4, 5, 6, 7, 8, 9, 10, false );
+                    }
+                };
 
         abstract void write( PageCursor cursor );
     }
@@ -245,37 +245,37 @@ public class TreeStatePairTest
     enum Selected
     {
         FAIL
-        {
-            @Override
-            void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection )
-            {
-                try
                 {
-                    selection.select( states );
-                    fail( "Should have thrown" );
-                }
-                catch ( TreeInconsistencyException e )
-                {
-                    // good
-                }
-            }
-        },
+                    @Override
+                    void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection )
+                    {
+                        try
+                        {
+                            selection.select( states );
+                            fail( "Should have thrown" );
+                        }
+                        catch ( TreeInconsistencyException e )
+                        {
+                            // good
+                        }
+                    }
+                },
         A
-        {
-            @Override
-            void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection )
-            {
-                assertSame( states.getLeft(), selection.select( states ) );
-            }
-        },
+                {
+                    @Override
+                    void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection )
+                    {
+                        assertSame( states.getLeft(), selection.select( states ) );
+                    }
+                },
         B
-        {
-            @Override
-            void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection )
-            {
-                assertSame( states.getRight(), selection.select( states ) );
-            }
-        };
+                {
+                    @Override
+                    void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection )
+                    {
+                        assertSame( states.getRight(), selection.select( states ) );
+                    }
+                };
 
         abstract void verify( Pair<TreeState,TreeState> states, SelectionUseCase selection );
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.virtual;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -27,8 +27,8 @@ import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charArray;
@@ -259,10 +259,9 @@ public class ListTest
             for ( ListValue list2 : equivalentLists )
             {
                 assertEqual( list1, list2 );
-                assertArrayEquals(
+                assertArrayEquals( list1.asArray(), list2.asArray(),
                         format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
-                                list2.getClass().getSimpleName() ),
-                        list1.asArray(), list2.asArray() );
+                                list2.getClass().getSimpleName() ) );
             }
         }
     }
@@ -279,10 +278,9 @@ public class ListTest
                     continue;
                 }
                 assertNotEqual( list1, list2 );
-                assertFalse(
+                assertFalse( Arrays.equals( list1.asArray(), list2.asArray() ),
                         format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
-                                list2.getClass().getSimpleName() ),
-                        Arrays.equals( list1.asArray(), list2.asArray() ) );
+                                list2.getClass().getSimpleName() ) );
             }
         }
     }

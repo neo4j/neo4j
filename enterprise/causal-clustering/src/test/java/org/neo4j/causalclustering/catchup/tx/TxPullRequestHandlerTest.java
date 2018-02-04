@@ -20,7 +20,7 @@
 package org.neo4j.causalclustering.catchup.tx;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 

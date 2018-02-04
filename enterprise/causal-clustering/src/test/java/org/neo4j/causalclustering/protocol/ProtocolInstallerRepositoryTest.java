@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.protocol;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.causalclustering.core.consensus.RaftProtocolClientInstaller;
 import org.neo4j.causalclustering.core.consensus.RaftProtocolServerInstaller;
@@ -28,54 +28,71 @@ import org.neo4j.causalclustering.protocol.handshake.TestProtocols;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory.VOID_WRAPPER;
+import static org.neo4j.causalclustering.protocol.Protocol.Protocols;
+import static org.neo4j.causalclustering.protocol.Protocol.Protocols.RAFT_1;
+import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation;
+import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Client;
+import static org.neo4j.causalclustering.protocol.ProtocolInstaller.Orientation.Server;
+import static org.neo4j.causalclustering.protocol.handshake.TestProtocols.RAFT_3;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 
 public class ProtocolInstallerRepositoryTest
 {
-    private final NettyPipelineBuilderFactory pipelineBuilderFactory = new NettyPipelineBuilderFactory( VoidPipelineWrapperFactory.VOID_WRAPPER );
+    private final NettyPipelineBuilderFactory pipelineBuilderFactory = new NettyPipelineBuilderFactory( VOID_WRAPPER );
     private final RaftProtocolClientInstaller raftProtocolClientInstaller =
-            new RaftProtocolClientInstaller( NullLogProvider.getInstance(), pipelineBuilderFactory );
+            new RaftProtocolClientInstaller( getInstance(), pipelineBuilderFactory );
     private final RaftProtocolServerInstaller raftProtocolServerInstaller =
-            new RaftProtocolServerInstaller( null, pipelineBuilderFactory, NullLogProvider.getInstance() );
+            new RaftProtocolServerInstaller( null, pipelineBuilderFactory, getInstance() );
 
-    private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> clientRepository =
+    private final ProtocolInstallerRepository<Client> clientRepository =
             new ProtocolInstallerRepository<>( asList( raftProtocolClientInstaller ) );
-    private final ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> serverRepository =
+    private final ProtocolInstallerRepository<Server> serverRepository =
             new ProtocolInstallerRepository<>( asList( raftProtocolServerInstaller ) );
 
     @Test
     public void shouldReturnRaftServerInstaller()
     {
-        assertEquals( raftProtocolServerInstaller, serverRepository.installerFor( Protocol.Protocols.RAFT_1 ) );
+        assertEquals( raftProtocolServerInstaller, serverRepository.installerFor( RAFT_1 ) );
     }
 
     @Test
     public void shouldReturnRaftClientInstaller()
     {
-        assertEquals( raftProtocolClientInstaller, clientRepository.installerFor( Protocol.Protocols.RAFT_1 ) );
+        assertEquals( raftProtocolClientInstaller, clientRepository.installerFor( RAFT_1 ) );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldNotInitialiseIfMultipleInstallersForSameProtocolForServer()
     {
-        new ProtocolInstallerRepository<>( asList( raftProtocolServerInstaller, raftProtocolServerInstaller ) );
+        assertThrows( IllegalArgumentException.class, () -> {
+            new ProtocolInstallerRepository<>( asList( raftProtocolServerInstaller, raftProtocolServerInstaller ) );
+        } );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void shouldNotInitialiseIfMultipleInstallersForSameProtocolForClient()
     {
-        new ProtocolInstallerRepository<>( asList( raftProtocolClientInstaller, raftProtocolClientInstaller ) );
+        assertThrows( IllegalArgumentException.class, () -> {
+            new ProtocolInstallerRepository<>( asList( raftProtocolClientInstaller, raftProtocolClientInstaller ) );
+        } );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowIfUnknownProtocolForServer()
     {
-        serverRepository.installerFor( TestProtocols.RAFT_3 );
+        assertThrows( IllegalStateException.class, () -> {
+            serverRepository.installerFor( RAFT_3 );
+        } );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test
     public void shouldThrowIfUnknownProtocolForClient()
     {
-        clientRepository.installerFor( TestProtocols.RAFT_3 );
+        assertThrows( IllegalStateException.class, () -> {
+            clientRepository.installerFor( RAFT_3 );
+        } );
     }
 }

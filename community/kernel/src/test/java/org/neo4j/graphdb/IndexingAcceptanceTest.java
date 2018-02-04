@@ -19,13 +19,13 @@
  */
 package org.neo4j.graphdb;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Map;
+import javax.annotation.Resource;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -50,12 +51,12 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
 import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -67,8 +68,27 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.isEmpty;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class IndexingAcceptanceTest
 {
+    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
+
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
+
+    private Label LABEL1;
+    private Label LABEL2;
+    private Label LABEL3;
+
+    @BeforeEach
+    public void setupLabels( TestInfo testInfo )
+    {
+        String testName = testInfo.getDisplayName();
+        LABEL1 = Label.label( "LABEL1-" + testName );
+        LABEL2 = Label.label( "LABEL2-" + testName );
+        LABEL3 = Label.label( "LABEL3-" + testName );
+    }
+
     /* This test is a bit interesting. It tests a case where we've got a property that sits in one
      * property block and the value is of a long type. So given that plus that there's an index for that
      * label/property, do an update that changes the long value into a value that requires two property blocks.
@@ -668,25 +688,6 @@ public class IndexingAcceptanceTest
             found.delete();
             tx.success();
         }
-    }
-
-    public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
-
-    @ClassRule
-    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    @Rule
-    public final TestName testName = new TestName();
-
-    private Label LABEL1;
-    private Label LABEL2;
-    private Label LABEL3;
-
-    @Before
-    public void setupLabels()
-    {
-        LABEL1 = Label.label( "LABEL1-" + testName.getMethodName() );
-        LABEL2 = Label.label( "LABEL2-" + testName.getMethodName() );
-        LABEL3 = Label.label( "LABEL3-" + testName.getMethodName() );
     }
 
     private Node createNode( GraphDatabaseService beansAPI, Map<String, Object> properties, Label... labels )

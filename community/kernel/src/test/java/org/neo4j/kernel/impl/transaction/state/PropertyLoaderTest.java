@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Resource;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
@@ -44,25 +46,28 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@EnableRuleMigrationSupport
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class PropertyLoaderTest
 {
     private static final int PROP_KEY_ID = 42;
 
-    @Rule
-    public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule db;
 
     private final IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
 
@@ -71,7 +76,7 @@ public class PropertyLoaderTest
     private final RelationshipStore relationshipStore = mock( RelationshipStore.class );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
 
-    @Before
+    @BeforeEach
     public void setUpMocking()
     {
         doReturn( nodeStore ).when( neoStores ).getNodeStore();

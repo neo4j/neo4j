@@ -91,9 +91,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Create node index\n" +
-                 "\n" +
-                 "NOTE: Instead of creating the index this way, you can simply start to use\n" +
-                 "it, and it will be created automatically with default configuration." )
+            "\n" +
+            "NOTE: Instead of creating the index this way, you can simply start to use\n" +
+            "it, and it will be created automatically with default configuration." )
     @Test
     public void shouldCreateANamedNodeIndex()
     {
@@ -131,10 +131,10 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Create node index with configuration.\n\n" +
-                 "This request is only necessary if you want to customize the index settings. \n" +
-                 "If you are happy with the defaults, you can just start indexing nodes/relationships, as\n" +
-                 "non-existent indexes will automatically be created as you do. See\n" +
-                 "<<indexing-create-advanced>> for more information on index configuration." )
+            "This request is only necessary if you want to customize the index settings. \n" +
+            "If you are happy with the defaults, you can just start indexing nodes/relationships, as\n" +
+            "non-existent indexes will automatically be created as you do. See\n" +
+            "<<indexing-create-advanced>> for more information on index configuration." )
     @Test
     public void shouldCreateANamedNodeIndexWithConfiguration()
     {
@@ -151,15 +151,15 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Add node to index.\n" +
-                 "\n" +
-                 "Associates a node with the given key/value pair in the given index.\n" +
-                 "\n" +
-                 "NOTE: Spaces in the URI have to be encoded as +%20+.\n" +
-                 "\n" +
-                 "CAUTION: This does *not* overwrite previous entries. If you index the\n" +
-                 "same key/value/item combination twice, two index entries are created. To\n" +
-                 "do update-type operations, you need to delete the old entry before adding\n" +
-                 "a new one." )
+            "\n" +
+            "Associates a node with the given key/value pair in the given index.\n" +
+            "\n" +
+            "NOTE: Spaces in the URI have to be encoded as +%20+.\n" +
+            "\n" +
+            "CAUTION: This does *not* overwrite previous entries. If you index the\n" +
+            "same key/value/item combination twice, two index entries are created. To\n" +
+            "do update-type operations, you need to delete the old entry before adding\n" +
+            "a new one." )
     @Test
     public void shouldAddToIndex() throws Exception
     {
@@ -184,8 +184,8 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Find node by exact match.\n" +
-                 "\n" +
-                 "NOTE: Spaces in the URI have to be encoded as +%20+." )
+            "\n" +
+            "NOTE: Spaces in the URI have to be encoded as +%20+." )
     @Test
     public void shouldAddToIndexAndRetrieveItByExactMatch() throws Exception
     {
@@ -209,22 +209,22 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Find node by query.\n" +
-                 "\n" +
-                 "The query language used here depends on what type of index you are\n" +
-                 "querying. The default index type is Lucene, in which case you should use\n" +
-                 "the Lucene query language here. Below an example of a fuzzy search over\n" +
-                 "multiple keys.\n" +
-                 "\n" +
-                 "See: {lucene-base-uri}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html\n" +
-                 "\n" +
-                 "Getting the results with a predefined ordering requires adding the\n" +
-                 "parameter\n" +
-                 "\n" +
-                 "`order=ordering`\n" +
-                 "\n" +
-                 "where ordering is one of index, relevance or score. In this case an\n" +
-                 "additional field will be added to each result, named score, that holds\n" +
-                 "the float value that is the score reported by the query result." )
+            "\n" +
+            "The query language used here depends on what type of index you are\n" +
+            "querying. The default index type is Lucene, in which case you should use\n" +
+            "the Lucene query language here. Below an example of a fuzzy search over\n" +
+            "multiple keys.\n" +
+            "\n" +
+            "See: {lucene-base-uri}/queryparser/org/apache/lucene/queryparser/classic/package-summary.html\n" +
+            "\n" +
+            "Getting the results with a predefined ordering requires adding the\n" +
+            "parameter\n" +
+            "\n" +
+            "`order=ordering`\n" +
+            "\n" +
+            "where ordering is one of index, relevance or score. In this case an\n" +
+            "additional field will be added to each result, named score, that holds\n" +
+            "the float value that is the score reported by the query result." )
     @Test
     public void shouldAddToIndexAndRetrieveItByQuery() throws JsonParseException
     {
@@ -238,7 +238,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         String entity = gen()
                 .expectedStatus( 200 )
                 .get( functionalTestHelper.indexNodeUri( indexName ) + "?query=" + key +
-                      ":Build~0.1%20AND%20Gender:Male" )
+                        ":Build~0.1%20AND%20Gender:Male" )
                 .entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
@@ -260,7 +260,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
 
         String entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                + "?query=" + key + ":Build~0.1%20AND%20Gender:Male" ).entity();
+                        + "?query=" + key + ":Build~0.1%20AND%20Gender:Male" ).entity();
 
         @SuppressWarnings( "unchecked" )
         Collection<LinkedHashMap<String, String>> hits =
@@ -304,7 +304,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
 
         String entity = gen().expectedStatus( 200 ).get(
                 functionalTestHelper.indexNodeUri( indexName )
-                + "?query=" + key + ":Builder~%20AND%20Gender:Male&order=relevance" ).entity();
+                        + "?query=" + key + ":Builder~%20AND%20Gender:Male&order=relevance" ).entity();
 
         Collection<?> hits = (Collection<?>) JsonHelper.readJson( entity );
         assertEquals( 2, hits.size() );
@@ -654,8 +654,8 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Get or create unique node (create).\n" +
-                 "\n" +
-                 "The node is created if it doesn't exist in the unique index already." )
+            "\n" +
+            "The node is created if it doesn't exist in the unique index already." )
     @Test
     public void get_or_create_a_node_in_an_unique_index() throws Exception
     {
@@ -667,9 +667,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 201 /* created */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
-                          + "\", \"properties\": {\"" + key + "\": \"" + value
-                                                       + "\", \"sequence\": 1}}" )
-                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
+                        + "\", \"properties\": {\"" + key + "\": \"" + value
+                        + "\", \"sequence\": 1}}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
 
         MultivaluedMap<String, String> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
@@ -690,9 +690,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 201 /* created */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
-                                                       + "\", \"properties\": {\"" + key + "\": \"" + value
-                                                       + "\", \"array\": [1,2,3]}}" )
-                                     .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
+                        + "\", \"properties\": {\"" + key + "\": \"" + value
+                        + "\", \"array\": [1,2,3]}}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
 
         MultivaluedMap<String, String> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
@@ -711,11 +711,11 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Get or create unique node (existing).\n" +
-                 "\n" +
-                 "Here,\n" +
-                 "a node is not created but the existing unique node returned, since another node\n" +
-                 "is indexed with the same data already. The node data returned is then that of the\n" +
-                 "already existing node." )
+            "\n" +
+            "Here,\n" +
+            "a node is not created but the existing unique node returned, since another node\n" +
+            "is indexed with the same data already. The node data returned is then that of the\n" +
+            "already existing node." )
     @Test
     public void get_or_create_unique_node_if_already_existing() throws Exception
     {
@@ -739,9 +739,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 200 /* ok */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
-                          + "\", \"properties\": {\"" + key + "\": \"" + value
-                                                       + "\", \"sequence\": 2}}" )
-                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
+                        + "\", \"properties\": {\"" + key + "\": \"" + value
+                        + "\", \"sequence\": 2}}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
 
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
@@ -750,10 +750,10 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Create a unique node or return fail (create).\n" +
-                 "\n" +
-                 "Here, in case\n" +
-                 "of an already existing node, an error should be returned. In this\n" +
-                 "example, no existing indexed node is found and a new node is created." )
+            "\n" +
+            "Here, in case\n" +
+            "of an already existing node, an error should be returned. In this\n" +
+            "example, no existing indexed node is found and a new node is created." )
     @Test
     public void create_a_unique_node_or_fail_create() throws Exception
     {
@@ -765,10 +765,10 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 201 /* created */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
-                          + "\", \"properties\": {\"" + key + "\": \"" + value
-                                                       + "\", \"sequence\": 1}}" )
-                                     .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" +
-                                            "" );
+                        + "\", \"properties\": {\"" + key + "\": \"" + value
+                        + "\", \"sequence\": 1}}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" +
+                        "" );
 
         MultivaluedMap<String, String> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
@@ -779,11 +779,11 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Create a unique node or return fail (fail).\n" +
-                 "\n" +
-                 "Here, in case\n" +
-                 "of an already existing node, an error should be returned. In this\n" +
-                 "example, an existing node indexed with the same data\n" +
-                 "is found and an error is returned." )
+            "\n" +
+            "Here, in case\n" +
+            "of an already existing node, an error should be returned. In this\n" +
+            "example, an existing node indexed with the same data\n" +
+            "is found and an error is returned." )
     @Test
     public void create_a_unique_node_or_return_fail___fail() throws Exception
     {
@@ -810,9 +810,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                 .expectedStatus( 409 /* conflict */ )
                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value
-                          + "\", \"properties\": {\"" + key + "\": \"" + value
-                                                       + "\", \"sequence\": 2}}" )
-                                    .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
+                        + "\", \"properties\": {\"" + key + "\": \"" + value
+                        + "\", \"sequence\": 2}}" )
+                .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" );
 
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
@@ -821,11 +821,11 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Add an existing node to unique index (not indexed).\n" +
-                 "\n" +
-                 "Associates a node with the given key/value pair in the given unique\n" +
-                 "index.\n" +
-                 "\n" +
-                 "In this example, we are using `create_or_fail` uniqueness." )
+            "\n" +
+            "Associates a node with the given key/value pair in the given unique\n" +
+            "index.\n" +
+            "\n" +
+            "In this example, we are using `create_or_fail` uniqueness." )
     @Test
     public void addExistingNodeToUniqueIndexAdded() throws Exception
     {
@@ -849,9 +849,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Add an existing node to unique index (already indexed).\n" +
-                 "\n" +
-                 "In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,\n" +
-                 "as we have set the uniqueness to `create_or_fail`." )
+            "\n" +
+            "In this case, the node already exists in the index, and thus we get a `HTTP 409` status response,\n" +
+            "as we have set the uniqueness to `create_or_fail`." )
     @Test
     public void addExistingNodeToUniqueIndexExisting()
     {
@@ -877,10 +877,10 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     }
 
     @Documented( "Backward Compatibility Test (using old syntax ?unique)\n" +
-                 "Put node if absent - Create.\n" +
-                 "\n" +
-                 "Add a node to an index unless a node already exists for the given index data. In\n" +
-                 "this case, a new node is created since nothing existing is found in the index." )
+            "Put node if absent - Create.\n" +
+            "\n" +
+            "Add a node to an index unless a node already exists for the given index data. In\n" +
+            "this case, a new node is created since nothing existing is found in the index." )
     @Test
     public void put_node_if_absent___create()
     {
@@ -890,10 +890,10 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         helper.createNodeIndex( index );
         String uri = functionalTestHelper.nodeIndexUri() + index + "?unique";
         gen().expectedStatus( 201 /* created */ )
-                 .payloadType( MediaType.APPLICATION_JSON_TYPE )
-                 .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", " +
-                         "\"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
-                 .post( uri );
+                .payloadType( MediaType.APPLICATION_JSON_TYPE )
+                .payload( "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", " +
+                        "\"uri\":\"" + functionalTestHelper.nodeUri( helper.createNode() ) + "\"}" )
+                .post( uri );
     }
 
     @Test
@@ -943,7 +943,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
     private String createJsonStringFor( final long nodeId, final String key, final String value )
     {
         return "{\"key\": \"" + key + "\", \"value\": \"" + value + "\", \"uri\": \""
-               + functionalTestHelper.nodeUri( nodeId ) + "\"}";
+                + functionalTestHelper.nodeUri( nodeId ) + "\"}";
     }
 
     private Object generateNodeIndexCreationPayload( String key, String value, String nodeUri )

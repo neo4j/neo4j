@@ -19,35 +19,37 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 
+import static java.lang.System.nanoTime;
 import static java.lang.Thread.sleep;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.scheduler.JobScheduler.Group;
 import static org.neo4j.scheduler.JobScheduler.Groups.indexPopulation;
 import static org.neo4j.test.ReflectionUtil.replaceValueInPrivateField;
 
@@ -59,7 +61,7 @@ public class Neo4jJobSchedulerTest
 
     private final Runnable countInvocationsJob = invocations::incrementAndGet;
 
-    @After
+    @AfterEach
     public void stopScheduler()
     {
         life.shutdown();
@@ -67,23 +69,26 @@ public class Neo4jJobSchedulerTest
 
     // Tests schedules a recurring job to run 5 times with 100ms in between.
     // The timeout of 10s should be enough.
-    @Test( timeout = 10_000 )
-    public void shouldRunRecurringJob() throws Throwable
+    @Test
+    public void shouldRunRecurringJob()
     {
-        // Given
-        long period = 100;
-        int count = 5;
-        life.start();
+        assertTimeout( ofMillis( 10_000 ), () -> {
+            //  Given
 
-        // When
-        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
-        awaitInvocationCount( count );
-        scheduler.shutdown();
+            long period = 100;
+            int count = 5;
+            life.start();
 
-        // Then assert that the recurring job was stopped (when the scheduler was shut down)
-        int actualInvocations = invocations.get();
-        sleep( period * 2 );
-        assertThat( invocations.get(), equalTo( actualInvocations ) );
+            // When
+            scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
+            awaitInvocationCount( count );
+            scheduler.shutdown();
+
+            // Then assert that the recurring job was stopped (when the scheduler was shut down)
+            int actualInvocations = invocations.get();
+            sleep( period * 2 );
+            assertThat( invocations.get(), equalTo( actualInvocations ) );
+        } );
     }
 
     @Test
@@ -92,7 +97,7 @@ public class Neo4jJobSchedulerTest
         // Given
         long period = 2;
         life.start();
-        JobScheduler.JobHandle jobHandle =
+        JobHandle jobHandle =
                 scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
         awaitFirstInvocation();
 
@@ -126,17 +131,16 @@ public class Neo4jJobSchedulerTest
         final AtomicLong runTime = new AtomicLong();
         final CountDownLatch latch = new CountDownLatch( 1 );
 
-        long time = System.nanoTime();
+        long time = nanoTime();
 
-        scheduler.schedule( new JobScheduler.Group( "group" ), () ->
-        {
-            runTime.set( System.nanoTime() );
+        scheduler.schedule( new Group( "group" ), () -> {
+            runTime.set( nanoTime() );
             latch.countDown();
-        }, 100, TimeUnit.MILLISECONDS );
+        }, 100, MILLISECONDS );
 
         latch.await();
 
-        assertTrue( time + TimeUnit.MILLISECONDS.toNanos( 100 ) <= runTime.get() );
+        assertTrue( time + MILLISECONDS.toNanos( 100 ) <= runTime.get() );
     }
 
     @Test
@@ -179,11 +183,10 @@ public class Neo4jJobSchedulerTest
 
         // WHEN
         AtomicBoolean halted = new AtomicBoolean();
-        Runnable job = () ->
-        {
+        Runnable job = () -> {
             while ( !halted.get() )
             {
-                LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
+                parkNanos( MILLISECONDS.toNanos( 10 ) );
             }
         };
         JobHandle handle = neo4jJobScheduler.schedule( indexPopulation, job );
@@ -204,7 +207,7 @@ public class Neo4jJobSchedulerTest
     {
         while ( invocations.get() < count )
         {
-            Thread.sleep( 10 );
+            sleep( 10 );
         }
     }
 }

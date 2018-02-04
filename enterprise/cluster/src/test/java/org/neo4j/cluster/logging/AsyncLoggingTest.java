@@ -19,7 +19,7 @@
  */
 package org.neo4j.cluster.logging;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.async.AsyncLogProvider;

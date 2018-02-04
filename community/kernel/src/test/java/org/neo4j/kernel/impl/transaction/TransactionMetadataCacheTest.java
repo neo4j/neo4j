@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class TransactionMetadataCacheTest
 {
@@ -81,7 +81,7 @@ public class TransactionMetadataCacheTest
         try
         {
             cache.cacheTransactionMetadata( txId, position, masterId, authorId, checksum, timestamp );
-            fail();
+            fail("Failure was expected");
         }
         catch ( RuntimeException ex )
         {

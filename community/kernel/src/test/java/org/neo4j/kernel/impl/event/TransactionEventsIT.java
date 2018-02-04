@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.event;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import javax.annotation.Resource;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,20 +53,23 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
@@ -72,14 +77,16 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
 /**
  * Test for randomly creating data and verifying transaction data seen in transaction event handlers.
  */
+@EnableRuleMigrationSupport
+@ExtendWith( {RandomExtension.class, ImpermanentDatabaseExtension.class} )
 public class TransactionEventsIT
 {
-    private final DatabaseRule db = new ImpermanentDatabaseRule();
-    private final RandomRule random = new RandomRule();
-    private final ExpectedException expectedException = ExpectedException.none();
-
+    @Resource
+    public ImpermanentDatabaseRule db;
+    @Resource
+    public RandomRule random;
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( random ).around( expectedException ).around( db );
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void shouldSeeExpectedTransactionData()
@@ -132,19 +139,19 @@ public class TransactionEventsIT
 
         long firstTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
         long firstTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
-        assertTrue("Should be positive tx id.", firstTransactionId > 0 );
-        assertTrue("Should be positive.", firstTransactionCommitTime > 0);
+        assertTrue( firstTransactionId > 0, "Should be positive tx id." );
+        assertTrue( firstTransactionCommitTime > 0, "Should be positive." );
 
         runTransaction();
 
         long secondTransactionId = commitTimeTracker.getTransactionIdAfterCommit();
         long secondTransactionCommitTime = commitTimeTracker.getCommitTimeAfterCommit();
-        assertTrue("Should be positive tx id.", secondTransactionId > 0 );
-        assertTrue("Should be positive commit time value.", secondTransactionCommitTime > 0);
+        assertTrue( secondTransactionId > 0, "Should be positive tx id." );
+        assertTrue( secondTransactionCommitTime > 0, "Should be positive commit time value." );
 
-        assertTrue( "Second tx id should be higher then first one.", secondTransactionId > firstTransactionId );
-        assertTrue( "Second commit time should be higher or equals then first one.",
-                secondTransactionCommitTime >= firstTransactionCommitTime );
+        assertTrue( secondTransactionId > firstTransactionId, "Second tx id should be higher then first one." );
+        assertTrue( secondTransactionCommitTime >= firstTransactionCommitTime,
+                "Second commit time should be higher or equals then first one." );
     }
 
     @Test

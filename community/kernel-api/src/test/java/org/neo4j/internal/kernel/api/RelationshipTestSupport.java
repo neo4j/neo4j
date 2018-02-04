@@ -35,7 +35,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public class RelationshipTestSupport
@@ -153,11 +153,11 @@ public class RelationshipTestSupport
 
         while ( relationship.next() )
         {
-            assertEquals( "same type", expectedType, relationship.label() );
+            assertEquals( expectedType, relationship.label(), "same type" );
             count++;
         }
 
-        assertEquals( format( "expected number of relationships for key '%s'", key ), expectedCount, count );
+        assertEquals( expectedCount, count, format( "expected number of relationships for key '%s'", key ) );
     }
 
     static class StartRelationship
@@ -200,9 +200,8 @@ public class RelationshipTestSupport
     {
         for ( Map.Entry<String, Integer> expected : expectedCounts.entrySet() )
         {
-            assertEquals(
-                    format( "counts for relationship key '%s' are equal", expected.getKey() ),
-                    expected.getValue(), counts.get( expected.getKey()) );
+            assertEquals( expected.getValue(), counts.get( expected.getKey() ),
+                    format( "counts for relationship key '%s' are equal", expected.getKey() ) );
         }
     }
 

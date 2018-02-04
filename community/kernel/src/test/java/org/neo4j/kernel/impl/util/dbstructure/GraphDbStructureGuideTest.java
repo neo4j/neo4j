@@ -19,12 +19,13 @@
  */
 package org.neo4j.kernel.impl.util.dbstructure;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.mockito.Mockito.mock;
@@ -48,8 +50,15 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.kernel.api.ReadOperations.ANY_LABEL;
 import static org.neo4j.kernel.api.ReadOperations.ANY_RELATIONSHIP_TYPE;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class GraphDbStructureGuideTest
 {
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
+    private GraphDatabaseService graph;
+    private ThreadToStatementContextBridge bridge;
+    private Transaction tx;
+
     @Test
     public void visitsLabelIds()
     {
@@ -298,13 +307,7 @@ public class GraphDbStructureGuideTest
         }
     }
 
-    @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    private GraphDatabaseService graph;
-    private ThreadToStatementContextBridge bridge;
-    private Transaction tx;
-
-    @Before
+    @BeforeEach
     public void setUp()
     {
         GraphDatabaseAPI api = dbRule.getGraphDatabaseAPI();
@@ -315,7 +318,7 @@ public class GraphDbStructureGuideTest
 
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         if ( bridge.hasTransaction() )

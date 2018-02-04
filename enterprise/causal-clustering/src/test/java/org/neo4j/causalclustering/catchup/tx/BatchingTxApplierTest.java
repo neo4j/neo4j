@@ -19,14 +19,13 @@
  */
 package org.neo4j.causalclustering.catchup.tx;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -37,14 +36,18 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertEquals;
+import static java.time.Duration.ofMillis;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.logging.NullLogProvider.getInstance;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
 public class BatchingTxApplierTest
@@ -55,18 +58,18 @@ public class BatchingTxApplierTest
     private final long startTxId = 31L;
     private final int maxBatchSize = 16;
 
-    private final BatchingTxApplier txApplier = new BatchingTxApplier(
-            maxBatchSize, () -> idStore, () -> commitProcess, new Monitors(), PageCursorTracerSupplier.NULL,
-            EmptyVersionContextSupplier.EMPTY, NullLogProvider.getInstance() );
+    private final BatchingTxApplier txApplier =
+            new BatchingTxApplier( maxBatchSize, () -> idStore, () -> commitProcess, new Monitors(),
+                    PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY, getInstance() );
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when( idStore.getLastCommittedTransactionId() ).thenReturn( startTxId );
         txApplier.start();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         txApplier.stop();
@@ -134,36 +137,35 @@ public class BatchingTxApplierTest
         assertTransactionsCommitted( startTxId + 1, maxBatchSize );
     }
 
-    @Test( timeout = 3_000 )
-    public void shouldGiveUpQueueingOnStop() throws Throwable
+    @Test
+    public void shouldGiveUpQueueingOnStop()
     {
-        // given
-        for ( int i = 1; i <= maxBatchSize; i++ ) // fell the queue
-        {
-            txApplier.queue( createTxWithId( startTxId + i ) );
-        }
+        assertTimeout( ofMillis( 3_000 ), () -> {
+            //  given
 
         // when
-        CountDownLatch latch = new CountDownLatch( 1 );
-        Thread thread = new Thread( () -> {
-            latch.countDown();
-            try
-            {
-                txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e );
-            }
+            CountDownLatch latch = new CountDownLatch( 1 );
+            Thread thread = new Thread( () -> {
+                latch.countDown();
+                try
+                {
+                    txApplier.queue( createTxWithId( startTxId + maxBatchSize + 1 ) );
+                }
+                catch ( Exception e )
+                {
+                    throw new RuntimeException( e );
+                }
+            } );
+
+
+            thread.start();
+
+            latch.await();
+            txApplier.stop();
+
+            // then we don't get stuck
+            thread.join();
         } );
-
-        thread.start();
-
-        latch.await();
-        txApplier.stop();
-
-        // then we don't get stuck
-        thread.join();
     }
 
     private CommittedTransactionRepresentation createTxWithId( long txId )
@@ -179,10 +181,10 @@ public class BatchingTxApplierTest
 
     private void assertTransactionsCommitted( long startTxId, long expectedCount ) throws TransactionFailureException
     {
-        ArgumentCaptor<TransactionToApply> batchCaptor = ArgumentCaptor.forClass( TransactionToApply.class );
+        ArgumentCaptor<TransactionToApply> batchCaptor = forClass( TransactionToApply.class );
         verify( commitProcess ).commit( batchCaptor.capture(), eq( NULL ), eq( EXTERNAL ) );
 
-        TransactionToApply batch = Iterables.single( batchCaptor.getAllValues() );
+        TransactionToApply batch = single( batchCaptor.getAllValues() );
         long expectedTxId = startTxId;
         long count = 0;
         while ( batch != null )

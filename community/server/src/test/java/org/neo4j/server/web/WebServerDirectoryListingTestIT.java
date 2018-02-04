@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.web;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 import org.neo4j.test.server.HTTP;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
 {
@@ -58,7 +58,7 @@ public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
         assertEquals( 403, illegalResource.status() );
     }
 
-    @After
+    @AfterEach
     public void cleanup()
     {
         if ( server != null )

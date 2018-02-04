@@ -20,7 +20,7 @@
 package org.neo4j.tools.txlog;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -60,10 +60,10 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.tools.txlog.checktypes.CheckTypes.CHECK_TYPES;
@@ -928,7 +928,7 @@ public class CheckTxLogsTest
         LogFiles logFiles = getLogFiles();
         boolean logsValidity = checkTxLogs.validateCheckPoints( logFiles, handler );
 
-        assertTrue("empty logs should be valid", logsValidity);
+        assertTrue( logsValidity, "empty logs should be valid" );
         verify( entryCursor ).close();
     }
 

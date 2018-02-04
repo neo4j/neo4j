@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.lang.Thread.sleep;
@@ -52,8 +54,13 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
  * the full 0.5 seconds to try to reproduce it.
  *
  */
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class ConcurrentCreateAndGetRelationshipsIT
 {
+    @Resource
+    public ImpermanentDatabaseRule dbRule;
+    private static final RelationshipType RELTYPE = MyRelTypes.TEST;
+
     @Test
     public void tryToReproduceTheIssue() throws Exception
     {
@@ -114,10 +121,6 @@ public class ConcurrentCreateAndGetRelationshipsIT
             return node;
         }
     }
-
-    @Rule
-    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     private static class Worker extends Thread
     {

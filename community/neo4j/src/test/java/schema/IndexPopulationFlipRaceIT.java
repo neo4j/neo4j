@@ -19,8 +19,10 @@
  */
 package schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -32,23 +34,25 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
+@ExtendWith( {RandomExtension.class, EmbeddedDatabaseExtension.class} )
 public class IndexPopulationFlipRaceIT
 {
     private static final int NODES_PER_INDEX = 10;
 
-    @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Resource
+    public EmbeddedDatabaseRule db;
+    @Resource
+    public RandomRule random;
 
     @Test
     public void shouldAtomicallyFlipMultipleIndexes() throws Exception

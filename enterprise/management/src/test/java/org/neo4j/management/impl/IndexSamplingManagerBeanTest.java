@@ -19,21 +19,24 @@
  */
 package org.neo4j.management.impl;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_ALL;
+import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
+import static org.neo4j.management.impl.IndexSamplingManagerBean.StoreAccess;
 
 public class IndexSamplingManagerBeanTest
 {
@@ -48,7 +51,7 @@ public class IndexSamplingManagerBeanTest
     private StoreReadLayer storeReadLayer;
     private IndexingService indexingService;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         dataSource = mock( NeoStoreDataSource.class );
@@ -68,63 +71,67 @@ public class IndexSamplingManagerBeanTest
     public void samplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
     {
         // Given
-        IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
+        StoreAccess storeAccess = new StoreAccess();
         storeAccess.registered( dataSource );
 
         // When
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
 
         // Then
-        verify( indexingService, times( 1 ) ).triggerIndexSampling(
-                SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID ) ,
-                IndexSamplingMode.TRIGGER_REBUILD_UPDATED);
+        verify( indexingService, times( 1 ) )
+                .triggerIndexSampling( forLabel( LABEL_ID, PROPERTY_ID ), TRIGGER_REBUILD_UPDATED );
     }
 
     @Test
     public void forceSamplingTriggeredWhenIdsArePresent() throws IndexNotFoundKernelException
     {
         // Given
-        IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
+        StoreAccess storeAccess = new StoreAccess();
         storeAccess.registered( dataSource );
 
         // When
         storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, true );
 
         // Then
-        verify( indexingService, times( 1 ) ).triggerIndexSampling(
-                SchemaDescriptorFactory.forLabel( LABEL_ID, PROPERTY_ID ) ,
-                IndexSamplingMode.TRIGGER_REBUILD_ALL);
+        verify( indexingService, times( 1 ) )
+                .triggerIndexSampling( forLabel( LABEL_ID, PROPERTY_ID ), TRIGGER_REBUILD_ALL );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void exceptionThrownWhenMissingLabel()
     {
-        // Given
-        IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
-        storeAccess.registered( dataSource );
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            StoreAccess storeAccess = new StoreAccess();
+            storeAccess.registered( dataSource );
 
-        // When
-        storeAccess.triggerIndexSampling( NON_EXISTING_LABEL, EXISTING_PROPERTY, false );
+            // When
+            storeAccess.triggerIndexSampling( NON_EXISTING_LABEL, EXISTING_PROPERTY, false );
+        } );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void exceptionThrownWhenMissingProperty()
     {
-        // Given
-        IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
-        storeAccess.registered( dataSource );
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            StoreAccess storeAccess = new StoreAccess();
+            storeAccess.registered( dataSource );
 
-        // When
-        storeAccess.triggerIndexSampling( EXISTING_LABEL, NON_EXISTING_PROPERTY, false );
+            // When
+            storeAccess.triggerIndexSampling( EXISTING_LABEL, NON_EXISTING_PROPERTY, false );
+        } );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void exceptionThrownWhenNotRegistered()
     {
-        // Given
-        IndexSamplingManagerBean.StoreAccess storeAccess = new IndexSamplingManagerBean.StoreAccess();
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            StoreAccess storeAccess = new StoreAccess();
 
-        // When
-        storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
+            // When
+            storeAccess.triggerIndexSampling( EXISTING_LABEL, EXISTING_PROPERTY, false );
+        } );
     }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
@@ -50,7 +50,7 @@ public class AutoIndexOperationsTest
     private final String indexedPropertyName = "bar";
     private final String indexedPropertyName2 = "baz";
 
-    @Before
+    @BeforeEach
     public void setup() throws TokenNotFoundException
     {
         when(tokens.getTokenById( nonIndexedProperty )).thenReturn( new Token( nonIndexedPropertyName, nonIndexedProperty ) );

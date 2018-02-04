@@ -19,8 +19,8 @@
  */
 package org.neo4j.io.pagecache.tracing;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,14 +30,14 @@ import org.neo4j.io.pagecache.PageSwapper;
 
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DefaultPageCacheTracerTest
 {
     private PageCacheTracer tracer;
     private PageSwapper swapper;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         tracer = new DefaultPageCacheTracer();

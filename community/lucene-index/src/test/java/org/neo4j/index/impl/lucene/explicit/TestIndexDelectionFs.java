@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,14 +34,14 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestIndexDelectionFs
 {
     private static GraphDatabaseAPI db;
 
-    @BeforeClass
+    @BeforeAll
     public static void doBefore() throws IOException
     {
         File directory = new File( "target/test-data/deletion" );
@@ -49,7 +49,7 @@ public class TestIndexDelectionFs
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
     }
 
-    @AfterClass
+    @AfterAll
     public static void doAfter()
     {
         db.shutdown();

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -30,26 +30,29 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.test.extension.ImpermanentDatabaseExtension;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.graphdb.Label.label;
 
+@ExtendWith( ImpermanentDatabaseExtension.class )
 public class DeleteRelationshipStressIT
 {
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
-    @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    @Resource
+    public ImpermanentDatabaseRule db;
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         for ( int i = 0; i < 100; i++ )
@@ -74,7 +77,7 @@ public class DeleteRelationshipStressIT
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         executorService.shutdown();

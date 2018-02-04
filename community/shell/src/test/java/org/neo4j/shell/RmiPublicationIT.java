@@ -19,8 +19,8 @@
  */
 package org.neo4j.shell;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,18 +28,24 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.reflect.Field;
 import java.util.Properties;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.getProperty;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class RmiPublicationIT
 {
+    @Resource
+    public TestDirectory testDirectory;
+
     public static File createDefaultConfigFile( File path ) throws IOException
     {
         File configFile = new File( path, Config.DEFAULT_CONFIG_FILE_NAME );
@@ -63,9 +69,6 @@ public class RmiPublicationIT
     {
         assertEquals( 0, spawnJvm( DontShutdownLocalServer.class, "server" ) );
     }
-
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private int spawnJvm( Class<?> mainClass, String name ) throws Exception
     {

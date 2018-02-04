@@ -19,12 +19,12 @@
  */
 package org.neo4j.server.enterprise;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * The classes that extend AbstractNeoServer are currently known to be:
@@ -44,15 +44,15 @@ public class ServerClassNameTest
     @Test
     public void shouldMaintainNamingOfCommunityNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
     {
-        assertEquals( getErrorMessage( CommunityNeoServer.class ), "communityneoserver",
-                CommunityNeoServer.class.getSimpleName().toLowerCase() );
+        assertEquals( "communityneoserver", CommunityNeoServer.class.getSimpleName().toLowerCase(),
+                getErrorMessage( CommunityNeoServer.class ) );
     }
 
     @Test
     public void shouldMaintainNamingOfEnterpriseNeoServerSoThatTheNeo4jEditionIsCorrectlyShownToRESTAPICallers()
     {
-        assertEquals( getErrorMessage( OpenEnterpriseNeoServer.class ), "openenterpriseneoserver",
-                OpenEnterpriseNeoServer.class.getSimpleName().toLowerCase() );
+        assertEquals( "openenterpriseneoserver", OpenEnterpriseNeoServer.class.getSimpleName().toLowerCase(),
+                getErrorMessage( OpenEnterpriseNeoServer.class ) );
     }
 
     private String getErrorMessage( Class<? extends AbstractNeoServer> neoServerClass )

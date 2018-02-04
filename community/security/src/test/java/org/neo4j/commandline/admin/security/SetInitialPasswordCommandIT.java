@@ -19,9 +19,9 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -36,9 +36,9 @@ import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.FileUserRepository;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -57,7 +57,7 @@ public class SetInitialPasswordCommandIT
 
     private static final String SET_PASSWORD = "set-initial-password";
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         File graphDir = new File( "graph-db" );
@@ -68,7 +68,7 @@ public class SetInitialPasswordCommandIT
         tool = new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), out, true );
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         fileSystem.close();

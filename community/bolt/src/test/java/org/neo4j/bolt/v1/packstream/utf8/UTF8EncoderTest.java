@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt.v1.packstream.utf8;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class UTF8EncoderTest
 {

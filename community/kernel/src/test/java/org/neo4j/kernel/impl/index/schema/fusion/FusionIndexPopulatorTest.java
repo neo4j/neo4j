@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -36,8 +36,8 @@ import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -59,7 +59,7 @@ public class FusionIndexPopulatorTest
     private final long indexId = 8;
     private final DropAction dropAction = mock( DropAction.class );
 
-    @Before
+    @BeforeEach
     public void mockComponents()
     {
         numberPopulator = mock( IndexPopulator.class );

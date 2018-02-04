@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Arrays;
@@ -47,7 +47,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 
@@ -63,7 +63,7 @@ public class SchemaStoreTest
     private NeoStores neoStores;
     private StoreFactory storeFactory;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         File storeDir = new File( "dir" );
@@ -76,7 +76,7 @@ public class SchemaStoreTest
         store = neoStores.getSchemaStore();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         neoStores.close();

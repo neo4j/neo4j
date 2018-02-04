@@ -21,13 +21,12 @@ package org.neo4j.graphalgo.shortestpath;
 
 import common.Neo4jAlgoTestCase;
 import common.SimpleGraphBuilder;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.impl.shortestpath.Dijkstra;
 import org.neo4j.graphdb.Direction;
-
-import static org.junit.Assert.assertTrue;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {

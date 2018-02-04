@@ -20,26 +20,32 @@
 package org.neo4j.kernel.lifecycle;
 
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 
 import java.util.Collections;
+import javax.annotation.Resource;
 
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+@EnableRuleMigrationSupport
+@ExtendWith( TestDirectoryExtension.class )
 public class GitHub1304Test
 {
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    @Resource
+    public TestDirectory folder;
     @Rule
     public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
     @Test
     public void givenBatchInserterWhenArrayPropertyUpdated4TimesThenShouldNotFail() throws Exception
     {
-        BatchInserter batchInserter = BatchInserters.inserter( folder.getRoot().getAbsoluteFile(), fileSystemRule.get() );
+        BatchInserter batchInserter = BatchInserters.inserter( folder.directory().getAbsoluteFile(), fileSystemRule.get() );
 
         long nodeId = batchInserter.createNode( Collections.emptyMap() );
 

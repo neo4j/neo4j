@@ -71,7 +71,7 @@ public class TreeGraphTest extends TraversalTestBase
             for ( Node node : traverser.nodes() )
             {
                 assertNotNull( "returned nodes should not be null. node #"
-                               + count, node );
+                        + count, node );
                 count++;
             }
             assertEquals( 13, count );
@@ -107,7 +107,7 @@ public class TreeGraphTest extends TraversalTestBase
             for ( Path path : traverser )
             {
                 assertNotNull( "returned paths should not be null. path #"
-                               + count, path );
+                        + count, path );
                 count++;
             }
             assertEquals( 13, count );

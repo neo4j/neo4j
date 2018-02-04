@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -34,12 +34,12 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ArrayQueueOutOfOrderSequenceTest
 {
@@ -199,7 +199,7 @@ public class ArrayQueueOutOfOrderSequenceTest
         {
             // when
             sequence.await( 4, TIMEOUT );
-            fail();
+            fail("Failure was expected");
         }
         catch ( TimeoutException e )
         {

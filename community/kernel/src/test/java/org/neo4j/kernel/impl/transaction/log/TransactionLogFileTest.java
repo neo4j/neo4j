@@ -73,8 +73,8 @@ public class TransactionLogFileTest
     {
         FileSystemAbstraction fs = fileSystemRule.get();
         LogFiles logFiles = LogFilesBuilder.builder( directory.directory(), fs )
-                                           .withTransactionIdStore( transactionIdStore )
-                                           .withLogVersionRepository( logVersionRepository ).build();
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository ).build();
         life.add( logFiles );
         life.start();
 

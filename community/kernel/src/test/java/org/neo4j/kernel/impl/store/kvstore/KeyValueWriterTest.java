@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class KeyValueWriterTest
 {
@@ -41,7 +41,7 @@ public class KeyValueWriterTest
     private final BigEndianByteArrayBuffer key = new BigEndianByteArrayBuffer( new byte[8] );
     private final BigEndianByteArrayBuffer value = new BigEndianByteArrayBuffer( new byte[8] );
 
-    @After
+    @AfterEach
     public void closeWriter() throws IOException
     {
         writer.close();
@@ -55,9 +55,9 @@ public class KeyValueWriterTest
         value.putByte( 7, (byte) 0x7F );
 
         // when
-        assertTrue( "format specifier", writer.writeHeader( key, value ) );
-        assertTrue( "end-of-header marker", writer.writeHeader( key, value ) );
-        assertTrue( "end marker + number of data items", writer.writeHeader( key, value ) );
+        assertTrue( writer.writeHeader( key, value ), "format specifier" );
+        assertTrue( writer.writeHeader( key, value ), "end-of-header marker" );
+        assertTrue( writer.writeHeader( key, value ), "end marker + number of data items" );
 
         // then
 
@@ -73,7 +73,7 @@ public class KeyValueWriterTest
     @Test
     public void shouldRequireNonZeroFormatSpecifier() throws Exception
     {
-        assertFalse( "format-specifier", writer.writeHeader( key, value ) );
+        assertFalse( writer.writeHeader( key, value ), "format-specifier" );
     }
 
     @Test

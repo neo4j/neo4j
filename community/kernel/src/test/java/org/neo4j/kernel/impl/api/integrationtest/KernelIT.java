@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Set;
@@ -53,13 +52,14 @@ import org.neo4j.storageengine.api.NodeItem;
 
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
@@ -162,7 +162,7 @@ public class KernelIT extends KernelIntegrationTest
         }
         finally
         {
-            Assert.assertNotNull( "Should have failed", expectedException );
+            assertNotNull( expectedException, "Should have failed" );
         }
 
         // THEN
@@ -326,7 +326,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.close();
 
         // THEN
-        assertFalse( "Shouldn't have been added now", added );
+        assertFalse( added, "Shouldn't have been added now" );
     }
 
     @Test
@@ -353,7 +353,7 @@ public class KernelIT extends KernelIntegrationTest
         tx.close();
 
         // THEN
-        assertTrue( "Should have been added now", added );
+        assertTrue( added, "Should have been added now" );
     }
 
     @Test
@@ -380,7 +380,7 @@ public class KernelIT extends KernelIntegrationTest
         }
 
         // THEN
-        assertTrue( "Should have been removed now", removed );
+        assertTrue( removed, "Should have been removed now" );
         tx.close();
     }
 
@@ -407,7 +407,7 @@ public class KernelIT extends KernelIntegrationTest
         }
 
         // THEN
-        assertFalse( "Shouldn't have been removed now", removed );
+        assertFalse( removed, "Shouldn't have been removed now" );
         tx.close();
     }
 
@@ -432,7 +432,7 @@ public class KernelIT extends KernelIntegrationTest
         try
         {
             statement.readOperations().nodeGetLabels( node.getId() );
-            fail();
+            fail("Failure was expected");
         }
         catch ( EntityNotFoundException e )
         {
@@ -442,7 +442,7 @@ public class KernelIT extends KernelIntegrationTest
         try
         {
             statement.readOperations().nodeHasLabel( node.getId(), labelId );
-            fail();
+            fail("Failure was expected");
         }
         catch ( EntityNotFoundException e )
         {

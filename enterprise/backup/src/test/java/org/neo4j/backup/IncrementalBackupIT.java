@@ -19,14 +19,13 @@
  */
 package org.neo4j.backup;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -41,35 +40,37 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 public class IncrementalBackupIT
 {
-    public TestName testName = new TestName();
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
-    @Rule
-    public RuleChain rules = RuleChain.outerRule( testName ).around( testDirectory ).around( suppressOutput );
+    @Resource
+    public TestDirectory testDirectory;
+    @Resource
+    public SuppressOutput suppressOutput;
 
     private File serverPath;
     private File backupPath;
     private ServerInterface server;
     private GraphDatabaseService db;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
-        File base = testDirectory.cleanDirectory( testName.getMethodName() );
+        File base = testDirectory.directory();
         serverPath = new File( base, "server" );
         backupPath = new File( base, "backup" );
         serverPath.mkdirs();
         backupPath.mkdirs();
     }
 
-    @After
+    @AfterEach
     public void shutItDown() throws Exception
     {
         if ( server != null )

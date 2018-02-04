@@ -30,9 +30,9 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.RuleChain;
 
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -81,7 +81,7 @@ public class BackupStoreCopyInteractionStressTesting
     private FileSystemAbstraction fs;
     private PageCache pageCache;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         fs = fileSystemRule.get();

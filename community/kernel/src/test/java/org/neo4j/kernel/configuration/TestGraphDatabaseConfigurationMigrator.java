@@ -20,9 +20,9 @@
 package org.neo4j.kernel.configuration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -31,8 +31,8 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
@@ -46,7 +46,7 @@ public class TestGraphDatabaseConfigurationMigrator
     @Rule
     public AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         migrator = new GraphDatabaseConfigurationMigrator();
@@ -63,8 +63,8 @@ public class TestGraphDatabaseConfigurationMigrator
     public void migrateIndexSamplingBufferSizeIfPresent()
     {
         Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.buffer_size", "64m" ), getLog() );
-        assertEquals( "Old property should be migrated to new one with correct value",
-                resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388608" ));
+        assertEquals( resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388608" ),
+                "Old property should be migrated to new one with correct value" );
         assertContainsWarningMessage("dbms.index_sampling.buffer_size has been replaced with dbms.index_sampling.sample_size_limit.");
     }
 
@@ -72,8 +72,8 @@ public class TestGraphDatabaseConfigurationMigrator
     public void skipMigrationOfIndexSamplingBufferSizeIfNotPresent()
     {
         Map<String,String> resultConfig = migrator.apply( stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ), getLog() );
-        assertEquals( "Nothing to migrate should be the same",
-                resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ));
+        assertEquals( resultConfig, stringMap( "dbms.index_sampling.sample_size_limit", "8388600" ),
+                "Nothing to migrate should be the same" );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -81,8 +81,8 @@ public class TestGraphDatabaseConfigurationMigrator
     public void migrateRestTransactionTimeoutIfPresent()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.transaction_timeout", "120s" ), getLog() );
-        assertEquals( "Old property should be migrated to new",
-                migratedProperties, stringMap( "dbms.rest.transaction.idle_timeout", "120s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.rest.transaction.idle_timeout", "120s" ),
+                "Old property should be migrated to new" );
 
         assertContainsWarningMessage("dbms.transaction_timeout has been replaced with dbms.rest.transaction.idle_timeout.");
     }
@@ -91,8 +91,8 @@ public class TestGraphDatabaseConfigurationMigrator
     public void skipMigrationOfTransactionTimeoutIfNotPresent()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.rest.transaction.idle_timeout", "120s" ), getLog() );
-        assertEquals( "Nothing to migrate",
-                migratedProperties, stringMap( "dbms.rest.transaction.idle_timeout", "120s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.rest.transaction.idle_timeout", "120s" ),
+                "Nothing to migrate" );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -101,8 +101,8 @@ public class TestGraphDatabaseConfigurationMigrator
     {
         Map<String,String> migratedProperties =
                 migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "120s" ), getLog() );
-        assertEquals( "Old property should be migrated to new",
-                migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ),
+                "Old property should be migrated to new" );
 
         assertContainsWarningMessage("unsupported.dbms.executiontime_limit.time has been replaced with dbms.transaction.timeout.");
     }
@@ -111,7 +111,7 @@ public class TestGraphDatabaseConfigurationMigrator
     public void skipMigrationOfExecutionTimeLimitIfNotPresent()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.transaction.timeout", "120s" ), getLog() );
-        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ), "Nothing to migrate" );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -120,8 +120,8 @@ public class TestGraphDatabaseConfigurationMigrator
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.executiontime_limit.time", "12s",
                 "dbms.transaction.timeout", "120s" ), getLog() );
-        assertEquals( "Should keep pre configured transaction timeout.",
-                migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.transaction.timeout", "120s" ),
+                "Should keep pre configured transaction timeout." );
         assertContainsWarningMessage();
     }
 
@@ -130,8 +130,8 @@ public class TestGraphDatabaseConfigurationMigrator
     {
         Map<String,String> migratedProperties =
                 migrator.apply( stringMap( "unsupported.dbms.shutdown_transaction_end_timeout", "12s" ), getLog() );
-        assertEquals( "Old property should be migrated to new", migratedProperties,
-                stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ) );
+        assertEquals( migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ),
+                "Old property should be migrated to new" );
 
         assertContainsWarningMessage( "unsupported.dbms.shutdown_transaction_end_timeout has been " +
                 "replaced with dbms.shutdown_transaction_end_timeout." );
@@ -141,7 +141,8 @@ public class TestGraphDatabaseConfigurationMigrator
     public void skipMigrationOfTransactionEndTimeoutIfNotPresent()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ), getLog() );
-        assertEquals( "Nothing to migrate", migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "12s" ),
+                "Nothing to migrate" );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -150,8 +151,8 @@ public class TestGraphDatabaseConfigurationMigrator
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "unsupported.dbms.shutdown_transaction_end_timeout", "12s",
                 "dbms.shutdown_transaction_end_timeout", "14s" ), getLog() );
-        assertEquals( "Should keep pre configured transaction timeout.",
-                migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "14s" ));
+        assertEquals( migratedProperties, stringMap( "dbms.shutdown_transaction_end_timeout", "14s" ),
+                "Should keep pre configured transaction timeout." );
         assertContainsWarningMessage();
     }
 
@@ -159,8 +160,8 @@ public class TestGraphDatabaseConfigurationMigrator
     public void migrateAllowFormatMigration()
     {
         Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.allow_format_migration", "true" ), getLog() );
-        assertEquals( "Old property should be migrated to new",
-                migratedProperties, stringMap( "dbms.allow_upgrade", "true" ));
+        assertEquals( migratedProperties, stringMap( "dbms.allow_upgrade", "true" ),
+                "Old property should be migrated to new" );
 
         assertContainsWarningMessage("dbms.allow_format_migration has been replaced with dbms.allow_upgrade.");
     }

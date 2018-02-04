@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -28,7 +28,7 @@ import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.store.id.IdType;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ReplicatedIdAllocationStateMachineTest
 {

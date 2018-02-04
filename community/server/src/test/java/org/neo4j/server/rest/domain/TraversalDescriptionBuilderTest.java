@@ -19,41 +19,42 @@
  */
 package org.neo4j.server.rest.domain;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class TraversalDescriptionBuilderTest
 {
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void throwsIllegalArgumentOnUnknownExpanderType()
     {
-        // Given
-        TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
-        Collection<Map<String,Object>> rels = new ArrayList<>();
-        rels.add( map( "type", "blah" ) );
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
+            Collection<Map<String,Object>> rels = new ArrayList<>();
+            rels.add( map( "type", "blah" ) );
 
-        // When
-        builder.from( map(
-                "relationships", rels,
-                "expander", "Suddenly, a string!" ) );
+            // When
+            builder.from( map( "relationships", rels, "expander", "Suddenly, a string!" ) );
+        } );
     }
 
-    @Test( expected = IllegalArgumentException.class )
+    @Test
     public void throwsIllegalArgumentOnNonStringExpanderType()
     {
-        // Given
-        TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
-        Collection<Map<String,Object>> rels = new ArrayList<>();
-        rels.add( map( "type", "blah" ) );
+        assertThrows( IllegalArgumentException.class, () -> {
+            // Given
+            TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
+            Collection<Map<String,Object>> rels = new ArrayList<>();
+            rels.add( map( "type", "blah" ) );
 
-        // When
-        builder.from( map(
-                "relationships", rels,
-                "expander", map( ) ) );
+            // When
+            builder.from( map( "relationships", rels, "expander", map() ) );
+        } );
     }
 }

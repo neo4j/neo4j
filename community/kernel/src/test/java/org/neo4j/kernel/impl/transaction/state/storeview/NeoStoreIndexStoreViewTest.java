@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.mockito.InOrder;
 
 import java.util.Arrays;
@@ -30,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Resource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -53,6 +55,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.extension.EmbeddedDatabaseExtension;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -61,9 +64,9 @@ import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
@@ -71,10 +74,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
+@EnableRuleMigrationSupport
+@ExtendWith( EmbeddedDatabaseExtension.class )
 public class NeoStoreIndexStoreViewTest
 {
-    @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    @Resource
+    public EmbeddedDatabaseRule dbRule;
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );
@@ -90,7 +95,7 @@ public class NeoStoreIndexStoreViewTest
     private LockService locks;
     private NeoStores neoStores;
 
-    @Before
+    @BeforeEach
     public void before() throws KernelException
     {
         graphDb = dbRule.getGraphDatabaseAPI();
@@ -166,8 +171,8 @@ public class NeoStoreIndexStoreViewTest
         assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
         Lock lock0 = lockMocks.get( 0L );
         Lock lock1 = lockMocks.get( 1L );
-        assertNotNull( "Lock[node=0] never acquired", lock0 );
-        assertNotNull( "Lock[node=1] never acquired", lock1 );
+        assertNotNull( lock0, "Lock[node=0] never acquired" );
+        assertNotNull( lock1, "Lock[node=1] never acquired" );
         InOrder order = inOrder( locks, lock0, lock1 );
         order.verify( locks ).acquireNodeLock( 0, LockService.LockType.READ_LOCK );
         order.verify( lock0 ).release();
@@ -197,7 +202,7 @@ public class NeoStoreIndexStoreViewTest
         storeViewNodeStoreScan.process( nodeRecord );
 
         NodeUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
-        assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
+        assertNotNull( propertyUpdates, "Visitor should contain container with updates." );
 
         LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 0, 0 );
         LabelSchemaDescriptor index2 = SchemaDescriptorFactory.forLabel( 0, 1 );
