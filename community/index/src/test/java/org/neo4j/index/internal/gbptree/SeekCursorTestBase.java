@@ -1199,7 +1199,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         // WHEN
         try ( SeekCursor<KEY,VALUE> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration, exceptionDecorator ) )
+                unstableGeneration, exceptionDecorator, 1 ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1869,7 +1869,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, key( 0 ), key( 1 ), layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             // do nothing
         }
@@ -1920,7 +1920,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         //noinspection EmptyTryBlock
         try ( SeekCursor<KEY,VALUE> ignored = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             // do nothing
         }
@@ -1969,7 +1969,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         KEY to = key( 20L );
         try ( SeekCursor<KEY,VALUE> seek = new SeekCursor<>( cursor, node, from, to, layout,
                 stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
-                exceptionDecorator ) )
+                exceptionDecorator, 1 ) )
         {
             while ( seek.next() )
             {
@@ -2191,7 +2191,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
             PageCursor pageCursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
         return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator );
+                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator, 1 );
     }
 
     /**
