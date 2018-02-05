@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
@@ -337,7 +336,7 @@ public class AbstractKeyValueStoreTest
     @Test
     @Resources.Life( STARTED )
     public void postStateUpdatesCountedOnlyForTransactionsGreaterThanRotationVersion()
-            throws IOException, TimeoutException, InterruptedException, ExecutionException
+            throws IOException, InterruptedException, ExecutionException
     {
         final Store store = resourceManager.managed( createTestStore() );
 

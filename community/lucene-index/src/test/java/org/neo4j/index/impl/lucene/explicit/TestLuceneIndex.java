@@ -1397,14 +1397,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void testRemoveWithoutKeyNodes() throws Exception
+    public void testRemoveWithoutKeyNodes()
     {
         testRemoveWithoutKey( NODE_CREATOR, nodeIndex(
                 LuceneIndexImplementation.EXACT_CONFIG ) );
     }
 
     @Test
-    public void testRemoveWithoutKeyRelationships() throws Exception
+    public void testRemoveWithoutKeyRelationships()
     {
         testRemoveWithoutKey( RELATIONSHIP_CREATOR, relationshipIndex(
                 LuceneIndexImplementation.EXACT_CONFIG ) );
@@ -1443,14 +1443,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void testRemoveWithoutKeyValueNodes() throws Exception
+    public void testRemoveWithoutKeyValueNodes()
     {
         testRemoveWithoutKeyValue( NODE_CREATOR, nodeIndex(
                 LuceneIndexImplementation.EXACT_CONFIG ) );
     }
 
     @Test
-    public void testRemoveWithoutKeyValueRelationships() throws Exception
+    public void testRemoveWithoutKeyValueRelationships()
     {
         testRemoveWithoutKeyValue( RELATIONSHIP_CREATOR, relationshipIndex(
                 LuceneIndexImplementation.EXACT_CONFIG ) );
@@ -1491,14 +1491,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void testRemoveWithoutKeyFulltextNode() throws Exception
+    public void testRemoveWithoutKeyFulltextNode()
     {
         testRemoveWithoutKeyFulltext( NODE_CREATOR,
                 nodeIndex( LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
 
     @Test
-    public void testRemoveWithoutKeyFulltextRelationship() throws Exception
+    public void testRemoveWithoutKeyFulltextRelationship()
     {
         testRemoveWithoutKeyFulltext( RELATIONSHIP_CREATOR,
                 relationshipIndex( LuceneIndexImplementation.FULLTEXT_CONFIG ) );
@@ -1537,14 +1537,14 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void testRemoveWithoutKeyValueFulltextNode() throws Exception
+    public void testRemoveWithoutKeyValueFulltextNode()
     {
         testRemoveWithoutKeyValueFulltext( NODE_CREATOR,
                 nodeIndex( LuceneIndexImplementation.FULLTEXT_CONFIG ) );
     }
 
     @Test
-    public void testRemoveWithoutKeyValueFulltextRelationship() throws Exception
+    public void testRemoveWithoutKeyValueFulltextRelationship()
     {
         testRemoveWithoutKeyValueFulltext( RELATIONSHIP_CREATOR,
                 relationshipIndex( LuceneIndexImplementation.FULLTEXT_CONFIG ) );

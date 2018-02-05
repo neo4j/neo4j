@@ -109,7 +109,7 @@ public class PropertyConstraintsStressIT
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.pull_interval, "0" )

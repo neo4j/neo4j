@@ -24,8 +24,6 @@ import org.junit.Test;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.cluster.InstanceId;
 
@@ -34,7 +32,7 @@ public class ClusterHeartbeatTest
 {
     @Test
     public void threeNodesJoinAndNoFailures()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 200 ).
@@ -49,7 +47,7 @@ public class ClusterHeartbeatTest
 
     @Test
     public void threeNodesJoinAndThenSlaveDies()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
@@ -70,7 +68,7 @@ public class ClusterHeartbeatTest
 
     @Test
     public void threeNodesJoinAndThenCoordinatorDies()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         testCluster( 3, DEFAULT_NETWORK(), new ClusterTestScriptDSL().
                 rounds( 1000 ).
@@ -95,7 +93,7 @@ public class ClusterHeartbeatTest
 
     @Test
     public void threeNodesJoinAndThenCoordinatorDiesForReal()
-            throws URISyntaxException, ExecutionException, TimeoutException, InterruptedException
+            throws URISyntaxException
     {
         final Map<String, InstanceId> roles = new HashMap<>();
 

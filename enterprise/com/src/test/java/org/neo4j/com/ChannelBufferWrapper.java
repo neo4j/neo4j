@@ -170,7 +170,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
         if ( availableBytes )
         {
             throw new IndexOutOfBoundsException( "Wanted " + writableBytes + " to be available for writing, " +
-                    "but there were only " + availableBytes + " available" );
+                    "but there were only " + delegate.availableBytesToWrite() + " available" );
         }
     }
 
@@ -1002,112 +1002,51 @@ public class ChannelBufferWrapper implements ChannelBuffer
     @Override
     public void writeByte( int value )
     {
-        try
-        {
-            delegate.put( (byte)value );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
-    }
-
-    private RuntimeException writeException( IOException e )
-    {
-        return new RuntimeException( e );
+        delegate.put( (byte)value );
     }
 
     @Override
     public void writeShort( int value )
     {
-        try
-        {
-            delegate.putShort( (short)value );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.putShort( (short)value );
     }
 
     @Override
     public void writeMedium( int value )
     {
-        try
-        {
-            delegate.putShort( (short)value );
-            delegate.put( (byte)(value >>> 16) );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.putShort( (short)value );
+        delegate.put( (byte)(value >>> 16) );
     }
 
     @Override
     public void writeInt( int value )
     {
-        try
-        {
-            delegate.putInt( value );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.putInt( value );
     }
 
     @Override
     public void writeLong( long value )
     {
-        try
-        {
-            delegate.putLong( value );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.putLong( value );
     }
 
     @Override
     public void writeChar( int value )
     {
-        try
-        {
-            delegate.put( (byte)value );
-            delegate.put( (byte)(value >>> 8) );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.put( (byte)value );
+        delegate.put( (byte)(value >>> 8) );
     }
 
     @Override
     public void writeFloat( float value )
     {
-        try
-        {
-            delegate.putFloat( value );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.putFloat( value );
     }
 
     @Override
     public void writeDouble( double value )
     {
-        try
-        {
-            delegate.putDouble( value );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.putDouble( value );
     }
 
     @Override
@@ -1119,16 +1058,9 @@ public class ChannelBufferWrapper implements ChannelBuffer
     @Override
     public void writeBytes( ChannelBuffer src, int length )
     {
-        try
-        {
-            byte[] array = new byte[length];
-            src.readBytes( array );
-            delegate.put( array, array.length );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        byte[] array = new byte[length];
+        src.readBytes( array );
+        delegate.put( array, array.length );
     }
 
     @Override
@@ -1141,14 +1073,7 @@ public class ChannelBufferWrapper implements ChannelBuffer
     @Override
     public void writeBytes( byte[] src )
     {
-        try
-        {
-            delegate.put( src, src.length );
-        }
-        catch ( IOException e )
-        {
-            throw writeException( e );
-        }
+        delegate.put( src, src.length );
     }
 
     @Override

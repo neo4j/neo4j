@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
@@ -124,7 +122,6 @@ public class RelationshipRecordFormatV3_0_0 extends BaseHighLimitRecordFormatV3_
 
     @Override
     protected void doWriteInternal( RelationshipRecord record, PageCursor cursor )
-            throws IOException
     {
         cursor.putShort( (short) record.getType() );
         long recordId = record.getId();

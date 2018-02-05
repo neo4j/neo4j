@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -58,8 +59,7 @@ public enum LearnerState
                 public LearnerState handle( LearnerContext context,
                                             Message<LearnerMessage> message,
                                             MessageHolder outgoing
-                )
-                        throws Throwable
+                ) throws IOException, ClassNotFoundException, URISyntaxException
                 {
                     switch ( message.getMessageType() )
                     {

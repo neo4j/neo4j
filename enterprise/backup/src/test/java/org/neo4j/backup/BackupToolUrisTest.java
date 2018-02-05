@@ -134,7 +134,7 @@ public class BackupToolUrisTest
         }
 
         @Test
-        public void shouldThrowForInvalidUri() throws Exception
+        public void shouldThrowForInvalidUri()
         {
             // Given
             String[] args = new String[]{"-from", uri, "-to", "/var/backup/graph"};

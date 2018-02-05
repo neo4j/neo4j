@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -294,7 +293,7 @@ public class StorePropertyCursorTest
         protected static PropertyStore propertyStore;
 
         @BeforeClass
-        public static void setUp() throws IOException
+        public static void setUp()
         {
             pageCache = pageCacheRule.getPageCache( fsRule.get() );
             EphemeralFileSystemAbstraction fs = fsRule.get();

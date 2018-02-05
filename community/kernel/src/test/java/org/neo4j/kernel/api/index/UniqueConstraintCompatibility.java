@@ -268,7 +268,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     @Test
     public void onlineConstraintShouldRejectChangingEntryToAlreadyIndexedValueThatOtherTransactionsAreRemoving()
-            throws Exception
     {
         // Given
         givenOnlineConstraint();

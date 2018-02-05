@@ -57,7 +57,7 @@ public class TestIndexImplOnNeo
                 .newImpermanentDatabase( new File( "mydb" ) );
     }
 
-    private void restartDb() throws Exception
+    private void restartDb()
     {
         shutdownDb();
         createDb();
@@ -70,7 +70,7 @@ public class TestIndexImplOnNeo
     }
 
     @Test
-    public void createIndexWithProviderThatUsesNeoAsDataSource() throws Exception
+    public void createIndexWithProviderThatUsesNeoAsDataSource()
     {
         String indexName = "inneo";
         assertFalse( indexExists( indexName ) );

@@ -77,7 +77,7 @@ public class MetricsKernelExtensionFactoryIT
     private File outputPath;
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
         outputPath = clusterRule.directory( "metrics" );
         Map<String, String> config = stringMap(

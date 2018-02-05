@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.api.state;
 import java.io.IOException;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -34,9 +36,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -53,8 +52,8 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
 public class ConstraintIndexCreator
@@ -110,8 +109,7 @@ public class ConstraintIndexCreator
      */
     public long createUniquenessConstraintIndex(
             KernelStatement state, SchemaReadOperations schemaOps, LabelSchemaDescriptor descriptor
-    ) throws TransactionFailureException, CreateConstraintFailureException,
-            DropIndexFailureException, UniquePropertyValueValidationException, AlreadyConstrainedException
+    ) throws TransactionFailureException, CreateConstraintFailureException, UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         IndexDescriptor index;
@@ -251,8 +249,8 @@ public class ConstraintIndexCreator
         }
     }
 
-    public IndexDescriptor getOrCreateUniquenessConstraintIndex( KernelStatement state,
-            SchemaReadOperations schemaOps, LabelSchemaDescriptor schema ) throws SchemaKernelException
+    private IndexDescriptor getOrCreateUniquenessConstraintIndex( KernelStatement state, SchemaReadOperations schemaOps,
+            LabelSchemaDescriptor schema ) throws SchemaKernelException
     {
         IndexDescriptor descriptor = schemaOps.indexGetForSchema( state, schema );
         if ( descriptor != null )

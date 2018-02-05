@@ -108,12 +108,12 @@ class BackupCopyService
                 f -> f.isFile() && f.getName().endsWith( MetaDataStore.DEFAULT_NAME ) );
     }
 
-    Path findNewBackupLocationForBrokenExisting( Path existingBackup ) throws IOException
+    Path findNewBackupLocationForBrokenExisting( Path existingBackup )
     {
         return findAnAvailableBackupLocation( existingBackup, "%s.err.%d" );
     }
 
-    Path findAnAvailableLocationForNewFullBackup( Path desiredBackupLocation ) throws IOException
+    Path findAnAvailableLocationForNewFullBackup( Path desiredBackupLocation )
     {
         return findAnAvailableBackupLocation( desiredBackupLocation, "%s.temp.%d" );
     }

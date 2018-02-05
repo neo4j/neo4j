@@ -307,7 +307,7 @@ public class StoreMigrationIT
     //This method is overridden by a blockdevice test.
     protected ConsistencyCheckService.Result runConsistencyChecker( File db, FileSystemAbstraction fs,
             ConsistencyCheckService consistencyCheckService, String storeVersion )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         Config config = Config.defaults( GraphDatabaseSettings.record_format, storeVersion );
         return consistencyCheckService.runFullConsistencyCheck( db, config, ProgressMonitorFactory.NONE,

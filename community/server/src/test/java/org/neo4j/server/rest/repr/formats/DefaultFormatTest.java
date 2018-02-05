@@ -95,7 +95,7 @@ public class DefaultFormatTest
     }
 
     @Test( expected = MediaTypeNotSupportedException.class )
-    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3() throws BadInputException
+    public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3()
     {
         input.readUri( "<xml />" );
     }

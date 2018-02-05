@@ -248,7 +248,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         create();
         if ( startEagerly )
@@ -263,7 +263,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         shutdown( success );
     }
 
-    private void create() throws IOException
+    private void create()
     {
         createResources();
         try

@@ -60,7 +60,7 @@ public class HaBeanIT
             .withInstanceSetting( GraphDatabaseSettings.forced_kernel_id, stringWithIntBase( "kernel", 0 ) );
 
     @Test
-    public void shouldAccessHaBeans() throws Throwable
+    public void shouldAccessHaBeans()
     {
         ManagedCluster cluster = clusterRule.startCluster();
 

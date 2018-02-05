@@ -178,7 +178,7 @@ public class MasterClientTest
         return when( mock( MasterImpl.SPI.class ).storeId() ).thenReturn( storeId ).getMock();
     }
 
-    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI ) throws Throwable
+    private MasterServer newMasterServer( MasterImpl.SPI masterImplSPI )
     {
         MasterImpl masterImpl = new MasterImpl( masterImplSPI, mock(
                 ConversationManager.class ), mock( Monitor.class ), masterConfig() );
@@ -202,7 +202,7 @@ public class MasterClientTest
                 ConversationManager.class ), logEntryReader ) );
     }
 
-    private MasterClient newMasterClient320( StoreId storeId ) throws Throwable
+    private MasterClient newMasterClient320( StoreId storeId )
     {
         return newMasterClient320( storeId, NO_OP_RESPONSE_UNPACKER );
     }

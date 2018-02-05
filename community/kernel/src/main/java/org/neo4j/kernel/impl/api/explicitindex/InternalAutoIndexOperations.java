@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
@@ -299,8 +298,7 @@ public class InternalAutoIndexOperations implements AutoIndexOperations
         return Collections.unmodifiableSet( propertyKeysToInclude.get() );
     }
 
-    private void ensureIndexExists( ExplicitIndexWrite ops ) throws ExplicitIndexNotFoundKernelException,
-            EntityNotFoundException
+    private void ensureIndexExists( ExplicitIndexWrite ops )
     {
         // Known racy, but this is safe because ensureIndexExists is concurrency safe, we just want to avoid calling it
         // for every single write we make.

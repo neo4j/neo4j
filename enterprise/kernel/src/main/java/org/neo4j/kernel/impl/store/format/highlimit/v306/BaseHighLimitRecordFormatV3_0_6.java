@@ -240,7 +240,7 @@ abstract class BaseHighLimitRecordFormatV3_0_6<RECORD extends AbstractBaseRecord
         }
     }
 
-    protected abstract void doWriteInternal( RECORD record, PageCursor cursor ) throws IOException;
+    protected abstract void doWriteInternal( RECORD record, PageCursor cursor );
 
     protected abstract byte headerBits( RECORD record );
 
@@ -295,12 +295,12 @@ abstract class BaseHighLimitRecordFormatV3_0_6<RECORD extends AbstractBaseRecord
         return has( headerByte, headerBitMask ) ? decodeCompressedReference( cursor ) : nullValue;
     }
 
-    protected static void encode( PageCursor cursor, long reference ) throws IOException
+    protected static void encode( PageCursor cursor, long reference )
     {
         Reference.encode( reference, cursor );
     }
 
-    protected static void encode( PageCursor cursor, long reference, long nullValue ) throws IOException
+    protected static void encode( PageCursor cursor, long reference, long nullValue )
     {
         if ( reference != nullValue )
         {

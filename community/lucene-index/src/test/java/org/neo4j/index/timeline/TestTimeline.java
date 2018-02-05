@@ -217,60 +217,60 @@ public class TestTimeline
     // ======== The tests
 
     @Test
-    public void makeSureFirstAndLastAreReturnedCorrectlyNode() throws Exception
+    public void makeSureFirstAndLastAreReturnedCorrectlyNode()
     {
         makeSureFirstAndLastAreReturnedCorrectly( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureFirstAndLastAreReturnedCorrectlyRelationship() throws Exception
+    public void makeSureFirstAndLastAreReturnedCorrectlyRelationship()
     {
         makeSureFirstAndLastAreReturnedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectOrderNode() throws Exception
+    public void makeSureRangesAreReturnedInCorrectOrderNode()
     {
         makeSureRangesAreReturnedInCorrectOrder( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectOrderRelationship() throws Exception
+    public void makeSureRangesAreReturnedInCorrectOrderRelationship()
     {
         makeSureRangesAreReturnedInCorrectOrder( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectReversedOrderNode() throws Exception
+    public void makeSureRangesAreReturnedInCorrectReversedOrderNode()
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureRangesAreReturnedInCorrectReversedOrderRelationship() throws Exception
+    public void makeSureRangesAreReturnedInCorrectReversedOrderRelationship()
     {
         makeSureRangesAreReturnedInCorrectReversedOrder( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureUncommittedChangesAreSortedCorrectlyNode() throws Exception
+    public void makeSureUncommittedChangesAreSortedCorrectlyNode()
     {
         makeSureUncommittedChangesAreSortedCorrectly( nodeCreator, nodeTimeline() );
     }
 
     @Test
-    public void makeSureUncommittedChangesAreSortedCorrectlyRelationship() throws Exception
+    public void makeSureUncommittedChangesAreSortedCorrectlyRelationship()
     {
         makeSureUncommittedChangesAreSortedCorrectly( relationshipCreator, relationshipTimeline() );
     }
 
     @Test
-    public void makeSureWeCanQueryLowerDefaultThan1970Node() throws Exception
+    public void makeSureWeCanQueryLowerDefaultThan1970Node()
     {
         makeSureWeCanQueryLowerDefaultThan1970( nodeCreator, nodeTimeline() );
     }
     @Test
-    public void makeSureWeCanQueryLowerDefaultThan1970Relationship() throws Exception
+    public void makeSureWeCanQueryLowerDefaultThan1970Relationship()
     {
         makeSureWeCanQueryLowerDefaultThan1970( relationshipCreator, relationshipTimeline() );
     }

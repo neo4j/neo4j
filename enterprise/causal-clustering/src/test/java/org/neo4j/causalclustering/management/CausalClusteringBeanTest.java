@@ -60,7 +60,7 @@ public class CausalClusteringBeanTest
     private CausalClustering ccBean;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         KernelData kernelData =
                 new DefaultKernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), db );

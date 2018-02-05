@@ -278,14 +278,14 @@ public class ForsetiFalseDeadlockTest
      */
     @Ignore
     @Test
-    public void testAggressivelyForFalseDeadlocks() throws Exception
+    public void testAggressivelyForFalseDeadlocks()
     {
         int testRuns = 2000;
         loopRunTest( testRuns );
     }
 
     @Test
-    public void testMildlyForFalseDeadlocks() throws Exception
+    public void testMildlyForFalseDeadlocks()
     {
         int testRuns = 10;
         loopRunTest( testRuns );

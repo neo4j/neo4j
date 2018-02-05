@@ -21,10 +21,9 @@ package org.neo4j.causalclustering.core.consensus.outcome;
 
 import org.junit.Test;
 
+import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.cache.ConsecutiveInFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
-import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
-
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -37,7 +36,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class TruncateLogCommandTest
 {
     @Test
-    public void applyTo() throws Exception
+    public void applyTo()
     {
         //Test that truncate commands correctly remove entries from the cache.
 
@@ -67,7 +66,7 @@ public class TruncateLogCommandTest
     }
 
     @Test
-    public void shouldTruncateWithGaps() throws Exception
+    public void shouldTruncateWithGaps()
     {
         //given
         long fromIndex = 1L;

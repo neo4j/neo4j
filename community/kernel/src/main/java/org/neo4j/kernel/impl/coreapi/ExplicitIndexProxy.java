@@ -86,7 +86,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void add( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.nodeAddToExplicitIndex( name, id, key, value );
                     }
@@ -170,24 +170,21 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                            throws ExplicitIndexNotFoundKernelException,
-                            EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.relationshipRemoveFromExplicitIndex( name, id, key, value );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id, String key )
-                            throws ExplicitIndexNotFoundKernelException,
-                            EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.relationshipRemoveFromExplicitIndex( name, id, key );
                     }
 
                     @Override
                     void remove( DataWriteOperations operations, String name, long id )
-                            throws ExplicitIndexNotFoundKernelException,
-                            EntityNotFoundException
+                            throws ExplicitIndexNotFoundKernelException
                     {
                         operations.relationshipRemoveFromExplicitIndex( name, id );
                     }
@@ -223,16 +220,13 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                 throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key, Object value )
-                throws ExplicitIndexNotFoundKernelException,
-                EntityNotFoundException;
+                throws ExplicitIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id, String key )
-                throws ExplicitIndexNotFoundKernelException,
-                EntityNotFoundException;
+                throws ExplicitIndexNotFoundKernelException;
 
         abstract void remove( DataWriteOperations operations, String name, long id )
-                throws ExplicitIndexNotFoundKernelException,
-                EntityNotFoundException;
+                throws ExplicitIndexNotFoundKernelException;
 
         abstract void drop( DataWriteOperations operations, String name )
                 throws ExplicitIndexNotFoundKernelException;
@@ -374,10 +368,6 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( entity + " doesn't exist" );
-        }
     }
 
     @Override
@@ -394,10 +384,6 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( entity + " doesn't exist" );
         }
     }
 
@@ -416,14 +402,10 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( entity + " doesn't exist" );
-        }
     }
 
     private void internalRemove( Statement statement, long id )
-            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws InvalidTransactionTypeKernelException, ExplicitIndexNotFoundKernelException
     {
         type.remove( statement.dataWriteOperations(), name, id );
     }
@@ -540,7 +522,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                     {
                         internalRemove( statement, id );
                     }
-                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException | EntityNotFoundException ignore )
+                    catch ( ExplicitIndexNotFoundKernelException | InvalidTransactionTypeKernelException ignore )
                     {
                         // Ignore these failures because we are going to skip the entity anyway
                     }

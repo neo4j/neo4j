@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import java.io.IOException;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
@@ -50,7 +48,7 @@ public interface Master
      * Calling this method will validate, persist to log and apply changes to stores on
      * the master.
      */
-    Response<Long> commit( RequestContext context, TransactionRepresentation channel ) throws IOException, TransactionFailureException;
+    Response<Long> commit( RequestContext context, TransactionRepresentation channel ) throws TransactionFailureException;
 
     /**
      * Calling this method will create a new session with the cluster lock manager and associate that

@@ -50,13 +50,13 @@ public class StoreLockerLifecycleAdapterTest
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrently() throws Exception
+    public void shouldNotAllowDatabasesToUseFilesetsConcurrently()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently( stringMap() );
     }
 
     @Test
-    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode() throws Exception
+    public void shouldNotAllowDatabasesToUseFilesetsConcurrentlyEvenIfTheyAreInReadOnlyMode()
     {
         shouldNotAllowDatabasesToUseFilesetsConcurrently(
                 stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );

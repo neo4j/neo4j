@@ -39,7 +39,7 @@ public class AutoIndexConfigIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void programmaticConfigShouldSurviveMasterSwitches() throws Throwable
+    public void programmaticConfigShouldSurviveMasterSwitches()
     {
         String propertyToIndex = "programmatic-property";
 

@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.time.Clock;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -30,6 +26,10 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+
+import java.time.Clock;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
@@ -108,7 +108,7 @@ public class CatchUpClient extends LifecycleAdapter
             Bootstrap bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
             {
                 @Override
-                protected void initChannel( SocketChannel ch ) throws Exception
+                protected void initChannel( SocketChannel ch )
                 {
                     CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, pipelineWrapper );
                 }

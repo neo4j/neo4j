@@ -56,7 +56,7 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public RecoveryStartInformation getRecoveryStartInformation() throws IOException
+    public RecoveryStartInformation getRecoveryStartInformation()
     {
         return recoveryStartInformationProvider.get();
     }

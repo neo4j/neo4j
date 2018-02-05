@@ -135,7 +135,7 @@ public class StateMachinesTest
         test
                 {
                     @Override
-                    public State<?, ?> handle( List context, Message<TestMessage> message,
+                    public TestState handle( List context, Message<TestMessage> message,
                                                MessageHolder outgoing )
                     {
                         context.add( message.getMessageType() );

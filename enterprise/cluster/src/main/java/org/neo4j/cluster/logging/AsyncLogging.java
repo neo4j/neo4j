@@ -84,7 +84,7 @@ public class AsyncLogging extends LifecycleAdapter implements Consumer<AsyncLogE
     }
 
     @Override
-    public void stop() throws InterruptedException
+    public void stop()
     {
         events.shutdown();
         executor.shutdown();

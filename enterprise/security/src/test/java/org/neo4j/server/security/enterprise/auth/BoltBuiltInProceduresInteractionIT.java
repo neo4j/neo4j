@@ -34,8 +34,7 @@ public class BoltBuiltInProceduresInteractionIT extends BuiltInProceduresInterac
     }
 
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String, String> config ) throws
-            Throwable
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String, String> config )
     {
         return new BoltInteraction( config );
     }

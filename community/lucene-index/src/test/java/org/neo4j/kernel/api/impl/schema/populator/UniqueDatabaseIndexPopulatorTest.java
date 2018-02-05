@@ -553,7 +553,7 @@ public class UniqueDatabaseIndexPopulatorTest
     }
 
     private static void addUpdate( UniqueLuceneIndexPopulator populator, long nodeId, Object value )
-            throws IOException, IndexEntryConflictException
+            throws IOException
     {
         IndexEntryUpdate<?> update = add( nodeId, descriptor.schema(), value );
         populator.add( asList( update ) );

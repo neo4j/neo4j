@@ -131,7 +131,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                    PageCursorTracerSupplier cursorTracerSupplier ) throws IOException
+                                    PageCursorTracerSupplier cursorTracerSupplier )
     {
         if ( pageCache != null )
         {
@@ -141,12 +141,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return pageCache;
     }
 
-    protected void configureStandardPageCache() throws IOException
+    protected void configureStandardPageCache()
     {
         getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
-    protected final void tearDownPageCache( T pageCache ) throws IOException
+    protected final void tearDownPageCache( T pageCache )
     {
         fixture.tearDownPageCache( pageCache );
     }

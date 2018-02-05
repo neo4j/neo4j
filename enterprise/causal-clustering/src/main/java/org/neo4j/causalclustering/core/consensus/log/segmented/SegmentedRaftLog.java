@@ -212,7 +212,7 @@ public class SegmentedRaftLog extends LifecycleAdapter implements RaftLog
     }
 
     @Override
-    public RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
+    public RaftLogCursor getEntryCursor( long fromIndex )
     {
         final IOCursor<EntryRecord> inner = new EntryCursor( state.segments, fromIndex );
         return new SegmentedRaftLogCursor( fromIndex, inner );

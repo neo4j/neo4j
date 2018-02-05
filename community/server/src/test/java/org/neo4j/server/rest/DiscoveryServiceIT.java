@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldRespondWith200WhenRetrievingDiscoveryDocument() throws Exception
+    public void shouldRespondWith200WhenRetrievingDiscoveryDocument()
     {
         JaxRsResponse response = getDiscoveryDocument();
         assertEquals( 200, response.getStatus() );
@@ -45,7 +45,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument() throws Exception
+    public void shouldGetContentLengthHeaderWhenRetrievingDiscoveryDocument()
     {
         JaxRsResponse response = getDiscoveryDocument();
         assertNotNull( response.getHeaders().get( "Content-Length" ) );
@@ -53,7 +53,7 @@ public class DiscoveryServiceIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument() throws Exception
+    public void shouldHaveJsonMediaTypeWhenRetrievingDiscoveryDocument()
     {
         JaxRsResponse response = getDiscoveryDocument();
         assertThat( response.getType().toString(), containsString( APPLICATION_JSON ) );

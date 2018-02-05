@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import java.net.InetSocketAddress;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class IdleChannelReaperHandlerTest
 {
     @Test
-    public void shouldRemoveChannelViaCallback() throws Exception
+    public void shouldRemoveChannelViaCallback()
     {
         // given
         AdvertisedSocketAddress address = new AdvertisedSocketAddress( "localhost", 1984 );

@@ -34,27 +34,27 @@ public class KernelTokenArgumentTest
     private KernelToken token = new KernelToken( mock( StoreReadLayer.class ) );
 
     @Test
-    public void labelGetOrCreateForName() throws Exception
+    public void labelGetOrCreateForName()
     {
         assertIllegalToken( () -> token.labelGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.labelGetOrCreateForName( "" ) );
     }
 
     @Test
-    public void propertyKeyGetOrCreateForName() throws Exception
+    public void propertyKeyGetOrCreateForName()
     {
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.propertyKeyGetOrCreateForName( "" ) );
     }
 
     @Test
-    public void relationshipTypeGetOrCreateForName() throws Exception
+    public void relationshipTypeGetOrCreateForName()
     {
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( null ) );
         assertIllegalToken( () -> token.relationshipTypeGetOrCreateForName( "" ) );
     }
 
-    private void assertIllegalToken( ThrowingAction<KernelException> f ) throws Exception
+    private void assertIllegalToken( ThrowingAction<KernelException> f )
     {
         Assert.assertException( f, IllegalTokenNameException.class );
     }

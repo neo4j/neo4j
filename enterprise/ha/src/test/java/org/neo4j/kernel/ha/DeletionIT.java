@@ -62,7 +62,7 @@ public class DeletionIT
      * Slave is because it makes guarantees for when the master has to apply the transaction.
      */
     @Test
-    public void shouldDeleteRecords() throws Throwable
+    public void shouldDeleteRecords()
     {
         // given
         ManagedCluster cluster = clusterRule.startCluster();

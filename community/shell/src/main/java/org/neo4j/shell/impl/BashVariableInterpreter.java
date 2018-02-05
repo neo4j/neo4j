@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.shell.Session;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellServer;
 
 /**
@@ -73,9 +72,8 @@ public class BashVariableInterpreter
      * @param server the server which runs the interpretation.
      * @param session the session (or environment) of the interpretation.
      * @return the interpreted string.
-     * @throws ShellException if there should be some communication error.
      */
-    public String interpret( String string, ShellServer server, Session session ) throws ShellException
+    public String interpret( String string, ShellServer server, Session session )
     {
         string = replace( string, server, session, localReplacers );
         string = replace( string, server, session, STATIC_REPLACERS );
@@ -83,7 +81,6 @@ public class BashVariableInterpreter
     }
 
     private String replace( String string, ShellServer server, Session session, Map<String, Replacer> replacers )
-            throws ShellException
     {
         for ( Map.Entry<String, Replacer> replacer : replacers.entrySet() )
         {
@@ -103,7 +100,6 @@ public class BashVariableInterpreter
          * @param server the server which runs the interpretation.
          * @param session the environment of the interpretation.
          * @return the replacement.
-         * @throws ShellException if there should be some communication error.
          */
         String getReplacement( ShellServer server, Session session );
     }

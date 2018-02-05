@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class BackupUsageTest
@@ -48,7 +46,7 @@ public class BackupUsageTest
     private final CommandLocator commandLocator = CommandLocator.fromServiceLocator();
 
     @Test
-    public void outputMatchesExpectedForMissingBackupDir() throws UnsupportedEncodingException
+    public void outputMatchesExpectedForMissingBackupDir()
     {
         // when
         String output = runBackup();
@@ -65,7 +63,7 @@ public class BackupUsageTest
     }
 
     @Test
-    public void missingBackupName() throws UnsupportedEncodingException
+    public void missingBackupName()
     {
         // when
         String output = runBackup( "--backup-dir=target" );
@@ -93,7 +91,7 @@ public class BackupUsageTest
         assertThat( output, containsString( reason ) );
     }
 
-    private String runBackup( String... args ) throws UnsupportedEncodingException
+    private String runBackup( String... args )
     {
         return runBackup( false, args );
     }

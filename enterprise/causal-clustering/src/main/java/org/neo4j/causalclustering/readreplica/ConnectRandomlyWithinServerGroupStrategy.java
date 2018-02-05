@@ -45,7 +45,7 @@ public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSe
     }
 
     @Override
-    public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+    public Optional<MemberId> upstreamDatabase()
     {
         return strategyImpl.upstreamDatabase();
     }

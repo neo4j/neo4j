@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -272,7 +271,7 @@ public class MasterImplConversationStopFuzzIT
             abstract State next( SlaveEmulatorWorker worker ) throws Exception;
 
             protected State commit( SlaveEmulatorWorker worker, RequestContext requestContext )
-                    throws IOException, TransactionFailureException
+                    throws TransactionFailureException
             {
                 try
                 {

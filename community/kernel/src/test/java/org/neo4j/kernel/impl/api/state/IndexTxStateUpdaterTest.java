@@ -30,7 +30,6 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
@@ -130,7 +129,7 @@ public class IndexTxStateUpdaterTest
     // LABELS
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( state, unIndexedLabelId, node, ADDED_LABEL );
@@ -141,7 +140,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( state, labelId1, node, ADDED_LABEL );
@@ -153,7 +152,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedLabel() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedLabel()
     {
         // WHEN
         indexTxUpdater.onLabelChange( state, labelId2, node, REMOVED_LABEL );
@@ -166,7 +165,7 @@ public class IndexTxStateUpdaterTest
     // PROPERTIES
 
     @Test
-    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty() throws EntityNotFoundException
+    public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( state, node, unIndexedPropId, Values.of( "whAt" ) );
@@ -178,7 +177,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnAddedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyAdd( state, node, newPropId, Values.of( "newHi" ) );
@@ -190,7 +189,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnRemovedProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyRemove( state, node, propId2, Values.of( "hi2" ) );
@@ -202,7 +201,7 @@ public class IndexTxStateUpdaterTest
     }
 
     @Test
-    public void shouldUpdateIndexesOnChangesProperty() throws EntityNotFoundException
+    public void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
         indexTxUpdater.onPropertyChange( state, node, propId2, Values.of( "hi2" ), Values.of( "new2" ) );

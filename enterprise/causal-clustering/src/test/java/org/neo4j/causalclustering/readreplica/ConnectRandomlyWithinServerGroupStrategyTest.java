@@ -38,7 +38,7 @@ import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStr
 public class ConnectRandomlyWithinServerGroupStrategyTest
 {
     @Test
-    public void shouldUseServerGroupsFromConfig() throws Exception
+    public void shouldUseServerGroupsFromConfig()
     {
         // given
         final String myServerGroup = "my_server_group";

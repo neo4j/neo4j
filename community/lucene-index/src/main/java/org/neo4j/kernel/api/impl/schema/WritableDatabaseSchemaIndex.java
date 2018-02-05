@@ -47,7 +47,7 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
     }
 
     @Override
-    public LuceneIndexWriter getIndexWriter() throws IOException
+    public LuceneIndexWriter getIndexWriter()
     {
         return luceneIndex.getIndexWriter( this );
     }

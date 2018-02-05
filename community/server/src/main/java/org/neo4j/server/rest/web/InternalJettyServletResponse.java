@@ -108,7 +108,7 @@ public class InternalJettyServletResponse extends Response
     }
 
     @Override
-    public void sendError( int sc ) throws IOException
+    public void sendError( int sc )
     {
         sendError( sc, null );
     }

@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -56,7 +55,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
     protected ServerBootstrapper bootstrapper;
 
     @Before
-    public void before() throws IOException
+    public void before()
     {
         bootstrapper = newBootstrapper();
     }

@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.Serializable;
-import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 public class ClientReconnectIT extends AbstractShellIT
 {
     @Before
-    public void setUp() throws RemoteException
+    public void setUp()
     {
         makeServerRemotelyAvailable();
     }

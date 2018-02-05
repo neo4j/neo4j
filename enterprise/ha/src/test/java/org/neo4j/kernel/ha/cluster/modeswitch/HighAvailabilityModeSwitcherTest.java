@@ -352,7 +352,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldTakeNoActionIfSwitchingToSlaveForItselfAsMaster() throws Throwable
+    public void shouldTakeNoActionIfSwitchingToSlaveForItselfAsMaster()
     {
         // Given
         // A HAMS
@@ -542,7 +542,7 @@ public class HighAvailabilityModeSwitcherTest
     }
 
     @Test
-    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached() throws Throwable
+    public void shouldSwitchToSlaveForNullMasterAndBeSilentWhenMovingToDetached()
     {
         // Given
         SwitchToSlaveCopyThenBranch sts = mock( SwitchToSlaveCopyThenBranch.class );

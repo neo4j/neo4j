@@ -157,7 +157,6 @@ public class GraphDatabaseFactoryWithCustomBoltKernelExtension extends GraphData
 
         @Override
         public Lifecycle newInstance( KernelContext context, BoltKernelExtension.Dependencies dependencies )
-                throws Throwable
         {
             return customExtension.newInstance( context, dependencies );
         }

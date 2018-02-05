@@ -61,7 +61,7 @@ public class WritableIndexReferenceFactoryTest
     private IndexConfigStore indexStore;
 
     @Before
-    public void setUp() throws IOException
+    public void setUp()
     {
         setupIndexInfrastructure();
     }

@@ -34,7 +34,7 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class IndexRuleTest extends SchemaRuleTestBase
 {
     @Test
-    public void shouldCreateGeneralIndex() throws Exception
+    public void shouldCreateGeneralIndex()
     {
         // GIVEN
         IndexDescriptor descriptor = forLabel( LABEL_ID, PROPERTY_ID_1 );

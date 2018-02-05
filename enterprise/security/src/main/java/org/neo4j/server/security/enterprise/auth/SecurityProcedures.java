@@ -19,11 +19,9 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -41,7 +39,7 @@ public class SecurityProcedures extends AuthProceduresBase
     @Deprecated
     @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
     @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS, deprecatedBy = "dbms.showCurrentUser" )
-    public Stream<UserManagementProcedures.UserResult> showCurrentUserDeprecated() throws InvalidArgumentsException, IOException
+    public Stream<UserManagementProcedures.UserResult> showCurrentUserDeprecated()
     {
         return showCurrentUser();
     }

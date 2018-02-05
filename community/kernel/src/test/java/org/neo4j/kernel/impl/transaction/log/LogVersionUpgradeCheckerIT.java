@@ -61,7 +61,7 @@ public class LogVersionUpgradeCheckerIT
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void startAsNormalWhenUpgradeIsNotAllowed() throws Exception
+    public void startAsNormalWhenUpgradeIsNotAllowed()
     {
         createGraphDbAndKillIt();
 

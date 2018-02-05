@@ -21,7 +21,6 @@ package org.neo4j.server.web;
 
 import org.eclipse.jetty.server.handler.ErrorHandler;
 
-import java.io.IOException;
 import java.io.Writer;
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,7 +29,6 @@ public class NeoJettyErrorHandler extends ErrorHandler
 
     @Override
     protected void handleErrorPage( HttpServletRequest request, Writer writer, int code, String message )
-            throws IOException
     {
         writeErrorPage( request, writer, code, message, false );
     }

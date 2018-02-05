@@ -71,7 +71,6 @@ public class OutputFormat
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response okIncludeLocation( REPR representation )
-            throws BadInputException
     {
         if ( representation.isEmpty() )
         {
@@ -81,7 +80,6 @@ public class OutputFormat
     }
 
     public final <REPR extends Representation & EntityRepresentation> Response created( REPR representation )
-            throws BadInputException
     {
         return response( Response.created( uri( representation ) ), representation );
     }

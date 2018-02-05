@@ -140,7 +140,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         getLdapServer().setConfidentialityRequired( false );
     }
 
-    private void restartNeo4jServerWithSaslDigestMd5() throws IOException
+    private void restartNeo4jServerWithSaslDigestMd5()
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( ldapOnlyAuthSettings.andThen(
@@ -153,7 +153,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         lookupConnectorAddress();
     }
 
-    private void restartNeo4jServerWithSaslCramMd5() throws IOException
+    private void restartNeo4jServerWithSaslCramMd5()
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( ldapOnlyAuthSettings.andThen(
@@ -1267,7 +1267,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
-    private void restartServerWithoutSystemAccount() throws IOException
+    private void restartServerWithoutSystemAccount()
     {
         restartNeo4jServerWithOverriddenSettings(
                 settings -> settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" ) );

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v310;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -140,7 +138,6 @@ class NodeRecordFormatV3_1_0 extends BaseHighLimitRecordFormatV3_1_0<NodeRecord>
 
     @Override
     protected void doWriteInternal( NodeRecord record, PageCursor cursor )
-            throws IOException
     {
         if ( record.isUseFixedReferences() )
         {

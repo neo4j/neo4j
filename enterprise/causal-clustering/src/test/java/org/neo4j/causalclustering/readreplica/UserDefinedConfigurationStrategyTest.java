@@ -57,7 +57,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class UserDefinedConfigurationStrategyTest
 {
     @Test
-    public void shouldPickTheFirstMatchingServerIfCore() throws Exception
+    public void shouldPickTheFirstMatchingServerIfCore()
     {
         // given
         MemberId theCoreMemberId = new MemberId( UUID.randomUUID() );
@@ -78,7 +78,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldPickTheFirstMatchingServerIfReadReplica() throws Exception
+    public void shouldPickTheFirstMatchingServerIfReadReplica()
     {
         // given
         MemberId[] readReplicaIds = memberIDs( 100 );
@@ -101,7 +101,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldReturnEmptyIfNoMatchingServers() throws Exception
+    public void shouldReturnEmptyIfNoMatchingServers()
     {
         // given
         MemberId[] readReplicaIds = memberIDs( 100 );
@@ -123,7 +123,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldReturnEmptyIfInvalidFilterSpecification() throws Exception
+    public void shouldReturnEmptyIfInvalidFilterSpecification()
     {
         // given
         TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),
@@ -143,7 +143,7 @@ public class UserDefinedConfigurationStrategyTest
     }
 
     @Test
-    public void shouldNotReturnSelf() throws Exception
+    public void shouldNotReturnSelf()
     {
         // given
         String wantedGroup = eastGroup;

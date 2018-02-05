@@ -114,7 +114,7 @@ public class SchemaIndexHaIT
     }
 
     @Test
-    public void creatingIndexOnSlaveIsNotAllowed() throws Throwable
+    public void creatingIndexOnSlaveIsNotAllowed()
     {
         // GIVEN
         ManagedCluster cluster = clusterRule.startCluster();

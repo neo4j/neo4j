@@ -262,7 +262,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         idGeneratorFactory.create( getIdFileName(), getNumberOfReservedLowIds(), false );
     }
 
-    private void createHeaderRecord( PageCursor cursor ) throws IOException
+    private void createHeaderRecord( PageCursor cursor )
     {
         int offset = cursor.getOffset();
         storeHeaderFormat.writeHeader( cursor );

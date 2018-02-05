@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -174,7 +173,7 @@ public class CappedLoggerTest
         return lines;
     }
 
-    public void assertLoggedLines( String[] lines, int count ) throws IOException
+    public void assertLoggedLines( String[] lines, int count )
     {
         assertLoggedLines( lines, count, 0 );
     }
@@ -210,7 +209,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogWithoutLimitConfiguration() throws Exception
+    public void mustLogWithoutLimitConfiguration()
     {
         int lineCount = 1000;
         String[] lines = logLines( lineCount );
@@ -274,7 +273,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLimitByConfiguredCount() throws Exception
+    public void mustLimitByConfiguredCount()
     {
         int limit = 10;
         logger.setCountLimit( limit );
@@ -284,7 +283,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogAfterResetWithCountLimit() throws Exception
+    public void mustLogAfterResetWithCountLimit()
     {
         int limit = 10;
         logger.setCountLimit( limit );
@@ -297,7 +296,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void unsettingCountLimitMustLetMessagesThrough() throws Exception
+    public void unsettingCountLimitMustLetMessagesThrough()
     {
         int limit = 10;
         logger.setCountLimit( limit );
@@ -381,7 +380,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustFilterDuplicateMessageAndNullException() throws Exception
+    public void mustFilterDuplicateMessageAndNullException()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###" );
@@ -392,7 +391,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustFilterDuplicateMessageAndException() throws Exception
+    public void mustFilterDuplicateMessageAndException()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) );
@@ -404,7 +403,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogSameMessageAndDifferentExceptionWithDuplicateLimit() throws Exception
+    public void mustLogSameMessageAndDifferentExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "exc_aaa" ) );
@@ -416,7 +415,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogSameMessageAndNonNullExceptionWithDuplicateLimit() throws Exception
+    public void mustLogSameMessageAndNonNullExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###" );
@@ -428,7 +427,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustFilterSameMessageAndExceptionWithNullMessage() throws Exception
+    public void mustFilterSameMessageAndExceptionWithNullMessage()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( null ) );
@@ -440,7 +439,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogDifferentMessageAndSameExceptionWithDuplicateLimit() throws Exception
+    public void mustLogDifferentMessageAndSameExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );
@@ -451,7 +450,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogDifferentMessageAndDifferentExceptionWithDuplicateLimit() throws Exception
+    public void mustLogDifferentMessageAndDifferentExceptionWithDuplicateLimit()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "foo" ) );
@@ -462,7 +461,7 @@ public class CappedLoggerTest
     }
 
     @Test
-    public void mustLogSameMessageAndExceptionAfterResetWithDuplicateFilter() throws Exception
+    public void mustLogSameMessageAndExceptionAfterResetWithDuplicateFilter()
     {
         logger.setDuplicateFilterEnabled( true );
         logMethod.log( logger, "### AAA ###", new ExceptionWithoutStackTrace( "xyz" ) );

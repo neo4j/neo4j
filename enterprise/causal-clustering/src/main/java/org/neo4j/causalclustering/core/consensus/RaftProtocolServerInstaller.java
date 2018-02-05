@@ -47,7 +47,7 @@ public class RaftProtocolServerInstaller extends ProtocolInstaller<ProtocolInsta
     }
 
     @Override
-    public void install( Channel channel ) throws Exception
+    public void install( Channel channel )
     {
         pipelineBuilderFactory.create( channel, log )
                 .addFraming()

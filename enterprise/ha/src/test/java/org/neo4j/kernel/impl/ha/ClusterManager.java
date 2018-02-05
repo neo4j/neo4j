@@ -1041,7 +1041,7 @@ public class ClusterManager
          * @param db the {@link HighlyAvailableGraphDatabase} to fail.
          * @return a {@link RepairKit} which can repair the failure.
          */
-        public RepairKit fail( HighlyAvailableGraphDatabase db ) throws Throwable
+        public RepairKit fail( HighlyAvailableGraphDatabase db )
         {
             return fail( db, NetworkFlag.values() );
         }
@@ -1056,7 +1056,7 @@ public class ClusterManager
          * @return a {@link RepairKit} which can repair the failure.
          * @throws IllegalArgumentException if the given db isn't a member of this cluster.
          */
-        public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags ) throws Throwable
+        public RepairKit fail( HighlyAvailableGraphDatabase db, NetworkFlag... flags )
         {
             return fail( db, true, flags );
         }

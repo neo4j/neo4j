@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -67,11 +64,6 @@ public class SlaveTransactionCommitProcess implements TransactionCommitProcess
             {
                 return response.response();
             }
-        }
-        catch ( IOException e )
-        {
-            throw new TransactionFailureException(
-                    Status.Transaction.TransactionCommitFailed, e, "Could not commit transaction on the master" );
         }
         catch ( ComException e )
         {

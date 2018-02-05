@@ -77,7 +77,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedRuleShouldBeVisibleInTx() throws Exception
+    public void addedRuleShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -96,7 +96,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedRulesShouldBeVisibleInTx() throws Exception
+    public void addedRulesShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -119,7 +119,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void addedAdditionalRuleShouldBeVisibleInTx() throws Exception
+    public void addedAdditionalRuleShouldBeVisibleInTx()
     {
         // GIVEN
         commitNoLabels();
@@ -203,7 +203,7 @@ public class SchemaTransactionStateTest
     }
 
     @Test
-    public void shouldNotReturnExistentRuleDroppedInTransaction() throws Exception
+    public void shouldNotReturnExistentRuleDroppedInTransaction()
     {
         // GIVEN
         // -- a rule that exists in the store
@@ -297,12 +297,12 @@ public class SchemaTransactionStateTest
         }
     }
 
-    private void commitNoLabels() throws Exception
+    private void commitNoLabels()
     {
         commitLabels( new int[0] );
     }
 
-    private void commitLabels( int... labels ) throws Exception
+    private void commitLabels( int... labels )
     {
         commitLabels( labels( nodeId, labels ) );
     }

@@ -26,7 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
@@ -54,7 +53,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class BoltMessagingProtocolV1HandlerTest
 {
     @Test
-    public void shouldNotTalkToChannelDirectlyOnFatalError() throws Throwable
+    public void shouldNotTalkToChannelDirectlyOnFatalError()
     {
         // Given
         Channel outputChannel = newChannelMock();
@@ -106,7 +105,7 @@ public class BoltMessagingProtocolV1HandlerTest
     }
 
     @Test
-    public void messageProcessingErrorIsLogged() throws IOException
+    public void messageProcessingErrorIsLogged()
     {
         RuntimeException error = new RuntimeException( "Unexpected error!" );
         ByteBuf data = newThrowingByteBuf( error );

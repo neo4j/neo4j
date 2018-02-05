@@ -33,10 +33,9 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.test.Randoms;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Math.abs;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Math.abs;
 
 public class InputEntityCacherTokenCreationTest
 {
@@ -254,13 +253,13 @@ public class InputEntityCacherTokenCreationTest
         return new Randoms( randomRule.random(), Randoms.DEFAULT );
     }
 
-    private InputNodeCacheWriter getNodeCacher( RecordFormats recordFormats ) throws IOException
+    private InputNodeCacheWriter getNodeCacher( RecordFormats recordFormats )
     {
         return new InputNodeCacheWriter( mock( StoreChannel.class ),
                 mock( StoreChannel.class ), recordFormats, 100 );
     }
 
-    private InputRelationshipCacheWriter getRelationshipCacher( RecordFormats recordFormats ) throws IOException
+    private InputRelationshipCacheWriter getRelationshipCacher( RecordFormats recordFormats )
     {
         return new InputRelationshipCacheWriter( mock( StoreChannel.class ),
                 mock( StoreChannel.class ), recordFormats, 100 );

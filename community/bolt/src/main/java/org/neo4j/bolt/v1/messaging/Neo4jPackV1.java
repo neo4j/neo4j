@@ -541,7 +541,7 @@ public class Neo4jPackV1 implements Neo4jPack
                         list.add( unpack() );
                     }
                 }
-                return VirtualValues.list( list.toArray( new AnyValue[list.size()] ) );
+                return VirtualValues.list( list.toArray( new AnyValue[0] ) );
             }
             else
             {

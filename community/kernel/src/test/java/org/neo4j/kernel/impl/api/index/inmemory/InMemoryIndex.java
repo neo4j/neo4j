@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -125,7 +124,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( accessor );
         }
@@ -230,7 +229,7 @@ class InMemoryIndex
 
         @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-                throws IndexEntryConflictException, IOException
+                throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( propertyAccessor );
         }

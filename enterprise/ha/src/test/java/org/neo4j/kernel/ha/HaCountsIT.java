@@ -59,7 +59,7 @@ public class HaCountsIT
     private HighlyAvailableGraphDatabase slave2;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
         master = cluster.getMaster();

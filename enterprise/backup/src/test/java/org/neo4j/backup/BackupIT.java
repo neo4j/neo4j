@@ -137,7 +137,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureFullFailsWhenDbExists() throws Exception
+    public void makeSureFullFailsWhenDbExists()
     {
         int backupPort = PortAuthority.allocatePort();
         createInitialDataSet( serverPath );
@@ -157,7 +157,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureIncrementalFailsWhenNoDb() throws Exception
+    public void makeSureIncrementalFailsWhenNoDb()
     {
         int backupPort = PortAuthority.allocatePort();
         createInitialDataSet( serverPath );
@@ -215,7 +215,7 @@ public class BackupIT
     }
 
     @Test
-    public void fullThenIncremental() throws Exception
+    public void fullThenIncremental()
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
         int backupPort = PortAuthority.allocatePort();
@@ -236,7 +236,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureNoLogFileRemains() throws Exception
+    public void makeSureNoLogFileRemains()
     {
         createInitialDataSet( serverPath );
         int backupPort = PortAuthority.allocatePort();
@@ -262,7 +262,7 @@ public class BackupIT
     }
 
     @Test
-    public void makeSureStoreIdIsEnforced() throws Exception
+    public void makeSureStoreIdIsEnforced()
     {
         // Create data set X on server A
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );

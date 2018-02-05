@@ -589,7 +589,7 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    void syncDevice() throws IOException
+    void syncDevice()
     {
         swapperFactory.syncDevice();
     }

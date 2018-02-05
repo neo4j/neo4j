@@ -98,7 +98,7 @@ public class RelationshipGroupDefragmenterTest
     }
 
     @After
-    public void stop() throws IOException
+    public void stop()
     {
         stores.close();
     }

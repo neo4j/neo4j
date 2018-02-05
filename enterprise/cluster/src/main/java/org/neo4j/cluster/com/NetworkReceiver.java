@@ -43,7 +43,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -130,7 +129,6 @@ public class NetworkReceiver
 
     @Override
     public void start()
-            throws Throwable
     {
         channels = new DefaultChannelGroup();
 

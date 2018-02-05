@@ -91,7 +91,7 @@ public class Start extends TransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
+            throws RemoteException
     {
         String query = parser.getLine().trim();
 
@@ -117,7 +117,7 @@ public class Start extends TransactionProvidingApp
     }
 
     private Result getResult( String query, Session session )
-            throws ShellException, QueryExecutionKernelException
+            throws QueryExecutionKernelException
     {
         Map<String,Object> parameters = getParameters( session );
         TransactionalContext tc = createTransactionContext( query, parameters, session );
@@ -130,7 +130,7 @@ public class Start extends TransactionProvidingApp
     }
 
     protected void handleResult( Output out, Result result, long startTime )
-            throws RemoteException, ShellException
+            throws RemoteException
     {
         printResult( out, result, startTime );
         result.close();

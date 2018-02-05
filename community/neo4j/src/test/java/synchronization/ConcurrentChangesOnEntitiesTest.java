@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.IOException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -192,7 +191,7 @@ public class ConcurrentChangesOnEntitiesTest
         }
     }
 
-    private void assertDatabaseConsistent() throws IOException
+    private void assertDatabaseConsistent()
     {
         LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         try

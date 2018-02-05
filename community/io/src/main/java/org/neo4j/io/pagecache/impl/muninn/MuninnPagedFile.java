@@ -504,7 +504,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return success;
     }
 
-    private void syncDevice() throws IOException
+    private void syncDevice()
     {
         pageCache.syncDevice();
     }

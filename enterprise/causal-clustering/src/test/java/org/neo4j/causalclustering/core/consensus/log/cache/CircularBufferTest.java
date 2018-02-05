@@ -126,7 +126,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRemove() throws Exception
+    public void comprehensivelyTestAppendRemove()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -138,7 +138,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRemoveHead() throws Exception
+    public void comprehensivelyTestAppendRemoveHead()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -150,7 +150,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRemoveReusingBuffer() throws Exception
+    public void comprehensivelyTestAppendRemoveReusingBuffer()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -217,7 +217,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRead() throws Exception
+    public void comprehensivelyTestAppendRead()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {

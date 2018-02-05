@@ -78,7 +78,7 @@ public class TransactionConstraintsIT
     protected ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
     }

@@ -105,28 +105,28 @@ import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @Test
-    public void mustReportConfiguredMaxPages() throws IOException
+    public void mustReportConfiguredMaxPages()
     {
         configureStandardPageCache();
         assertThat( pageCache.maxCachedPages(), is( (long) maxPages ) );
     }
 
     @Test
-    public void mustReportConfiguredCachePageSize() throws IOException
+    public void mustReportConfiguredCachePageSize()
     {
         configureStandardPageCache();
         assertThat( pageCache.pageSize(), is( pageCachePageSize ) );
     }
 
     @Test
-    public void mustHaveAtLeastTwoPages() throws Exception
+    public void mustHaveAtLeastTwoPages()
     {
         expectedException.expect( IllegalArgumentException.class );
         getPageCache( fs, 1, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
     @Test
-    public void mustAcceptTwoPagesAsMinimumConfiguration() throws Exception
+    public void mustAcceptTwoPagesAsMinimumConfiguration()
     {
         getPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }

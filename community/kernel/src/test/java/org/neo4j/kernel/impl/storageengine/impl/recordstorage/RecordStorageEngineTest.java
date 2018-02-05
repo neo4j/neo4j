@@ -184,7 +184,7 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void shouldListAllStoreFiles() throws Throwable
+    public void shouldListAllStoreFiles()
     {
         RecordStorageEngine engine = buildRecordStorageEngine();
 

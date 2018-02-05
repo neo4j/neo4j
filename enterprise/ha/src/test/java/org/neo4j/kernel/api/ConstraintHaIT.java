@@ -251,7 +251,7 @@ public class ConstraintHaIT
         protected abstract Class<? extends ConstraintDefinition> constraintDefinitionClass();
 
         @Test
-        public void shouldCreateConstraintOnMaster() throws Exception
+        public void shouldCreateConstraintOnMaster()
         {
             // given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -282,7 +282,7 @@ public class ConstraintHaIT
         }
 
         @Test
-        public void shouldNotBePossibleToCreateConstraintsDirectlyOnSlaves() throws Exception
+        public void shouldNotBePossibleToCreateConstraintsDirectlyOnSlaves()
         {
             // given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -303,7 +303,7 @@ public class ConstraintHaIT
         }
 
         @Test
-        public void shouldRemoveConstraints() throws Exception
+        public void shouldRemoveConstraints()
         {
             // given
             ClusterManager.ManagedCluster cluster = clusterRule.startCluster();

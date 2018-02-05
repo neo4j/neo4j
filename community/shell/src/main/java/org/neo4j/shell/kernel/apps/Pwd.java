@@ -45,7 +45,7 @@ public class Pwd extends TransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException, RemoteException
+        Output out ) throws RemoteException
     {
         String current = null;
         try

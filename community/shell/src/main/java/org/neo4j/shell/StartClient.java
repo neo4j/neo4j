@@ -429,7 +429,7 @@ public class StartClient
         }
     }
 
-    static Map<String,Serializable> getSessionVariablesFromArgs( Args args ) throws ShellException
+    static Map<String,Serializable> getSessionVariablesFromArgs( Args args )
     {
         String profile = args.get( "profile", null );
         Map<String,Serializable> session = new HashMap<>();

@@ -50,7 +50,7 @@ public class BiggerThanLogTxIT
     private final TransactionTemplate template = new TransactionTemplate().retries( 10 ).backoff( 3, TimeUnit.SECONDS );
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
     }

@@ -106,7 +106,7 @@ public interface DataWriteOperations extends ExplicitIndexWrite
 
     @Override
     void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     @Override
     void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
@@ -114,15 +114,15 @@ public interface DataWriteOperations extends ExplicitIndexWrite
 
     @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     @Override
     void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
 

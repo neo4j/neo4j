@@ -162,14 +162,12 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testAllRelationshipsAreReturnedOnceDepthFirst()
-            throws Exception
     {
         testAllRelationshipsAreReturnedOnce( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
     public void testAllRelationshipsAreReturnedOnceBreadthFirst()
-            throws Exception
     {
         testAllRelationshipsAreReturnedOnce( getGraphDb().traversalDescription().breadthFirst() );
     }
@@ -185,7 +183,6 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUniqueDepthFirst()
-            throws Exception
     {
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
                 getGraphDb().traversalDescription().depthFirst() );
@@ -193,7 +190,6 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUniqueBreadthFirst()
-            throws Exception
     {
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
                 getGraphDb().traversalDescription().breadthFirst() );
@@ -210,13 +206,13 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testAllUniqueNodePathsAreReturnedDepthFirst() throws Exception
+    public void testAllUniqueNodePathsAreReturnedDepthFirst()
     {
         testAllUniqueNodePathsAreReturned( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
-    public void testAllUniqueNodePathsAreReturnedBreadthFirst() throws Exception
+    public void testAllUniqueNodePathsAreReturnedBreadthFirst()
     {
         testAllUniqueNodePathsAreReturned( getGraphDb().traversalDescription().breadthFirst() );
     }
@@ -230,13 +226,13 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testAllUniqueRelationshipPathsAreReturnedDepthFirst() throws Exception
+    public void testAllUniqueRelationshipPathsAreReturnedDepthFirst()
     {
         testAllUniqueRelationshipPathsAreReturned( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
-    public void testAllUniqueRelationshipPathsAreReturnedBreadthFirst() throws Exception
+    public void testAllUniqueRelationshipPathsAreReturnedBreadthFirst()
     {
         testAllUniqueRelationshipPathsAreReturned( getGraphDb().traversalDescription().breadthFirst() );
     }

@@ -442,7 +442,7 @@ public class UdcExtensionImplIT extends LocalServerTestBase
     }
 
     @Test
-    public void shouldUseTheCustomConfiguration() throws Exception
+    public void shouldUseTheCustomConfiguration()
     {
         // Given
         config.put( UdcSettings.udc_source.name(), "my_source" );
@@ -488,12 +488,12 @@ public class UdcExtensionImplIT extends LocalServerTestBase
         fail();
     }
 
-    private GraphDatabaseService createDatabase() throws IOException
+    private GraphDatabaseService createDatabase()
     {
         return createDatabase( null, null );
     }
 
-    private GraphDatabaseService createDatabase( Map<String,String> config ) throws IOException
+    private GraphDatabaseService createDatabase( Map<String,String> config )
     {
         return createDatabase( null, config );
     }

@@ -46,7 +46,7 @@ public class HACountsPropagationIT
             .withSharedSetting( HaSettings.pull_interval, PULL_INTERVAL + "ms" );
 
     @Test
-    public void shouldPropagateNodeCountsInHA() throws Throwable
+    public void shouldPropagateNodeCountsInHA()
     {
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();
@@ -74,7 +74,7 @@ public class HACountsPropagationIT
     }
 
     @Test
-    public void shouldPropagateRelationshipCountsInHA() throws Throwable
+    public void shouldPropagateRelationshipCountsInHA()
     {
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();

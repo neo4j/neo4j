@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
+
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -1701,7 +1702,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         goTo( readCursor, currentPageId );
     }
 
-    private KEY keyAt( long nodeId, int pos, TreeNode.Type type ) throws IOException
+    private KEY keyAt( long nodeId, int pos, TreeNode.Type type )
     {
         KEY readKey = layout.newKey();
         long prevId = readCursor.getCurrentPageId();

@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 public class DataSourceManagerTest
 {
     @Test
-    public void shouldCallListenersOnStart() throws Throwable
+    public void shouldCallListenersOnStart()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -47,7 +47,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldCallListenersWhenAddedIfManagerAlreadyStarted() throws Throwable
+    public void shouldCallListenersWhenAddedIfManagerAlreadyStarted()
     {
         // given
         DataSourceManager manager = new DataSourceManager();
@@ -63,7 +63,7 @@ public class DataSourceManagerTest
     }
 
     @Test
-    public void shouldCallListenersOnDataSourceRegistrationIfManagerAlreadyStarted() throws Throwable
+    public void shouldCallListenersOnDataSourceRegistrationIfManagerAlreadyStarted()
     {
         // given
         DataSourceManager manager = new DataSourceManager();

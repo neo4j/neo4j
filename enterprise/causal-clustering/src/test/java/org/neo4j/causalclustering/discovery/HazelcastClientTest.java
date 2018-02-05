@@ -50,7 +50,6 @@ import com.hazelcast.monitor.LocalMultiMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,12 +60,10 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -114,7 +111,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnTopologyUsingHazelcastMembers() throws Throwable
+    public void shouldReturnTopologyUsingHazelcastMembers()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -147,7 +144,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldNotReconnectWhileHazelcastRemainsAvailable() throws Throwable
+    public void shouldNotReconnectWhileHazelcastRemainsAvailable()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -186,7 +183,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast() throws Throwable
+    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -219,7 +216,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRegisterReadReplicaInTopology() throws Throwable
+    public void shouldRegisterReadReplicaInTopology()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -264,7 +261,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRemoveReadReplicasOnGracefulShutdown() throws Throwable
+    public void shouldRemoveReadReplicasOnGracefulShutdown()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -311,7 +308,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldSwallowNPEFromHazelcast() throws Throwable
+    public void shouldSwallowNPEFromHazelcast()
     {
         // given
         Endpoint endpoint = mock( Endpoint.class );

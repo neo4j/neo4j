@@ -357,12 +357,12 @@ public class LabelTransactionStateTest
         }
     }
 
-    private void commitNoLabels() throws Exception
+    private void commitNoLabels()
     {
         commitLabels( new int[0] );
     }
 
-    private void commitLabels( int... labels ) throws Exception
+    private void commitLabels( int... labels )
     {
         commitLabels( labels( nodeId, labels ) );
     }

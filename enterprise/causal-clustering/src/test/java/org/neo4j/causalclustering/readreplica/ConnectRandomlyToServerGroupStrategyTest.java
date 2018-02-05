@@ -39,7 +39,7 @@ public class ConnectRandomlyToServerGroupStrategyTest
 {
 
     @Test
-    public void shouldConnectToGroupDefinedInStrategySpecificConfig() throws Exception
+    public void shouldConnectToGroupDefinedInStrategySpecificConfig()
     {
         // given
         final String targetServerGroup = "target_server_group";

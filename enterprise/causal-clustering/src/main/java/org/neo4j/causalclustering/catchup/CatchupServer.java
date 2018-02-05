@@ -19,11 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -39,20 +34,25 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
+import java.net.BindException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
 import org.neo4j.causalclustering.catchup.storecopy.FileChunkEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.FileHeaderEncoder;
-import org.neo4j.causalclustering.catchup.storecopy.StoreResourceStreamFactory;
-import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProcess;
-import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProtocol;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequest;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreIdResponseEncoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestDecoder;
 import org.neo4j.causalclustering.catchup.storecopy.GetStoreRequestHandler;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponseEncoder;
+import org.neo4j.causalclustering.catchup.storecopy.StoreResourceStreamFactory;
+import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProcess;
+import org.neo4j.causalclustering.catchup.storecopy.StoreStreamingProtocol;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestDecoder;
 import org.neo4j.causalclustering.catchup.tx.TxPullRequestHandler;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseEncoder;
@@ -148,7 +148,7 @@ public class CatchupServer extends LifecycleAdapter
                 .localAddress( listenAddress.socketAddress() ).childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    protected void initChannel( SocketChannel ch ) throws Exception
+                    protected void initChannel( SocketChannel ch )
                     {
                         CatchupServerProtocol protocol = new CatchupServerProtocol();
 

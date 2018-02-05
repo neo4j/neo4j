@@ -22,8 +22,6 @@ package org.neo4j.index.internal.gbptree;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +35,7 @@ public class TreeStateTest
     private PageAwareByteArrayCursor cursor;
 
     @Before
-    public void initiateCursor() throws IOException
+    public void initiateCursor()
     {
         cursor = new PageAwareByteArrayCursor( pageSize );
         cursor.next();

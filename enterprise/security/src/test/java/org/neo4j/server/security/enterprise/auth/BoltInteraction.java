@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,11 +44,11 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -82,12 +81,12 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     private FileSystemAbstraction fileSystem;
     private EnterpriseAuthManager authManager;
 
-    BoltInteraction( Map<String,String> config ) throws IOException
+    BoltInteraction( Map<String,String> config )
     {
         this( config, EphemeralFileSystemAbstraction::new );
     }
 
-    BoltInteraction( Map<String,String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws IOException
+    BoltInteraction( Map<String,String> config, Supplier<FileSystemAbstraction> fileSystemSupplier )
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         fileSystem = fileSystemSupplier.get();

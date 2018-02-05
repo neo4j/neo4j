@@ -74,7 +74,7 @@ public class SocketTransportHandlerTest
     }
 
     @Test
-    public void shouldCloseContextWhenProtocolNotInitializedOnChannelInactive() throws Throwable
+    public void shouldCloseContextWhenProtocolNotInitializedOnChannelInactive()
     {
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
@@ -107,7 +107,7 @@ public class SocketTransportHandlerTest
     }
 
     @Test
-    public void shouldCloseContextWhenProtocolNotInitializedOnHandlerRemoved() throws Throwable
+    public void shouldCloseContextWhenProtocolNotInitializedOnHandlerRemoved()
     {
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
@@ -145,7 +145,7 @@ public class SocketTransportHandlerTest
     }
 
     @Test
-    public void logsAndClosesContextWhenProtocolNotInitializedOnUnexpectedExceptions() throws Throwable
+    public void logsAndClosesContextWhenProtocolNotInitializedOnUnexpectedExceptions()
     {
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );

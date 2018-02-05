@@ -550,7 +550,7 @@ public class KernelTransactionsTest
     }
 
     private static KernelTransactions newKernelTransactions( Locks locks, StorageEngine storageEngine,
-            TransactionCommitProcess commitProcess, boolean testKernelTransactions ) throws Throwable
+            TransactionCommitProcess commitProcess, boolean testKernelTransactions )
     {
         LifeSupport life = new LifeSupport();
         life.start();

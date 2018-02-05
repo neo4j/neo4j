@@ -24,7 +24,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -147,7 +146,7 @@ public class Neo4jWithSocket extends ExternalResource
         }
     }
 
-    public void ensureDatabase( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
+    public void ensureDatabase( Consumer<Map<String,String>> overrideSettingsFunction )
     {
         if ( gdb != null )
         {

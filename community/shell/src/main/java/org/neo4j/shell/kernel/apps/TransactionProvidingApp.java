@@ -176,7 +176,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return RelationshipType.withName( name );
     }
 
-    protected static Direction getDirection( String direction ) throws ShellException
+    protected static Direction getDirection( String direction )
     {
         return getDirection( direction, Direction.OUTGOING );
     }
@@ -349,7 +349,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
     }
 
-    protected void cdTo( Session session, Node node ) throws RemoteException, ShellException
+    protected void cdTo( Session session, Node node )
     {
         List<TypedId> wd = readCurrentWorkingDir( session );
         try
@@ -719,7 +719,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     protected static Map<String, Direction> filterMapToTypes( GraphDatabaseService db,
             Direction defaultDirection, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
-            boolean looseFilters ) throws ShellException
+            boolean looseFilters )
     {
         Map<String, Direction> matches = new TreeMap<>();
         for ( RelationshipType type : db.getAllRelationshipTypes() )
@@ -752,7 +752,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters )
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
@@ -771,7 +771,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters )
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,

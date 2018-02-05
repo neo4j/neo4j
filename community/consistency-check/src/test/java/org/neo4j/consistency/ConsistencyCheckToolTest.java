@@ -283,7 +283,7 @@ public class ConsistencyCheckToolTest
     }
 
     private void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )
-            throws IOException, ToolFailureException
+            throws ToolFailureException
     {
         new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class),
                 mock( PrintStream.class ) ).run( args );

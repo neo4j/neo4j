@@ -231,7 +231,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
+    protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,

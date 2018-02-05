@@ -28,7 +28,6 @@ import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -214,7 +213,7 @@ public class RecordingChannel implements Channel
             }
 
             @Override
-            public ChannelBuffer read( long timeout, TimeUnit unit ) throws IOException, InterruptedException
+            public ChannelBuffer read( long timeout, TimeUnit unit )
             {
                 return read();
             }

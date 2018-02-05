@@ -133,13 +133,13 @@ public class TestRelationshipCount
     }
 
     @Test
-    public void testGetRelationshipTypesOnDiscreteNode() throws Exception
+    public void testGetRelationshipTypesOnDiscreteNode()
     {
         testGetRelationshipTypes( getGraphDb().createNode(), new HashSet<>() );
     }
 
     @Test
-    public void testGetRelationshipTypesOnDenseNode() throws Exception
+    public void testGetRelationshipTypesOnDenseNode()
     {
         Node node = getGraphDb().createNode();
         Node otherNode = getGraphDb().createNode();

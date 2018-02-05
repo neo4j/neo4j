@@ -92,13 +92,13 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldComplainIfMissingPrivateKey() throws Exception
+    public void shouldComplainIfMissingPrivateKey()
     {
         shouldComplainIfMissingFile( privateKeyFile );
     }
 
     @Test
-    public void shouldComplainIfMissingPublicCertificate() throws Exception
+    public void shouldComplainIfMissingPublicCertificate()
     {
         shouldComplainIfMissingFile( publicCertificateFile );
     }

@@ -139,7 +139,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
                         jobScheduler );
     }
 
-    public static Builder withInternalLog( File logFile ) throws IOException
+    public static Builder withInternalLog( File logFile )
     {
         return new Builder().withInternalLog( logFile );
     }

@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Node;
@@ -616,7 +615,7 @@ public class ListQueriesProcedureTest
     }
 
     private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String... queries )
-            throws TimeoutException, InterruptedException, ExecutionException
+            throws InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatch = new CountDownLatch( 1 );

@@ -45,7 +45,7 @@ public enum ElectionState
     start
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
@@ -67,7 +67,7 @@ public enum ElectionState
     election
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )

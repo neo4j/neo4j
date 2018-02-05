@@ -82,7 +82,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreesForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    public void degreesForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testDegreesForDenseNodeWithPartiallyDeletedRelGroupChain();
 
@@ -147,7 +147,7 @@ public class StorageLayerRelTypesAndDegreeTest extends StorageLayerTest
     }
 
     @Test
-    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain() throws Exception
+    public void degreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain()
     {
         testDegreeByDirectionAndTypeForDenseNodeWithPartiallyDeletedRelGroupChain();
 

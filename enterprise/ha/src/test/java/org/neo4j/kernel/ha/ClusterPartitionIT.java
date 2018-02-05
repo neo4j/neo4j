@@ -318,7 +318,7 @@ public class ClusterPartitionIT
     private ClusterManager.RepairKit killAbruptly( ClusterManager.ManagedCluster cluster,
                                                    HighlyAvailableGraphDatabase failed1,
                                                    HighlyAvailableGraphDatabase failed2,
-                                                   HighlyAvailableGraphDatabase failed3 ) throws Throwable
+                                                   HighlyAvailableGraphDatabase failed3 )
     {
         ClusterManager.RepairKit firstFailure = cluster.fail( failed1 );
         cluster.fail( failed2 );
@@ -334,7 +334,7 @@ public class ClusterPartitionIT
     private ClusterManager.RepairKit killIncrementally( ClusterManager.ManagedCluster cluster,
                                                    HighlyAvailableGraphDatabase failed1,
                                                    HighlyAvailableGraphDatabase failed2,
-                                                   HighlyAvailableGraphDatabase failed3 ) throws Throwable
+                                                   HighlyAvailableGraphDatabase failed3 )
     {
         ClusterManager.RepairKit firstFailure = cluster.fail( failed1 );
         cluster.await( instanceEvicted( failed1 ) );

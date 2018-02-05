@@ -45,7 +45,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.cert.CertificateException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -283,7 +282,7 @@ public class SecureCommunicationsTest
         client.assertResponse( expected );
     }
 
-    private SslContext makeSslContext( SslResource sslResource, boolean forServer ) throws CertificateException, IOException
+    private SslContext makeSslContext( SslResource sslResource, boolean forServer ) throws IOException
     {
         return makeSslContext( sslResource, forServer, SslProvider.JDK.name() );
     }

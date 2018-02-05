@@ -34,7 +34,7 @@ public enum SnapshotState
     start
             {
                 @Override
-                public State<?, ?> handle( SnapshotContext context,
+                public SnapshotState handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
                                            MessageHolder outgoing
                 )
@@ -91,11 +91,10 @@ public enum SnapshotState
     refreshing
             {
                 @Override
-                public State<?, ?> handle( SnapshotContext context,
+                public SnapshotState handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == SnapshotMessage.snapshot )
                     {
@@ -112,7 +111,7 @@ public enum SnapshotState
     ready
             {
                 @Override
-                public State<?, ?> handle( SnapshotContext context,
+                public SnapshotState handle( SnapshotContext context,
                                            Message<SnapshotMessage> message,
                                            MessageHolder outgoing
                 )

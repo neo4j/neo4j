@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -59,7 +58,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldLogHelpfulStartupMessages() throws Throwable
+    public void shouldLogHelpfulStartupMessages()
     {
         CommunityBootstrapper boot = new CommunityBootstrapper();
         Map<String,String> propertyPairs = getPropertyPairs();

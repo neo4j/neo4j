@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -81,7 +80,7 @@ public class CountsComputerTest
     private PageCache pageCache;
 
     @Test
-    public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase() throws IOException
+    public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -100,7 +99,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreNodesInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreNodesInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -131,7 +130,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -163,7 +162,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -197,7 +196,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB() throws IOException
+    public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
@@ -236,7 +235,7 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountStoreWhenDBContainsDenseNodes() throws IOException
+    public void shouldCreateACountStoreWhenDBContainsDenseNodes()
     {
         @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.

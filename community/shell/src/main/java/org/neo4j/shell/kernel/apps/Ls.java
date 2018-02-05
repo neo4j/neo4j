@@ -297,7 +297,7 @@ public class Ls extends TransactionProvidingApp
 
     private Iterator<Relationship> wrapInLimitingIterator( AppCommandParser parser,
             Iterator<Relationship> iterator, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
-            boolean looseFilters ) throws ShellException
+            boolean looseFilters )
     {
         final AtomicBoolean handBreak = new AtomicBoolean();
         int maxRelsPerType = parser.optionAsNumber( "m", DEFAULT_MAX_RELS_PER_TYPE_LIMIT ).intValue();
@@ -354,7 +354,7 @@ public class Ls extends TransactionProvidingApp
     }
 
     private Iterable<Relationship> getRelationships( final Node node, Map<String, Object> filterMap,
-            boolean caseInsensitiveFilters, boolean looseFilters, boolean sortByType ) throws ShellException
+            boolean caseInsensitiveFilters, boolean looseFilters, boolean sortByType )
     {
         if ( sortByType )
         {

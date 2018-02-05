@@ -277,7 +277,7 @@ public class HAClusterStartupIT
     }
 
     private static void assertAllStoreConsistent( ClusterManager.ManagedCluster cluster )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         for ( HighlyAvailableGraphDatabase slave : cluster.getAllMembers() )
         {

@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,9 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.causalclustering.core.replication.DirectReplicator;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
@@ -62,14 +62,12 @@ public class ReplicatedIdRangeAcquirerTest
 
     @Test
     public void consecutiveAllocationsFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateWhenInitialIdIsZero()
-            throws Exception
     {
         consecutiveAllocationFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateForGivenInitialHighId( 0 );
     }
 
     @Test
     public void consecutiveAllocationsFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateWhenInitialIdIsNotZero()
-            throws Exception
     {
         consecutiveAllocationFromSeparateIdGeneratorsForSameIdTypeShouldNotDuplicateForGivenInitialHighId( 1 );
     }

@@ -82,7 +82,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
+    public void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -122,7 +122,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldNotRescheduleAJobWhenStopped() throws Throwable
+    public void shouldNotRescheduleAJobWhenStopped()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -238,7 +238,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldContinueThroughSporadicFailures() throws Throwable
+    public void shouldContinueThroughSporadicFailures()
     {
         // GIVEN
         ControlledCheckPointer checkPointer = new ControlledCheckPointer();

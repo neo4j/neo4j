@@ -64,7 +64,7 @@ public class BoltFactoryImplTest
     }
 
     @Test
-    public void newMachineThrowsWhenStopped() throws Throwable
+    public void newMachineThrowsWhenStopped()
     {
         BoltFactoryImpl boltFactory = newBoltFactory();
 
@@ -88,7 +88,7 @@ public class BoltFactoryImplTest
     }
 
     @Test
-    public void txIdStoreRefreshedAfterRestart() throws Throwable
+    public void txIdStoreRefreshedAfterRestart()
     {
         GraphDatabaseAPI db = newDbMock();
         DependencyResolver dependencyResolver = db.getDependencyResolver();

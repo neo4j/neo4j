@@ -61,7 +61,7 @@ public class ClusterLocksIT
     private ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.tx_push_factor, "2" )

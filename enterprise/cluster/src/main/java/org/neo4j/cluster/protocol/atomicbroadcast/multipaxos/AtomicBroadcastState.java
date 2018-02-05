@@ -72,7 +72,7 @@ public enum AtomicBroadcastState
     joining
             {
                 @Override
-                public State<?, ?> handle( AtomicBroadcastContext context,
+                public AtomicBroadcastState handle( AtomicBroadcastContext context,
                                            Message<AtomicBroadcastMessage> message,
                                            MessageHolder outgoing
                 )

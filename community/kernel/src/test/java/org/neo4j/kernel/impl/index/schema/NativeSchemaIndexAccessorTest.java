@@ -624,7 +624,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     }
 
     @Test
-    public void snapshotFilesShouldReturnIndexFile() throws Exception
+    public void snapshotFilesShouldReturnIndexFile()
     {
         // when
         ResourceIterator<File> files = accessor.snapshotFiles();

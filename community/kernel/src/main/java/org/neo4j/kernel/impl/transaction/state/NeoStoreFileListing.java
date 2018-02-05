@@ -167,7 +167,7 @@ public class NeoStoreFileListing
         return snapshot;
     }
 
-    private Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles ) throws IOException
+    private Resource gatherLabelScanStoreFiles( Collection<StoreFileMetadata> targetFiles )
     {
         ResourceIterator<File> snapshot = labelScanStore.snapshotStoreFiles();
         targetFiles.addAll( getSnapshotFilesMetadata( snapshot ) );

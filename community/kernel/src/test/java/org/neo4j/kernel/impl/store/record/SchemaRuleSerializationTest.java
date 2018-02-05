@@ -324,7 +324,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldReturnCorrectLengthForIndexRules() throws MalformedSchemaRuleException
+    public void shouldReturnCorrectLengthForIndexRules()
     {
         assertCorrectLength( indexRegular );
         assertCorrectLength( indexUnique );
@@ -334,7 +334,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldReturnCorrectLengthForConstraintRules() throws MalformedSchemaRuleException
+    public void shouldReturnCorrectLengthForConstraintRules()
     {
         assertCorrectLength( constraintExistsLabel );
     }

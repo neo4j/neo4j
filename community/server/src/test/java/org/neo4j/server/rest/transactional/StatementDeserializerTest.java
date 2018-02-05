@@ -22,7 +22,6 @@ package org.neo4j.server.rest.transactional;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.neo4j.kernel.api.exceptions.Status;
@@ -60,7 +59,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldRejectMapWithADifferentFieldBeforeStatement() throws Exception
+    public void shouldRejectMapWithADifferentFieldBeforeStatement()
     {
         // NOTE: We don't really want this behaviour, but it's a symptom of keeping
         // streaming behaviour while moving the statement list into a map.
@@ -171,7 +170,7 @@ public class StatementDeserializerTest
     }
 
     @Test
-    public void shouldNotThrowButReportErrorOnInvalidInput() throws Exception
+    public void shouldNotThrowButReportErrorOnInvalidInput()
     {
         assertYieldsErrors( "{}",
                 new Neo4jError( Status.Request.InvalidFormat, new DeserializationException( "Unable to " +

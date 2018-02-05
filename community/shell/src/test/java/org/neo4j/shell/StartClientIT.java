@@ -64,7 +64,7 @@ public class StartClientIT extends AbstractShellIT
     private GraphDatabaseShellServer shellServer;
 
     @Before
-    public void startDatabase() throws Exception
+    public void startDatabase()
     {
         makeServerRemotelyAvailable();
     }

@@ -33,11 +33,11 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.kernel.impl.security.User;
-import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -75,14 +75,14 @@ public class SetInitialPasswordCommandTest
     }
 
     @Test
-    public void shouldFailSetPasswordWithNoArguments() throws Exception
+    public void shouldFailSetPasswordWithNoArguments()
     {
         assertException( () -> setPasswordCommand.execute( new String[0] ), IncorrectUsage.class,
                 "not enough arguments" );
     }
 
     @Test
-    public void shouldFailSetPasswordWithTooManyArguments() throws Exception
+    public void shouldFailSetPasswordWithTooManyArguments()
     {
         String[] arguments = {"", "123", "321"};
         assertException( () -> setPasswordCommand.execute( arguments ), IncorrectUsage.class, "unrecognized arguments: '123 321'" );

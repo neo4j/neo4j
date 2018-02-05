@@ -81,7 +81,7 @@ public abstract class PageSwapperTest
 
     protected abstract boolean isRootAccessible();
 
-    protected final PageSwapperFactory createSwapperFactory() throws Exception
+    protected final PageSwapperFactory createSwapperFactory()
     {
         PageSwapperFactory factory = swapperFactory();
         openedFactories.add( factory );

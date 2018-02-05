@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import java.io.File;
-import java.io.IOException;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
@@ -78,7 +77,7 @@ public class LuceneFulltextTestSupport
         transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
     }
 
-    protected FulltextProviderImpl createProvider() throws IOException
+    protected FulltextProviderImpl createProvider()
     {
         return new FulltextProviderImpl( db, LOG, availabilityGuard, scheduler, transactionIdStore,
                 fs, storeDir, analyzer );

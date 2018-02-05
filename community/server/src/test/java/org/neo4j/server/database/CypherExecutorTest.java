@@ -71,7 +71,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransaction() throws Throwable
+    public void startDefaultTransaction()
     {
         CypherExecutor cypherExecutor = new CypherExecutor( database, logProvider );
         cypherExecutor.start();
@@ -83,7 +83,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startTransactionWithCustomTimeout() throws Throwable
+    public void startTransactionWithCustomTimeout()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( String.valueOf( CUSTOM_TRANSACTION_TIMEOUT ) );
@@ -99,7 +99,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransactionWhenHeaderHasIncorrectValue() throws Throwable
+    public void startDefaultTransactionWhenHeaderHasIncorrectValue()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "not a number" );
@@ -115,7 +115,7 @@ public class CypherExecutorTest
     }
 
     @Test
-    public void startDefaultTransactionIfTimeoutIsNegative() throws Throwable
+    public void startDefaultTransactionIfTimeoutIsNegative()
     {
         when( request.getHeader( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER ) )
                 .thenReturn( "-2" );

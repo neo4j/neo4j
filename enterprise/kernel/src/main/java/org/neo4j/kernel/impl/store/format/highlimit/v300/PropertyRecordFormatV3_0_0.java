@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v300;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.highlimit.Reference;
@@ -89,11 +87,10 @@ public class PropertyRecordFormatV3_0_0 extends BaseOneByteHeaderRecordFormat<Pr
 
     @Override
     public void write( PropertyRecord record, PageCursor cursor, int recordSize )
-            throws IOException
     {
         if ( record.inUse() )
         {
-            cursor.putByte( (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4) );
+            cursor.putByte( (byte) (IN_USE_BIT | numberOfBlocks( record ) << 4) );
             long recordId = record.getId();
             Reference.encode( toRelative( record.getPrevProp(), recordId), cursor );
             Reference.encode( toRelative( record.getNextProp(), recordId), cursor );

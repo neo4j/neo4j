@@ -49,13 +49,13 @@ import static org.mockito.Mockito.verify;
 public class BackupProtocolIT
 {
     @Test
-    public void shouldGatherForensicsInFullBackupRequest() throws Exception
+    public void shouldGatherForensicsInFullBackupRequest()
     {
         shouldGatherForensicsInFullBackupRequest( true );
     }
 
     @Test
-    public void shouldSkipGatheringForensicsInFullBackupRequest() throws Exception
+    public void shouldSkipGatheringForensicsInFullBackupRequest()
     {
         shouldGatherForensicsInFullBackupRequest( false );
     }

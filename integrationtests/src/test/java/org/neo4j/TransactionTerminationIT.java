@@ -384,7 +384,7 @@ public class TransactionTerminationIT
         return Executors.newSingleThreadExecutor( named( threadName ) ).submit( runnable );
     }
 
-    private ClusterManager.ManagedCluster startCluster() throws Exception
+    private ClusterManager.ManagedCluster startCluster()
     {
         clusterRule.withSharedSetting( GraphDatabaseFacadeFactory.Configuration.lock_manager, lockManagerName );
 

@@ -41,7 +41,7 @@ import static org.junit.Assert.assertThat;
 public class TestBlockLogBuffer
 {
     @Test
-    public void onlyOneNonFullBlock() throws IOException
+    public void onlyOneNonFullBlock()
     {
         byte[] bytes = new byte[255];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -142,7 +142,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void onlyOneFullBlock() throws Exception
+    public void onlyOneFullBlock()
     {
         byte[] bytes = new byte[256];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -186,7 +186,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void canWriteLargestAtomAfterFillingBuffer() throws Exception
+    public void canWriteLargestAtomAfterFillingBuffer()
     {
         byte[] bytes = new byte[300];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -211,7 +211,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void canWriteReallyLargeByteArray() throws Exception
+    public void canWriteReallyLargeByteArray()
     {
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );
@@ -246,7 +246,7 @@ public class TestBlockLogBuffer
     }
 
     @Test
-    public void canReaderReallyLargeByteArray() throws Exception
+    public void canReaderReallyLargeByteArray()
     {
         byte[] bytes = new byte[650];
         ChannelBuffer wrappedBuffer = ChannelBuffers.wrappedBuffer( bytes );

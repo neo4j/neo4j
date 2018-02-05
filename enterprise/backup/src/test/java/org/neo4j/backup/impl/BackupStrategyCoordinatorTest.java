@@ -153,7 +153,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void consistencyCheckIsRunIfSpecified() throws CommandFailed, IOException, ConsistencyCheckIncompleteException
+    public void consistencyCheckIsRunIfSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -170,7 +170,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void consistencyCheckIsNotRunIfNotSpecified() throws CommandFailed, IOException, ConsistencyCheckIncompleteException
+    public void consistencyCheckIsNotRunIfNotSpecified() throws CommandFailed, ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -208,7 +208,8 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void errorsDuringConsistencyCheckAreWrappedAsCommandFailed() throws CommandFailed, IOException, ConsistencyCheckIncompleteException
+    public void errorsDuringConsistencyCheckAreWrappedAsCommandFailed() throws CommandFailed,
+            ConsistencyCheckIncompleteException
     {
         // given
         anyStrategyPasses();
@@ -225,7 +226,7 @@ public class BackupStrategyCoordinatorTest
     }
 
     @Test
-    public void commandFailedWhenConsistencyCheckFails() throws IOException, ConsistencyCheckIncompleteException, CommandFailed
+    public void commandFailedWhenConsistencyCheckFails() throws ConsistencyCheckIncompleteException, CommandFailed
     {
         // given
         anyStrategyPasses();

@@ -112,6 +112,7 @@ public class MultiPaxosServerFactory
                 context, snapshotContext );
     }
 
+    @SuppressWarnings( "unchecked" )
     public ProtocolServer newProtocolServer( InstanceId me, MessageSource input, MessageSender output,
                                              Executor stateMachineExecutor, DelayedDirectExecutor executor,
                                              Timeouts timeouts,
@@ -143,6 +144,7 @@ public class MultiPaxosServerFactory
      * an external requirement for assembling protocol servers given an existing set of state machines (used to prove
      * correctness).
      */
+    @SuppressWarnings( "rawtypes" )
     public ProtocolServer constructSupportingInfrastructureFor( InstanceId me, MessageSource input,
                                                                 MessageSender output, DelayedDirectExecutor executor,
                                                                 Timeouts timeouts,

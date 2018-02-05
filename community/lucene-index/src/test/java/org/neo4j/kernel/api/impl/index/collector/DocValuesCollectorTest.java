@@ -345,7 +345,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoDocValues() throws Exception
+    public void shouldReturnEmptyIteratorWhenNoDocValues()
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );

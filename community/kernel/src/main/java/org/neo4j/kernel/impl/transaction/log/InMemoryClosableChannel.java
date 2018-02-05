@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Closeable;
 import java.io.Flushable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -79,49 +78,49 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     }
 
     @Override
-    public InMemoryClosableChannel put( byte b ) throws IOException
+    public InMemoryClosableChannel put( byte b )
     {
         writer.put( b );
         return this;
     }
 
     @Override
-    public InMemoryClosableChannel putShort( short s ) throws IOException
+    public InMemoryClosableChannel putShort( short s )
     {
         writer.putShort( s );
         return this;
     }
 
     @Override
-    public InMemoryClosableChannel putInt( int i ) throws IOException
+    public InMemoryClosableChannel putInt( int i )
     {
         writer.putInt( i );
         return this;
     }
 
     @Override
-    public InMemoryClosableChannel putLong( long l ) throws IOException
+    public InMemoryClosableChannel putLong( long l )
     {
         writer.putLong( l );
         return this;
     }
 
     @Override
-    public InMemoryClosableChannel putFloat( float f ) throws IOException
+    public InMemoryClosableChannel putFloat( float f )
     {
         writer.putFloat( f );
         return this;
     }
 
     @Override
-    public InMemoryClosableChannel putDouble( double d ) throws IOException
+    public InMemoryClosableChannel putDouble( double d )
     {
         writer.putDouble( d );
         return this;
     }
 
     @Override
-    public InMemoryClosableChannel put( byte[] bytes, int length ) throws IOException
+    public InMemoryClosableChannel put( byte[] bytes, int length )
     {
         writer.put( bytes, length );
         return this;
@@ -188,7 +187,7 @@ public class InMemoryClosableChannel implements ReadableClosablePositionAwareCha
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
     {
         // Hmm, this would be for the writer.
         return writer.getCurrentPosition( positionMarker );

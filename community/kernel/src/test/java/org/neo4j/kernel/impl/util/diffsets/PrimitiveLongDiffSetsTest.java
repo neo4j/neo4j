@@ -25,8 +25,6 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 
 import static org.junit.Assert.assertEquals;
@@ -154,7 +152,7 @@ public class PrimitiveLongDiffSetsTest
     }
 
     @Test
-    public void visitAddedAndRemovedElements() throws ConstraintValidationException, CreateConstraintFailureException
+    public void visitAddedAndRemovedElements()
     {
         PrimitiveLongDiffSets diffSet = createDiffSet();
         diffSet.addAll( PrimitiveLongCollections.iterator( 9L, 10L, 11L ) );

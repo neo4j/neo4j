@@ -113,7 +113,7 @@ public class PullUpdatesIT
     }
 
     @Test
-    public void terminatedTransactionDoesNotForceUpdatePulling() throws Throwable
+    public void terminatedTransactionDoesNotForceUpdatePulling()
     {
         int testTxsOnMaster = 42;
         ClusterManager.ManagedCluster cluster = clusterRule.

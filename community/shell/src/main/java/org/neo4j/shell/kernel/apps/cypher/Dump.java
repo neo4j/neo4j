@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps.cypher;
 
-import java.rmi.RemoteException;
-
 import org.neo4j.cypher.export.CypherResultSubGraph;
 import org.neo4j.cypher.export.DatabaseSubGraph;
 import org.neo4j.cypher.export.SubGraph;
@@ -92,13 +90,13 @@ public class Dump extends Start
         }
     }
 
-    private void export( SubGraph subGraph, Output out ) throws RemoteException, ShellException
+    private void export( SubGraph subGraph, Output out )
     {
         new Exporter( subGraph ).export( out );
     }
 
     @Override
-    protected void handleResult( Output out, Result result, long startTime ) throws RemoteException, ShellException
+    protected void handleResult( Output out, Result result, long startTime )
     {
         final SubGraph subGraph = CypherResultSubGraph.from( result, getServer().getDb(), false );
         export( subGraph, out );

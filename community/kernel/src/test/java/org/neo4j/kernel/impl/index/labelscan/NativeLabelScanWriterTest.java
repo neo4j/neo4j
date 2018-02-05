@@ -39,11 +39,9 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.test.rule.RandomRule;
 
+import static java.lang.Integer.max;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
-
-import static java.lang.Integer.max;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
@@ -135,7 +133,7 @@ public class NativeLabelScanWriterTest
         }
 
         @Override
-        public void put( LabelScanKey key, LabelScanValue value ) throws IOException
+        public void put( LabelScanKey key, LabelScanValue value )
         {
             merge( key, value, ValueMergers.overwrite() );
         }

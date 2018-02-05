@@ -600,7 +600,7 @@ public class Cluster
     }
 
     public static <T extends ClusterMember> void dataMatchesEventually( ClusterMember source, Collection<T> targets )
-            throws TimeoutException, InterruptedException
+            throws TimeoutException
     {
         dataMatchesEventually( DbRepresentation.of( source.database() ), targets );
     }
