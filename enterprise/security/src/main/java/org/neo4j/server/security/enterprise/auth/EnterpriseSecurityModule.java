@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -112,8 +111,7 @@ public class EnterpriseSecurityModule extends SecurityModule
                     ctx -> authManager.getUserManager( ctx.get( SECURITY_CONTEXT ).subject(), ctx.get( SECURITY_CONTEXT ).isAdmin() ), true );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
-                procedures.registerProcedure( UserManagementProcedures.class, true,
-                        Optional.of( "%s only applies to native users." ) );
+                procedures.registerProcedure( UserManagementProcedures.class, true, "%s only applies to native users."  );
             }
             else
             {
