@@ -668,12 +668,6 @@ public enum TemporalType
 
     public abstract ArrayValue decodeArray( Value dataValue );
 
-    // TODO use that ting man
-    public int getTemporalType()
-    {
-        return temporalType;
-    }
-
     public String getName()
     {
         return name;
