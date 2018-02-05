@@ -370,7 +370,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     protected int computeHash()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return value.toInstant().hashCode();
     }
 
     @Override
