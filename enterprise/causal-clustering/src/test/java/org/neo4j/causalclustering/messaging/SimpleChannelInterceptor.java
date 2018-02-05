@@ -22,9 +22,12 @@ package org.neo4j.causalclustering.messaging;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.Future;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 
 public class SimpleChannelInterceptor implements ChannelInterceptor
 {
@@ -43,5 +46,11 @@ public class SimpleChannelInterceptor implements ChannelInterceptor
     public void write( BiFunction<Channel,Object,Future<Void>> writer, Channel channel, Object msg, CompletableFuture<Void> promise )
     {
         writer.apply( channel, msg ).addListener( x -> promise.complete( null ) );
+    }
+
+    @Override
+    public Optional<ProtocolStack> installedProtocolStack()
+    {
+        return Optional.empty();
     }
 }

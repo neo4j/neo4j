@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
@@ -46,9 +47,10 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
-import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
-import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.discovery.procedures.InstalledProtocolsProcedure;
 import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
@@ -63,15 +65,19 @@ import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.ProtocolInstaller;
-import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.SocketAddress;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -125,6 +131,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final CoreTopologyService topologyService;
     protected final LogProvider logProvider;
     protected final Config config;
+    private final Supplier<Stream<Pair<AdvertisedSocketAddress,ProtocolStack>>> clientInstalledProtocols;
+    private final Supplier<Stream<Pair<SocketAddress,ProtocolStack>>> serverInstalledProtocols;
     private CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
@@ -162,6 +170,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
+        procedures.register( new InstalledProtocolsProcedure( clientInstalledProtocols, serverInstalledProtocols ) );
         procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), true );
         procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
@@ -231,6 +240,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 protocolInstallerRepository, config, clientPipelineBuilderFactory );
         final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
+        this.clientInstalledProtocols = raftSender::installedProtocols;
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
@@ -267,7 +277,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule, coreStateMachinesModule, clusteringModule,
                 replicationModule, localDatabase, databaseHealthSupplier, clusterStateDirectory.get(), serverPipelineWrapper, clientPipelineWrapper );
 
-        new RaftServerModule( platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory, messageLogger );
+        serverInstalledProtocols = new RaftServerModule(
+                platformModule, consensusModule, identityModule, coreServerModule, localDatabase, serverPipelineBuilderFactory, messageLogger
+        ).raftServer()::installedProtocols;
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 

@@ -24,23 +24,25 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.Future;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 import org.neo4j.causalclustering.protocol.handshake.ClientHandshakeException;
+import org.neo4j.causalclustering.protocol.handshake.ClientHandshakeFinishedEvent;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
-import org.neo4j.causalclustering.protocol.handshake.HandshakeFinishedEvent;
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.logging.Log;
 
 /**
  * Gates messages written before the handshake has completed. The handshake is finalized
- * by firing a HandshakeFinishedEvent (as a netty user event) in {@link HandshakeClientInitializer}.
+ * by firing a ClientHandshakeFinishedEvent (as a netty user event) in {@link HandshakeClientInitializer}.
  */
 public class HandshakeGate implements ChannelInterceptor
 {
     public static final String HANDSHAKE_GATE = "HandshakeGate";
 
-    private final CompletableFuture<Void> handshakePromise = new CompletableFuture<>();
+    private final CompletableFuture<ProtocolStack> handshakePromise = new CompletableFuture<>();
 
     HandshakeGate( Channel channel, Log log )
     {
@@ -50,12 +52,12 @@ public class HandshakeGate implements ChannelInterceptor
             @Override
             public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
             {
-                if ( HandshakeFinishedEvent.getSuccess().equals( evt ) )
+                if ( evt instanceof ClientHandshakeFinishedEvent.Success )
                 {
                     log.info( "Handshake gate success" );
-                    handshakePromise.complete( null );
+                    handshakePromise.complete( ((ClientHandshakeFinishedEvent.Success) evt).protocolStack() );
                 }
-                else if ( HandshakeFinishedEvent.getFailure().equals( evt ) )
+                else if ( evt instanceof ClientHandshakeFinishedEvent.Failure )
                 {
                     log.warn( "Handshake gate failed" );
                     handshakePromise.completeExceptionally( new ClientHandshakeException( "Handshake failed" ) );
@@ -74,5 +76,11 @@ public class HandshakeGate implements ChannelInterceptor
     {
         handshakePromise.whenComplete( ( ignored, failure ) ->
                 writer.apply( channel, msg ).addListener( x -> promise.complete( null ) ) );
+    }
+
+    @Override
+    public Optional<ProtocolStack> installedProtocolStack()
+    {
+        return Optional.ofNullable( handshakePromise.getNow( null ) );
     }
 }

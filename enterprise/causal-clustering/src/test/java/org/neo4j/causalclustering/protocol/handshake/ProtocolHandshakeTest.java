@@ -29,12 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.messaging.Channel;
 import org.neo4j.causalclustering.protocol.Protocol;
 
-import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ProtocolHandshakeTest
 {
@@ -62,7 +59,7 @@ public class ProtocolHandshakeTest
         // then
         assertFalse( clientChannel.isClosed() );
         Protocol clientProtocol = clientHandshakeFuture.get( 1, TimeUnit.SECONDS ).applicationProtocol();
-        assertThat( clientProtocol, equalTo( TestProtocols.RAFT_3 ) );
+        assertThat( clientProtocol, equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
     @Test
@@ -75,7 +72,7 @@ public class ProtocolHandshakeTest
         // then
         assertFalse( clientChannel.isClosed() );
         Protocol serverProtocol = serverHandshakeFuture.get( 1, TimeUnit.SECONDS ).applicationProtocol();
-        assertThat( serverProtocol, equalTo( TestProtocols.RAFT_3 ) );
+        assertThat( serverProtocol, equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
     @Test( expected = ClientHandshakeException.class )

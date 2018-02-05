@@ -22,8 +22,11 @@ package org.neo4j.causalclustering.messaging;
 import io.netty.channel.Channel;
 import io.netty.util.concurrent.Future;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 
 /**
  * Allows intercepting the writing to a channel.
@@ -32,4 +35,6 @@ public interface ChannelInterceptor
 {
     void write( BiFunction<Channel, Object, Future<Void>> writer, io.netty.channel.Channel channel, Object msg,
             CompletableFuture<Void> promise );
+
+    Optional<ProtocolStack> installedProtocolStack();
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.Comparator;
+import java.util.stream.Stream;
+
 import org.neo4j.causalclustering.protocol.Protocol;
 
 public enum TestProtocols implements Protocol
@@ -26,10 +29,16 @@ public enum TestProtocols implements Protocol
     RAFT_1( Identifier.RAFT, 1 ),
     RAFT_2( Identifier.RAFT, 2 ),
     RAFT_3( Identifier.RAFT, 3 ),
+    RAFT_4( Identifier.RAFT, 4 ),
     CATCHUP_1( Identifier.CATCHUP, 1 ),
     CATCHUP_2( Identifier.CATCHUP, 2 ),
     CATCHUP_3( Identifier.CATCHUP, 3 ),
     CATCHUP_4( Identifier.CATCHUP, 4 );
+
+    static Protocol RAFT_LATEST = Stream.of( values() )
+            .filter( protocol -> protocol.identifier().equals( Identifier.RAFT.canonicalName() ) )
+            .max( Comparator.comparing( Protocol::version ) )
+            .get();
 
     private final int version;
     private final Identifier identifier;

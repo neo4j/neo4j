@@ -681,6 +681,11 @@ public abstract class Iterators
         };
     }
 
+    public static <T, EX extends Exception> RawIterator<T, EX> asRawIterator( Stream<T> stream )
+    {
+        return asRawIterator( stream.iterator() );
+    }
+
     public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
     {
         return new CombiningIterator<>( map(function, from) );
