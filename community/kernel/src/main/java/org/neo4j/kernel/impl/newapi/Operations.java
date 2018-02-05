@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
@@ -89,7 +90,7 @@ public class Operations implements Write, ExplicitIndexWrite
     private final DefaultCursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
     private NodeValueIndexCursor nodeValueIndexCursor;
-    private NodeLabelIndexCursor nodeLabelIndexCursor;
+    private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -307,7 +308,7 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
+        try ( NodeValueIndexCursor valueCursor = ktx.nodeValueIndexCursor() )
         {
             IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( indexDescriptor );
@@ -699,7 +700,7 @@ public class Operations implements Write, ExplicitIndexWrite
         return nodeValueIndexCursor;
     }
 
-    public NodeLabelIndexCursor nodeLabelIndexCursor()
+    public DefaultNodeLabelIndexCursor nodeLabelIndexCursor()
     {
         return nodeLabelIndexCursor;
     }

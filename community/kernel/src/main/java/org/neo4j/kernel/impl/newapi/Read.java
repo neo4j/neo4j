@@ -181,8 +181,9 @@ abstract class Read implements TxStateHolder,
             if ( j > 0 )
             {
                 filters = Arrays.copyOf( filters, j );
-                target = new NodeValueClientFilter( target, cursors.allocateNodeCursor(),
-                        cursors.allocatePropertyCursor(), this, filters );
+                NodeCursor nodeCursor = (NodeCursor) ktx.nodeCursor();
+                PropertyCursor propertyCursor = (PropertyCursor) ktx.propertyCursor();
+                target = new NodeValueClientFilter( target, nodeCursor, propertyCursor, this, filters );
             }
         }
         reader.query( target, indexOrder, query );
@@ -521,10 +522,10 @@ abstract class Read implements TxStateHolder,
         //System.out.println("AssertCursorsAreClosed with " + cursorsInUse + " open cursors");
         if ( cursorsInUse > 0 )
         {
-//            System.out.println( "Leaked cursors:" );
-//            for(Cursor c : cursorsOpenCloseCalls.keySet()){
-//                System.out.println(c + "@" + System.identityHashCode( c ));
-//            }
+            System.out.println( "Leaked cursors:" );
+            for(Cursor c : cursorsOpenCloseCalls.keySet()){
+                System.out.println(c + "@" + System.identityHashCode( c ));
+            }
             long leakedCursors = cursorsInUse;
             cursorsInUse = 0;
             if ( TRACK_CURSORS )

@@ -636,7 +636,7 @@ public class NodeProxy implements Node
     {
         KernelTransaction transaction = safeAcquireTransaction();
         try ( Statement ignore = transaction.acquireStatement();
-              NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
+              NodeCursor nodes = transaction.nodeCursor() )
         {
             int labelId = transaction.tokenRead().nodeLabel( label.name() );
             if ( labelId == NO_SUCH_LABEL )
@@ -653,7 +653,7 @@ public class NodeProxy implements Node
     {
         KernelTransaction transaction = safeAcquireTransaction();
         try ( Statement ignore = spi.statement();
-              NodeCursor nodes = transaction.cursors().allocateNodeCursor() )
+              NodeCursor nodes = transaction.nodeCursor())
         {
             singleNode( transaction, nodes );
             LabelSet labelSet = nodes.labels();
