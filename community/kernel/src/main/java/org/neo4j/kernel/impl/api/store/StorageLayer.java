@@ -163,6 +163,12 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public int timeZoneGetOrCreateForName( String timeZoneName )
+    {
+        return timeZoneTokenHolder.getOrCreateId( timeZoneName );
+    }
+
+    @Override
     public int labelGetForName( String label )
     {
         return labelTokenHolder.getIdByName( label );

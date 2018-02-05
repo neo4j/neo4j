@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
@@ -362,6 +363,10 @@ public class ConsistencyReporterTest
             if ( type == LabelTokenRecord.class )
             {
                 return new LabelTokenRecord( 0 );
+            }
+            if ( type == TimeZoneTokenRecord.class )
+            {
+                return new TimeZoneTokenRecord( 0 );
             }
             if ( type == DynamicRecord.class )
             {

@@ -1360,7 +1360,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public int timeZoneGetOrCreateForName( Statement state, String timeZoneName ) throws IllegalTokenNameException
     {
-        return 0;
+        return storeLayer.timeZoneGetOrCreateForName( timeZoneName );
     }
 
     @Override

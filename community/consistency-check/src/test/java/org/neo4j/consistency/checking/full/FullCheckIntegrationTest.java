@@ -267,6 +267,9 @@ public class FullCheckIntegrationTest
                     label2 = readOperations.labelGetForName( "label2" );
                     label3 = readOperations.labelGetForName( "label3" );
                     label4 = readOperations.labelGetForName( "label4" );
+                    // Create a timezone directly (without the property value detour)
+                    tokenWriteOperations.timeZoneGetOrCreateForName( "tz1" );
+
                     draconian = tokenWriteOperations.labelGetOrCreateForName( "draconian" );
                     key1 = readOperations.propertyKeyGetForName( PROP1 );
                     mandatory = tokenWriteOperations.propertyKeyGetOrCreateForName( "mandatory" );
@@ -1294,12 +1297,22 @@ public class FullCheckIntegrationTest
     public void shouldReportTimeZoneInconsistencies() throws Exception
     {
         // given
+        final Reference<Integer> inconsistentKey = new Reference<>();
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                    GraphStoreFixture.IdGenerator next )
+            {
+                inconsistentKey.set( next.timeZone() );
+                tx.timeZone( inconsistentKey.get(), "FOO" );
+            }
+        } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
-        TimeZoneTokenRecord record = access.getTimeZoneTokenStore().getRecord( 1,
-                access.getTimeZoneTokenStore().newRecord(), FORCE );
-        record.setNameId( 20 );
-        record.setInUse( true );
-        access.getTimeZoneTokenStore().updateRecord( record );
+        DynamicRecord record = access.getTimeZoneNameStore().getRecord( inconsistentKey.get() + 1,
+                access.getTimeZoneNameStore().newRecord(), FORCE );
+        record.setInUse( false );
+        access.getTimeZoneNameStore().updateRecord( record );
 
         // when
         ConsistencySummaryStatistics stats = check();

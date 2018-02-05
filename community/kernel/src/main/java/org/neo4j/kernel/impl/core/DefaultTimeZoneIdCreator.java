@@ -37,7 +37,7 @@ public class DefaultTimeZoneIdCreator extends IsolatedTransactionTokenCreator
     @Override
     protected int createKey( Statement statement, String name ) throws IllegalTokenNameException
     {
-        int id = (int) idGeneratorFactory.get( IdType.LABEL_TOKEN ).nextId();
+        int id = (int) idGeneratorFactory.get( IdType.TIME_ZONE_TOKEN ).nextId();
         statement.tokenWriteOperations().timeZoneCreateForName( name, id );
         return id;
     }

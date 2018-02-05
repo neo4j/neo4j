@@ -781,6 +781,19 @@ public class OperationsFacade
     }
 
     @Override
+    public int timeZoneGetOrCreateForName( String timeZoneName ) throws IllegalTokenNameException
+    {
+        statement.assertOpen();
+        int id = tokenRead().timeZoneGetForName( statement, timeZoneName );
+        if ( id != KeyReadOperations.NO_SUCH_TIME_ZONE )
+        {
+            return id;
+        }
+
+        return tokenWrite().timeZoneGetOrCreateForName( statement, timeZoneName );
+    }
+
+    @Override
     public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         statement.assertOpen();

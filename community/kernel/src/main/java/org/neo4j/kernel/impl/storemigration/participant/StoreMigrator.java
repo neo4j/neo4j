@@ -496,6 +496,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
             StoreType[] storesToMigrate = {
                     StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                    StoreType.TIME_ZONE_TOKEN, StoreType.TIME_ZONE_TOKEN_NAME,
                     StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
                     StoreType.NODE_LABEL,

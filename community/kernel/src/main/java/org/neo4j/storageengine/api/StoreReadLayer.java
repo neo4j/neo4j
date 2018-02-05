@@ -285,6 +285,15 @@ public interface StoreReadLayer
     int labelGetOrCreateForName( String labelName ) throws TooManyLabelsException;
 
     /**
+     * Gets timeZone token id for the given {@code timeZoneName}, or creates one if there is no
+     * existing timeZone with the given name.
+     *
+     * @param timeZoneName name of timeZone.
+     * @return timeZone token id for the given name, created if need be.
+     */
+    int timeZoneGetOrCreateForName( String timeZoneName );
+
+    /**
      * Gets relationship type token id for the given {@code relationshipTypeName}, or creates one if there is no
      * existing relationship type with the given name.
      *

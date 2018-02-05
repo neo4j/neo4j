@@ -129,6 +129,7 @@ public class NeoStoreTransactionApplierTest
         when( neoStores.getRelationshipGroupStore() ).thenReturn( relationshipGroupStore );
         when( neoStores.getRelationshipTypeTokenStore() ).thenReturn( relationshipTypeTokenStore );
         when( neoStores.getLabelTokenStore() ).thenReturn( labelTokenStore );
+        when( neoStores.getTimeZoneTokenStore() ).thenReturn( timeZoneTokenStore );
         when( neoStores.getPropertyKeyTokenStore() ).thenReturn( propertyKeyTokenStore );
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( nodeStore.getDynamicLabelStore() ).thenReturn( dynamicLabelStore );

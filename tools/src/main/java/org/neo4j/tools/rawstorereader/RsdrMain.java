@@ -260,6 +260,8 @@ public class RsdrMain
             return neoStores.getNodeStore();
         case "neostore.labeltokenstore.db":
             return neoStores.getLabelTokenStore();
+        case "neostore.timezonetokenstore.db":
+            return neoStores.getTimeZoneTokenStore();
         case "neostore.propertystore.db.index":
             return neoStores.getPropertyKeyTokenStore();
         case "neostore.propertystore.db":
