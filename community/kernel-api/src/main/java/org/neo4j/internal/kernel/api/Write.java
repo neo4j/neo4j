@@ -61,7 +61,7 @@ public interface Write
      * Add a label to a node
      * @param node the internal node id
      * @param nodeLabel the internal id of the label to add
-     * @return <tt>true</tt> if a label was added otherwise <tt>false</tt>
+     * @return {@code true} if a label was added otherwise {@code false}
      * @throws ConstraintValidationException if adding the label to node breaks a constraint
      */
     boolean nodeAddLabel( long node, int nodeLabel ) throws KernelException;
@@ -70,7 +70,7 @@ public interface Write
      * Remove a label from a node
      * @param node the internal node id
      * @param nodeLabel the internal id of the label to remove
-     * @return <tt>true</tt> if node was removed otherwise <tt>false</tt>
+     * @return {@code true} if node was removed otherwise {@code false}
      */
     boolean nodeRemoveLabel( long node, int nodeLabel ) throws KernelException;
 

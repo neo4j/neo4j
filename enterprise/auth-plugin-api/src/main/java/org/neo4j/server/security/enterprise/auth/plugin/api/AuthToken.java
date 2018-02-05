@@ -21,13 +21,16 @@ package org.neo4j.server.security.enterprise.auth.plugin.api;
 
 import java.util.Map;
 
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
+
 /**
  * The authentication token provided by the client, which is used to authenticate the subject's identity.
  *
  * <p>A common scenario is to have principal be a username and credentials be a password.
  *
- * @see org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin#authenticate(AuthToken)
- * @see org.neo4j.server.security.enterprise.auth.plugin.spi.AuthPlugin#authenticateAndAuthorize(AuthToken)
+ * @see AuthenticationPlugin#authenticate(AuthToken)
+ * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
  */
 public interface AuthToken
 {
@@ -45,7 +48,7 @@ public interface AuthToken
      *
      * <p>Most commonly this is a password.
      *
-     * <p>The reason this is a character array and not a <tt>String</tt>, is so that sensitive information
+     * <p>The reason this is a character array and not a {@link String}, is so that sensitive information
      * can be cleared from memory after useage without having to wait for the garbage collector to act.
      *
      * @return the credentials that verifies the identity.

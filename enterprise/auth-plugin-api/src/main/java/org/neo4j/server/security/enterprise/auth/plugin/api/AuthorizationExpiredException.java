@@ -19,16 +19,17 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin.api;
 
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin;
+
 /**
  * An exception that can be thrown if authorization has expired and the user needs to re-authenticate
  * in order to renew authorization.
  * Throwing this exception will cause the server to disconnect the client.
  *
- * <p>This is typically used from the
- * {@link org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin#authorize}
- * method of a combined authentication and authorization plugin (that implements
- * the two separate interfaces <tt>AuthenticationPlugin</tt> and <tt>AuthorizationPlugin</tt>),
- * that manages its own caching of auth info.
+ * <p>This is typically used from the {@link AuthorizationPlugin#authorize}
+ * method of a combined authentication and authorization plugin (that implements the two separate interfaces
+ * {@link AuthenticationPlugin} and {@link AuthorizationPlugin}), that manages its own caching of auth info.
  *
  * @see org.neo4j.server.security.enterprise.auth.plugin.spi.AuthorizationPlugin
  */

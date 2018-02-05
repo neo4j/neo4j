@@ -25,14 +25,13 @@ import java.util.Collection;
 import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
- * An object that can be returned as the result of successful authentication by an <tt>AuthPlugin</tt>.
+ * An object that can be returned as the result of successful authentication by an {@link AuthPlugin}.
  *
  * <p>This result type combines authentication and authorization information.
  *
- * <p>NOTE: If authentication caching is enabled the result type <tt>CacheableAuthInfo</tt> should be used instead.
+ * <p>NOTE: If authentication caching is enabled the result type {@link CacheableAuthInfo} should be used instead.
  *
  * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
- * @see CacheableAuthInfo
  */
 public interface AuthInfo extends Serializable
 {

@@ -24,11 +24,11 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
- * <tt>AuthenticationPlugin</tt>.
+ * {@link AuthenticationPlugin}.
  *
  * <p>This object can be cached by the Neo4j authentication cache.
  *
- * <p>This is an alternative to <tt>CustomCacheableAuthenticationInfo</tt> if you want Neo4j to manage secure
+ * <p>This is an alternative to {@link CustomCacheableAuthenticationInfo} if you want Neo4j to manage secure
  * hashing and matching of cached credentials.
  *
  * <p>NOTE: Caching only occurs if it is explicitly enabled by the plugin.
@@ -54,8 +54,7 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
 
     /**
      * Should return credentials that can be cached, so that successive authentication attempts could be performed
-     * against the cached authentication info from a previous successful authentication attempt, without having to
-     * call <tt>AuthenticationInfo.getAuthenticationInfo()</tt> again.
+     * against the cached authentication info from a previous successful authentication attempt.
      *
      * <p>NOTE: The returned credentials will be hashed using a cryptographic hash function together
      * with a random salt (generated with a secure random number generator) before being stored.
@@ -68,12 +67,12 @@ public interface CacheableAuthenticationInfo extends AuthenticationInfo
     byte[] credentials();
 
     /**
-     * Creates a new <tt>CacheableAuthenticationInfo</tt>
+     * Creates a new {@link CacheableAuthenticationInfo}
      *
      * @param principal a principal that uniquely identifies the authenticated subject within this authentication
      *                  provider
      * @param credentials credentials that can be cached
-     * @return a new <tt>CacheableAuthenticationInfo</tt> containing the given parameters
+     * @return a new {@link CacheableAuthenticationInfo} containing the given parameters
      */
     static CacheableAuthenticationInfo of( Object principal, byte[] credentials )
     {

@@ -26,13 +26,12 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthorizationExpired
 /**
  * An authorization provider plugin for the Neo4j enterprise security module.
  *
- * <p>If the configuration setting <tt>dbms.security.plugin.authorization_enabled</tt> is set to <tt>true</tt>,
+ * <p>If the configuration setting {@code dbms.security.plugin.authorization_enabled} is set to {@code true},
  * all objects that implements this interface that exists in the class path at Neo4j startup, will be
  * loaded as services.
  *
- * <p>NOTE: If the same object also implements <tt>AuthenticationPlugin</tt>, it will not be loaded twice.
+ * <p>NOTE: If the same object also implements {@link AuthenticationPlugin}, it will not be loaded twice.
  *
- * @see AuthenticationPlugin
  * @see AuthPlugin
  * @see AuthorizationExpiredException
  */
@@ -75,12 +74,12 @@ public interface AuthorizationPlugin extends AuthProviderLifecycle
 
     /**
      * Should perform authorization of the given collection of principals and their corresponding authentication
-     * providers, and return an <tt>AuthorizationInfo</tt> result that contains a collection of roles
+     * providers, and return an {@link AuthorizationInfo} result that contains a collection of roles
      * that are assigned to the given principals.
      *
      * @param principals a collection of principals and their corresponding authentication providers
      *
-     * @return an <tt>AuthorizationInfo</tt> result that contains the roles that are assigned to the given principals
+     * @return an {@link AuthorizationInfo} result that contains the roles that are assigned to the given principals
      */
     AuthorizationInfo authorize( Collection<PrincipalAndProvider> principals );
 

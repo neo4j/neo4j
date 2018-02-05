@@ -77,7 +77,7 @@ public interface Read
      * Checks if a node exists in the database
      *
      * @param reference The reference of the node to check
-     * @return <tt>true</tt> if the node exists, otherwise <tt>false</tt>
+     * @return {@code true} if the node exists, otherwise {@code false}
      */
     boolean nodeExists( long reference );
 

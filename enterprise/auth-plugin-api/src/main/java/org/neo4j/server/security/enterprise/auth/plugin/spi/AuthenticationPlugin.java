@@ -26,7 +26,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationExcept
 /**
  * An authentication provider plugin for the Neo4j enterprise security module.
  *
- * <p>If the configuration setting <tt>dbms.security.plugin.authentication_enabled</tt> is set to <tt>true</tt>,
+ * <p>If the configuration setting {@code dbms.security.plugin.authentication_enabled} is set to {@code true},
  * all objects that implements this interface that exists in the class path at Neo4j startup, will be
  * loaded as services.
  *
@@ -47,22 +47,20 @@ public interface AuthenticationPlugin extends AuthProviderLifecycle
 
     /**
      * Should perform authentication of the identity in the given auth token and return an
-     * <tt>AuthenticationInfo</tt> result if successful.
-     * If authentication failed, either <tt>null</tt> should be returned,
-     * or an <tt>AuthenticationException</tt> should be thrown.
+     * {@link AuthenticationInfo} result if successful.
+     * If authentication failed, either {@code null} should be returned,
+     * or an {@link AuthenticationException} should be thrown.
+     * <p>
+     * If authentication caching is enabled, either a {@link CacheableAuthenticationInfo} or a
+     * {@link CustomCacheableAuthenticationInfo} should be returned.
      *
-     * <p>If authentication caching is enabled, either a <tt>CacheableAuthenticationInfo</tt> or a
-     * <tt>CustomCacheableAuthenticationInfo</tt> should be returned.
-     *
-     * @return an <tt>AuthenticationInfo</tt> object if authentication was successful, otherwise <tt>null</tt>
+     * @return an {@link AuthenticationInfo} object if authentication was successful, otherwise {@code null}
+     * @throws AuthenticationException if authentication failed
      *
      * @see org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken
-     * @see AuthenticationInfo
-     * @see CacheableAuthenticationInfo
-     * @see CustomCacheableAuthenticationInfo
      * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
      */
-    AuthenticationInfo authenticate( AuthToken authToken );
+    AuthenticationInfo authenticate( AuthToken authToken ) throws AuthenticationException;
 
     abstract class Adapter extends AuthProviderLifecycle.Adapter implements AuthenticationPlugin
     {

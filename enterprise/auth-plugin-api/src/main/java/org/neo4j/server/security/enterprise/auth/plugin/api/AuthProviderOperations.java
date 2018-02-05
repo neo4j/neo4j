@@ -42,7 +42,7 @@ public interface AuthProviderOperations
      *
      * @deprecated
      * Settings are recommended to be stored in a separate file. You can use {@link AuthProviderOperations#neo4jHome()}
-     * to resolve your configuration file, e.g. <code>neo4jHome().resolve("conf/myPlugin.conf" );</code>.
+     * to resolve your configuration file, e.g. {@code neo4jHome().resolve("conf/myPlugin.conf" );}
      */
     @Deprecated
     Optional<Path> neo4jConfigFile();
@@ -103,35 +103,35 @@ public interface AuthProviderOperations
         void error( String message );
 
         /**
-         * Returns <tt>true</tt> if log level debug is enabled.
+         * Returns {@code true} if log level debug is enabled.
          *
-         * @return <tt>true</tt> if log level debug is enabled, otherwise <tt>false</tt>
+         * @return {@code true} if log level debug is enabled, otherwise {@code false}
          */
         boolean isDebugEnabled();
     }
 
     /**
-     * If set to <tt>true</tt> the authentication information returned by the plugin will be cached.
+     * If set to {@code true} the authentication information returned by the plugin will be cached.
      * The expiration time of the cached information is configured by the
-     * <tt>dbms.security.auth_cache_ttl</tt> configuration setting.
+     * {@code dbms.security.auth_cache_ttl} configuration setting.
      *
      * <p>Since a principal can be authenticated against cached authentication information this requires
      * the capability of matching the credentials of an authentication token against the credentials of the
      * authentication information returned by the plugin.
      *
-     * <p>The default value is <tt>false</tt>.
+     * <p>The default value is {@code false}.
      *
      * @param authenticationCachingEnabled if caching of authentication information should be enabled or not
      */
     void setAuthenticationCachingEnabled( boolean authenticationCachingEnabled );
 
     /**
-     * If set to <tt>true</tt> the authorization information (i.e. the list of roles for a given principal)
+     * If set to {@code true} the authorization information (i.e. the list of roles for a given principal)
      * returned by the plugin will be cached.
      * The expiration time of the cached information is configured by the
-     * <tt>dbms.security.auth_cache_ttl</tt> configuration setting.
+     * {@code dbms.security.auth_cache_ttl} configuration setting.
      *
-     * The default value is <tt>true</tt>.
+     * The default value is {@code true}.
      *
      * @param authorizationCachingEnabled if caching of authorization information should be enabled or not
      */

@@ -848,8 +848,8 @@ public final class Iterables
     /**
      * Returns the index of the first occurrence of the specified element
      * in this iterable, or -1 if this iterable does not contain the element.
-     * More formally, returns the lowest index <tt>i</tt> such that
-     * <tt>(o==null&nbsp;?&nbsp;get(i)==null&nbsp;:&nbsp;o.equals(get(i)))</tt>,
+     * More formally, returns the lowest index {@code i} such that
+     * {@code (o==null ? get(i)==null : o.equals(get(i)))},
      * or -1 if there is no such index.
      *
      * @param itemToFind element to find

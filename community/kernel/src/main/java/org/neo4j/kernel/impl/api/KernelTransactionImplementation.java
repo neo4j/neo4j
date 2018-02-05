@@ -159,7 +159,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private Type type;
     private long transactionId;
     private long commitTime;
-    private volatile int reuseCount; // TODO: why volatile?
+    private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
     private final Operations operations;
 

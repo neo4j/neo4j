@@ -83,7 +83,7 @@ public final class CompiledCursorUtils
      * @param nodeCursor The node cursor to use
      * @param node The id of the node
      * @param label The id of the label
-     * @return <tt>true</tt> if the node has the label, otherwise <tt>false</tt>
+     * @return {@code true} if the node has the label, otherwise {@code false}
      * @throws EntityNotFoundException if the node is not there.
      */
     public static boolean nodeHasLabel( Read read, NodeCursor nodeCursor, long node, int label )
