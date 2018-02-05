@@ -27,7 +27,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Array;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
@@ -333,87 +339,226 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     }
 
     @Test
+    public void testPointArray()
+    {
+        Point[] array = new Point[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1 ),
+                Values.pointValue( CoordinateReferenceSystem.Cartesian, 2, 1, 3 )};
+        String key = "testpointarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        Point[] propertyValue = null;
+        propertyValue = (Point[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    @Test
     public void testDateTypeSmallEpochDay()
     {
-        DateValue date = DateValue.date( 2018, 1, 31 );
+        LocalDate date = DateValue.date( 2018, 1, 31 ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, date );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( date.asObjectCopy(), property );
+        assertEquals( date, property );
     }
 
     @Test
     public void testDateTypeLargeEpochDay()
     {
-        DateValue date = DateValue.epochDate( 2147483648L );
+        LocalDate date = DateValue.epochDate( 2147483648L ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, date );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( date.asObjectCopy(), property );
+        assertEquals( date, property );
+    }
+
+    @Test
+    public void testDateArray()
+    {
+        LocalDate[] array = new LocalDate[]{DateValue.date( 2018, 1, 31 ).asObjectCopy(), DateValue.epochDate( 2147483648L ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        LocalDate[] propertyValue = (LocalDate[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test
     public void testLocalTimeTypeSmallNano()
     {
-        LocalTimeValue time = LocalTimeValue.localTime( 0, 0, 0, 37 );
+        LocalTime time = LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, time );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( time.asObjectCopy(), property );
+        assertEquals( time, property );
     }
 
     @Test
     public void testLocalTimeTypeLargeNano()
     {
-        LocalTimeValue time = LocalTimeValue.localTime( 0, 0, 13, 37 );
+        LocalTime time = LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, time );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( time.asObjectCopy(), property );
+        assertEquals( time, property );
+    }
+
+    @Test
+    public void testLocalTimeArray()
+    {
+        LocalTime[] array = new LocalTime[]{LocalTimeValue.localTime( 0, 0, 0, 37 ).asObjectCopy(), LocalTimeValue.localTime( 0, 0, 13, 37 ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        LocalTime[] propertyValue = (LocalTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test
     public void testLocalDateTimeType()
     {
-        LocalDateTimeValue dateTime = LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 );
+        LocalDateTime dateTime = LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, dateTime );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( dateTime.asObjectCopy(), property );
+        assertEquals( dateTime, property );
+    }
+
+    @Test
+    public void testLocalDateTimeArray()
+    {
+        LocalDateTime[] array = new LocalDateTime[]{LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 ).asObjectCopy(),
+                LocalDateTimeValue.localDateTime( 1992, 2, 28, 1, 15, 0, 4000 ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        LocalDateTime[] propertyValue = (LocalDateTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test
     public void testTimeType()
     {
-        TimeValue time = TimeValue.time( 23, 11, 8, 0, "+17:59" );
+        OffsetTime time = TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, time );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( time.asObjectCopy(), property );
+        assertEquals( time, property );
+    }
+
+    @Test
+    public void testTimeArray()
+    {
+        String key = "testarray";
+
+        // array sizes 1 through 4
+        for ( OffsetTime[] array : new OffsetTime[][]{new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy()},
+                new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy()},
+                new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy(),
+                        TimeValue.time( 0, 17, 20, 783478, "-03:00" ).asObjectCopy()},
+                new OffsetTime[]{TimeValue.time( 23, 11, 8, 0, "+17:59" ).asObjectCopy(), TimeValue.time( 14, 34, 55, 3478, "+02:00" ).asObjectCopy(),
+                        TimeValue.time( 0, 17, 20, 783478, "-03:00" ).asObjectCopy(), TimeValue.time( 1, 1, 1, 1, "-01:00" ).asObjectCopy()}} )
+        {
+            node1.setProperty( key, array );
+            newTransaction();
+
+            OffsetTime[] propertyValue = (OffsetTime[]) node1.getProperty( key );
+            assertEquals( array.length, propertyValue.length );
+            for ( int i = 0; i < array.length; i++ )
+            {
+                assertEquals( array[i], propertyValue[i] );
+            }
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test
     public void testDurationType()
     {
-        DurationValue duration = DurationValue.duration( 57, 57, 57, 57 );
+        TemporalAmount duration = DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy();
         String key = "dt";
         node1.setProperty( key, duration );
         newTransaction();
 
         Object property = node1.getProperty( key );
-        assertEquals( duration.asObjectCopy(), property );
+        assertEquals( duration, property );
+    }
+
+    @Test
+    public void testDurationArray()
+    {
+        TemporalAmount[] array = new TemporalAmount[]{DurationValue.duration( 57, 57, 57, 57 ).asObjectCopy(),
+                DurationValue.duration( -40, -189, -6247, -1 ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        TemporalAmount[] propertyValue = (TemporalAmount[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test
@@ -428,7 +573,29 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( dateTime.asObjectCopy(), property );
     }
 
-    // TODO unignore when zone IDs are supported in the property store
+    @Test
+    public void testDateTimeArrayWithZoneOffset()
+    {
+        ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
+                DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, "+11:00" ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        ZonedDateTime[] propertyValue = (ZonedDateTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
+    }
+
+    // TODO unignore next 2 when zone IDs are supported in the property store
     @Ignore
     public void testDateTimeTypeWithZoneId()
     {
@@ -439,6 +606,29 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
 
         Object property = node1.getProperty( key );
         assertEquals( dateTime.asObjectCopy(), property );
+    }
+
+    @Ignore
+    public void testDateTimeArrayWithZoneOffsetAndZoneID()
+    {
+        ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),
+                DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, "+11:00" ).asObjectCopy(),
+                DateTimeValue.datetime( 1992, 2, 28, 1, 15, 0, 4000, ZoneId.of( "Europe/Stockholm" ) ).asObjectCopy()};
+        String key = "testarray";
+        node1.setProperty( key, array );
+        newTransaction();
+
+        ZonedDateTime[] propertyValue = (ZonedDateTime[]) node1.getProperty( key );
+        assertEquals( array.length, propertyValue.length );
+        for ( int i = 0; i < array.length; i++ )
+        {
+            assertEquals( array[i], propertyValue[i] );
+        }
+
+        node1.removeProperty( key );
+        newTransaction();
+
+        assertTrue( !node1.hasProperty( key ) );
     }
 
     @Test

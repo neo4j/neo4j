@@ -23,10 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.time.LocalDate;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
@@ -39,9 +41,11 @@ import org.neo4j.values.storable.DateValue;
 
 import static migration.RecordFormatMigrationIT.startDatabaseWithFormat;
 import static migration.RecordFormatMigrationIT.startNonUpgradableDatabaseWithFormat;
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 
 public class TemporalPropertiesRecordFormatIT
 {
@@ -58,7 +62,36 @@ public class TemporalPropertiesRecordFormatIT
         try ( Transaction transaction = nonUpgradedStore.beginTx() )
         {
             Node node = nonUpgradedStore.createNode();
-            node.setProperty( "a", DateValue.date( 1991, 5, 3 ) );
+            node.setProperty( "a", DateValue.date( 1991, 5, 3 ).asObjectCopy() );
+            transaction.success();
+        }
+        catch ( TransactionFailureException e )
+        {
+            assertEquals( "Current record format does not support TEMPORAL_PROPERTIES. Please upgrade your store " +
+                    "to the format that support requested capability.", Exceptions.rootCause( e ).getMessage() );
+        }
+        nonUpgradedStore.shutdown();
+
+        GraphDatabaseService restartedOldFormatDatabase = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+        try ( Transaction transaction = restartedOldFormatDatabase.beginTx() )
+        {
+            Node node = restartedOldFormatDatabase.createNode();
+            node.setProperty( "c", "d" );
+            transaction.success();
+        }
+        restartedOldFormatDatabase.shutdown();
+    }
+
+    @Test
+    public void failToCreateDateArrayOnOldDatabase() throws Exception
+    {
+        File storeDir = testDirectory.graphDbDir();
+        GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
+        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
+        try ( Transaction transaction = nonUpgradedStore.beginTx() )
+        {
+            Node node = nonUpgradedStore.createNode();
+            node.setProperty( "a", new LocalDate[]{date, date} );
             transaction.success();
         }
         catch ( TransactionFailureException e )
@@ -82,15 +115,15 @@ public class TemporalPropertiesRecordFormatIT
     public void createDatePropertyOnLatestDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
-        Label pointNode = Label.label( "DateNode" );
+        Label label = Label.label( "DateNode" );
         String propertyKey = "a";
-        DateValue dateValue = DateValue.date( 1991, 5, 3 );
+        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
 
         GraphDatabaseService database = startDatabaseWithFormat( storeDir, Standard.LATEST_NAME );
         try ( Transaction transaction = database.beginTx() )
         {
-            Node node = database.createNode( pointNode );
-            node.setProperty( propertyKey, dateValue );
+            Node node = database.createNode( label );
+            node.setProperty( propertyKey, date );
             transaction.success();
         }
         database.shutdown();
@@ -98,7 +131,37 @@ public class TemporalPropertiesRecordFormatIT
         GraphDatabaseService restartedDatabase = startDatabaseWithFormat( storeDir, Standard.LATEST_NAME );
         try ( Transaction ignored = restartedDatabase.beginTx() )
         {
-            assertNotNull( restartedDatabase.findNode( pointNode, propertyKey, dateValue ) );
+            assertNotNull( restartedDatabase.findNode( label, propertyKey, date ) );
+        }
+        restartedDatabase.shutdown();
+    }
+
+    @Test
+    public void createDateArrayOnLatestDatabase() throws Exception
+    {
+        File storeDir = testDirectory.graphDbDir();
+        Label label = Label.label( "DateNode" );
+        String propertyKey = "a";
+        LocalDate date = DateValue.date( 1991, 5, 3 ).asObjectCopy();
+
+        GraphDatabaseService database = startDatabaseWithFormat( storeDir, Standard.LATEST_NAME );
+        try ( Transaction transaction = database.beginTx() )
+        {
+            Node node = database.createNode( label );
+            node.setProperty( propertyKey, new LocalDate[]{date, date} );
+            transaction.success();
+        }
+        database.shutdown();
+
+        GraphDatabaseService restartedDatabase = startDatabaseWithFormat( storeDir, Standard.LATEST_NAME );
+        try ( Transaction ignored = restartedDatabase.beginTx() )
+        {
+            try ( ResourceIterator<Node> nodes = restartedDatabase.findNodes( label ) )
+            {
+                Node node = nodes.next();
+                LocalDate[] points = (LocalDate[]) node.getProperty( propertyKey );
+                assertThat( points, arrayWithSize( 2 ) );
+            }
         }
         restartedDatabase.shutdown();
     }
