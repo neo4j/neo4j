@@ -22,26 +22,24 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.scalatest.BeforeAndAfterAll
 import sun.net.www.protocol.http.HttpURLConnection
 
 class LoadCsvAcceptanceUserAgentTest
   extends ExecutionEngineFunSuite with BeforeAndAfterAll with CypherComparisonSupport {
 
-  val expectedToSucceed: TestConfiguration = Configs.Interpreted - Configs.Version2_3
-
   test("should be able to download data from the web") {
     val url = s"http://127.0.0.1:$port/test.csv".cypherEscape
 
-    val result = executeWith(expectedToSucceed, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
     val url = s"http://127.0.0.1:$port/redirect_test.csv".cypherEscape
 
-    val result = executeWith(expectedToSucceed, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
   private val CSV_DATA_CONTENT = "1,1,1\n2,2,2\n3,3,3\n".getBytes
