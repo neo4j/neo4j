@@ -38,6 +38,7 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -85,13 +86,13 @@ public class ConsistencyCheckTasks
         this.numberOfThreads = numberOfThreads;
     }
 
-    public List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkIndexes,
-            boolean checkGraph )
+    public List<ConsistencyCheckerTask> createTasksForFullCheck( boolean checkLabelScanStore, boolean checkIndexes, boolean checkGraph,
+            IndexProviderMap indexes )
     {
         List<ConsistencyCheckerTask> tasks = new ArrayList<>();
         if ( checkGraph )
         {
-            MandatoryProperties mandatoryProperties = new MandatoryProperties( nativeStores );
+            MandatoryProperties mandatoryProperties = new MandatoryProperties( nativeStores, indexes );
             StoreProcessor processor =
                     multiPass.processor( CheckStage.Stage1_NS_PropsLabels, PROPERTIES );
             tasks.add( create( CheckStage.Stage1_NS_PropsLabels.name(), nativeStores.getNodeStore(),
@@ -136,7 +137,7 @@ public class ConsistencyCheckTasks
             PropertyReader propertyReader = new PropertyReader( nativeStores );
             tasks.add( recordScanner( CheckStage.Stage8_PS_Props.name(),
                     new IterableStore<>( nativeStores.getNodeStore(), true ),
-                    new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? indexes : null,
+                    new PropertyAndNode2LabelIndexProcessor( reporter, checkIndexes ? this.indexes : null,
                             propertyReader, cacheAccess, mandatoryProperties.forNodes( reporter ) ),
                     CheckStage.Stage8_PS_Props, ROUND_ROBIN,
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
@@ -151,8 +152,7 @@ public class ConsistencyCheckTasks
         // PASS 1: Dynamic record chains
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
-        final SchemaRecordCheck schemaCheck =
-                new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ), indexes );
+        final SchemaRecordCheck schemaCheck = new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore(), indexes ), this.indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
                 schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
@@ -183,10 +183,9 @@ public class ConsistencyCheckTasks
         }
         if ( checkIndexes )
         {
-            for ( IndexRule indexRule : indexes.onlineRules() )
+            for ( IndexRule indexRule : this.indexes.onlineRules() )
             {
-                tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
-                        new IndexIterator( indexes.accessorFor( indexRule ) ),
+                tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ), new IndexIterator( this.indexes.accessorFor( indexRule ) ),
                         new IndexEntryProcessor( filteredReporter, new IndexCheck( indexRule ) ),
                         Stage.SEQUENTIAL_FORWARD, ROUND_ROBIN ) );
             }

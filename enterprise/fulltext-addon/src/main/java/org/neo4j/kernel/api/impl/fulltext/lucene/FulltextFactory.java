@@ -30,15 +30,17 @@ import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.storageengine.api.EntityType;
 
 /**
  * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
  */
-class FulltextFactory
+public class FulltextFactory
 {
     public static final String INDEX_DIR = "bloom_fts";
     private final FileSystemAbstraction fileSystem;
@@ -54,7 +56,7 @@ class FulltextFactory
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
      * @throws IOException
      */
-    FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
+    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
     {
         this.analyzer = getAnalyzer( analyzerClassName );
         this.fileSystem = fileSystem;
@@ -94,5 +96,19 @@ class FulltextFactory
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         PartitionedIndexStorage storage = storageBuilder.build();
         return new LuceneFulltext( storage, partitionFactory, analyzer, identifier, type );
+    }
+
+    public LuceneFulltext createFulltextIndex( FulltextIndexDescriptor descriptor )
+    {
+        File indexRootFolder = new File( indexDir, descriptor.identifier() );
+        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
+        PartitionedIndexStorage storage = storageBuilder.build();
+        return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), getType( descriptor ) );
+    }
+
+    public static FulltextIndexType getType( FulltextIndexDescriptor descriptor )
+    {
+        return descriptor.schema().entityType() == EntityType.NODE ? FulltextIndexType.NODES : FulltextIndexType.RELATIONSHIPS;
     }
 }

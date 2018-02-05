@@ -1,6 +1,7 @@
 package org.neo4j.kernel.api.schema;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
@@ -86,8 +87,39 @@ public class NonSchemaSchemaDescriptor implements org.neo4j.internal.kernel.api.
     }
 
     @Override
+    public PropertySchemaType propertySchemaType()
+    {
+        return PropertySchemaType.NON_SCHEMA_ANY;
+    }
+
+    @Override
     public SchemaDescriptor schema()
     {
         return this;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        NonSchemaSchemaDescriptor that = (NonSchemaSchemaDescriptor) o;
+        return Arrays.equals( entityTokens, that.entityTokens ) && entityType == that.entityType && Arrays.equals( propertyIds, that.propertyIds );
+    }
+
+    @Override
+    public int hashCode()
+    {
+
+        int result = Objects.hash( entityType );
+        result = 31 * result + Arrays.hashCode( entityTokens );
+        result = 31 * result + Arrays.hashCode( propertyIds );
+        return result;
     }
 }

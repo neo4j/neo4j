@@ -54,11 +54,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -176,7 +178,8 @@ public class IndexStatisticsTest
         SchemaIndexDescriptor index = createIndex( "Person", "name" );
         awaitIndexesOnline();
 
-        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
+        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( new InMemoryIndexProvider(), Collections.EMPTY_LIST );
+        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore(), indexProviderMap );
         long indexId = storage.indexGetForSchema( index ).getId();
 
         // when

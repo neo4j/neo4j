@@ -27,10 +27,12 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -96,28 +98,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends LifecycleAdapter implements Comparable<IndexProvider<?>>
 {
-    public interface Monitor
-    {
-        Monitor EMPTY = new Monitor.Adaptor();
-
-        class Adaptor implements Monitor
-        {
-            @Override
-            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
-            {   // no-op
-            }
-
-            @Override
-            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
-            {   // no-op
-            }
-        }
-
-        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
-
-        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
-    }
-
     public static final IndexProvider NO_INDEX_PROVIDER =
             new IndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
@@ -129,6 +109,12 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                                                         IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
+                }
+
+                @Override
+                public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+                {
+                    return SchemaIndexDescriptorFactory.forSchema( schema );
                 }
 
                 @Override
@@ -169,6 +155,30 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                     throw new IllegalStateException();
                 }
             };
+
+    public abstract DESCRIPTOR indexDescriptorFor( SchemaDescriptor schema, String name );
+
+    public interface Monitor
+    {
+        Monitor EMPTY = new Monitor.Adaptor();
+
+        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
+
+        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
+
+        class Adaptor implements Monitor
+        {
+            @Override
+            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+            {   // no-op
+            }
+        }
+    }
 
     /**
      * Indicate that {@link Descriptor} has not yet been decided.

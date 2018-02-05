@@ -97,6 +97,12 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
+    public PropertySchemaType propertySchemaType()
+    {
+        return PropertySchemaType.SCHEMA_ALL;
+    }
+
+    @Override
     public int getPropertyId()
     {
         if ( propertyIds.length != 1 )

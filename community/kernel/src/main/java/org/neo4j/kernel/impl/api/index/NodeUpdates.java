@@ -37,6 +37,8 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.NON_SCHEMA_ANY;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.SCHEMA_ALL;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.NoValue;
 
@@ -243,14 +245,12 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean relevantBefore( SchemaDescriptor schema )
     {
-        return hasLabel( schema.getEntityTokenIds(), labelsBefore ) &&
-                hasPropsBefore( schema.getPropertyIds() );
+        return hasLabel( schema.getEntityTokenIds(), labelsBefore ) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
     private boolean relevantAfter( SchemaDescriptor schema )
     {
-        return hasLabel( schema.getEntityTokenIds(), labelsAfter ) &&
-                hasPropsAfter( schema.getPropertyIds() );
+        return hasLabel( schema.getEntityTokenIds(), labelsAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
     private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
@@ -301,27 +301,41 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         return Arrays.stream( entityTokenIds ).anyMatch( id ->binarySearch( labels, id ) >= 0);
     }
 
-    private boolean hasPropsBefore( int[] propertyIds )
+    private boolean hasPropsBefore( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
         for ( int propertyId : propertyIds )
         {
             PropertyValue propertyValue = knownProperties.get( propertyId );
             if ( propertyValue == null || !propertyValue.hasBefore() )
             {
-                return false;
+                if ( propertySchemaType == SCHEMA_ALL )
+                {
+                    return false;
+                }
+            }
+            else if ( propertySchemaType == NON_SCHEMA_ANY )
+            {
+                return true;
             }
         }
         return true;
     }
 
-    private boolean hasPropsAfter( int[] propertyIds )
+    private boolean hasPropsAfter( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
         for ( int propertyId : propertyIds )
         {
             PropertyValue propertyValue = knownProperties.get( propertyId );
             if ( propertyValue == null || !propertyValue.hasAfter() )
             {
-                return false;
+                if ( propertySchemaType == SCHEMA_ALL )
+                {
+                    return false;
+                }
+            }
+            else if ( propertySchemaType == NON_SCHEMA_ANY )
+            {
+                return true;
             }
         }
         return true;

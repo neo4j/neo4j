@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaComputer;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -81,6 +82,12 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     public EntityType entityType()
     {
         return EntityType.NODE;
+    }
+
+    @Override
+    public PropertySchemaType propertySchemaType()
+    {
+        return PropertySchemaType.SCHEMA_ALL;
     }
 
     @Override

@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.rule.DatabaseRule;
@@ -37,38 +41,82 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.Label.label;
 
 public class FulltextIndexProviderTest
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule();
 
+    @Before
+    public void prepDB()
+    {
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            Node node = db.createNode( label( "hej" ), label( "ha" ), label( "he" ) );
+            node.setProperty( "hej", "value" );
+            node.setProperty( "ha", "value1" );
+            node.setProperty( "he", "value2" );
+            node.setProperty( "ho", "value3" );
+            node.setProperty( "hi", "value4" );
+            transaction.success();
+        }
+    }
+
     @Test
-    public void shouldProvideFulltextIndexProviderForFulltextIndexDescriptor()
+    public void shouldProvideFulltextIndexProviderForFulltextIndexDescriptor() throws Exception
     {
         AllByPrioritySelectionStrategy<IndexProvider<?>> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         IndexProvider defaultIndexProvider = db.getDependencyResolver().resolveDependency( IndexProvider.class, indexProviderSelection );
 
         IndexProviderMap indexProviderMap = new DefaultIndexProviderMap( defaultIndexProvider, indexProviderSelection.lowerPrioritizedCandidates() );
-        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( new int[0], EntityType.NODE, 2, 3, 4 );
+        IndexProvider provider = indexProviderMap.apply( FulltextindexProviderFactory.DESCRIPTOR );
+        IndexDescriptor fulltextIndexDescriptor;
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[0], EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
+            assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
+        }
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
     }
 
     @Test
     public void createFulltextIndex() throws Exception
     {
-        FulltextIndexDescriptor fulltextIndexDescriptor = new FulltextIndexDescriptor( new int[]{7,8,9}, EntityType.NODE, 2, 3, 4 );
-        try ( Transaction transaction = db.beginTx();
-                Statement stmt =db.statement( ))
+        IndexDescriptor fulltextIndexDescriptor;
+        IndexProvider provider = db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).apply( FulltextindexProviderFactory.DESCRIPTOR );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
-        try ( Transaction transaction = db.beginTx();
-                Statement stmt =db.statement( ))
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            IndexDescriptor descriptor = stmt.readOperations().indexGetForSchema( fulltextIndexDescriptor.schema() );
+            assertEquals( descriptor.schema(), fulltextIndexDescriptor.schema() );
+            transaction.success();
+        }
+    }
+
+    @Test
+    public void createAndRetainFulltextIndex() throws Exception
+    {
+        IndexDescriptor fulltextIndexDescriptor;
+        IndexProvider provider = db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).apply( FulltextindexProviderFactory.DESCRIPTOR );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
+            transaction.success();
+        }
+        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             IndexDescriptor descriptor = stmt.readOperations().indexGetForSchema( fulltextIndexDescriptor.schema() );
             System.out.println( "descriptor = " + descriptor );
+            assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
             assertEquals( descriptor.schema(), fulltextIndexDescriptor.schema() );
             transaction.success();
         }

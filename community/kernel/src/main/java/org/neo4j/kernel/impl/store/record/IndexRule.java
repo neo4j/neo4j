@@ -50,7 +50,7 @@ public class IndexRule extends SchemaRule implements IndexDescriptor.Supplier
         return new IndexRule( id, providerDescriptor, descriptor, owningConstraint );
     }
 
-    public static IndexRule indexRule( long id, SchemaIndexDescriptor descriptor,
+    public static IndexRule indexRule( long id, IndexDescriptor descriptor,
                                        IndexProvider.Descriptor providerDescriptor, String name )
     {
         return new IndexRule( id, providerDescriptor, descriptor, null, name );

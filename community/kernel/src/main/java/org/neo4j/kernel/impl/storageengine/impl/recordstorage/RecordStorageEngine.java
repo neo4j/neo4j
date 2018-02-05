@@ -198,9 +198,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         try
         {
+            //TODO
+            propertyKeyTokenHolder.setInitialTokens(
+                    neoStores.getPropertyKeyTokenStore().getTokens( Integer.MAX_VALUE ) );
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
-            schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyIterator() );
+            schemaStorage = new SchemaStorage( neoStores.getSchemaStore(), indexProviderMap );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
             Boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
@@ -212,7 +215,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             this.indexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, this.indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() ), logProvider,
+                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
@@ -229,7 +232,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
-            commandReaderFactory = new RecordStorageCommandReaderFactory();
+            commandReaderFactory = new RecordStorageCommandReaderFactory( indexProviderMap );
             indexUpdatesSync = new WorkSync<>( indexingService );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
@@ -427,7 +430,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void loadSchemaCache()
     {
-        List<SchemaRule> schemaRules = Iterators.asList( neoStores.getSchemaStore().loadAllSchemaRules() );
+        List<SchemaRule> schemaRules = Iterators.asList( schemaStorage.loadAllSchemaRules() );
         schemaCache.load( schemaRules );
     }
 

@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -162,7 +163,7 @@ public class VersionAwareLogEntryReaderTest
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
+                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), invalidLogEntryHandler );
         InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
         LogEntryWriter writer = new LogEntryWriter( channel.writer() );
         long startTime = currentTimeMillis();
@@ -202,7 +203,7 @@ public class VersionAwareLogEntryReaderTest
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new RecordStorageCommandReaderFactory(), invalidLogEntryHandler );
+                new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), invalidLogEntryHandler );
         InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
         LogEntryWriter writer = new LogEntryWriter( channel.writer() );
         long startTime = currentTimeMillis();

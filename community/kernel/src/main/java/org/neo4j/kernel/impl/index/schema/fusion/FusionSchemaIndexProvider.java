@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
+import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -65,6 +67,12 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
         this.luceneProvider = luceneProvider;
         this.selector = selector;
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
+    }
+
+    @Override
+    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    {
+        return SchemaIndexDescriptorFactory.forSchema( schema );
     }
 
     @Override

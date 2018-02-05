@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.string.UTF8;
@@ -78,10 +79,11 @@ public class SchemaRuleSerialization
      * Parse a SchemaRule from the provided buffer.
      * @param id the id to give the returned Schema Rule
      * @param source the buffer to parse from
+     * @param indexProviderMap
      * @return a SchemaRule
      * @throws MalformedSchemaRuleException if bytes in the buffer do encode a valid SchemaRule
      */
-    public static SchemaRule deserialize( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    public static SchemaRule deserialize( long id, ByteBuffer source, IndexProviderMap indexProviderMap ) throws MalformedSchemaRuleException
     {
         int legacyLabelOrRelTypeId = source.getInt();
         byte schemaRuleType = source.get();
@@ -89,7 +91,7 @@ public class SchemaRuleSerialization
         switch ( schemaRuleType )
         {
         case INDEX_RULE:
-            return readIndexRule( id, source );
+            return readIndexRule( id, source, indexProviderMap );
         case CONSTRAINT_RULE:
             return readConstraintRule( id, source );
         default:
@@ -100,6 +102,7 @@ public class SchemaRuleSerialization
             throw new MalformedSchemaRuleException( format( "Got unknown schema rule type '%d'.", schemaRuleType ) );
         }
     }
+
     private static SchemaComputer<Integer> schemaSizeComputer = new SchemaComputer<Integer>()
     {
         @Override
@@ -221,7 +224,7 @@ public class SchemaRuleSerialization
 
     // READ INDEX
 
-    private static IndexRule readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    private static IndexRule readIndexRule( long id, ByteBuffer source, IndexProviderMap indexProviderMap ) throws MalformedSchemaRuleException
     {
         IndexProvider.Descriptor indexProvider = readIndexProviderDescriptor( source );
         LabelSchemaDescriptor schema;
@@ -232,7 +235,7 @@ public class SchemaRuleSerialization
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forSchema( schema ), indexProvider, name );
+            return IndexRule.indexRule( id, indexProviderMap.apply( indexProvider ).indexDescriptorFor( schema, name ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
@@ -241,6 +244,13 @@ public class SchemaRuleSerialization
             name = readRuleName( id, IndexRule.class, source );
             return IndexRule.constraintIndexRule( id, descriptor, indexProvider,
                     owningConstraint == NO_OWNING_CONSTRAINT_YET ? null : owningConstraint, name );
+
+        case NON_SCHEMA_INDEX:
+            //TODO typing is ugly here
+            NonSchemaSchemaDescriptor nonSchema = readNonSchemaSchema( source );
+            name = readRuleName( id, IndexRule.class, source );
+            IndexDescriptor indexDescriptor = indexProviderMap.apply( indexProvider ).indexDescriptorFor( nonSchema, name );
+            return IndexRule.indexRule( id, indexDescriptor, indexProvider, name );
 
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
@@ -252,10 +262,21 @@ public class SchemaRuleSerialization
         SchemaDescriptor schemaDescriptor = readSchema( source );
         if ( !(schemaDescriptor instanceof LabelSchemaDescriptor) )
         {
-            throw new MalformedSchemaRuleException( "IndexRules must have LabelSchemaDescriptors, got " +
+            throw new MalformedSchemaRuleException( "Schema IndexRules must have LabelSchemaDescriptors, got " +
                     schemaDescriptor.getClass().getSimpleName() );
         }
         return (LabelSchemaDescriptor)schemaDescriptor;
+    }
+
+    private static NonSchemaSchemaDescriptor readNonSchemaSchema( ByteBuffer source ) throws MalformedSchemaRuleException
+    {
+        SchemaDescriptor schemaDescriptor = readNonSchema( source );
+        if ( !(schemaDescriptor instanceof NonSchemaSchemaDescriptor) )
+        {
+            throw new MalformedSchemaRuleException(
+                    "Non schema IndexRules must have NonSchemaSchemaDescriptor, got " + schemaDescriptor.getClass().getSimpleName() );
+        }
+        return (NonSchemaSchemaDescriptor) schemaDescriptor;
     }
 
     private static IndexProvider.Descriptor readIndexProviderDescriptor( ByteBuffer source )
@@ -322,11 +343,11 @@ public class SchemaRuleSerialization
         {
         case SIMPLE_LABEL:
             int labelId = source.getInt();
-            propertyIds = readPropertyIds( source );
+            propertyIds = readTokenIdList( source );
             return SchemaDescriptorFactory.forLabel( labelId, propertyIds );
         case SIMPLE_REL_TYPE:
             int relTypeId = source.getInt();
-            propertyIds = readPropertyIds( source );
+            propertyIds = readTokenIdList( source );
             return SchemaDescriptorFactory.forRelType( relTypeId, propertyIds );
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown schema descriptor type '%d'.",
@@ -334,7 +355,27 @@ public class SchemaRuleSerialization
         }
     }
 
-    private static int[] readPropertyIds( ByteBuffer source )
+    private static SchemaDescriptor readNonSchema( ByteBuffer source ) throws MalformedSchemaRuleException
+    {
+        byte schemaDescriptorType = source.get();
+        EntityType type;
+        switch ( schemaDescriptorType )
+        {
+        case SIMPLE_LABEL:
+            type = EntityType.NODE;
+            break;
+        case SIMPLE_REL_TYPE:
+            type = EntityType.NODE;
+            break;
+        default:
+            throw new MalformedSchemaRuleException( format( "Got unknown schema descriptor type '%d'.", schemaDescriptorType ) );
+        }
+        int[] entityTokenIds = readTokenIdList( source );
+        int[] propertyIds = readTokenIdList( source );
+        return new org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor( entityTokenIds, type, propertyIds );
+    }
+
+    private static int[] readTokenIdList( ByteBuffer source )
     {
         short numProperties = source.getShort();
         int[] propertyIds = new int[numProperties];

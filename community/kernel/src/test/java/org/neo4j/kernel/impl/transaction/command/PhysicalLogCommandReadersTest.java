@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.CommandReader;
@@ -54,25 +55,25 @@ public class PhysicalLogCommandReadersTest
     @Test
     public void readRelGroupWithHugeTypeInV2_2_4() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4( IndexProviderMap.EMPTY ) );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV2_2_10() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_10() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_10( IndexProviderMap.EMPTY ) );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV3_0() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY ) );
     }
 
     @Test
     public void readRelGroupWithHugeTypeInV3_0_2() throws IOException
     {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2() );
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY ) );
     }
 
     private static void assertDoesNotKnowAboutRelGroups( CommandReader reader )

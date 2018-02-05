@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
@@ -90,7 +91,7 @@ public class SchemaRuleCommandTest
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
-    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
+    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY );
     private final IndexRule rule = IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKey ),
             PROVIDER_DESCRIPTOR );
 

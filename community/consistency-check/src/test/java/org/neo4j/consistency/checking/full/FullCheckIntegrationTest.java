@@ -78,6 +78,7 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -153,7 +154,7 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    private static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( "lucene", "1.0" );
+    private static final IndexProvider.Descriptor DESCRIPTOR = IndexProvider.NO_INDEX_PROVIDER.getProviderDescriptor();
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
@@ -448,7 +449,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
+        Iterator<IndexRule> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll();
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();
@@ -561,7 +562,7 @@ public class FullCheckIntegrationTest
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexRule> indexRuleIterator =
-                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                 fixture.directStoreAccess().nativeStores().getRawNeoStores() );
         while ( indexRuleIterator.hasNext() )
@@ -600,7 +601,7 @@ public class FullCheckIntegrationTest
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexRule> indexRuleIterator =
-                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore(), IndexProviderMap.EMPTY ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();

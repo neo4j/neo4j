@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PositionableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.ReadPastEndException;
 
@@ -48,7 +50,7 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
 
     public VersionAwareLogEntryReader()
     {
-        this( new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
+        this( new RecordStorageCommandReaderFactory( IndexProviderMap.EMPTY ), InvalidLogEntryHandler.STRICT );
     }
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory,

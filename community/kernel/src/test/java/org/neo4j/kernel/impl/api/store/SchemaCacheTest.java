@@ -63,7 +63,7 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator() );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexRules() ) );
@@ -74,7 +74,7 @@ public class SchemaCacheTest
     public void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules.iterator() );
 
         IndexRule rule1 = newIndexRule( 10, 11, 12 );
         IndexRule rule2 = newIndexRule( 13, 14, 15 );
@@ -360,7 +360,7 @@ public class SchemaCacheTest
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
         return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                                           ? Collections.emptyList() : Arrays.asList( rules ) );
+                                                           ? Collections.emptyIterator() : Arrays.asList( rules ).iterator() );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics

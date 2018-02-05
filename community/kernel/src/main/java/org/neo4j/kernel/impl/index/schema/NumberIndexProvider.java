@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -70,6 +71,12 @@ public class NumberIndexProvider extends IndexProvider<SchemaIndexDescriptor>
         this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
+    }
+
+    @Override
+    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    {
+        return null;
     }
 
     @Override

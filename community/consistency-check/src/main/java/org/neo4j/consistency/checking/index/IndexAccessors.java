@@ -48,7 +48,7 @@ public class IndexAccessors implements Closeable
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Iterator<IndexRule> rules = new SchemaStorage( schemaStore ).indexesGetAll();
+        Iterator<IndexRule> rules = new SchemaStorage( schemaStore, providers ).indexesGetAll();
         for (; ; )
         {
             try

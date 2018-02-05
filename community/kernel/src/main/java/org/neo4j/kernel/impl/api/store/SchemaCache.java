@@ -56,7 +56,7 @@ public class SchemaCache
     private final Lock cacheUpdateLock = new StampedLock().asWriteLock();
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
+    public SchemaCache( ConstraintSemantics constraintSemantics, Iterator<SchemaRule> initialRules )
     {
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules );
     }
@@ -112,7 +112,7 @@ public class SchemaCache
         try
         {
             ConstraintSemantics constraintSemantics = schemaCacheState.constraintSemantics;
-            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules );
+            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules.iterator() );
         }
         finally
         {
@@ -178,7 +178,7 @@ public class SchemaCache
         private final Map<Class<?>,Object> dependantState;
         private final PrimitiveIntObjectMap<List<IndexDescriptor>> indexByProperty;
 
-        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
+        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterator<SchemaRule> rules )
         {
             this.constraintSemantics = constraintSemantics;
             this.constraints = new HashSet<>();
@@ -205,12 +205,9 @@ public class SchemaCache
             this.indexByProperty = PrimitiveIntCollections.copy( schemaCacheState.indexByProperty );
         }
 
-        public void load( Iterable<SchemaRule> schemaRuleIterator )
+        public void load( Iterator<SchemaRule> schemaRuleIterator )
         {
-            for ( SchemaRule schemaRule : schemaRuleIterator )
-            {
-                addSchemaRule( schemaRule );
-            }
+            schemaRuleIterator.forEachRemaining( this::addSchemaRule );
         }
 
         Iterable<IndexRule> indexRules()

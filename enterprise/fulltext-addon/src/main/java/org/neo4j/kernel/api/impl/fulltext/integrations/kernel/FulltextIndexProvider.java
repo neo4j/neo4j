@@ -19,31 +19,71 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
+import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextProviderImpl;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
+
+import static org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory.getType;
 
 public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor>
 {
-    protected FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory )
+    private final FulltextFactory factory;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final FulltextProviderImpl oldProvider;
+
+    protected FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory,
+            FileSystemAbstraction fileSystem, String analyzerClassName, PropertyKeyTokenHolder propertyKeyTokenHolder, LogService logging,
+            AvailabilityGuard availabilityGuard, GraphDatabaseService db, JobScheduler scheduler, Supplier<TransactionIdStore> transactionIdStore,
+            File storeDir ) throws IOException
     {
         super( descriptor, priority, directoryStructureFactory );
+        Log log = logging.getInternalLog( FulltextProviderImpl.class );
+        this.oldProvider = new FulltextProviderImpl( db, log, availabilityGuard, scheduler, transactionIdStore, fileSystem, storeDir, analyzerClassName );
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        factory = new FulltextFactory( fileSystem, directoryStructure().rootDirectory(), analyzerClassName );
+    }
+
+    @Override
+    public FulltextIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    {
+        try
+        {
+            return new FulltextIndexDescriptor( schema, name, propertyKeyTokenHolder );
+        }
+        catch ( TokenNotFoundException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new FulltextIndexPopulator(indexId, descriptor, samplingConfig);
+        //factory.createFulltextIndex( descriptor );
+        return new FulltextIndexPopulator(indexId, descriptor, samplingConfig, oldProvider);
     }
 
     @Override
@@ -55,13 +95,21 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        throw new IllegalStateException( "Not implemented" );
+        return "TODO Failure";
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, FulltextIndexDescriptor descriptor )
     {
-        throw new IllegalStateException( "Not implemented" );
+        try
+        {
+            oldProvider.openIndex( descriptor.identifier(), FulltextFactory.getType(descriptor) );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace(  );
+        }
+        return oldProvider.getState( descriptor.identifier(), getType( descriptor )  );
     }
 
     @Override

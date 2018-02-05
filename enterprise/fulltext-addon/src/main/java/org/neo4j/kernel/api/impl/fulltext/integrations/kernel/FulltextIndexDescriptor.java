@@ -19,14 +19,43 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.storageengine.api.EntityType;
 
 public class FulltextIndexDescriptor extends IndexDescriptor
 {
-    public FulltextIndexDescriptor( int[] entityTokens, EntityType entityType, int... propertyIds )
+    private final Set<String> propertyNames;
+    private final String indentifier;
+
+    public FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder ) throws TokenNotFoundException
     {
-        super( SchemaDescriptorFactory.nonSchema(entityTokens, entityType, propertyIds), Type.NON_SCHEMA );
+        super( schema, Type.NON_SCHEMA );
+        propertyNames = new HashSet<>();
+        this.indentifier = name;
+        for ( int propertyId : schema.getPropertyIds() )
+        {
+            propertyNames.add( propertyKeyTokenHolder.getTokenById( propertyId ).name() );
+        }
+    }
+
+    public String identifier()
+    {
+        return indentifier;
+    }
+
+    public Collection<String> propertyNames()
+    {
+        return Collections.unmodifiableSet( propertyNames );
     }
 }

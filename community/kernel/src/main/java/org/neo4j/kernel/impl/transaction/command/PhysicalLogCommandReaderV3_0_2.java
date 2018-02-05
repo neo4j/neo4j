@@ -28,6 +28,7 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
@@ -65,6 +66,14 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
 public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
 {
+    private IndexProviderMap indexProviderMap;
+
+    public PhysicalLogCommandReaderV3_0_2( IndexProviderMap indexProviderMap )
+    {
+
+        this.indexProviderMap = indexProviderMap;
+    }
+
     @Override
     protected Command read( byte commandType, ReadableChannel channel ) throws IOException
     {
@@ -640,7 +649,7 @@ public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = SchemaRuleSerialization.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
+            rule = SchemaRuleSerialization.deserialize( Iterables.first( recordsBefore ).getId(), deserialized, indexProviderMap );
         }
         catch ( MalformedSchemaRuleException e )
         {

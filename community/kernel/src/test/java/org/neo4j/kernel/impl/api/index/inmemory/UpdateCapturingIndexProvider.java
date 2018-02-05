@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -40,7 +41,7 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
 public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescriptor>
 {
-    private final IndexProvider actual;
+    private final IndexProvider<SchemaIndexDescriptor> actual;
     private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
     private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
 
@@ -49,6 +50,12 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
         super( actual );
         this.actual = actual;
         this.initialUpdates = initialUpdates;
+    }
+
+    @Override
+    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    {
+        return actual.indexDescriptorFor( schema, name );
     }
 
     @Override

@@ -37,6 +37,10 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
+    enum PropertySchemaType{
+        SCHEMA_ALL,
+        NON_SCHEMA_ANY
+    }
     /**
      * Computes some value by feeding this object into the given SchemaComputer.
      *
@@ -103,4 +107,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
     }
 
     EntityType entityType();
+
+    PropertySchemaType propertySchemaType();
 }

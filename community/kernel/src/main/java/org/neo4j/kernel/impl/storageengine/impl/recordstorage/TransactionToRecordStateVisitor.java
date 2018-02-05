@@ -182,7 +182,6 @@ public class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitAddedIndex( IndexDescriptor index )
     {
-        // TODO HEJ
         IndexProvider.Descriptor providerDescriptor = indexProviderMap.getProviderFor( index ).getProviderDescriptor();
         IndexRule rule = IndexRule.indexRule( schemaStorage.newRuleId(), index, providerDescriptor );
         recordState.createSchemaRule( rule );

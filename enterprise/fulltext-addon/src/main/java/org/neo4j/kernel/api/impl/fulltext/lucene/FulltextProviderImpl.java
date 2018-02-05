@@ -29,11 +29,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -42,6 +44,8 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexType;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexDescriptor;
+import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -83,6 +87,102 @@ public class FulltextProviderImpl implements FulltextProvider
         this.db = db;
         this.log = log;
         this.transactionIdStore = transactionIdStore;
+        applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
+        applier.start();
+        factory = new FulltextFactory( fileSystem, storeDir, analyzerClassName );
+        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, applier );
+        nodeProperties = ConcurrentHashMap.newKeySet();
+        relationshipProperties = ConcurrentHashMap.newKeySet();
+        writableNodeIndices = new ConcurrentHashMap<>();
+        writableRelationshipIndices = new ConcurrentHashMap<>();
+        configurationLock = new ReentrantReadWriteLock( true );
+    }
+
+    public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard, JobScheduler scheduler,
+            Supplier<TransactionIdStore> transactionIdStore, FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
+    {
+        this.db = db;
+        this.log = log;
+        this.transactionIdStore = new TransactionIdStore()
+        {
+            @Override
+            public long nextCommittingTransactionId()
+            {
+                return transactionIdStore.get().nextCommittingTransactionId();
+            }
+
+            @Override
+            public long committingTransactionId()
+            {
+                return transactionIdStore.get().committingTransactionId();
+            }
+
+            @Override
+            public void transactionCommitted( long transactionId, long checksum, long commitTimestamp )
+            {
+                transactionIdStore.get().transactionCommitted( transactionId, checksum, commitTimestamp );
+            }
+
+            @Override
+            public long getLastCommittedTransactionId()
+            {
+                return transactionIdStore.get().getLastCommittedTransactionId();
+            }
+
+            @Override
+            public TransactionId getLastCommittedTransaction()
+            {
+                return transactionIdStore.get().getLastCommittedTransaction();
+            }
+
+            @Override
+            public TransactionId getUpgradeTransaction()
+            {
+                return transactionIdStore.get().getUpgradeTransaction();
+            }
+
+            @Override
+            public long getLastClosedTransactionId()
+            {
+                return transactionIdStore.get().getLastClosedTransactionId();
+            }
+
+            @Override
+            public void awaitClosedTransactionId( long txId, long timeoutMillis ) throws InterruptedException, TimeoutException
+            {
+                transactionIdStore.get().awaitClosedTransactionId( txId, timeoutMillis );
+            }
+
+            @Override
+            public long[] getLastClosedTransaction()
+            {
+                return transactionIdStore.get().getLastClosedTransaction();
+            }
+
+            @Override
+            public void setLastCommittedAndClosedTransactionId( long transactionId, long checksum, long commitTimestamp, long byteOffset, long logVersion )
+            {
+                transactionIdStore.get().setLastCommittedAndClosedTransactionId( transactionId, checksum, commitTimestamp, byteOffset, logVersion );
+            }
+
+            @Override
+            public void transactionClosed( long transactionId, long logVersion, long byteOffset )
+            {
+                transactionIdStore.get().transactionClosed( transactionId, logVersion, byteOffset );
+            }
+
+            @Override
+            public boolean closedTransactionIdIsOnParWithOpenedTransactionId()
+            {
+                return transactionIdStore.get().closedTransactionIdIsOnParWithOpenedTransactionId();
+            }
+
+            @Override
+            public void flush()
+            {
+                transactionIdStore.get().flush();
+            }
+        };
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         factory = new FulltextFactory( fileSystem, storeDir, analyzerClassName );
@@ -141,6 +241,12 @@ public class FulltextProviderImpl implements FulltextProvider
     public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
     {
         LuceneFulltext index = factory.createFulltextIndex( identifier, type, properties );
+        register( index );
+    }
+
+    public void createIndex( FulltextIndexDescriptor schema ) throws IOException
+    {
+        LuceneFulltext index = factory.createFulltextIndex( schema );
         register( index );
     }
 

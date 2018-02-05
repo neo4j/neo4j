@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -48,7 +49,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
@@ -69,7 +70,7 @@ public class PhysicalLogCommandReaderV3_0Test
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
@@ -89,7 +90,7 @@ public class PhysicalLogCommandReaderV3_0Test
         RelationshipRecord after = new RelationshipRecord( 42, true, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
@@ -109,7 +110,7 @@ public class PhysicalLogCommandReaderV3_0Test
         after.setUseFixedReferences( true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
@@ -130,7 +131,7 @@ public class PhysicalLogCommandReaderV3_0Test
         after.setUseFixedReferences( true );
         new Command.RelationshipCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipCommand );
 
@@ -153,7 +154,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
@@ -178,7 +179,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
@@ -204,7 +205,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
@@ -229,7 +230,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
@@ -255,7 +256,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.RelationshipGroupCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.RelationshipGroupCommand);
 
@@ -280,7 +281,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.NeoStoreCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.NeoStoreCommand);
 
@@ -304,7 +305,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.NodeCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.NodeCommand);
 
@@ -330,7 +331,7 @@ public class PhysicalLogCommandReaderV3_0Test
         new Command.NodeCommand( before, after ).serialize( channel );
 
         // When
-        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.NodeCommand);
 
@@ -354,7 +355,7 @@ public class PhysicalLogCommandReaderV3_0Test
 
         new Command.PropertyCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
@@ -377,7 +378,7 @@ public class PhysicalLogCommandReaderV3_0Test
 
         new Command.PropertyCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
@@ -400,7 +401,7 @@ public class PhysicalLogCommandReaderV3_0Test
 
         new Command.PropertyCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0();
+        PhysicalLogCommandReaderV3_0 reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
@@ -424,7 +425,7 @@ public class PhysicalLogCommandReaderV3_0Test
 
         new Command.PropertyCommand( before, after ).serialize( channel );
 
-        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2();
+        PhysicalLogCommandReaderV3_0_2 reader = new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY );
         Command command = reader.read( channel );
         assertTrue( command instanceof Command.PropertyCommand);
 
@@ -448,7 +449,7 @@ public class PhysicalLogCommandReaderV3_0Test
         Commands.createRelationship( 0, 0, 1, 0 ).serialize( channel );
         Commands.createPropertyKeyToken( 0, 0 ).serialize( channel );
         Commands.createProperty( 0, PropertyType.SHORT_STRING, 0 ).serialize( channel );
-        CommandReader reader = new PhysicalLogCommandReaderV3_0();
+        CommandReader reader = new PhysicalLogCommandReaderV3_0( IndexProviderMap.EMPTY );
 
         // THEN
         assertTrue( reader.read( channel ) instanceof Command.NodeCommand );
