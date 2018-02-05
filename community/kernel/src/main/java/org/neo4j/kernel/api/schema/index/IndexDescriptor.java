@@ -122,6 +122,12 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
         return this.equals( supplier.getIndexDescriptor() );
     }
 
+    //TODO javadoc
+    public String identifier()
+    {
+        return null;
+    }
+
     @Override
     public boolean equals( Object o )
     {

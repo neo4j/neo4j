@@ -73,5 +73,5 @@ public interface SchemaWriteOperations
 
     void constraintDrop( KernelStatement state, ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 
-    void fulltextIndexCreate( KernelStatement statement, IndexDescriptor fulltextIndexDescriptor );
+    void nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor );
 }

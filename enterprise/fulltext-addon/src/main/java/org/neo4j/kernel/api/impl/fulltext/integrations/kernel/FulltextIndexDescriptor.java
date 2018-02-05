@@ -24,34 +24,31 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.storageengine.api.EntityType;
 
 public class FulltextIndexDescriptor extends IndexDescriptor
 {
     private final Set<String> propertyNames;
-    private final String indentifier;
+    private final String identifier;
 
     public FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder ) throws TokenNotFoundException
     {
         super( schema, Type.NON_SCHEMA );
         propertyNames = new HashSet<>();
-        this.indentifier = name;
+        this.identifier = name;
         for ( int propertyId : schema.getPropertyIds() )
         {
             propertyNames.add( propertyKeyTokenHolder.getTokenById( propertyId ).name() );
         }
     }
 
+    @Override
     public String identifier()
     {
-        return indentifier;
+        return identifier;
     }
 
     public Collection<String> propertyNames()

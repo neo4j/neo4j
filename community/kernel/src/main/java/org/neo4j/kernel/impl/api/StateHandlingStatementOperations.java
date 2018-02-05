@@ -735,9 +735,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void fulltextIndexCreate( KernelStatement statement, IndexDescriptor fulltextIndexDescriptor )
+    public void nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
     {
-        statement.txState().indexRuleDoAdd( fulltextIndexDescriptor );
+        statement.txState().indexRuleDoAdd( indexDescriptor );
     }
 
     @Override

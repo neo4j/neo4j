@@ -31,7 +31,6 @@ import org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.rule.DatabaseRule;
@@ -115,10 +114,12 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             IndexDescriptor descriptor = stmt.readOperations().indexGetForSchema( fulltextIndexDescriptor.schema() );
-            System.out.println( "descriptor = " + descriptor );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
-            assertEquals( descriptor.schema(), fulltextIndexDescriptor.schema() );
+            assertEquals( fulltextIndexDescriptor.schema(), descriptor.schema() );
+            assertEquals( fulltextIndexDescriptor.type(), descriptor.type() );
+            assertEquals( ((FulltextIndexDescriptor) fulltextIndexDescriptor).identifier(), ((FulltextIndexDescriptor) descriptor).identifier() );
             transaction.success();
         }
     }
+
 }
