@@ -341,7 +341,6 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   implicit class RichGraph(graph: GraphDatabaseQueryService) {
-    def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
     val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
@@ -356,6 +355,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
 
     def shutdown() = gds.shutdown()
+
+    def createNode() = gds.createNode()
 
     def createNode(label: Label) = gds.createNode(label)
 

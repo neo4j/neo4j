@@ -195,6 +195,12 @@ public class MockStore extends Read implements TestRule
         throw new UnsupportedOperationException( "not implemented" );
     }
 
+    @Override
+    public boolean relationshipExists( long reference )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
     private abstract static class Record<R extends AbstractBaseRecord>
     {
         abstract void initialize( R record );

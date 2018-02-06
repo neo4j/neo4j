@@ -104,6 +104,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public boolean relationshipExists( long reference )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void allRelationshipsScan( RelationshipScanCursor cursor )
     {
         throw new UnsupportedOperationException();

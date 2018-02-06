@@ -54,7 +54,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -236,32 +236,34 @@ public class NodeProxy implements Node
     public void setProperty( String key, Object value )
     {
         KernelTransaction transaction = spi.kernelTransaction();
-        try ( Statement statement = transaction.acquireStatement() )
+        int propertyKeyId;
+        try
         {
-            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
-            try
-            {
-                transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
-            }
-            catch ( ConstraintValidationException e )
-            {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                // Trying to set an illegal value is a critical error - fail this transaction
-                spi.failTransaction();
-                throw e;
-            }
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( e );
+            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
         }
         catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
+        }
+
+        try ( Statement ignore = transaction.acquireStatement() )
+        {
+            transaction.dataWrite().nodeSetProperty( nodeId, propertyKeyId, Values.of( value, false ) );
+        }
+        catch ( ConstraintValidationException e )
+        {
+            throw new ConstraintViolationException(
+                    e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Trying to set an illegal value is a critical error - fail this transaction
+            spi.failTransaction();
+            throw e;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -575,18 +577,15 @@ public class NodeProxy implements Node
     public void addLabel( Label label )
     {
         KernelTransaction transaction = spi.kernelTransaction();
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            try
-            {
-                transaction.dataWrite().nodeAddLabel( getId(),
-                        transaction.tokenWrite().labelGetOrCreateForName( label.name() ) );
-            }
-            catch ( ConstraintValidationException e )
-            {
-                throw new ConstraintViolationException(
-                        e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
-            }
+            transaction.dataWrite().nodeAddLabel( getId(),
+                    transaction.tokenWrite().labelGetOrCreateForName( label.name() ) );
+        }
+        catch ( ConstraintValidationException e )
+        {
+            throw new ConstraintViolationException(
+                    e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
         }
         catch ( IllegalTokenNameException e )
         {

@@ -157,7 +157,7 @@ public class NettyPipelineBuilder
                 }
                 else
                 {
-                    ctx.write( msg );
+                    ctx.write( msg, promise );
                 }
             }
         } );

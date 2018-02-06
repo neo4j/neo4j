@@ -75,6 +75,7 @@ public interface Read
 
     /**
      * Checks if a node exists in the database
+     *
      * @param reference The reference of the node to check
      * @return <tt>true</tt> if the node exists, otherwise <tt>false</tt>
      */
@@ -87,6 +88,14 @@ public interface Read
      *         the cursor to use for consuming the results.
      */
     void singleRelationship( long reference, RelationshipScanCursor cursor );
+
+    /**
+     * Checks if a relationship exists in the database
+     *
+     * @param reference The reference of the relationship to check
+     * @return <tt>true</tt> if the relationship exists, otherwise <tt>false</tt>
+     */
+    boolean relationshipExists( long reference );
 
     void allRelationshipsScan( RelationshipScanCursor cursor );
 

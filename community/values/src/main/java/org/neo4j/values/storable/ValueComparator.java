@@ -71,6 +71,24 @@ public class ValueComparator implements Comparator<Value>
                 // Currently only Point
                 return ((PointValue) v1).compareTo( (PointValue) v2 );
 
+            case ZONED_DATE_TIME:
+                return ((DateTimeValue) v1).compareTo( (DateTimeValue) v2 );
+
+            case LOCAL_DATE_TIME:
+                return ((LocalDateTimeValue) v1).compareTo( (LocalDateTimeValue) v2 );
+
+            case DATE:
+                return ((DateValue) v1).compareTo( (DateValue) v2 );
+
+            case ZONED_TIME:
+                return ((TimeValue) v1).compareTo( (TimeValue) v2 );
+
+            case LOCAL_TIME:
+                return ((LocalTimeValue) v1).compareTo( (LocalTimeValue) v2 );
+
+            case DURATION:
+                return ((DurationValue) v1).compareTo( (DurationValue) v2 );
+
             case TEXT:
                 return ((TextValue) v1).compareTo( (TextValue) v2 );
 

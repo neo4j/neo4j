@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.consensus.outcome;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.causalclustering.messaging.Message;
@@ -344,5 +345,36 @@ public class Outcome implements Message, ConsensusOutcome
     public Set<MemberId> getPreVotesForMe()
     {
         return preVotesForMe;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        Outcome outcome = (Outcome) o;
+        return term == outcome.term && leaderCommit == outcome.leaderCommit && commitIndex == outcome.commitIndex &&
+                renewElectionTimeout == outcome.renewElectionTimeout && needsFreshSnapshot == outcome.needsFreshSnapshot &&
+                isPreElection == outcome.isPreElection && lastLogIndexBeforeWeBecameLeader == outcome.lastLogIndexBeforeWeBecameLeader &&
+                electedLeader == outcome.electedLeader && steppingDown == outcome.steppingDown && nextRole == outcome.nextRole &&
+                Objects.equals( leader, outcome.leader ) && Objects.equals( logCommands, outcome.logCommands ) &&
+                Objects.equals( outgoingMessages, outcome.outgoingMessages ) && Objects.equals( votedFor, outcome.votedFor ) &&
+                Objects.equals( preVotesForMe, outcome.preVotesForMe ) && Objects.equals( votesForMe, outcome.votesForMe ) &&
+                Objects.equals( followerStates, outcome.followerStates ) && Objects.equals( shipCommands, outcome.shipCommands ) &&
+                Objects.equals( heartbeatResponses, outcome.heartbeatResponses );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( nextRole, term, leader, leaderCommit, logCommands, outgoingMessages, commitIndex, votedFor, renewElectionTimeout,
+                needsFreshSnapshot, isPreElection, preVotesForMe, votesForMe, lastLogIndexBeforeWeBecameLeader, followerStates, shipCommands, electedLeader,
+                steppingDown, heartbeatResponses );
     }
 }

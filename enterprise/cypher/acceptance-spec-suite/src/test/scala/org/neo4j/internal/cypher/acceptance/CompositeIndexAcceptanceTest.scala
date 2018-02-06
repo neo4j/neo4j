@@ -34,8 +34,6 @@ import scala.collection.JavaConverters._
   */
 class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val planFailConfig = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1
-
   test("should succeed in creating and deleting composite index") {
     // When
     graph.createIndex("Person", "firstname")
@@ -65,7 +63,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("NodeIndexSeek")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -113,7 +111,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         plan should useOperatorWithText("NodeIndexSeek", ":User(firstname,lastname)")
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(firstname)"))
         plan should not(useOperatorWithText("NodeIndexSeek", ":User(lastname)"))
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -184,20 +182,20 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators("NodeIndexSeek")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
   test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
+    executeWith(Configs.UpdateConf, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
+    executeWith(Configs.UpdateConf, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
     executeWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Person(firstname,lastname)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
   }
 
   test("should use composite index correctly given two IN predicates") {
@@ -219,7 +217,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal((0 to 99).map(i => Map("x" -> i)).toList)
@@ -242,7 +240,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal((0 to 9).map(i => Map("x" -> i)).toList)
@@ -265,7 +263,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Foo(bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
 
     // Then
     result.toComparableResult should equal(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
@@ -285,7 +283,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
 
@@ -303,7 +301,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":L(foo,bar,baz)")
-      }, planFailConfig))
+      }, Configs.OldAndRule))
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
   }
 
@@ -357,7 +355,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
                 //THEN
                 plan should useOperatorWithText("NodeIndexSeek", ":User(name,surname,age,active)")
-              }, planFailConfig))
+              }, Configs.OldAndRule))
           else
             executeWith(testConfig, query,
               planComparisonStrategy = ComparePlansWithAssertion((plan) => {
@@ -396,7 +394,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":X(p1,p2)")
-      }, planFailConfig), params = Map("id" -> a.getId))
+      }, Configs.OldAndRule), params = Map("id" -> a.getId))
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
   }
