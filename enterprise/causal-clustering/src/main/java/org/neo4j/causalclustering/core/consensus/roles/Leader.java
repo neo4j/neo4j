@@ -280,20 +280,17 @@ public class Leader implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.PreVote.Request request ) throws IOException
+        public Outcome handle( RaftMessages.PreVote.Request req ) throws IOException
         {
-            if ( request.term() > ctx.term() )
+            if ( ctx.supportPreVoting() )
             {
-                log.info(
-                        "Considering pre vote request at term %d (my term is " + "%d) from %s",
-                        request.term(), ctx.term(), request.from() );
-
-                Voting.handlePreVoteRequest( ctx, outcome, request, log );
-            }
-            else
-            {
-                outcome.addOutgoingMessage( new RaftMessages.Directed( request.from(),
-                        new RaftMessages.PreVote.Response( ctx.myself(), ctx.term(), false ) ) );
+                if ( req.term() > ctx.term() )
+                {
+                    stepDownToFollower( outcome );
+                    log.info( "Moving to FOLLOWER state after receiving pre vote request from %s at term %d (I am at %d)",
+                            req.from(), req.term(), ctx.term() );
+                }
+                Voting.declinePreVoteRequest( ctx, outcome, req );
             }
             return outcome;
         }

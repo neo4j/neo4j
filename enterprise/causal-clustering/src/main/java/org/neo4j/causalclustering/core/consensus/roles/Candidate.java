@@ -157,8 +157,19 @@ class Candidate implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.PreVote.Request request ) throws IOException
+        public Outcome handle( RaftMessages.PreVote.Request req ) throws IOException
         {
+            if ( ctx.supportPreVoting() )
+            {
+                if ( req.term() > ctx.term() )
+                {
+                    outcome.getVotesForMe().clear();
+                    outcome.setNextRole( FOLLOWER );
+                    log.info( "Moving to FOLLOWER state after receiving pre vote request from %s at term %d (I am at %d)",
+                            req.from(), req.term(), ctx.term() );
+                }
+                Voting.declinePreVoteRequest( ctx, outcome, req );
+            }
             return outcome;
         }
 
