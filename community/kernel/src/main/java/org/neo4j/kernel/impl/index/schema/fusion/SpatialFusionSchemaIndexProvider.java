@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -40,8 +39,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
-import org.neo4j.kernel.impl.index.schema.SpatialLayoutNonUnique;
-import org.neo4j.kernel.impl.index.schema.SpatialLayoutUnique;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -185,6 +182,11 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
                 k -> new SpatialKnownIndex( directoryStructure(), crs, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
     }
 
+    /**
+     * The expected directory structure for spatial indexes are:
+     * provider/{indexId}/spatial/{crs-tableId}-{crs-code}/index-{indexId}
+     * If a directory is found for a crs and it is missing the index file, the index will be marked as failed.
+     */
     private void findAndCreateKnownSpatialIndexes()
     {
         Pattern pattern = Pattern.compile( "(\\d+)-(\\d+)" );
@@ -215,8 +217,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
                                 SpatialKnownIndex index = selectAndCreate( indexesFor( indexId ), indexId, crs );
                                 if ( !index.indexExists() )
                                 {
-                                    // TODO: log something here?
-                                    indexesFor( indexId ).remove( crs );
+                                    index.markAsFailed( "Index file was not found" );
                                 }
                             }
                         }
