@@ -66,7 +66,7 @@ public class RaftStateTest
         InFlightCache cache = new ConsecutiveInFlightCache();
         RaftState raftState = new RaftState( member( 0 ),
                 new InMemoryStateStorage<>( new TermState() ), new FakeMembership(), new InMemoryRaftLog(),
-                new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance(), false );
+                new InMemoryStateStorage<>( new VoteState() ), cache, NullLogProvider.getInstance(), false, false );
 
         List<RaftLogCommand> logCommands = new LinkedList<RaftLogCommand>()
         {{
@@ -102,7 +102,7 @@ public class RaftStateTest
                 new FakeMembership(), new InMemoryRaftLog(),
                 new InMemoryStateStorage<>( new VoteState( ) ),
                 new ConsecutiveInFlightCache(), NullLogProvider.getInstance(),
-                false );
+                false, false );
 
         raftState.update( new Outcome( CANDIDATE, 1, null, -1, null, emptySet(), emptySet(), -1, initialFollowerStates(), true, emptyLogCommands(),
                 emptyOutgoingMessages(), emptySet(), -1, emptySet(), false ) );

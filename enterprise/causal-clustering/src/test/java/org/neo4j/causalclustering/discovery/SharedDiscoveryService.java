@@ -87,13 +87,22 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         lock.lock();
         try
         {
-            return new CoreTopology( clusterId, coreClients.size() > 0 && coreClients.get( 0 ) == client,
-                    unmodifiableMap( coreMembers ) );
+            return new CoreTopology( clusterId, canBeBootstrapped( client ), unmodifiableMap( coreMembers ) );
         }
         finally
         {
             lock.unlock();
         }
+    }
+
+    private boolean canBeBootstrapped( SharedDiscoveryCoreClient client )
+    {
+        return client != null && coreClients.size() > 0 &&
+                coreClients.stream()
+                        .filter( core -> !core.refusesToBeLeader() )
+                        .findFirst()
+                        .map( client::equals )
+                        .orElse( false );
     }
 
     ReadReplicaTopology readReplicaTopology()

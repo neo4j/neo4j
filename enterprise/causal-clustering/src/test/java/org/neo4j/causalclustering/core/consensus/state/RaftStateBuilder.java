@@ -65,6 +65,7 @@ public class RaftStateBuilder
     public long commitIndex = -1;
     private FollowerStates<MemberId> followerStates = new FollowerStates<>();
     private boolean isPreElection;
+    private boolean refusesToBeLeader;
 
     public RaftStateBuilder myself( MemberId myself )
     {
@@ -144,6 +145,12 @@ public class RaftStateBuilder
         return this;
     }
 
+    public RaftStateBuilder setRefusesToBeLeader( boolean refusesToBeLeader )
+    {
+        this.refusesToBeLeader = refusesToBeLeader;
+        return this;
+    }
+
     public RaftState build() throws IOException
     {
         StateStorage<TermState> termStore = new InMemoryStateStorage<>( new TermState() );
@@ -151,7 +158,7 @@ public class RaftStateBuilder
         StubMembership membership = new StubMembership( votingMembers, replicationMembers );
 
         RaftState state = new RaftState( myself, termStore, membership, entryLog,
-                voteStore, new ConsecutiveInFlightCache(), NullLogProvider.getInstance(), supportPreVoting );
+                voteStore, new ConsecutiveInFlightCache(), NullLogProvider.getInstance(), supportPreVoting, refusesToBeLeader );
 
         Collection<RaftMessages.Directed> noMessages = Collections.emptyList();
         List<RaftLogCommand> noLogCommands = Collections.emptyList();

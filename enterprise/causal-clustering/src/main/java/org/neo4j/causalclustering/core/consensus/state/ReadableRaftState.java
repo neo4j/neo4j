@@ -58,4 +58,6 @@ public interface ReadableRaftState
     boolean isPreElection();
 
     Set<MemberId> preVotesForMe();
+
+    boolean refusesToBeLeader();
 }

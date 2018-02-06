@@ -23,6 +23,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.io.IOException;
+
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.AppendEntries;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.Timeout.Heartbeat;
@@ -785,6 +787,16 @@ public class LeaderTest
         RaftMessages.AppendEntries.Response typedResponse = (RaftMessages.AppendEntries.Response) response;
         assertThat( typedResponse.term(), equalTo( rivalTerm ) );
         // Not checking success or failure of append
+    }
+
+    private RaftState preElectionActive() throws IOException
+    {
+        return raftState()
+                .myself( myself )
+                .supportsPreVoting( true )
+                .setPreElection( true )
+                .votingMembers( asSet( myself, member1, member2 ) )
+                .build();
     }
 
     private Log log()

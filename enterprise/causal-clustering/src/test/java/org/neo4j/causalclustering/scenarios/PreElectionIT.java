@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -46,29 +45,31 @@ import static org.junit.Assert.fail;
 public class PreElectionIT
 {
     @Rule
-    public ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withNumberOfCoreMembers( 3 )
+    public ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 0 )
-            .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "10s" )
+            .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )
             .withSharedCoreParam( CausalClusteringSettings.enable_pre_voting, "true" );
-
-    private Cluster cluster;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        cluster = clusterRule.startCluster();
-    }
 
     @Test
     public void shouldActuallyStartAClusterWithPreVoting() throws Exception
     {
+        clusterRule.startCluster();
         // pass
+    }
+
+    @Test
+    public void shouldActuallyStartAClusterWithPreVotingAndARefuseToBeLeader() throws Throwable
+    {
+        clusterRule
+                .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
+                .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
+        clusterRule.startCluster();
     }
 
     @Test
     public void shouldStartAnElectionIfAllServersHaveTimedOutOnHeartbeats() throws Exception
     {
+        Cluster cluster = clusterRule.startCluster();
         Collection<CompletableFuture<Void>> futures = new ArrayList<>( cluster.coreMembers().size() );
 
         // given
@@ -101,6 +102,7 @@ public class PreElectionIT
     public void shouldNotStartAnElectionIfAMinorityOfServersHaveTimedOutOnHeartbeats() throws Exception
     {
         // given
+        Cluster cluster = clusterRule.startCluster();
         CoreClusterMember follower = cluster.awaitCoreMemberWithRole( Role.FOLLOWER, 1, TimeUnit.MINUTES );
 
         // when
@@ -122,6 +124,7 @@ public class PreElectionIT
     public void shouldStartElectionIfLeaderRemoved() throws Exception
     {
         // given
+        Cluster cluster = clusterRule.startCluster();
         CoreClusterMember oldLeader = cluster.awaitLeader();
 
         // when
@@ -131,5 +134,29 @@ public class PreElectionIT
         CoreClusterMember newLeader = cluster.awaitLeader();
 
         assertThat( newLeader.serverId(), not( equalTo( oldLeader.serverId() ) ) );
+    }
+
+    @Test
+    public void shouldElectANewLeaderIfAServerRefusesToBeLeader() throws Exception
+    {
+        // given
+        clusterRule
+                .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
+                .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
+        Cluster cluster = clusterRule.startCluster();
+        CoreClusterMember oldLeader = cluster.awaitLeader();
+
+        // when
+        cluster.removeCoreMember( oldLeader );
+
+        // then
+        CoreClusterMember newLeader = cluster.awaitLeader();
+
+        assertThat( newLeader.serverId(), not( equalTo( oldLeader.serverId() ) ) );
+    }
+
+    private String firstServerRefusesToBeLeader( int id )
+    {
+        return id == 0 ? "true" : "false";
     }
 }
