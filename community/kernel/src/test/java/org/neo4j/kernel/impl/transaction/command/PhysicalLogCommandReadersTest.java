@@ -75,6 +75,12 @@ public class PhysicalLogCommandReadersTest
         assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_2() );
     }
 
+    @Test
+    public void readRelGroupWithHugeTypeInV3_0_11() throws IOException
+    {
+        assertCanReadRelGroup( new PhysicalLogCommandReaderV3_0_11() );
+    }
+
     private static void assertDoesNotKnowAboutRelGroups( CommandReader reader )
     {
         try
