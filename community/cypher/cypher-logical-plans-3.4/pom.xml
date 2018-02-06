@@ -65,7 +65,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -79,7 +79,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <artifactId>openCypher-frontend-1</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
