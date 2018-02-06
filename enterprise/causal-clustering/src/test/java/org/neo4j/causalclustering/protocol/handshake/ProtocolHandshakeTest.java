@@ -28,15 +28,20 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.messaging.Channel;
 import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestModifierProtocols;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class ProtocolHandshakeTest
 {
     private HandshakeClient handshakeClient;
-    private ProtocolRepository protocolRepository;
+    private ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository;
+    private ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository;
     private HandshakeServer handshakeServer;
     private FakeChannelWrapper clientChannel;
 
@@ -44,8 +49,10 @@ public class ProtocolHandshakeTest
     public void setUp()
     {
         handshakeClient = new HandshakeClient();
-        protocolRepository = new ProtocolRepository( TestProtocols.values() );
-        handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), protocolRepository, Protocol.Protocols.Identifier.RAFT );
+        applicationProtocolRepository = new ProtocolRepository<>( TestApplicationProtocols.values() );
+        modifierProtocolRepository = new ProtocolRepository<>( TestModifierProtocols.values() );
+        handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), applicationProtocolRepository, modifierProtocolRepository,
+                Protocol.ApplicationProtocolIdentifier.RAFT );
         clientChannel = new FakeServerChannel( handshakeServer );
     }
 
@@ -53,35 +60,42 @@ public class ProtocolHandshakeTest
     public void shouldSuccessfullyHandshakeKnownProtocolOnClient() throws Exception
     {
         // when
-        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate( clientChannel, protocolRepository, TestProtocols.Identifier.RAFT );
+        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate(
+                clientChannel, applicationProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT,
+                modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
         handshakeServer.protocolStackFuture();
 
         // then
         assertFalse( clientChannel.isClosed() );
-        Protocol clientProtocol = clientHandshakeFuture.get( 1, TimeUnit.SECONDS ).applicationProtocol();
-        assertThat( clientProtocol, equalTo( TestProtocols.RAFT_LATEST ) );
+        ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, TimeUnit.SECONDS );
+        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( Protocol.ApplicationProtocolIdentifier.RAFT ) ) );
+        assertThat( clientProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( Protocol.ModifierProtocolIdentifier.COMPRESSION ) ) );
     }
 
     @Test
     public void shouldSuccessfullyHandshakeKnownProtocolOnServer() throws Exception
     {
         // when
-        handshakeClient.initiate( clientChannel, protocolRepository, TestProtocols.Identifier.RAFT );
+        handshakeClient.initiate(
+                clientChannel, applicationProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT,
+                modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
         CompletableFuture<ProtocolStack> serverHandshakeFuture = handshakeServer.protocolStackFuture();
 
         // then
         assertFalse( clientChannel.isClosed() );
-        Protocol serverProtocol = serverHandshakeFuture.get( 1, TimeUnit.SECONDS ).applicationProtocol();
-        assertThat( serverProtocol, equalTo( TestProtocols.RAFT_LATEST ) );
+        ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, TimeUnit.SECONDS );
+        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestApplicationProtocols.latest( Protocol.ApplicationProtocolIdentifier.RAFT ) ) );
+        assertThat( serverProtocolStack.modifierProtocols(), contains( TestModifierProtocols.latest( Protocol.ModifierProtocolIdentifier.COMPRESSION ) ) );
     }
 
     @Test( expected = ClientHandshakeException.class )
     public void shouldFailHandshakeForUnknownProtocolOnClient() throws Throwable
     {
         // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
-        CompletableFuture<ProtocolStack> clientHandshakeFuture =
-                handshakeClient.initiate( clientChannel, protocolRepository, TestProtocols.Identifier.CATCHUP );
+        applicationProtocolRepository = new ProtocolRepository<>( new Protocol.ApplicationProtocol[]{Protocol.ApplicationProtocols.RAFT_1} );
+        CompletableFuture<ProtocolStack> clientHandshakeFuture = handshakeClient.initiate(
+                clientChannel, applicationProtocolRepository, Protocol.ApplicationProtocolIdentifier.CATCHUP,
+                modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
 
         // then
         try
@@ -98,10 +112,14 @@ public class ProtocolHandshakeTest
     public void shouldFailHandshakeForUnknownProtocolOnServer() throws Throwable
     {
         // when
-        protocolRepository = new ProtocolRepository( new Protocol[]{TestProtocols.Protocols.RAFT_1} );
-        handshakeServer = new HandshakeServer( new FakeClientChannel( handshakeClient ), protocolRepository, Protocol.Protocols.Identifier.RAFT );
+        applicationProtocolRepository = new ProtocolRepository<>( new Protocol.ApplicationProtocol[]{Protocol.ApplicationProtocols.RAFT_1} );
+        handshakeServer = new HandshakeServer(
+                new FakeClientChannel( handshakeClient ), applicationProtocolRepository, modifierProtocolRepository, Protocol.ApplicationProtocolIdentifier.RAFT
+        );
         clientChannel = new FakeServerChannel( handshakeServer );
-        handshakeClient.initiate( clientChannel, protocolRepository, Protocol.Identifier.CATCHUP );
+        handshakeClient.initiate(
+                clientChannel, applicationProtocolRepository, Protocol.ApplicationProtocolIdentifier.CATCHUP,
+                modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ) );
         CompletableFuture<ProtocolStack> serverHandshakeFuture = handshakeServer.protocolStackFuture();
 
         // then

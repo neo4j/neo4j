@@ -39,6 +39,7 @@ import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
 import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
@@ -84,15 +85,18 @@ class RaftServerModule
     private RaftServer createRaftServer( CoreServerModule coreServerModule,
             LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain )
     {
-        ProtocolRepository protocolRepository = new ProtocolRepository( Protocol.Protocols.values() );
+        ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( Protocol.ApplicationProtocols.values() );
+        ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( Protocol.ModifierProtocols.values() );
 
         RaftMessageNettyHandler nettyHandler = new RaftMessageNettyHandler( logProvider );
-        RaftProtocolServerInstaller raftProtocolServerInstaller = new RaftProtocolServerInstaller( nettyHandler, pipelineBuilderFactory, logProvider );
+        RaftProtocolServerInstaller.Factory raftProtocolServerInstaller =
+                new RaftProtocolServerInstaller.Factory( nettyHandler, pipelineBuilderFactory, logProvider );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Server> protocolInstallerRepository =
-                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ) );
+                new ProtocolInstallerRepository<>( singletonList( raftProtocolServerInstaller ), ModifierProtocolInstaller.allServerInstallers );
 
-        HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( logProvider, protocolRepository, Protocol.Identifier.RAFT,
-                protocolInstallerRepository, pipelineBuilderFactory );
+        HandshakeServerInitializer handshakeServerInitializer =
+                new HandshakeServerInitializer( logProvider, applicationProtocolRepository, modifierProtocolRepository,
+                        Protocol.ApplicationProtocolIdentifier.RAFT, protocolInstallerRepository, pipelineBuilderFactory );
         RaftServer raftServer = new RaftServer( handshakeServerInitializer, platformModule.config,
                 logProvider, platformModule.logging.getUserLogProvider() );
 

@@ -27,12 +27,13 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
-import org.neo4j.causalclustering.protocol.handshake.TestProtocols;
+import org.neo4j.causalclustering.protocol.handshake.TestProtocols.TestApplicationProtocols;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.collection.Pair;
 
 import static co.unruly.matchers.StreamMatchers.contains;
 import static co.unruly.matchers.StreamMatchers.empty;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertThat;
 
 public class ReconnectingChannelsTest
@@ -44,7 +45,7 @@ public class ReconnectingChannelsTest
     private ReconnectingChannel channel2 = Mockito.mock( ReconnectingChannel.class );
 
     @Test
-    public void shouldReturnEmptyStreamOfInstalledProtocolsIfNoChannels() throws Throwable
+    public void shouldReturnEmptyStreamOfInstalledProtocolsIfNoChannels()
     {
         // when
         Stream<Pair<AdvertisedSocketAddress,ProtocolStack>> installedProtocols = reconnectingChannels.installedProtocols();
@@ -54,13 +55,13 @@ public class ReconnectingChannelsTest
     }
 
     @Test
-    public void shouldReturnStreamOfInstalledProtocolsForChannelsThatHaveCompletedHandshake() throws Throwable
+    public void shouldReturnStreamOfInstalledProtocolsForChannelsThatHaveCompletedHandshake()
     {
         // given
         reconnectingChannels.putIfAbsent( to1, channel1 );
         reconnectingChannels.putIfAbsent( to2, channel2 );
-        ProtocolStack protocolStack1 = new ProtocolStack( TestProtocols.RAFT_3 );
-        ProtocolStack protocolStack2 = new ProtocolStack( TestProtocols.RAFT_2 );
+        ProtocolStack protocolStack1 = new ProtocolStack( TestApplicationProtocols.RAFT_3, emptyList() );
+        ProtocolStack protocolStack2 = new ProtocolStack( TestApplicationProtocols.RAFT_2, emptyList() );
         Mockito.when( channel1.installedProtocolStack() ).thenReturn( Optional.of( protocolStack1 ) );
         Mockito.when( channel2.installedProtocolStack() ).thenReturn( Optional.of( protocolStack2 ) );
 
@@ -73,12 +74,12 @@ public class ReconnectingChannelsTest
     }
 
     @Test
-    public void shouldExcludeChannelsWithoutInstalledProtocol() throws Throwable
+    public void shouldExcludeChannelsWithoutInstalledProtocol()
     {
         // given
         reconnectingChannels.putIfAbsent( to1, channel1 );
         reconnectingChannels.putIfAbsent( to2, channel2 );
-        ProtocolStack protocolStack1 = new ProtocolStack( TestProtocols.RAFT_3 );
+        ProtocolStack protocolStack1 = new ProtocolStack( TestApplicationProtocols.RAFT_3, emptyList() );
         Mockito.when( channel1.installedProtocolStack() ).thenReturn( Optional.of( protocolStack1 ) );
         Mockito.when( channel2.installedProtocolStack() ).thenReturn( Optional.empty() );
 

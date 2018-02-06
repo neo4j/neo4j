@@ -71,7 +71,7 @@ public class MessageGate extends ChannelDuplexHandler
     }
 
     @Override
-    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+    public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
     {
         if ( !gated.test( msg ) )
         {

@@ -19,18 +19,48 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
+import java.util.Objects;
 import java.util.Set;
 
-public class ModifierProtocolRequest extends BaseProtocolRequest implements ServerMessage
+public abstract class BaseProtocolRequest
 {
-    ModifierProtocolRequest( String protocolName, Set<Integer> versions )
+    private final String protocolName;
+    private final Set<Integer> versions;
+
+    BaseProtocolRequest( String protocolName, Set<Integer> versions )
     {
-        super( protocolName, versions );
+        this.protocolName = protocolName;
+        this.versions = versions;
+    }
+
+    public String protocolName()
+    {
+        return protocolName;
+    }
+
+    public Set<Integer> versions()
+    {
+        return versions;
     }
 
     @Override
-    public void dispatch( ServerMessageHandler handler )
+    public boolean equals( Object o )
     {
-        handler.handle( this );
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        BaseProtocolRequest that = (BaseProtocolRequest) o;
+        return Objects.equals( protocolName, that.protocolName ) && Objects.equals( versions, that.versions );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( protocolName, versions );
     }
 }

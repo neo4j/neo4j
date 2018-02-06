@@ -64,11 +64,12 @@ import org.neo4j.causalclustering.messaging.LoggingOutbound;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.causalclustering.messaging.RaftOutbound;
 import org.neo4j.causalclustering.messaging.SenderService;
+import org.neo4j.causalclustering.protocol.ModifierProtocolInstaller;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
-import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
-import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
+import org.neo4j.causalclustering.protocol.Protocol;
+import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolRepository;
 import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -120,6 +121,7 @@ import org.neo4j.udc.UsageData;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -234,11 +236,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
-        ProtocolRepository protocolRepository = new ProtocolRepository( Protocol.Protocols.values() );
+        ProtocolRepository<Protocol.ApplicationProtocol> applicationProtocolRepository = new ProtocolRepository<>( Protocol.ApplicationProtocols.values() );
+        ProtocolRepository<Protocol.ModifierProtocol> modifierProtocolRepository = new ProtocolRepository<>( Protocol.ModifierProtocols.values() );
         ProtocolInstallerRepository<ProtocolInstaller.Orientation.Client> protocolInstallerRepository =
-                new ProtocolInstallerRepository<>( singletonList( new RaftProtocolClientInstaller( logProvider, clientPipelineBuilderFactory ) ) );
-        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( logProvider, protocolRepository, Protocol.Identifier.RAFT,
-                protocolInstallerRepository, config, clientPipelineBuilderFactory );
+                new ProtocolInstallerRepository<>(
+                        singletonList( new RaftProtocolClientInstaller.Factory( clientPipelineBuilderFactory, logProvider ) ),
+                        ModifierProtocolInstaller.allClientInstallers );
+        HandshakeClientInitializer channelInitializer = new HandshakeClientInitializer( applicationProtocolRepository,
+                Protocol.ApplicationProtocolIdentifier.RAFT, modifierProtocolRepository, asSet( Protocol.ModifierProtocolIdentifier.COMPRESSION ),
+                protocolInstallerRepository, clientPipelineBuilderFactory, config, logProvider );
         final SenderService raftSender = new SenderService( channelInitializer, logProvider );
         life.add( raftSender );
         this.clientInstalledProtocols = raftSender::installedProtocols;

@@ -27,10 +27,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Pair;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -56,11 +59,13 @@ public class ServerMessageEncodingTest
     @Parameterized.Parameters( name = "ResponseMessage-{0}" )
     public static Collection<ServerMessage> data()
     {
-        return Arrays.asList(
+        return asList(
                 new ApplicationProtocolRequest( "protocol", asSet( 3,7,13 ) ),
                 new InitialMagicMessage( "Magic string" ),
-                new ModifierProtocolRequest(),
-                new SwitchOverRequest( "protocol", 38 )
+                new ModifierProtocolRequest( "modifierProtocol", asSet( 1,4,7) ),
+                new SwitchOverRequest( "protocol", 38, emptyList() ),
+                new SwitchOverRequest( "protocol", 38,
+                        asList( Pair.of( "mod1", 1 ), Pair.of( "mod2" , 2) ) )
                 );
     }
 

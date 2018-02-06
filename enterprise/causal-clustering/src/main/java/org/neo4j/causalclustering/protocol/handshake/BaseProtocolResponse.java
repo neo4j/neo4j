@@ -21,37 +21,17 @@ package org.neo4j.causalclustering.protocol.handshake;
 
 import java.util.Objects;
 
-public class InitialMagicMessage implements ServerMessage, ClientMessage
+public abstract class BaseProtocolResponse
 {
-    // these can never, ever change
-    static final String CORRECT_MAGIC_VALUE = "NEO4J_CLUSTER";
-    static final int MESSAGE_CODE = 0x344F454E; // ASCII/UTF-8 "NEO4"
+    private final StatusCode statusCode;
+    private final String protocolName;
+    private final int version;
 
-    private final String magic;
-    // TODO: clusterId (String?)
-
-    private static final InitialMagicMessage instance = new InitialMagicMessage( CORRECT_MAGIC_VALUE );
-
-    InitialMagicMessage( String magic )
+    BaseProtocolResponse( StatusCode statusCode, String protocolName, int version )
     {
-        this.magic = magic;
-    }
-
-    public static InitialMagicMessage instance()
-    {
-        return instance;
-    }
-
-    @Override
-    public void dispatch( ServerMessageHandler handler )
-    {
-        handler.handle( this );
-    }
-
-    @Override
-    public void dispatch( ClientMessageHandler handler )
-    {
-        handler.handle( this );
+        this.statusCode = statusCode;
+        this.protocolName = protocolName;
+        this.version = version;
     }
 
     @Override
@@ -65,23 +45,28 @@ public class InitialMagicMessage implements ServerMessage, ClientMessage
         {
             return false;
         }
-        InitialMagicMessage that = (InitialMagicMessage) o;
-        return Objects.equals( magic, that.magic );
+        BaseProtocolResponse that = (BaseProtocolResponse) o;
+        return version == that.version && Objects.equals( protocolName, that.protocolName );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( magic );
+        return Objects.hash( protocolName, version );
     }
 
-    boolean isCorrectMagic()
+    public StatusCode statusCode()
     {
-        return magic.equals( CORRECT_MAGIC_VALUE );
+        return statusCode;
     }
 
-    public String magic()
+    public String protocolName()
     {
-        return magic;
+        return protocolName;
+    }
+
+    public int version()
+    {
+        return version;
     }
 }

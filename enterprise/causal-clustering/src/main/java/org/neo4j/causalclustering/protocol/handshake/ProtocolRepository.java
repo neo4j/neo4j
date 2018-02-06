@@ -31,14 +31,14 @@ import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.stream.Streams;
 
-public class ProtocolRepository
+public class ProtocolRepository<T extends Protocol>
 {
-    private final Map<Pair<String, Integer>,Protocol> protocolMap;
+    private final Map<Pair<String, Integer>,T> protocolMap;
 
-    public ProtocolRepository( Protocol[] protocols )
+    public ProtocolRepository( T[] protocols )
     {
-        Map<Pair<String, Integer>,Protocol> map = new HashMap<>();
-        for ( Protocol protocol : protocols )
+        Map<Pair<String, Integer>,T> map = new HashMap<>();
+        for ( T protocol : protocols )
         {
             Protocol previous = map.put( Pair.of( protocol.identifier(), protocol.version() ), protocol );
             if ( previous != null )
@@ -50,12 +50,12 @@ public class ProtocolRepository
         protocolMap = Collections.unmodifiableMap( map );
     }
 
-    Optional<Protocol> select( String protocolName, int version )
+    Optional<T> select( String protocolName, int version )
     {
         return Optional.ofNullable( protocolMap.get( Pair.of( protocolName, version ) ) );
     }
 
-    Optional<Protocol> select( String protocolName, Set<Integer> versions )
+    Optional<T> select( String protocolName, Set<Integer> versions )
     {
         return versions
                 .stream()
@@ -64,15 +64,19 @@ public class ProtocolRepository
                 .max( Comparator.comparingInt( Protocol::version ) );
     }
 
-    private Optional<Protocol> of( String identifier, Integer version )
+    private Optional<T> of( String identifier, Integer version )
     {
         return Optional.ofNullable( protocolMap.get( Pair.of( identifier, version) ) );
     }
 
-    public ProtocolSelection getAll( Protocol.Identifier identifier )
+    public ProtocolSelection<T> getAll( Protocol.Identifier<T> identifier )
     {
-        Set<Integer> versions = protocolMap.entrySet().stream().filter( e -> e.getKey().first().equals( identifier.canonicalName() ) ).map(
-                e -> e.getKey().other() ).collect( Collectors.toSet() );
-        return new ProtocolSelection( identifier.canonicalName(), versions );
+        Set<Integer> versions = protocolMap
+                .entrySet()
+                .stream()
+                .filter( e -> e.getKey().first().equals( identifier.canonicalName() ) )
+                .map( e -> e.getKey().other() )
+                .collect( Collectors.toSet() );
+        return new ProtocolSelection<>( identifier.canonicalName(), versions );
     }
 }
