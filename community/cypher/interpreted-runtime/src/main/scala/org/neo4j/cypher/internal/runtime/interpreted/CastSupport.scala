@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.time._
+import java.time.temporal.TemporalAmount
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
@@ -140,7 +141,7 @@ object CastSupport {
     case _: Point => Converter(
       transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
     case _: DurationValue => Converter(
-      transform(new ArrayConverterWriter(classOf[DurationValue], a => Values.durationArray(a.asInstanceOf[Array[DurationValue]]))))
+      transform(new ArrayConverterWriter(classOf[TemporalAmount], a => Values.durationArray(a.asInstanceOf[Array[TemporalAmount]]))))
     case _: DateTimeValue => Converter(
       transform(new ArrayConverterWriter(classOf[ZonedDateTime], a => Values.dateTimeArray(a.asInstanceOf[Array[ZonedDateTime]]))))
     case _: DateValue => Converter(

@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class IntArray extends IntegralArray
 {
-    final int[] value;
+    private final int[] value;
 
     IntArray( int[] value )
     {

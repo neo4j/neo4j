@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class ShortArray extends IntegralArray
 {
-    final short[] value;
+    private final short[] value;
 
     ShortArray( short[] value )
     {

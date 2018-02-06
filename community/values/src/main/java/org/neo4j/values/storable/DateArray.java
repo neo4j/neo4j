@@ -26,7 +26,7 @@ import org.neo4j.values.ValueMapper;
 
 public class DateArray extends TemporalArray<LocalDate, DateValue>
 {
-    final LocalDate[] value;
+    private final LocalDate[] value;
 
     DateArray( LocalDate[] value )
     {

@@ -72,11 +72,7 @@ public abstract class ArrayValue extends Value implements SequenceValue
             return false;
         }
 
-        if ( other instanceof SequenceValue )
-        {
-            return this.equals( (SequenceValue) other );
-        }
-        return other instanceof Value && equals( (Value) other );
+        return other instanceof SequenceValue && this.equals( (SequenceValue) other );
     }
 
     @Override

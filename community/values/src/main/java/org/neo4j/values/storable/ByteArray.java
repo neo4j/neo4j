@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class ByteArray extends IntegralArray
 {
-    final byte[] value;
+    private final byte[] value;
 
     ByteArray( byte[] value )
     {

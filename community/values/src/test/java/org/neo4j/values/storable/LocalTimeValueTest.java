@@ -118,7 +118,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldNotEqualSameTimeButDifferentTimezone()
+    public void shouldNotEqualOther()
     {
         assertNotEqual( localTime( 10, 52, 5, 6 ), localTime( 10, 52, 5, 7 ) );
     }

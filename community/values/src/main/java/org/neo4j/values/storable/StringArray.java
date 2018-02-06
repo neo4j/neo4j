@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class StringArray extends TextArray
 {
-    final String[] value;
+    private final String[] value;
 
     StringArray( String[] value )
     {

@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -210,10 +211,25 @@ public class ParameterConverterTest
     }
 
     @Test
-    public void shouldHandleDateTime()
+    public void shouldHandleDateTimeWithZoneOffset()
     {
         // Given
         DateTimeValue dvalue = DateTimeValue.datetime( 1, 2, 3, 4, 5, 6, 7, "+00:00" );
+
+        // When
+        dvalue.writeTo( converter );
+
+        // Then
+        Object value = converter.value();
+        assertThat( value, instanceOf( ZonedDateTime.class ) );
+        assertThat( value, equalTo( dvalue.asObjectCopy() ) );
+    }
+
+    @Test
+    public void shouldHandleDateTimeWithZoneId()
+    {
+        // Given
+        DateTimeValue dvalue = DateTimeValue.datetime( 1, 2, 3, 4, 5, 6, 7, ZoneId.of( "Europe/Stockholm" ) );
 
         // When
         dvalue.writeTo( converter );

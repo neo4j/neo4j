@@ -26,7 +26,7 @@ import org.neo4j.values.ValueMapper;
 
 public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
 {
-    final OffsetTime[] value;
+    private final OffsetTime[] value;
 
     TimeArray( OffsetTime[] value )
     {

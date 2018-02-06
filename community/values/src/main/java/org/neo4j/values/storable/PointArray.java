@@ -27,7 +27,7 @@ import org.neo4j.values.ValueMapper;
 
 public class PointArray extends NonPrimitiveArray<PointValue>
 {
-    final PointValue[] value;
+    private final PointValue[] value;
 
     PointArray( PointValue[] value )
     {

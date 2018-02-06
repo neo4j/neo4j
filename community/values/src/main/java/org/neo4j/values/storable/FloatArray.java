@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class FloatArray extends FloatingPointArray
 {
-    final float[] value;
+    private final float[] value;
 
     FloatArray( float[] value )
     {

@@ -449,7 +449,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     @Override
     public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
     {
-        writeValue( ZonedDateTime.of( LocalDate.ofEpochDay( epochSecondUTC ), LocalTime.ofNanoOfDay( nano ), ZoneId.of( zoneId ) ) );
+        writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneId.of( zoneId ) ) );
     }
 
     private interface Writer

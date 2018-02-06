@@ -26,7 +26,7 @@ import org.neo4j.values.ValueMapper;
 
 public class DurationArray extends NonPrimitiveArray<DurationValue>
 {
-    final DurationValue[] value;
+    private final DurationValue[] value;
 
     DurationArray( DurationValue[] value )
     {

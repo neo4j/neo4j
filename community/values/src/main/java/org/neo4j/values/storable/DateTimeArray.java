@@ -26,7 +26,7 @@ import org.neo4j.values.ValueMapper;
 
 public class DateTimeArray extends TemporalArray<ZonedDateTime, DateTimeValue>
 {
-    final ZonedDateTime[] value;
+    private final ZonedDateTime[] value;
 
     DateTimeArray( ZonedDateTime[] value )
     {

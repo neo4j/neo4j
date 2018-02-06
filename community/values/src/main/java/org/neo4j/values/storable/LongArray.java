@@ -28,7 +28,7 @@ import static java.lang.String.format;
 
 public class LongArray extends IntegralArray
 {
-    final long[] value;
+    private final long[] value;
 
     LongArray( long[] value )
     {
