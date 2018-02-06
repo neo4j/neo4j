@@ -159,8 +159,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, config, idGeneratorFactory, pageCache,
                 fileSystem, recordFormats, logProvider );
-        try ( NeoStores neoStores = storeFactory
-                .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN, StoreType.TIME_ZONE_TOKEN,
+        try ( NeoStores neoStores = storeFactory.openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )
         {
             neoStores.verifyStoreOk();

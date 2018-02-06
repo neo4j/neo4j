@@ -55,8 +55,8 @@ public class HighLimit extends BaseRecordFormats
 
     public HighLimit()
     {
-        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_4_0.introductionVersion(), 5, Capability.DENSE_NODES,
-                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5, Capability.POINT_PROPERTIES,
+        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_4_0.introductionVersion(), 5, Capability.DENSE_NODES, Capability.RELATIONSHIP_TYPE_3BYTES,
+                Capability.SCHEMA, Capability.LUCENE_5, Capability.POINT_PROPERTIES, Capability.TIME_ZONE_TOKENS,
                 Capability.SECONDARY_RECORD_UNITS );
     }
 

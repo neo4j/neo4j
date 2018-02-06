@@ -43,8 +43,8 @@ public class StandardV3_4 extends BaseRecordFormats
 
     public StandardV3_4()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V3_4.introductionVersion(), 8, Capability.SCHEMA,
-                Capability.DENSE_NODES, Capability.LUCENE_5, Capability.POINT_PROPERTIES );
+        super( STORE_VERSION, StoreVersion.STANDARD_V3_4.introductionVersion(), 8, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5,
+                Capability.POINT_PROPERTIES, Capability.TIME_ZONE_TOKENS );
     }
 
     @Override
