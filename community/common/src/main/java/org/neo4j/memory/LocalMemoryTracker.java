@@ -24,23 +24,22 @@ package org.neo4j.memory;
  * tracking of memory that is independent from global.
  * All allocations/de-allocation reported to this trackers also will be reported to global tracker transparently.
  */
-public class LocalMemoryTracker implements MemoryTracker, MemoryAllocationTracker
+public class LocalMemoryTracker implements MemoryAllocationTracker
 {
     private long allocatedBytes;
-    private GlobalMemoryTracker globalTracker = GlobalMemoryTracker.INSTANCE;
 
     @Override
-    public void allocate( long allocatedBytes )
+    public void allocated( long bytes )
     {
-        globalTracker.allocate( allocatedBytes );
-        this.allocatedBytes += allocatedBytes;
+        GlobalMemoryTracker.INSTANCE.allocated( bytes );
+        this.allocatedBytes += bytes;
     }
 
     @Override
-    public void deallocate( long deallocatedBytes )
+    public void deallocated( long bytes )
     {
-        globalTracker.deallocate( deallocatedBytes );
-        this.allocatedBytes -= deallocatedBytes;
+        GlobalMemoryTracker.INSTANCE.deallocated( bytes );
+        this.allocatedBytes -= bytes;
     }
 
     /**
