@@ -36,7 +36,7 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeN
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 
-class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
+final class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );

@@ -29,26 +29,26 @@ import org.neo4j.graphdb.ResourceIterator;
 public final class RelationshipDenseSelectionIterator<R> extends RelationshipDenseSelection
         implements ResourceIterator<R>
 {
+    private final static long NO_ID = -1L;
+    private final static long NOT_INITIALIZED = -2L;
     private RelationshipFactory<R> factory;
-    private R _next;
-    private boolean initialized;
+    private long _next = NOT_INITIALIZED;
 
-    public RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
+    RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
     {
         this.factory = factory;
-        this.initialized = false;
     }
 
     @Override
     public boolean hasNext()
     {
-        if ( !initialized )
+        if ( _next == NOT_INITIALIZED )
         {
             fetchNext();
-            initialized = true;
+            _next = relationshipCursor.relationshipReference();
         }
 
-        if ( _next == null )
+        if ( _next == NO_ID )
         {
             close();
             return false;
@@ -63,18 +63,15 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
         {
             throw new NoSuchElementException();
         }
-        R current = _next;
+        R current = factory.relationship( relationshipCursor.relationshipReference(),
+                relationshipCursor.sourceNodeReference(),
+                relationshipCursor.label(), relationshipCursor.targetNodeReference() );
         if ( !fetchNext() )
         {
-            _next = null;
+            _next = NO_ID;
         }
+        _next = relationshipCursor.relationshipReference();
 
         return current;
-    }
-
-    @Override
-    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
-    {
-        _next = factory.relationship( id, sourceNode, type, targetNode );
     }
 }
