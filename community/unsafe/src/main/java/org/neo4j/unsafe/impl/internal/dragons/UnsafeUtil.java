@@ -393,7 +393,7 @@ public final class UnsafeUtil
             setMemory( pointer, sizeInBytes, (byte) 0xA5 );
         }
         addAllocatedPointer( pointer, sizeInBytes );
-        allocationTracker.allocate( sizeInBytes );
+        allocationTracker.allocated( sizeInBytes );
         return pointer;
     }
 
@@ -431,7 +431,7 @@ public final class UnsafeUtil
     {
         checkFree( pointer );
         unsafe.freeMemory( pointer );
-        allocationTracker.deallocate( bytes );
+        allocationTracker.deallocated( bytes );
     }
 
     private static final class FreeTrace extends Throwable implements Comparable<FreeTrace>

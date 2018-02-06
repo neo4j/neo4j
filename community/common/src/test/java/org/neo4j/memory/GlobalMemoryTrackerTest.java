@@ -30,9 +30,9 @@ public class GlobalMemoryTrackerTest
     public void trackMemoryAllocations()
     {
         long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-        GlobalMemoryTracker.INSTANCE.allocate( 10 );
-        GlobalMemoryTracker.INSTANCE.allocate( 20 );
-        GlobalMemoryTracker.INSTANCE.allocate( 40 );
+        GlobalMemoryTracker.INSTANCE.allocated( 10 );
+        GlobalMemoryTracker.INSTANCE.allocated( 20 );
+        GlobalMemoryTracker.INSTANCE.allocated( 40 );
         assertEquals( 70, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
     }
 
@@ -40,13 +40,13 @@ public class GlobalMemoryTrackerTest
     public void trackMemoryDeallocations()
     {
         long initialUsedMemory = GlobalMemoryTracker.INSTANCE.usedDirectMemory();
-        GlobalMemoryTracker.INSTANCE.allocate( 100 );
+        GlobalMemoryTracker.INSTANCE.allocated( 100 );
         assertEquals( 100, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
 
-        GlobalMemoryTracker.INSTANCE.deallocate( 20 );
+        GlobalMemoryTracker.INSTANCE.deallocated( 20 );
         assertEquals( 80, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
 
-        GlobalMemoryTracker.INSTANCE.deallocate( 40 );
+        GlobalMemoryTracker.INSTANCE.deallocated( 40 );
         assertEquals( 40, GlobalMemoryTracker.INSTANCE.usedDirectMemory() - initialUsedMemory );
     }
 }
