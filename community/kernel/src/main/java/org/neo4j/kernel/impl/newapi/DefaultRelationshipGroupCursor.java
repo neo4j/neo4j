@@ -132,11 +132,12 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         if ( isBuffered() )
         {
-            bufferedGroup = bufferedGroup.next;
-            if ( bufferedGroup == null )
+            BufferedGroup next = bufferedGroup.next;
+            if ( next == null )
             {
                 return false; // we never have both types of traversal, so terminate early
             }
+            bufferedGroup = next;
             setType( bufferedGroup.label );
             setFirstOut( bufferedGroup.outgoing() );
             setFirstIn( bufferedGroup.incoming() );

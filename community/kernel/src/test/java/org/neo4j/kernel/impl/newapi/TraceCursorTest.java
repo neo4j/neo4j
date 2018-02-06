@@ -33,7 +33,15 @@ import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -55,15 +63,8 @@ public class TraceCursorTest
     @Before
     public void setup()
     {
-        try
-        {
-            readTestSupport.setup( folder.getRoot(), a ->
-            { } );
-        }
-        catch ( IOException e )
-        {
-            fail();
-        }
+        readTestSupport.setup( folder.getRoot(), a -> {
+        } );
         kernel = readTestSupport.kernelToTest();
         session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
         System.setProperty( "org.neo4j.kernel.impl.newapi.Read.trackCursors", "true" );
@@ -80,7 +81,7 @@ public class TraceCursorTest
     @Test
     public void verifyTracingOutput()
     {
-        NodeCursor cursor = (NodeCursor) kernel.cursors().allocateNodeCursor();
+        NodeCursor cursor = kernel.cursors().allocateNodeCursor();
         Transaction tx = openTX();
 
         tx.dataRead().allNodesScan( cursor );
@@ -106,7 +107,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForAllNodesScanAtTXClose()
     {
         // given
-        NodeCursor cursor = (NodeCursor) kernel.cursors().allocateNodeCursor();
+        NodeCursor cursor = kernel.cursors().allocateNodeCursor();
         Transaction tx = openTX();
 
         tx.dataRead().allNodesScan( cursor );
@@ -118,7 +119,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForSingleNodeAtTXClose()
     {
         // given
-        NodeCursor cursor = (NodeCursor) kernel.cursors().allocateNodeCursor();
+        NodeCursor cursor = kernel.cursors().allocateNodeCursor();
         Transaction tx = openTX();
 
         tx.dataRead().singleNode( 0L, cursor );
@@ -130,7 +131,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForRelationshipLabelScanAtTXClose()
     {
         // given
-        RelationshipScanCursor cursor = (RelationshipScanCursor) kernel.cursors().allocateRelationshipScanCursor();
+        RelationshipScanCursor cursor = kernel.cursors().allocateRelationshipScanCursor();
         Transaction tx = openTX();
 
         tx.dataRead().relationshipLabelScan( 0, cursor );
@@ -142,7 +143,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForAllRelationshipsScanAtTXClose()
     {
         // given
-        RelationshipScanCursor cursor = (RelationshipScanCursor) kernel.cursors().allocateRelationshipScanCursor();
+        RelationshipScanCursor cursor = kernel.cursors().allocateRelationshipScanCursor();
         Transaction tx = openTX();
 
         tx.dataRead().allRelationshipsScan( cursor );
@@ -154,7 +155,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForSingleRelationshipAtTXClose()
     {
         // given
-        RelationshipScanCursor cursor = (RelationshipScanCursor) kernel.cursors().allocateRelationshipScanCursor();
+        RelationshipScanCursor cursor = kernel.cursors().allocateRelationshipScanCursor();
         Transaction tx = openTX();
 
         tx.dataRead().singleRelationship( 0L, cursor );
@@ -166,7 +167,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForRelationshipGroupsScanAtTXClose()
     {
         // given
-        RelationshipGroupCursor cursor = (RelationshipGroupCursor) kernel.cursors().allocateRelationshipGroupCursor();
+        RelationshipGroupCursor cursor = kernel.cursors().allocateRelationshipGroupCursor();
         Transaction tx = openTX();
 
         tx.dataRead().relationshipGroups( 0L, 0L, cursor );
@@ -178,7 +179,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForRelationshipsAtTXClose()
     {
         // given
-        RelationshipTraversalCursor cursor = (RelationshipTraversalCursor) kernel.cursors().allocateRelationshipTraversalCursor();
+        RelationshipTraversalCursor cursor = kernel.cursors().allocateRelationshipTraversalCursor();
         Transaction tx = openTX();
 
         tx.dataRead().relationships( 0L, 0L, cursor );
@@ -190,7 +191,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForNodeLabelScanAtTXClose()
     {
         // given
-        NodeLabelIndexCursor cursor = (NodeLabelIndexCursor) kernel.cursors().allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor cursor = kernel.cursors().allocateNodeLabelIndexCursor();
         Transaction tx = openTX();
 
         tx.dataRead().nodeLabelScan( 0, cursor );
@@ -202,7 +203,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForNodeLabelUnionScanAtTXClose()
     {
         // given
-        NodeLabelIndexCursor cursor = (NodeLabelIndexCursor) kernel.cursors().allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor cursor = kernel.cursors().allocateNodeLabelIndexCursor();
         Transaction tx = openTX();
 
         try
@@ -221,7 +222,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForNodeLabelIntersectionScanAtTXClose()
     {
         // given
-        NodeLabelIndexCursor cursor = (NodeLabelIndexCursor) kernel.cursors().allocateNodeLabelIndexCursor();
+        NodeLabelIndexCursor cursor = kernel.cursors().allocateNodeLabelIndexCursor();
         Transaction tx = openTX();
 
         try
@@ -241,7 +242,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForNodeIndexScanAtTXClose()
     {
         // given
-        NodeValueIndexCursor cursor = (NodeValueIndexCursor) kernel.cursors().allocateNodeValueIndexCursor();
+        NodeValueIndexCursor cursor = kernel.cursors().allocateNodeValueIndexCursor();
         Transaction tx = openTX();
 
         DefaultCapableIndexReference index = new DefaultCapableIndexReference( true, IndexCapability.NO_CAPABILITY, 0, new int[]{0} );
@@ -269,7 +270,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForNodeIndexSeekAtTXClose()
     {
         // given
-        NodeValueIndexCursor cursor = (NodeValueIndexCursor) kernel.cursors().allocateNodeValueIndexCursor();
+        NodeValueIndexCursor cursor = kernel.cursors().allocateNodeValueIndexCursor();
         Transaction tx = openTX();
 
         try
@@ -298,7 +299,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenNodePropertiesAtTXClose()
     {
         // given
-        PropertyCursor cursor = (PropertyCursor) kernel.cursors().allocatePropertyCursor();
+        PropertyCursor cursor = kernel.cursors().allocatePropertyCursor();
         Transaction tx = openTX();
 
         tx.dataRead().nodeProperties( 0L, 0L, cursor );
@@ -310,7 +311,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenRelationshipPropertiesAtTXClose()
     {
         // given
-        PropertyCursor cursor = (PropertyCursor) kernel.cursors().allocatePropertyCursor();
+        PropertyCursor cursor = kernel.cursors().allocatePropertyCursor();
         Transaction tx = openTX();
 
         tx.dataRead().relationshipProperties( 0L, 0L, cursor );
@@ -323,7 +324,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenGraphPropertiesAtTXClose()
     {
         // given
-        PropertyCursor cursor = (PropertyCursor) kernel.cursors().allocatePropertyCursor();
+        PropertyCursor cursor = kernel.cursors().allocatePropertyCursor();
         Transaction tx = openTX();
 
         tx.dataRead().graphProperties( cursor );
@@ -421,7 +422,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForRelationshipExplicitIndexGetAtTXClose()
     {
         // given
-        RelationshipExplicitIndexCursor cursor = (RelationshipExplicitIndexCursor) kernel.cursors().allocateRelationshipExplicitIndexCursor();
+        RelationshipExplicitIndexCursor cursor = kernel.cursors().allocateRelationshipExplicitIndexCursor();
         Transaction tx = openTX();
 
         try
@@ -449,7 +450,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForRelationshipExplicitIndexQueryAtTXClose()
     {
         // given
-        RelationshipExplicitIndexCursor cursor = (RelationshipExplicitIndexCursor) kernel.cursors().allocateRelationshipExplicitIndexCursor();
+        RelationshipExplicitIndexCursor cursor = kernel.cursors().allocateRelationshipExplicitIndexCursor();
         Transaction tx = openTX();
 
         try
@@ -477,7 +478,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForRelationshipExplicitIndexQuery2AtTXClose()
     {
         // given
-        RelationshipExplicitIndexCursor cursor = (RelationshipExplicitIndexCursor) kernel.cursors().allocateRelationshipExplicitIndexCursor();
+        RelationshipExplicitIndexCursor cursor = kernel.cursors().allocateRelationshipExplicitIndexCursor();
         Transaction tx = openTX();
 
         try

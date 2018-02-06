@@ -653,7 +653,7 @@ public class NodeProxy implements Node
     {
         KernelTransaction transaction = safeAcquireTransaction();
         try ( Statement ignore = spi.statement();
-              NodeCursor nodes = transaction.nodeCursor())
+                NodeCursor nodes = transaction.nodeCursor() )
         {
             singleNode( transaction, nodes );
             LabelSet labelSet = nodes.labels();

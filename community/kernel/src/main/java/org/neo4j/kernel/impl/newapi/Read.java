@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -97,8 +96,6 @@ abstract class Read implements TxStateHolder,
     private static final boolean RECORD_CURSORS_TRACES = flag( Read.class, "recordCursorTraces", true );
     private static final int CURSORS_TRACK_HISTORY_MAX_SIZE = 100;
     private final Map<Cursor, StackTraceElement[]> cursorsOpenCloseCalls;
-
-    private static AtomicInteger counter = new AtomicInteger( 0 );
 
     Read( DefaultCursors cursors, KernelTransactionImplementation ktx )
     {
@@ -181,8 +178,8 @@ abstract class Read implements TxStateHolder,
             if ( j > 0 )
             {
                 filters = Arrays.copyOf( filters, j );
-                NodeCursor nodeCursor = (NodeCursor) ktx.nodeCursor();
-                PropertyCursor propertyCursor = (PropertyCursor) ktx.propertyCursor();
+                DefaultNodeCursor nodeCursor = ktx.nodeCursor();
+                DefaultPropertyCursor propertyCursor = ktx.propertyCursor();
                 target = new NodeValueClientFilter( target, nodeCursor, propertyCursor, this, filters );
             }
         }
@@ -523,8 +520,9 @@ abstract class Read implements TxStateHolder,
         if ( cursorsInUse > 0 )
         {
             System.out.println( "Leaked cursors:" );
-            for(Cursor c : cursorsOpenCloseCalls.keySet()){
-                System.out.println(c + "@" + System.identityHashCode( c ));
+            for ( Cursor c : cursorsOpenCloseCalls.keySet() )
+            {
+                System.out.println( c + "@" + System.identityHashCode( c ) );
             }
             long leakedCursors = cursorsInUse;
             cursorsInUse = 0;

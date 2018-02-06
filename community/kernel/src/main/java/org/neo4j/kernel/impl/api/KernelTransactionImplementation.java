@@ -76,6 +76,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.newapi.DefaultNodeCursor;
+import org.neo4j.kernel.impl.newapi.DefaultPropertyCursor;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -1072,13 +1074,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public DefaultNodeCursor nodeCursor()
     {
         return operations.nodeCursor();
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public DefaultPropertyCursor propertyCursor()
     {
         return operations.propertyCursor();
     }

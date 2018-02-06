@@ -114,11 +114,27 @@ public class Operations implements Write, ExplicitIndexWrite
 
     public void initialize()
     {
-        if ( (nodeCursor != null) || (propertyCursor != null) || (relationshipCursor != null) || (nodeValueIndexCursor != null) ||
-                (nodeLabelIndexCursor != null) )
+        if ( nodeCursor != null )
         {
-            throw new RuntimeException( "What?" );
+            nodeCursor.close();
         }
+        if ( propertyCursor != null )
+        {
+            propertyCursor.close();
+        }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+        }
+        if ( nodeValueIndexCursor != null )
+        {
+            nodeValueIndexCursor.close();
+        }
+        if ( nodeLabelIndexCursor != null )
+        {
+            nodeLabelIndexCursor.close();
+        }
+
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
@@ -308,8 +324,9 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( NodeValueIndexCursor valueCursor = ktx.nodeValueIndexCursor() )
+        try
         {
+            NodeValueIndexCursor valueCursor = ktx.nodeValueIndexCursor();
             IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( indexDescriptor );
             int labelId = indexDescriptor.schema().getLabelId();
@@ -325,11 +342,9 @@ public class Operations implements Write, ExplicitIndexWrite
             if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
             {
                 long nodeReference = valueCursor.nodeReference();
-                valueCursor.close();
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
                         new IndexEntryConflictException( nodeReference, NO_SUCH_NODE, IndexQuery.asValueTuple( propertyValues ) ) );
             }
-            valueCursor.close();
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
         {

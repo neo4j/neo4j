@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Collections.emptySet;
 
-class DefaultNodeCursor extends NodeRecord implements NodeCursor
+public class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
     private Read read;
     private RecordCursor<DynamicRecord> labelCursor;
