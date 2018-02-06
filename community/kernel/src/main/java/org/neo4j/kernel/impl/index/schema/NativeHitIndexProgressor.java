@@ -51,8 +51,8 @@ public class NativeHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends
             while ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                Value value = client.needsValues() ? key.asValue() : null;
-                if ( client.acceptNode( key.getEntityId(), value ) )
+                Value[] values = client.needsValues() ? new Value[]{ key.asValue()} : null;
+                if ( client.acceptNode( key.getEntityId(), values ) )
                 {
                     return true;
                 }
