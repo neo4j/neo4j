@@ -33,6 +33,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
@@ -82,6 +83,7 @@ public class BoltChannelAutoReadLimiterIT
     public TransportConnection connection;
 
     private HostnamePort address;
+    private TransportTestUtil util;
 
     @Parameterized.Parameters
     public static Collection<TransportConnection> transports()
@@ -113,6 +115,7 @@ public class BoltChannelAutoReadLimiterIT
         installSleepProcedure( server.graphDatabaseService() );
 
         address = server.lookupDefaultConnector();
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @After
@@ -131,17 +134,17 @@ public class BoltChannelAutoReadLimiterIT
         String largeString = StringUtils.repeat( " ", 8 * 1024  );
 
         connection.connect( address )
-                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( TransportTestUtil.chunk(
+                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, eventuallyReceives( msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // when
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
-            connection.send( TransportTestUtil.chunk(
+            connection.send( util.chunk(
                     run( "CALL boltissue.sleep( $data )", ValueUtils.asMapValue( singletonMap( "data", largeString ) ) ),
                     discardAll()
             ) );
@@ -150,7 +153,7 @@ public class BoltChannelAutoReadLimiterIT
         // expect
         for ( int i = 0; i < numberOfRunDiscardPairs; i++ )
         {
-            assertThat( connection, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+            assertThat( connection, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
         }
 
         logProvider.assertAtLeastOnce(
