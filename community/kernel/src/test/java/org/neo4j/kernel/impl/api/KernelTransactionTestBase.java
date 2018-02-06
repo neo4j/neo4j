@@ -27,7 +27,9 @@ import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -71,7 +73,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class KernelTransactionTestBase
@@ -116,32 +118,33 @@ public class KernelTransactionTestBase
         return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( SecurityContext securityContext )
+    public KernelTransactionImplementation newTransaction( LoginContext loginContext )
     {
-        return newTransaction( 0, securityContext );
+        return newTransaction( 0, loginContext );
     }
 
-    public KernelTransactionImplementation newTransaction( SecurityContext securityContext, Locks.Client locks )
+    public KernelTransactionImplementation newTransaction( LoginContext loginContext, Locks.Client locks )
     {
-        return newTransaction( 0, securityContext, locks, defaultTransactionTimeoutMillis );
+        return newTransaction( 0, loginContext, locks, defaultTransactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, SecurityContext securityContext )
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext )
     {
-        return newTransaction( lastTransactionIdWhenStarted, securityContext, defaultTransactionTimeoutMillis );
+        return newTransaction( lastTransactionIdWhenStarted, loginContext, defaultTransactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, SecurityContext securityContext,
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
             long transactionTimeoutMillis )
     {
-        return newTransaction( lastTransactionIdWhenStarted, securityContext, new NoOpClient(), transactionTimeoutMillis );
+        return newTransaction( lastTransactionIdWhenStarted, loginContext, new NoOpClient(), transactionTimeoutMillis );
     }
 
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, SecurityContext securityContext,
+    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
             Locks.Client locks, long transactionTimeout )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         StatementLocks statementLocks = new SimpleStatementLocks( locks );
+        SecurityContext securityContext = loginContext.authorize( mock( Token.class ) );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP,statementLocks, Type.implicit,
                 securityContext, transactionTimeout, 1L );
         return tx;

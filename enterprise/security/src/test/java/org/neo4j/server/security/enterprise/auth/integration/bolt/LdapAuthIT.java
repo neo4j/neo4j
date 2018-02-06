@@ -57,9 +57,9 @@ import javax.naming.ldap.LdapContext;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -454,7 +454,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         EnterpriseAuthAndUserManager authManager =
                 gds.getDependencyResolver().resolveDependency( EnterpriseAuthAndUserManager.class );
 
-        authManager.getUserManager( EnterpriseSecurityContext.AUTH_DISABLED )
+        authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
                 .newUser( ldapReaderUser, nativePassword, false );
 
         // Then

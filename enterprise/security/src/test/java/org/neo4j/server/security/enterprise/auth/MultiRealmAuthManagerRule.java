@@ -30,10 +30,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -81,7 +81,7 @@ public class MultiRealmAuthManagerRule implements TestRule
                     );
 
         manager = new MultiRealmAuthManager( internalFlatFileRealm, Collections.singleton( internalFlatFileRealm ),
-                new MemoryConstrainedCacheManager(), securityLog, true );
+                new MemoryConstrainedCacheManager(), securityLog, true, false, Collections.emptyMap() );
         manager.init();
     }
 
@@ -90,9 +90,9 @@ public class MultiRealmAuthManagerRule implements TestRule
         return manager;
     }
 
-    public SecurityContext makeSecurityContext( ShiroSubject shiroSubject )
+    public LoginContext makeLoginContext( ShiroSubject shiroSubject )
     {
-        return new StandardEnterpriseSecurityContext( manager, shiroSubject );
+        return new StandardEnterpriseLoginContext( manager, shiroSubject );
     }
 
     @Override

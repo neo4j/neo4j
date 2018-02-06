@@ -31,7 +31,7 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -46,7 +46,9 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
@@ -266,7 +268,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         {
             // When
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    AnonymousContext.none() );
+                    AnonymousContext.none().authorize( mock( Token.class ) ) );
             fail( "This should never get here" );
         }
         catch ( Exception e )
@@ -296,7 +298,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listAllIndexes() throws Throwable
     {
         // Given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        Statement statement = statementInNewTransaction( AUTH_DISABLED );
         int labelId1 = statement.tokenWriteOperations().labelGetOrCreateForName( "Person" );
         int labelId2 = statement.tokenWriteOperations().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "foo" );

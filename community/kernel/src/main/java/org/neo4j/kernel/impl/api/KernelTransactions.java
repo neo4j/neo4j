@@ -31,6 +31,7 @@ import org.neo4j.collection.pool.MarshlandPool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -171,10 +172,10 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         return explicitIndexTxStateSupplier;
     }
 
-    public KernelTransaction newInstance( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
+    public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext frozenSecurityContext = securityContext.freeze();
+        SecurityContext securityContext = loginContext.authorize( token );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )
@@ -188,7 +189,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                 KernelTransactionImplementation tx = localTxPool.acquire();
                 StatementLocks statementLocks = statementLocksFactory.newInstance();
                 tx.initialize( lastCommittedTransaction.transactionId(), lastCommittedTransaction.commitTimestamp(),
-                        statementLocks, type, frozenSecurityContext, timeout, userTransactionIdCounter.incrementAndGet() );
+                        statementLocks, type, securityContext, timeout, userTransactionIdCounter.incrementAndGet() );
                 return tx;
             }
             finally

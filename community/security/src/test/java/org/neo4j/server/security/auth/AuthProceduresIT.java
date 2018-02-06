@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -66,7 +67,7 @@ public class AuthProceduresIT
     protected GraphDatabaseAPI db;
     private EphemeralFileSystemAbstraction fs;
     private BasicAuthManager authManager;
-    private BasicSecurityContext admin;
+    private LoginContext admin;
 
     @Before
     public void setup() throws InvalidAuthTokenException, IOException
@@ -119,7 +120,7 @@ public class AuthProceduresIT
     {
         // Given
         authManager.newUser( "andres", "banana", true );
-        BasicSecurityContext user = login("andres", "banana");
+        LoginContext user = login("andres", "banana");
 
         // Then
         assertFail( user, "CALL dbms.procedures",
@@ -251,7 +252,7 @@ public class AuthProceduresIT
                 r -> assertKeyIsMap( r, "username", "flags", map( "neo4j", listOf( PWD_CHANGE ) ) ) );
 
         authManager.newUser( "andres", "123", false );
-        BasicSecurityContext andres = login( "andres", "123" );
+        LoginContext andres = login( "andres", "123" );
         assertSuccess( andres, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "flags", map( "andres", listOf() ) ) );
     }
@@ -281,12 +282,12 @@ public class AuthProceduresIT
         }
     }
 
-    private BasicSecurityContext login( String username, String password ) throws InvalidAuthTokenException
+    private LoginContext login( String username, String password ) throws InvalidAuthTokenException
     {
         return authManager.login( SecurityTestUtils.authToken( username, password ) );
     }
 
-    private void assertEmpty( BasicSecurityContext subject, String query )
+    private void assertEmpty( LoginContext subject, String query )
     {
         assertThat( execute( subject, query, r ->
                 {
@@ -295,7 +296,7 @@ public class AuthProceduresIT
                 equalTo( "" ) );
     }
 
-    private void assertFail( BasicSecurityContext subject, String query, String partOfErrorMsg )
+    private void assertFail( LoginContext subject, String query, String partOfErrorMsg )
     {
         assertThat( execute( subject, query, r ->
                 {
@@ -304,7 +305,7 @@ public class AuthProceduresIT
                 containsString( partOfErrorMsg ) );
     }
 
-    private void assertSuccess( BasicSecurityContext subject, String query,
+    private void assertSuccess( LoginContext subject, String query,
             Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
     {
         assertThat(
@@ -312,7 +313,7 @@ public class AuthProceduresIT
                 equalTo( "" ) );
     }
 
-    private String execute( BasicSecurityContext subject, String query,
+    private String execute( LoginContext subject, String query,
             Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
     {
         try ( Transaction tx = db.beginTransaction( KernelTransaction.Type.implicit, subject ) )

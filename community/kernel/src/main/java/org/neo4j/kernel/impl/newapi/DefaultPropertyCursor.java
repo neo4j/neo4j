@@ -136,6 +136,21 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public boolean next()
     {
+        boolean hasNext;
+        do
+        {
+            hasNext = innerNext();
+        } while ( hasNext && !allowed( propertyKey() ) );
+        return hasNext;
+    }
+
+    private boolean allowed( int propertyKey )
+    {
+        return read.ktx.securityContext().mode().allowsPropertyReads( propertyKey );
+    }
+
+    private boolean innerNext()
+    {
         if ( txStateChangedProperties != null )
         {
             if ( txStateChangedProperties.hasNext() )

@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
@@ -32,6 +33,7 @@ import org.neo4j.time.Clocks;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 
 public class SecurityContextDescriptionTest
@@ -52,7 +54,7 @@ public class SecurityContextDescriptionTest
         manager.init();
         manager.start();
         manager.newUser( "johan", "bar", false );
-        context = manager.login( authToken( "johan", "bar" ) );
+        context = manager.login( authToken( "johan", "bar" ) ).authorize( mock( Token.class ) );
     }
 
     @After
@@ -66,13 +68,6 @@ public class SecurityContextDescriptionTest
     public void shouldMakeNiceDescription() throws Throwable
     {
         assertThat( context.description(), equalTo( "user 'johan' with FULL" ) );
-    }
-
-    @Test
-    public void shouldMakeNiceDescriptionFrozen() throws Throwable
-    {
-        SecurityContext frozen = context.freeze();
-        assertThat( frozen.description(), equalTo( "user 'johan' with FULL" ) );
     }
 
     @Test

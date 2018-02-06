@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
-import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
 
