@@ -21,7 +21,7 @@ package cypher.feature.parser.matchers;
 
 import java.lang.reflect.Array;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 public class ListMatcher implements ValueMatcher
 {
@@ -51,7 +51,7 @@ public class ListMatcher implements ValueMatcher
         return false;
     }
 
-    protected boolean sizeAndElements( int length, Function<Integer,Object> resultList )
+    protected boolean sizeAndElements( int length, IntFunction<Object> resultList )
     {
         if ( list.size() == length )
         {
