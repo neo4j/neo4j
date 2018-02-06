@@ -22,7 +22,6 @@ package org.neo4j.bolt;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.Map;
 import java.util.function.Function;
