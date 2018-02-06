@@ -240,7 +240,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         singleTreeWriter = closeIfPresent( singleTreeWriter );
     }
 
-    private static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
     {
         private final KEY treeKey;
         private final VALUE treeValue;
@@ -262,7 +262,7 @@ abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE ext
         }
     }
 
-    private static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
             implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
     {
         private final Collection<? extends IndexEntryUpdate<?>> updates;

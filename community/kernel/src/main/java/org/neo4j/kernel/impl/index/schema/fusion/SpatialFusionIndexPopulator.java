@@ -68,12 +68,14 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         {
             throw new IOException( "Trying to create a new spatial populator when the index had already been created." );
         }
+        // TODO should we clear out all the SpatialKnownIndex on drop()?
+        // Currently create -> drop -> create works due to the recreated index getting a new indexId
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).getPopulator( descriptor, samplingConfig ).drop(), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).drop(), indexMap.values().toArray() );
     }
 
     @Override
@@ -86,7 +88,13 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
-            indexFactory.selectAndCreate( indexMap, indexId, crs ).getPopulator( descriptor, samplingConfig ).add( batchMap.get( crs ) );
+            SpatialKnownIndex index = getOrCreateInitializedIndex( crs );
+            if ( index.getState() == SpatialKnownIndex.State.INIT )
+            {
+                // First add to sub-index, make sure to create
+                index.create();
+            }
+            index.add( batchMap.get( crs ) );
         }
     }
 
@@ -101,27 +109,25 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).getPopulator( descriptor, samplingConfig ).verifyDeferredConstraints( propertyAccessor ),
-                indexMap.values().toArray() );
+        // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexFactory, descriptor, samplingConfig, accessor );
+        return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexFactory, descriptor, samplingConfig );
     }
 
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).closePopulator( descriptor, samplingConfig, populationCompletedSuccessfully ),
-                indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).close( populationCompletedSuccessfully ), indexMap.values().toArray() );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).getPopulator( descriptor, samplingConfig ).markAsFailed( failure ), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).markAsFailed( failure ), indexMap.values().toArray() );
     }
 
     @Override
@@ -129,14 +135,24 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     {
         Value[] values = update.values();
         assert values.length == 1;
-        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, values[0] );
-        index.getPopulator( descriptor, samplingConfig ).includeSample( update );
+        CoordinateReferenceSystem crs = ((PointValue) values[0]).getCoordinateReferenceSystem();
+        SpatialKnownIndex index = getOrCreateInitializedIndex( crs );
+        index.includeSample( update );
+    }
+
+    private SpatialKnownIndex getOrCreateInitializedIndex( CoordinateReferenceSystem crs )
+    {
+        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
+        if ( index.getState() == SpatialKnownIndex.State.NONE )
+        {
+            index.initialize( descriptor, samplingConfig );
+        }
+        return index;
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples(
-                indexMap.values().stream().map( i -> i.getPopulator( descriptor, samplingConfig ).sampleResult() ).toArray( IndexSample[]::new ) );
+        return combineSamples( indexMap.values().stream().map( SpatialKnownIndex::sampleResult ).toArray( IndexSample[]::new ) );
     }
 }

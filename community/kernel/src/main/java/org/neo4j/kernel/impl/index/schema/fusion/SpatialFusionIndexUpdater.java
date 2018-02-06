@@ -26,9 +26,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -45,31 +43,29 @@ class SpatialFusionIndexUpdater implements IndexUpdater
     private final SpatialKnownIndex.Factory indexFactory;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
-    private final IndexUpdateMode mode;
-    private final PropertyAccessor accessor;
+    private final boolean populating;
 
     static SpatialFusionIndexUpdater updaterForAccessor( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
-            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexUpdateMode mode )
+            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, mode, null );
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, false );
     }
 
     static SpatialFusionIndexUpdater updaterForPopulator( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
-            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PropertyAccessor accessor )
+            SpatialKnownIndex.Factory indexFactory, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, null, accessor );
+        return new SpatialFusionIndexUpdater( indexMap, indexId, indexFactory, descriptor, samplingConfig, true );
     }
 
     private SpatialFusionIndexUpdater( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, SpatialKnownIndex.Factory indexFactory,
-            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, IndexUpdateMode mode, PropertyAccessor accessor )
+            IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating )
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
         this.indexFactory = indexFactory;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
-        this.mode = mode;
-        this.accessor = accessor;
+        this.populating = populating;
     }
 
     @Override
@@ -116,14 +112,28 @@ class SpatialFusionIndexUpdater implements IndexUpdater
         {
             return updater;
         }
-        if ( mode != null )
+        SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
+        if ( populating )
         {
-            return remember( crs, indexFactory.selectAndCreate( indexMap, indexId, crs ).getOnlineAccessor( descriptor, samplingConfig ).newUpdater( mode ) );
+            if ( index.getState() == SpatialKnownIndex.State.NONE )
+            {
+                // sub-index didn't exist, create in populating mode
+                index.initialize( descriptor, samplingConfig );
+                index.create();
+            }
+            return remember( crs, index.newPopulatingUpdater() );
         }
         else
         {
-            return remember( crs,
-                    indexFactory.selectAndCreate( indexMap, indexId, crs ).getPopulator( descriptor, samplingConfig ).newPopulatingUpdater( accessor ) );
+            if ( index.getState() == SpatialKnownIndex.State.NONE )
+            {
+                // sub-index didn't exist, create and make it online
+                index.initialize( descriptor, samplingConfig );
+                index.create();
+                index.close( true );
+                index.online();
+            }
+            return remember( crs, index.newUpdater() );
         }
     }
 

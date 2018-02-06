@@ -147,6 +147,28 @@ class SpatialIndexAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSu
     testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
   }
 
+  test("create drop create index") {
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.createIndex("Place", "location")
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+
+    graph.execute("DROP INDEX ON :Place(location)")
+    graph.createIndex("Place", "location")
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+  }
+
+  test("change crs") {
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
+    graph.createIndex("Place", "location")
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    graph.execute("MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) SET p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'})")
+
+    testPointRead("MATCH (p:Place) WHERE p.location = point({x: 1.0, y: 2.78, crs: 'cartesian'}) RETURN p.location as point", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.0, 2.78))
+  }
+
   private def testPointRead(query: String, expected: PointValue*): Unit = {
     testPointScanOrRead(query, seek = true, expected)
   }

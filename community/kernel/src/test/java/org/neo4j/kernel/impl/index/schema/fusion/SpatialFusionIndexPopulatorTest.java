@@ -31,7 +31,6 @@ import java.util.Map;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -58,7 +57,6 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.veri
 public class SpatialFusionIndexPopulatorTest
 {
 
-    private Map<CoordinateReferenceSystem,IndexPopulator> populatorMap = new HashMap<>();
     private SpatialFusionIndexPopulator fusionIndexPopulator;
     private Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap = new HashMap<>();
 
@@ -66,23 +64,22 @@ public class SpatialFusionIndexPopulatorTest
     public void setup() throws Exception
     {
         SpatialKnownIndex.Factory indexFactory = mock( SpatialKnownIndex.Factory.class );
+        IndexDescriptor descriptor = mock( IndexDescriptor.class );
+
         for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
         {
-            populatorMap.put( crs, mock( IndexPopulator.class ) );
             indexMap.put( crs, mock( SpatialKnownIndex.class ) );
 
-            when( indexMap.get( crs ).getPopulator( any(), any() ) ).thenReturn( populatorMap.get( crs ) );
             when( indexFactory.selectAndCreate( indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
-            when( indexMap.get( crs ).getPopulator( any(), any() ) ).thenReturn( populatorMap.get( crs ) );
         }
 
         when( indexFactory.selectAndCreate( eq( indexMap ), eq( 0L ), any( PointValue.class ) ) ).thenAnswer( a ->
         {
-            PointValue pointValue = a.getArgument( 2 );
+            PointValue pointValue = a.getArgument( 3 );
             return indexMap.get( pointValue.getCoordinateReferenceSystem() );
         } );
 
-        fusionIndexPopulator = new SpatialFusionIndexPopulator( indexMap, 0, mock( IndexDescriptor.class ), null, indexFactory );
+        fusionIndexPopulator = new SpatialFusionIndexPopulator( indexMap, 0, descriptor, null, indexFactory );
     }
 
     @Test
@@ -92,9 +89,9 @@ public class SpatialFusionIndexPopulatorTest
         fusionIndexPopulator.drop();
 
         // then
-        for ( IndexPopulator populator : populatorMap.values() )
+        for ( SpatialKnownIndex spatialKnownIndex : indexMap.values() )
         {
-            verify( populator, times( 1 ) ).drop();
+            verify( spatialKnownIndex, times( 1 ) ).drop();
         }
     }
 
@@ -103,14 +100,14 @@ public class SpatialFusionIndexPopulatorTest
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( populatorMap.get( CoordinateReferenceSystem.WGS84 ) ).drop();
+        doThrow( failure ).when( indexMap.get( CoordinateReferenceSystem.WGS84 ) ).drop();
 
         verifyCallFail( failure, () ->
         {
             fusionIndexPopulator.drop();
             return null;
         } );
-        verify( populatorMap.get( CoordinateReferenceSystem.Cartesian ), times( 1 ) ).drop();
+        verify( indexMap.get( CoordinateReferenceSystem.Cartesian ), times( 1 ) ).drop();
     }
 
     @Test
@@ -118,14 +115,14 @@ public class SpatialFusionIndexPopulatorTest
     {
         // given
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( populatorMap.get( CoordinateReferenceSystem.Cartesian ) ).drop();
+        doThrow( failure ).when( indexMap.get( CoordinateReferenceSystem.Cartesian ) ).drop();
 
         verifyCallFail( failure, () ->
         {
             fusionIndexPopulator.drop();
             return null;
         } );
-        verify( populatorMap.get( CoordinateReferenceSystem.WGS84 ), times( 1 ) ).drop();
+        verify( indexMap.get( CoordinateReferenceSystem.WGS84 ), times( 1 ) ).drop();
     }
 
     @Test
@@ -134,38 +131,8 @@ public class SpatialFusionIndexPopulatorTest
         for ( Value value : FusionIndexTestHelp.valuesSupportedBySpatial() )
         {
             PointValue point = (PointValue) value;
-            verifyAddWithCorrectPopulator( populatorMap.get( point.getCoordinateReferenceSystem() ), value );
+            verifyAddWithCorrectSpatialIndex( indexMap.get( point.getCoordinateReferenceSystem() ), value );
         }
-    }
-
-    @Test
-    public void verifyDeferredConstraintsMustThrowIfWGSThrow() throws Exception
-    {
-        // given
-        IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
-        doThrow( failure ).when( populatorMap.get( CoordinateReferenceSystem.WGS84 ) ).verifyDeferredConstraints( any() );
-
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.verifyDeferredConstraints( null );
-            return null;
-        } );
-        verify( populatorMap.get( CoordinateReferenceSystem.Cartesian ), times( 1 ) ).verifyDeferredConstraints( any() );
-    }
-
-    @Test
-    public void verifyDeferredConstraintsMustThrowIfCartesianThrow() throws Exception
-    {
-        // given
-        IndexEntryConflictException failure = mock( IndexEntryConflictException.class );
-        doThrow( failure ).when( populatorMap.get( CoordinateReferenceSystem.Cartesian ) ).verifyDeferredConstraints( any() );
-
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.verifyDeferredConstraints( null );
-            return null;
-        } );
-        verify( populatorMap.get( CoordinateReferenceSystem.WGS84 ), times( 1 ) ).verifyDeferredConstraints( any() );
     }
 
     @Test
@@ -184,28 +151,28 @@ public class SpatialFusionIndexPopulatorTest
     public void closeMustCloseOtherAndThrowIfCloseWGSThrow() throws Exception
     {
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( indexMap.get( CoordinateReferenceSystem.WGS84 ) ).closePopulator( any(), any(), anyBoolean() );
+        doThrow( failure ).when( indexMap.get( CoordinateReferenceSystem.WGS84 ) ).close( anyBoolean() );
 
         verifyCallFail( failure, () ->
         {
             fusionIndexPopulator.close( true );
             return null;
         } );
-        verify( indexMap.get( CoordinateReferenceSystem.Cartesian ), times( 1 ) ).closePopulator( any(), any(), eq( true ) );
+        verify( indexMap.get( CoordinateReferenceSystem.Cartesian ), times( 1 ) ).close( true );
     }
 
     @Test
     public void closeMustCloseOtherAndThrowIfCloseCartesianThrow() throws Exception
     {
         IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( indexMap.get( CoordinateReferenceSystem.Cartesian ) ).closePopulator( any(), any(), anyBoolean() );
+        doThrow( failure ).when( indexMap.get( CoordinateReferenceSystem.Cartesian ) ).close( anyBoolean() );
 
         verifyCallFail( failure, () ->
         {
             fusionIndexPopulator.close( true );
             return null;
         } );
-        verify( indexMap.get( CoordinateReferenceSystem.WGS84 ), times( 1 ) ).closePopulator( any(), any(), eq( true ) );
+        verify( indexMap.get( CoordinateReferenceSystem.WGS84 ), times( 1 ) ).close( true );
     }
 
     @Test
@@ -213,8 +180,8 @@ public class SpatialFusionIndexPopulatorTest
     {
         IOException wgsFailure = new IOException( "fail" );
         IOException cartesianFailure = new IOException( "fail" );
-        doThrow( cartesianFailure ).when( indexMap.get( CoordinateReferenceSystem.Cartesian ) ).closePopulator( any(), any(), anyBoolean() );
-        doThrow( wgsFailure ).when( indexMap.get( CoordinateReferenceSystem.WGS84 ) ).closePopulator( any(), any(), anyBoolean() );
+        doThrow( cartesianFailure ).when( indexMap.get( CoordinateReferenceSystem.Cartesian ) ).close( anyBoolean() );
+        doThrow( wgsFailure ).when( indexMap.get( CoordinateReferenceSystem.WGS84 ) ).close( anyBoolean() );
 
         try
         {
@@ -237,42 +204,10 @@ public class SpatialFusionIndexPopulatorTest
         fusionIndexPopulator.markAsFailed( failureMessage );
 
         // then
-        for ( IndexPopulator populator : populatorMap.values() )
+        for ( SpatialKnownIndex spatialKnownIndex : indexMap.values() )
         {
-            verify( populator, times( 1 ) ).markAsFailed( failureMessage );
+            verify( spatialKnownIndex, times( 1 ) ).markAsFailed( failureMessage );
         }
-    }
-
-    @Test
-    public void markAsFailedMustThrowIfWGSThrow() throws Exception
-    {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( populatorMap.get( CoordinateReferenceSystem.WGS84 ) ).markAsFailed( "failed" );
-
-        // then
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.markAsFailed( "failed" );
-            return null;
-        } );
-        verify( populatorMap.get( CoordinateReferenceSystem.Cartesian ) ).markAsFailed( "failed" );
-    }
-
-    @Test
-    public void markAsFailedMustThrowIfCartesianThrow() throws Exception
-    {
-        // given
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( populatorMap.get( CoordinateReferenceSystem.Cartesian ) ).markAsFailed( "failed" );
-
-        // then
-        verifyCallFail( failure, () ->
-        {
-            fusionIndexPopulator.markAsFailed( "failed" );
-            return null;
-        } );
-        verify( populatorMap.get( CoordinateReferenceSystem.WGS84 ) ).markAsFailed( "failed" );
     }
 
     @Test
@@ -287,9 +222,9 @@ public class SpatialFusionIndexPopulatorTest
             fusionIndexPopulator.includeSample( update );
 
             // then
-            IndexPopulator populator = populatorMap.get( point.getCoordinateReferenceSystem() );
-            verify( populator ).includeSample( update );
-            reset( populator );
+            SpatialKnownIndex spatialKnownIndex = indexMap.get( point.getCoordinateReferenceSystem() );
+            verify( spatialKnownIndex ).includeSample( update );
+            reset( spatialKnownIndex );
         }
     }
 
@@ -300,20 +235,20 @@ public class SpatialFusionIndexPopulatorTest
         // then
         for ( SpatialKnownIndex index : indexMap.values() )
         {
-            verify( index, times( 1 ) ).closePopulator( any(), any(), eq( populationCompletedSuccessfully ) );
+            verify( index, times( 1 ) ).close( populationCompletedSuccessfully );
         }
     }
 
-    private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, Value numberValues ) throws IndexEntryConflictException, IOException
+    private void verifyAddWithCorrectSpatialIndex( SpatialKnownIndex correctSpatialIndex, Value numberValues ) throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = Collections.singletonList( add( numberValues ) );
+        Collection<IndexEntryUpdate<?>> update = Collections.singletonList( add( numberValues ) );
         fusionIndexPopulator.add( update );
-        verify( correctPopulator, times( 1 ) ).add( update );
-        for ( IndexPopulator populator : populatorMap.values() )
+        verify( correctSpatialIndex, times( 1 ) ).add( update );
+        for ( SpatialKnownIndex spatialKnownIndex : indexMap.values() )
         {
-            if ( populator != correctPopulator )
+            if ( spatialKnownIndex != correctSpatialIndex )
             {
-                verify( populator, times( 0 ) ).add( update );
+                verify( spatialKnownIndex, times( 0 ) ).add( update );
             }
         }
     }

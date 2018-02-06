@@ -28,13 +28,10 @@ import java.util.Map;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.SpatialKnownIndex;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -42,8 +39,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -57,8 +52,6 @@ public class SpatialFusionIndexUpdaterTest
 {
     private Map<CoordinateReferenceSystem,IndexUpdater> updaterMap = new HashMap<>();
     private Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap = new HashMap<>();
-    private Map<CoordinateReferenceSystem,IndexAccessor> accessorMap = new HashMap<>();
-    private Map<CoordinateReferenceSystem,IndexPopulator> populatorMap = new HashMap<>();
     private SpatialFusionIndexUpdater fusionIndexAccessorUpdater;
     private SpatialFusionIndexUpdater fusionIndexPopulatorUpdater;
 
@@ -66,24 +59,21 @@ public class SpatialFusionIndexUpdaterTest
     public void setup() throws Exception
     {
         SpatialKnownIndex.Factory indexFactory = mock( SpatialKnownIndex.Factory.class );
+        IndexDescriptor descriptor = mock( IndexDescriptor.class );
 
         for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
         {
             updaterMap.put( crs, mock( IndexUpdater.class ) );
             indexMap.put( crs, mock( SpatialKnownIndex.class ) );
-            accessorMap.put( crs, mock( IndexAccessor.class ) );
-            populatorMap.put( crs, mock( IndexPopulator.class ) );
             when( indexFactory.selectAndCreate( indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
-            when( indexMap.get( crs ).getOnlineAccessor( any(), any() ) ).thenReturn( accessorMap.get( crs ) );
-            when( accessorMap.get( crs ).newUpdater( any() ) ).thenReturn( updaterMap.get( crs ) );
-            when( indexMap.get( crs ).getPopulator( any(), any() ) ).thenReturn( populatorMap.get( crs ) );
-            when( populatorMap.get( crs ).newPopulatingUpdater( any() ) ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).newUpdater() ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).newPopulatingUpdater() ).thenReturn( updaterMap.get( crs ) );
         }
 
         fusionIndexAccessorUpdater = SpatialFusionIndexUpdater.updaterForAccessor(
-                indexMap, 0, indexFactory, mock( IndexDescriptor.class ), null, IndexUpdateMode.ONLINE );
+                indexMap, 0, indexFactory, descriptor, mock( IndexSamplingConfig.class ) );
         fusionIndexPopulatorUpdater = SpatialFusionIndexUpdater.updaterForPopulator(
-                indexMap, 0, indexFactory, mock( IndexDescriptor.class ), null, mock( PropertyAccessor.class ) );
+                indexMap, 0, indexFactory, descriptor, mock( IndexSamplingConfig.class ) );
     }
 
     @Test

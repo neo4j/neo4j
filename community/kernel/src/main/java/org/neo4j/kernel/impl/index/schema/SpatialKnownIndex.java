@@ -21,25 +21,45 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
+import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateApply;
+import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdateWork;
+import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_POPULATING;
@@ -51,14 +71,7 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
  */
 public class SpatialKnownIndex
 {
-
-    public interface Factory
-    {
-        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value );
-
-        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, CoordinateReferenceSystem crs );
-    }
-
+    private UniqueIndexSampler uniqueSampler;
     private final File indexFile;
     private final PageCache pageCache;
     private final CoordinateReferenceSystem crs;
@@ -66,9 +79,19 @@ public class SpatialKnownIndex
     private final FileSystemAbstraction fs;
     private final SchemaIndexProvider.Monitor monitor;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-    private SpatialSchemaIndexAccessor indexAccessor;
-    private NativeSchemaIndexPopulator indexPopulator;
-    private SpaceFillingCurve curve;
+    private final SpaceFillingCurve curve;
+
+    private State state;
+    private boolean dropped;
+    private byte[] failureBytes;
+    private SpatialSchemaKey treeKey;
+    private NativeSchemaValue treeValue;
+    private SpatialLayout layout;
+    private NativeSchemaIndexUpdater<SpatialSchemaKey,NativeSchemaValue> singleUpdater;
+    private Writer<SpatialSchemaKey,NativeSchemaValue> singleTreeWriter;
+    private NativeSchemaIndex<SpatialSchemaKey,NativeSchemaValue> schemaIndex;
+    private WorkSync<IndexUpdateApply<SpatialSchemaKey,NativeSchemaValue>,IndexUpdateWork<SpatialSchemaKey,NativeSchemaValue>> workSync;
+    private DefaultNonUniqueIndexSampler generalSampler;
 
     /**
      * Create a representation of a spatial index for a specific coordinate reference system.
@@ -91,6 +114,302 @@ public class SpatialKnownIndex
                 IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
         indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
         curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
+        state = State.NONE;
+    }
+
+    public void initialize( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    {
+        assert state == State.NONE;
+        layout = layout( descriptor );
+        treeKey = layout.newKey();
+        treeValue = layout.newValue();
+        schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
+        if ( uniqueSampler( descriptor ) )
+        {
+            uniqueSampler = new UniqueIndexSampler();
+        }
+        else
+        {
+            generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+        }
+        state = State.INIT;
+    }
+
+    public void online() throws IOException
+    {
+        assert state == State.POPULATED || state == State.INIT;
+        singleUpdater = new NativeSchemaIndexUpdater<>( treeKey, treeValue );
+        schemaIndex.instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
+        state = State.ONLINE;
+    }
+
+    public State getState()
+    {
+        return state;
+    }
+
+    public synchronized void drop() throws IOException
+    {
+        try
+        {
+            closeWriter();
+            schemaIndex.closeTree();
+            schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
+        }
+        finally
+        {
+            dropped = true;
+            state = State.NONE; // ???
+        }
+    }
+
+    public synchronized void create() throws IOException
+    {
+        assert state == State.INIT;
+        // extra check here???
+        schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile ); /// TODO <- warning
+        schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+        instantiateWriter();
+        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger<>() ) );
+        state = State.POPULATING;
+    }
+
+    public void close() throws IOException
+    {
+        schemaIndex.closeTree();
+    }
+
+    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
+    {
+        assert state == State.POPULATING;
+        closeWriter();
+        if ( populationCompletedSuccessfully && failureBytes != null )
+        {
+            throw new IllegalStateException( "Can't mark index as online after it has been marked as failure" );
+        }
+
+        try
+        {
+            if ( populationCompletedSuccessfully )
+            {
+                assertPopulatorOpen();
+                markTreeAsOnline();
+                state = State.POPULATED;
+            }
+            else
+            {
+                assertNotDropped();
+                ensureTreeInstantiated();
+                markTreeAsFailed();
+                state = State.FAILED;
+            }
+        }
+        finally
+        {
+            schemaIndex.closeTree();
+        }
+    }
+
+    public void add( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    {
+        applyWithWorkSync( updates );
+    }
+
+    public void markAsFailed( String failure )
+    {
+        failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
+    }
+
+    public void includeSample( IndexEntryUpdate<?> update )
+    {
+        if ( uniqueSampler != null )
+        {
+            uniqueSampler.increment( 1 );
+        }
+        else if ( generalSampler != null )
+        {
+            generalSampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
+        }
+        else
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public IndexSample sampleResult()
+    {
+        if ( uniqueSampler != null )
+        {
+            return uniqueSampler.result();
+        }
+        else if ( generalSampler != null )
+        {
+            // Close the writer before scanning
+            try
+            {
+                closeWriter();
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+
+            try
+            {
+                return generalSampler.result();
+            }
+            finally
+            {
+                try
+                {
+                    instantiateWriter();
+                }
+                catch ( IOException e )
+                {
+                    System.out.println( "GAAAAAH" );
+                    throw new UncheckedIOException( e );
+                }
+            }
+        }
+        else
+        {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public IndexUpdater newPopulatingUpdater() throws IOException
+    {
+        return new IndexUpdater()
+        {
+            private boolean closed;
+            private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+
+            @Override
+            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+            {
+                assertOpen();
+                updates.add( update );
+            }
+
+            @Override
+            public void close() throws IOException, IndexEntryConflictException
+            {
+                applyWithWorkSync( updates );
+                closed = true;
+            }
+
+            private void assertOpen()
+            {
+                if ( closed )
+                {
+                    throw new IllegalStateException( "Updater has been closed" );
+                }
+            }
+        };
+    }
+
+    public IndexUpdater newUpdater()
+    {
+        schemaIndex.assertOpen();
+        try
+        {
+            return singleUpdater.initialize( schemaIndex.tree.writer(), true );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public ResourceIterator<File> snapshotFiles() throws IOException
+    {
+        return asResourceIterator( iterator( indexFile ) );
+    }
+
+    public void force() throws IOException
+    {
+        // TODO add IOLimiter arg
+        schemaIndex.tree.checkpoint( IOLimiter.unlimited() );
+    }
+
+    public BoundedIterable<Long> newAllEntriesReader()
+    {
+        return new NativeAllEntriesReader<>( schemaIndex.tree, layout );
+    }
+
+    public IndexReader newReader( IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    {
+        schemaIndex.assertOpen();
+        return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor );
+    }
+
+    private void instantiateWriter() throws IOException
+    {
+        assert singleTreeWriter == null;
+        singleTreeWriter = schemaIndex.tree.writer();
+    }
+
+    private void applyWithWorkSync( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
+    {
+        try
+        {
+            workSync.apply( new IndexUpdateWork<>( updates ) );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IOException( e );
+        }
+    }
+
+    private void assertPopulatorOpen()
+    {
+        if ( schemaIndex.tree == null )
+        {
+            throw new IllegalStateException( "Populator has already been closed." );
+        }
+    }
+
+    private void closeWriter() throws IOException
+    {
+        singleTreeWriter = schemaIndex.closeIfPresent( singleTreeWriter );
+    }
+
+    private void markTreeAsOnline() throws IOException
+    {
+        schemaIndex.tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
+    }
+
+    private void markTreeAsFailed() throws IOException
+    {
+        if ( failureBytes == null )
+        {
+            failureBytes = new byte[0];
+        }
+        schemaIndex.tree.checkpoint( IOLimiter.unlimited(), new FailureHeaderWriter( failureBytes ) );
+    }
+
+    private void assertNotDropped()
+    {
+        if ( dropped )
+        {
+            throw new IllegalStateException( "Populator has already been dropped." );
+        }
+    }
+
+    private void ensureTreeInstantiated() throws IOException
+    {
+        if ( schemaIndex.tree == null )
+        {
+            schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IGNORE, NO_HEADER_WRITER );
+        }
+    }
+
+    public interface Factory
+    {
+        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value );
+
+        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
+                CoordinateReferenceSystem crs );
     }
 
     static Envelope envelopeFromCRS( CoordinateReferenceSystem crs )
@@ -147,77 +466,37 @@ public class SpatialKnownIndex
     private SpatialLayout layout( IndexDescriptor descriptor )
     {
         SpatialLayout layout;
-        switch ( descriptor.type() )
+        if ( uniqueSampler( descriptor ) )
         {
-        case GENERAL:
-            layout = new SpatialLayoutNonUnique( crs, curve );
-            break;
-        case UNIQUE:
             layout = new SpatialLayoutUnique( crs, curve );
-            break;
-        default:
-            throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
+        }
+        else
+        {
+            layout = new SpatialLayoutNonUnique( crs, curve );
         }
         return layout;
     }
 
-    private NativeSchemaIndexPopulator makeIndexPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    private boolean uniqueSampler( IndexDescriptor descriptor )
     {
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutNonUnique( crs, curve ), samplingConfig, monitor,
-                    descriptor, indexId );
+            return false;
         case UNIQUE:
-            return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, new SpatialLayoutUnique( crs, curve ), monitor, descriptor, indexId );
+            return true;
         default:
-            throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
+            throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
         }
     }
 
-    public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public enum State
     {
-        if ( indexPopulator == null )
-        {
-            indexPopulator = makeIndexPopulator( descriptor, samplingConfig );
-            try
-            {
-                // The index populator is always created on demand. The demand occurs when populating is desired, so we can also create it at this point
-                // Note that this deletes the GBPTree in advance of re-populating it
-                indexPopulator.create();
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-        }
-        return indexPopulator;
-    }
-
-    public void closePopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populationCompletedSuccessfully ) throws IOException
-    {
-        getPopulator( descriptor, samplingConfig ).close( populationCompletedSuccessfully );
-        this.indexPopulator = null;
-    }
-
-    private SpatialSchemaIndexAccessor makeOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
-    {
-        return new SpatialSchemaIndexAccessor<>( pageCache, fs, indexFile, layout( descriptor ),
-                recoveryCleanupWorkCollector, monitor, descriptor, indexId, samplingConfig );
-    }
-
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
-    {
-        if ( indexAccessor == null )
-        {
-            if ( !indexExists() )
-            {
-                // No CRS specific index was created during normal population (due to no data of that CRS being in the database)
-                // We need to create the index as if it was created by normal index populating, but empty
-                getPopulator( descriptor, samplingConfig ).close( true );
-            }
-            indexAccessor = makeOnlineAccessor( descriptor, samplingConfig );
-        }
-        return indexAccessor;
+        NONE,
+        INIT,
+        POPULATING,
+        POPULATED,
+        ONLINE,
+        FAILED
     }
 }

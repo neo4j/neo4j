@@ -53,43 +53,58 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     private final SpatialKnownIndex.Factory indexFactory;
 
     SpatialFusionIndexAccessor( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, IndexDescriptor descriptor,
-            IndexSamplingConfig samplingConfig, SpatialKnownIndex.Factory indexFactory )
+            IndexSamplingConfig samplingConfig, SpatialKnownIndex.Factory indexFactory ) throws IOException
     {
         this.indexMap = indexMap;
         this.indexId = indexId;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.indexFactory = indexFactory;
+        for ( SpatialKnownIndex index : indexMap.values() )
+        {
+            if ( index.getState() == SpatialKnownIndex.State.NONE )
+            {
+                index.initialize( descriptor, samplingConfig );
+            }
+            if ( index.getState() == SpatialKnownIndex.State.INIT || index.getState() == SpatialKnownIndex.State.POPULATED )
+            {
+                index.online();
+            }
+            if ( index.getState() != SpatialKnownIndex.State.ONLINE )
+            {
+                throw new IllegalStateException( "" );
+            }
+        }
     }
 
     @Override
     public void drop() throws IOException
     {
-        forAll( index -> ((SpatialKnownIndex) index).getOnlineAccessor( descriptor, samplingConfig ).drop(), indexMap.values().toArray() );
+        forAll( index -> ((SpatialKnownIndex) index).drop(), indexMap.values().toArray() );
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return SpatialFusionIndexUpdater.updaterForAccessor( indexMap, indexId, indexFactory, descriptor, samplingConfig, mode );
+        return SpatialFusionIndexUpdater.updaterForAccessor( indexMap, indexId, indexFactory, descriptor, samplingConfig );
     }
 
     @Override
     public void force() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).getOnlineAccessor( descriptor, samplingConfig ).force(), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).force(), indexMap.values().toArray() );
     }
 
     @Override
     public void refresh() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).getOnlineAccessor( descriptor, samplingConfig ).refresh(), indexMap.values().toArray() );
+        // not required in this implementation
     }
 
     @Override
     public void close() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).getOnlineAccessor( descriptor, samplingConfig ).close(), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).close(), indexMap.values().toArray() );
     }
 
     @Override
@@ -98,14 +113,8 @@ class SpatialFusionIndexAccessor implements IndexAccessor
         Map<CoordinateReferenceSystem,IndexReader> indexReaders = new HashMap<>();
         for ( Map.Entry<CoordinateReferenceSystem,SpatialKnownIndex> index : indexMap.entrySet() )
         {
-            try
-            {
-                indexReaders.put( index.getKey(), index.getValue().getOnlineAccessor(descriptor, samplingConfig).newReader() );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
+            // TODO should this be populated here, or delegate to SpatialFusionIndexReader?
+            indexReaders.put( index.getKey(), index.getValue().newReader( samplingConfig, descriptor ) );
         }
         return new SpatialFusionIndexReader( indexReaders, descriptor );
     }
@@ -116,14 +125,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
         ArrayList<BoundedIterable<Long>> allEntriesReader = new ArrayList<>();
         for ( SpatialKnownIndex index : indexMap.values() )
         {
-            try
-            {
-                allEntriesReader.add( index.getOnlineAccessor( descriptor, samplingConfig ).newAllEntriesReader() );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
+            allEntriesReader.add( index.newAllEntriesReader() );
         }
         return new BoundedIterable<Long>()
         {
@@ -160,7 +162,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
         List<ResourceIterator<File>> snapshotFiles = new ArrayList<>();
         for ( SpatialKnownIndex index : indexMap.values() )
         {
-            snapshotFiles.add( index.getOnlineAccessor( descriptor, samplingConfig ).snapshotFiles() );
+            snapshotFiles.add( index.snapshotFiles() );
         }
         return concatResourceIterators( snapshotFiles.iterator() );
     }
@@ -169,9 +171,6 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        for ( SpatialKnownIndex index : indexMap.values() )
-        {
-            index.getOnlineAccessor( descriptor, samplingConfig ).verifyDeferredConstraints( propertyAccessor );
-        }
+        // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 }
