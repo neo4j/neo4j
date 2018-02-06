@@ -257,6 +257,18 @@ public interface Configuration
         {
             return defaults.parallelRecordReadsWhenWriting();
         }
+
+        @Override
+        public long maxMemoryUsage()
+        {
+            return defaults.maxMemoryUsage();
+        }
+
+        @Override
+        public boolean allowCacheAllocationOnHeap()
+        {
+            return defaults.allowCacheAllocationOnHeap();
+        }
     }
 
     static Configuration withBatchSize( Configuration config, int batchSize )
@@ -286,8 +298,8 @@ public interface Configuration
         {
             throw new IllegalArgumentException( "Expected percentage to be < 100, was " + percent );
         }
-        long freePhysicalMemory = OsBeanUtil.getFreePhysicalMemory();
-        if ( freePhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
+        long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+        if ( totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE )
         {
             // Unable to detect amount of free memory, so rather max memory should be explicitly set
             // in order to get best performance. However let's just go with a default of 2G in this case.
@@ -295,6 +307,6 @@ public interface Configuration
         }
 
         double factor = percent / 100D;
-        return round( (freePhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
+        return round( (totalPhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
     }
 }
