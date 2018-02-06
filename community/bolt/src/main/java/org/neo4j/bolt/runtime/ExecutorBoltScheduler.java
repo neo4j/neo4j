@@ -19,37 +19,41 @@
  */
 package org.neo4j.bolt.runtime;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 import org.neo4j.bolt.v1.runtime.Job;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltScheduler, BoltConnectionListener, BoltConnectionQueueMonitor
+public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionListener, BoltConnectionQueueMonitor
 {
-    private final Config config;
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final Log log;
     private final ConcurrentHashMap<String, BoltConnection> activeConnections = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CompletableFuture<Void>> activeWorkItems = new ConcurrentHashMap<>();
+    private final int corePoolSize;
+    private final int maxPoolSize;
+    private final Duration keepAlive;
+    private final int queueSize;
 
-    private ExecutorService stdThreadPool;
-    private ExecutorService oobThreadPool;
+    private ExecutorService threadPool;
 
-    public ExecutorBoltScheduler( Config config, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService )
+    public ExecutorBoltScheduler( ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize, int maxPoolSize,
+            Duration keepAlive, int queueSize )
     {
-        this.config = config;
         this.executorFactory = executorFactory;
         this.scheduler = scheduler;
         this.log = logService.getInternalLog( getClass() );
+        this.corePoolSize = corePoolSize;
+        this.maxPoolSize = maxPoolSize;
+        this.keepAlive = keepAlive;
+        this.queueSize = queueSize;
     }
 
     boolean isRegistered( BoltConnection connection )
@@ -68,23 +72,14 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
         }
     }
 
-    @Override
-    public void init() throws Throwable
+    public void start()
     {
-        stdThreadPool = executorFactory.create( config.get( GraphDatabaseSettings.bolt_thread_pool_std_core_size ),
-                config.get( GraphDatabaseSettings.bolt_thread_pool_std_max_size ), config.get( GraphDatabaseSettings.bolt_thread_pool_keep_live ),
-                scheduler.threadFactory( JobScheduler.Groups.boltStdWorker ) );
-
-        oobThreadPool = executorFactory.create( config.get( GraphDatabaseSettings.bolt_thread_pool_oob_core_size ),
-                config.get( GraphDatabaseSettings.bolt_thread_pool_oob_max_size ), config.get( GraphDatabaseSettings.bolt_thread_pool_keep_live ),
-                scheduler.threadFactory( JobScheduler.Groups.boltOobWorker ) );
+        threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) );
     }
 
-    @Override
-    public void shutdown() throws Throwable
+    public void stop()
     {
-        executorFactory.destroy( stdThreadPool );
-        executorFactory.destroy( oobThreadPool );
+        executorFactory.destroy( threadPool );
     }
 
     @Override
@@ -134,8 +129,8 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
             {
                 if ( !activeWorkItems.containsKey( id ) )
                 {
-                    activeWorkItems.put( id, CompletableFuture.runAsync( () -> connection.processNextBatch(), threadPoolFor( connection ) ).whenCompleteAsync(
-                            ( result, error ) -> handleCompletion( connection, result, error ) ) );
+                    activeWorkItems.put( id, CompletableFuture.runAsync( () -> connection.processNextBatch(), threadPool ).whenCompleteAsync(
+                            ( result, error ) -> handleCompletion( connection, result, error ), threadPool ) );
                 }
             }
         }
@@ -156,15 +151,10 @@ public class ExecutorBoltScheduler extends LifecycleAdapter implements BoltSched
             {
                 if ( connection.hasPendingJobs() )
                 {
-                    previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ) );
+                    previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), threadPool );
                 }
             }
         }
-    }
-
-    private ExecutorService threadPoolFor( BoltConnection connection )
-    {
-        return connection.isOutOfBand() ? oobThreadPool : stdThreadPool;
     }
 
 }

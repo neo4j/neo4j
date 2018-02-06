@@ -47,7 +47,6 @@ public class DefaultBoltConnection implements BoltConnection
     private final BoltStateMachine machine;
     private final BoltConnectionListener listener;
     private final BoltConnectionQueueMonitor queueMonitor;
-    private final OutOfBandStrategy outOfBandStrategy;
 
     private final Log log;
     private final Log userLog;
@@ -59,19 +58,18 @@ public class DefaultBoltConnection implements BoltConnection
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, OutOfBandStrategy outOfBandStrategy,
-            BoltConnectionListener listener, BoltConnectionQueueMonitor queueMonitor )
+    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionListener listener,
+            BoltConnectionQueueMonitor queueMonitor )
     {
-        this( channel, machine, logService, outOfBandStrategy, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
+        this( channel, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
     }
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, OutOfBandStrategy outOfBandStrategy,
-            BoltConnectionListener listener, BoltConnectionQueueMonitor queueMonitor, int maxBatchSize )
+    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionListener listener,
+            BoltConnectionQueueMonitor queueMonitor, int maxBatchSize )
     {
         this.id = channel.id();
         this.channel = channel;
         this.machine = machine;
-        this.outOfBandStrategy = outOfBandStrategy;
         this.listener = listener;
         this.queueMonitor = queueMonitor;
         this.log = logService.getInternalLog( getClass() );
@@ -108,12 +106,6 @@ public class DefaultBoltConnection implements BoltConnection
     public String principal()
     {
         return machine.owner();
-    }
-
-    @Override
-    public boolean isOutOfBand()
-    {
-        return outOfBandStrategy.isOutOfBand( this );
     }
 
     @Override

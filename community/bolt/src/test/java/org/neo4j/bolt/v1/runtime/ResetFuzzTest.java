@@ -21,7 +21,9 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,10 +41,11 @@ import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltScheduler;
+import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
-import org.neo4j.bolt.runtime.OutOfBandStrategy;
+import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -50,13 +53,14 @@ import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
-import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.concurrent.Runnables;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Connector;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -77,9 +81,11 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 
 public class ResetFuzzTest
 {
+    private static final String CONNECTOR = "bolt";
     // Because RESET has a "call ahead" mechanism where it will interrupt
     // the session before RESET arrives in order to purge any statements
     // ahead in the message queue, we use this test to convince ourselves
@@ -93,11 +99,13 @@ public class ResetFuzzTest
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
-    private final BoltScheduler boltScheduler = life.add(new ExecutorBoltScheduler( Config.defaults(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler, NullLogService.getInstance() ));
+    private final BoltSchedulerProvider boltSchedulerProvider = life.add(
+            new ExecutorBoltSchedulerProvider( createConfig(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
+                    NullLogService.getInstance() ) );
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), mock( BoltChannel.class ), clock );
     private final BoltConnectionFactory connectionFactory =
-            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltScheduler, mock( OutOfBandStrategy.class ), NullLogService.getInstance(),
+            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltSchedulerProvider, NullLogService.getInstance(),
                     clock, null );
     private BoltChannel boltChannel;
 
@@ -114,6 +122,7 @@ public class ResetFuzzTest
     {
         boltChannel = mock( BoltChannel.class );
         when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
+        when( boltChannel.connector() ).thenReturn( CONNECTOR );
     }
 
     @Test
@@ -202,6 +211,19 @@ public class ResetFuzzTest
     public void cleanup()
     {
         life.shutdown();
+    }
+
+    private static Config createConfig()
+    {
+        Map<String, String> configProps = new HashMap<>();
+
+        configProps.put( new BoltConnector( CONNECTOR ).enabled.name(), "TRUE" );
+        configProps.put( new BoltConnector( CONNECTOR ).listen_address.name(), "localhost:0" );
+        configProps.put( new BoltConnector( CONNECTOR ).type.name(), BoltConnector.ConnectorType.BOLT.name() );
+        configProps.put( new BoltConnector( CONNECTOR ).thread_pool_core_size.name(), "5" );
+        configProps.put( new BoltConnector( CONNECTOR ).thread_pool_max_size.name(), "10" );
+
+        return Config.fromSettings( configProps ).build();
     }
 
     /**

@@ -208,14 +208,9 @@ public interface JobScheduler extends Lifecycle
         public static final Group pageCacheIOHelper = new Group( "PageCacheIOHelper" );
 
         /**
-         * Bolt scheduler standard worker
+         * Bolt scheduler worker
          */
-        public static Group boltStdWorker = new Group( "BoltStdWorker" );
-
-        /**
-         * Bolt scheduler out-of-band worker
-         */
-        public static Group boltOobWorker = new Group( "BoltOobWorker" );
+        public static Group boltWorker = new Group( "BoltWorker" );
 
         private Groups()
         {

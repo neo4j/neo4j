@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.time.Duration;
+
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.graphdb.config.Setting;
@@ -26,10 +28,13 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Configuration options for Bolt connectors. " +
               "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +
@@ -51,6 +56,19 @@ public class BoltConnector extends Connector
     @Description( "Advertised address for this connector" )
     public final Setting<AdvertisedSocketAddress> advertised_address;
 
+    @Description( "The number of threads to keep in the thread pool bound to this connector, even if they are idle." )
+    public final Setting<Integer> thread_pool_core_size;
+
+    @Description( "The maximum number of threads allowed in the thread pool bound to this connector." )
+    public final Setting<Integer> thread_pool_max_size;
+
+    @Description( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." )
+    public final Setting<Duration> thread_pool_keep_alive;
+
+    @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
+    public final Setting<Integer> thread_pool_queue_size;
+
+
     // Used by config doc generator
     public BoltConnector()
     {
@@ -69,6 +87,10 @@ public class BoltConnector extends Connector
         this.address = group.scope( legacyAddressSetting );
         this.listen_address = group.scope( listenAddressSetting );
         this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
+        this.thread_pool_core_size = group.scope( setting( "thread_pool_core_size", INTEGER, String.valueOf( 10 ) ) );
+        this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 100 ) ) );
+        this.thread_pool_keep_alive = group.scope( setting( "thread_pool_keep_alive", DURATION, "5m" ) );
+        this.thread_pool_queue_size = group.scope( setting( "thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
     }
 
     public enum EncryptionLevel

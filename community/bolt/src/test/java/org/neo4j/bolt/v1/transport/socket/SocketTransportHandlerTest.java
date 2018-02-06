@@ -64,6 +64,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 @RunWith( Parameterized.class )
 public class SocketTransportHandlerTest
 {
+    private static final String CONNECTOR = "default";
     private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final BoltMessageLogging BOLT_LOGGING = BoltMessageLogging.none();
 
@@ -151,7 +152,7 @@ public class SocketTransportHandlerTest
         AssertableLogProvider logging = new AssertableLogProvider();
 
         BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
-        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, logging, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, logging, BOLT_LOGGING );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -172,7 +173,7 @@ public class SocketTransportHandlerTest
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
         AssertableLogProvider logging = new AssertableLogProvider();
-        SocketTransportHandler handler = new SocketTransportHandler( mock( BoltHandshakeProtocolHandler.class ),
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, mock( BoltHandshakeProtocolHandler.class ),
                 logging, BOLT_LOGGING );
 
         // When
@@ -192,7 +193,7 @@ public class SocketTransportHandlerTest
         BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
         ChannelHandlerContext context = channelHandlerContextMock();
 
-        SocketTransportHandler handler = new SocketTransportHandler( handshakeHandler, LOG_PROVIDER, BOLT_LOGGING );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, LOG_PROVIDER, BOLT_LOGGING );
 
         handler.channelRead( context, handshake() );
         BoltMessagingProtocolHandler protocol1 = handshakeHandler.chosenProtocol();
@@ -225,7 +226,7 @@ public class SocketTransportHandlerTest
 
     private static SocketTransportHandler newSocketTransportHandler( BoltHandshakeProtocolHandler handler )
     {
-        return new SocketTransportHandler( handler, LOG_PROVIDER, BOLT_LOGGING );
+        return new SocketTransportHandler( CONNECTOR, handler, LOG_PROVIDER, BOLT_LOGGING );
     }
 
     private static ChannelHandlerContext channelHandlerContextMock()

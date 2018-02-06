@@ -60,38 +60,39 @@ public class ExecutorBoltSchedulerTest
     private final Config config = Config.defaults();
     private final ExecutorFactory executorFactory = mock( ExecutorFactory.class );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
-    private final ExecutorBoltScheduler boltScheduler = new ExecutorBoltScheduler( config, executorFactory, jobScheduler, logService );
+    private final ExecutorBoltScheduler boltScheduler =
+            new ExecutorBoltScheduler( executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0 );
 
     @Before
     public void setup()
     {
         when( jobScheduler.threadFactory( any() ) ).thenReturn( Executors.defaultThreadFactory() );
-        when( executorFactory.create( anyInt(), anyInt(), any( Duration.class ), any( ThreadFactory.class ) ) ).thenReturn( Executors.newCachedThreadPool() );
+        when( executorFactory.create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) ) ).thenReturn(
+                Executors.newCachedThreadPool() );
     }
 
     @After
     public void cleanup() throws Throwable
     {
-        boltScheduler.shutdown();
+        boltScheduler.stop();
     }
 
     @Test
     public void initShouldCreateBothThreadPools() throws Throwable
     {
-        boltScheduler.init();
+        boltScheduler.start();
 
-        verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltStdWorker );
-        verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltOobWorker );
-        verify( executorFactory, times( 2 ) ).create( anyInt(), anyInt(), any( Duration.class ), any( ThreadFactory.class ) );
+        verify( jobScheduler ).threadFactory( JobScheduler.Groups.boltWorker );
+        verify( executorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), any( ThreadFactory.class ) );
     }
 
     @Test
-    public void shutdownShouldTerminateBothThreadPools() throws Throwable
+    public void shutdownShouldTerminateThreadPool() throws Throwable
     {
-        boltScheduler.init();
-        boltScheduler.shutdown();
+        boltScheduler.start();
+        boltScheduler.stop();
 
-        verify( executorFactory, times( 2 ) ).destroy( any() );
+        verify( executorFactory, times( 1 ) ).destroy( any() );
     }
 
     @Test
@@ -100,7 +101,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
 
         verify( connection ).id();
@@ -113,7 +114,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.destroyed( connection );
 
@@ -128,7 +129,7 @@ public class ExecutorBoltSchedulerTest
         BoltConnection connection = newConnection( id );
         doAnswer( inv -> awaitExit( exitCondition ) ).when( connection ).processNextBatch();
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
@@ -147,7 +148,7 @@ public class ExecutorBoltSchedulerTest
         AtomicBoolean exitCondition = new AtomicBoolean();
         doAnswer( inv -> awaitExit( exitCondition ) ).when( connection ).processNextBatch();
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
@@ -166,7 +167,7 @@ public class ExecutorBoltSchedulerTest
         BoltConnection connection = newConnection( id );
         doThrow( new RuntimeException( "some unexpected error" ) ).when( connection ).processNextBatch();
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
@@ -189,7 +190,7 @@ public class ExecutorBoltSchedulerTest
         doAnswer( inv -> counter.incrementAndGet() ).when( connection ).processNextBatch();
         when( connection.hasPendingJobs() ).thenReturn( true ).thenReturn( false );
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
@@ -207,7 +208,7 @@ public class ExecutorBoltSchedulerTest
         AtomicBoolean exitCondition = new AtomicBoolean();
         doAnswer( inv -> awaitExit( exitCondition ) ).when( connection ).processNextBatch();
 
-        boltScheduler.init();
+        boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 

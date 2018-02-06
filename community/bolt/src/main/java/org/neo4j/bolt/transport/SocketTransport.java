@@ -33,6 +33,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class SocketTransport implements NettyServer.ProtocolInitializer
 {
+    private final String connector;
     private final ListenSocketAddress address;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
@@ -41,11 +42,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final TransportThrottleGroup throttleGroup;
     private final BoltProtocolHandlerFactory handlerFactory;
 
-    public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
+    public SocketTransport( String connector, ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
                             LogProvider logging, BoltMessageLogging boltLogging,
                             TransportThrottleGroup throttleGroup,
                             BoltProtocolHandlerFactory handlerFactory )
     {
+        this.connector = connector;
         this.address = address;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
@@ -71,7 +73,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 // add a close listener that will uninstall throttles
                 ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
 
-                TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler( sslCtx,
+                TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler( connector, sslCtx,
                         encryptionRequired, false, logging, handlerFactory, boltLogging );
 
                 ch.pipeline().addLast( transportSelectionHandler );

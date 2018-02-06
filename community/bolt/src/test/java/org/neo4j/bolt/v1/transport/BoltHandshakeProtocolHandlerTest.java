@@ -46,6 +46,7 @@ import static org.neo4j.bolt.transport.HandshakeOutcome.PROTOCOL_CHOSEN;
 
 public class BoltHandshakeProtocolHandlerTest
 {
+    private final String connector = "default";
     private final BoltMessagingProtocolHandler protocol = mock( BoltMessagingProtocolHandler.class );
     private final ChannelHandlerContext ctx = newChannelHandlerContextMock();
     private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
@@ -53,7 +54,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldChooseFirstAvailableProtocol()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
@@ -77,7 +78,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldHandleFragmentedMessage()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
@@ -109,7 +110,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldHandleHandshakeFollowedByMessageInSameBuffer()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
@@ -136,7 +137,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldHandleVersionBoundary()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             long maxUnsignedInt32 = 4_294_967_295L;
@@ -160,7 +161,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldFallBackToNoneProtocolIfNoMatch()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
@@ -183,7 +184,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldRejectIfInvalidHandshake()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );
@@ -206,7 +207,7 @@ public class BoltHandshakeProtocolHandlerTest
     @Test
     public void shouldRejectIfInsecureHandshake()
     {
-        try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
+        try ( BoltChannel boltChannel = BoltChannel.open( connector, ctx, messageLogger ) )
         {
             // Given
             BoltProtocolHandlerFactory handlerFactory = newHandlerFactory( 1, protocol );

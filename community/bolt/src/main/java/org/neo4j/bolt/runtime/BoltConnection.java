@@ -64,13 +64,6 @@ public interface BoltConnection
     String principal();
 
     /**
-     * Returns whether this connection has high priority (administrative access) over the standard connections
-     *
-     * @return true when it is assigned higher priority
-     */
-    boolean isOutOfBand();
-
-    /**
      * Returns whether there's any pending Job waiting to be processed
      *
      * @return true when there's at least one job in the queue

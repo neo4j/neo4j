@@ -60,7 +60,7 @@ public class CachedThreadPoolExecutorFactoryTest
     @Test
     public void createShouldCreateExecutor()
     {
-        executorService = factory.create( 0, 1, Duration.ZERO, newThreadFactory() );
+        executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactory() );
 
         assertNotNull( executorService );
         assertFalse( executorService.isShutdown() );
@@ -72,12 +72,12 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( -1, 10, Duration.ZERO, newThreadFactory() );
+            factory.create( -1, 10, Duration.ZERO, 0, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
         {
-
+            // expected
         }
     }
 
@@ -86,12 +86,12 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( 0, -1, Duration.ZERO, newThreadFactory() );
+            factory.create( 0, -1, Duration.ZERO, 0, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
         {
-
+            // expected
         }
     }
 
@@ -100,12 +100,12 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( 0, 0, Duration.ZERO, newThreadFactory() );
+            factory.create( 0, 0, Duration.ZERO, 0, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
         {
-
+            // expected
         }
     }
 
@@ -114,19 +114,19 @@ public class CachedThreadPoolExecutorFactoryTest
     {
         try
         {
-            factory.create( 10, 5, Duration.ZERO, newThreadFactory() );
+            factory.create( 10, 5, Duration.ZERO, 0, newThreadFactory() );
             fail( "should throw exception" );
         }
         catch ( IllegalArgumentException ex )
         {
-
+            // expected
         }
     }
 
     @Test
     public void destroyShouldDestroyExecutor()
     {
-        executorService = factory.create( 0, 1, Duration.ZERO, newThreadFactory() );
+        executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactory() );
 
         factory.destroy( executorService );
 
@@ -146,7 +146,7 @@ public class CachedThreadPoolExecutorFactoryTest
         }
         catch ( IllegalArgumentException ex )
         {
-
+            // expected
         }
     }
 
@@ -156,7 +156,7 @@ public class CachedThreadPoolExecutorFactoryTest
         AtomicBoolean exitCondition = new AtomicBoolean( false );
         AtomicInteger threadCounter = new AtomicInteger( 0 );
 
-        executorService = factory.create( 0, 1, Duration.ZERO, newThreadFactoryWithCounter( threadCounter ) );
+        executorService = factory.create( 0, 1, Duration.ZERO, 0, newThreadFactoryWithCounter( threadCounter ) );
 
         assertNotNull( executorService );
         assertEquals( 0, threadCounter.get() );
@@ -177,7 +177,7 @@ public class CachedThreadPoolExecutorFactoryTest
         AtomicBoolean exitCondition = new AtomicBoolean( false );
         AtomicInteger threadCounter = new AtomicInteger( 0 );
 
-        executorService = factory.create( 0, 5, Duration.ZERO, newThreadFactoryWithCounter( threadCounter ) );
+        executorService = factory.create( 0, 5, Duration.ZERO, 0, newThreadFactoryWithCounter( threadCounter ) );
 
         assertNotNull( executorService );
         assertEquals( 0, threadCounter.get() );
@@ -195,19 +195,8 @@ public class CachedThreadPoolExecutorFactoryTest
         }
         catch ( RejectedExecutionException ex )
         {
-
+            // expected
         }
-    }
-
-    @Test
-    public void createdExecutorShouldPrecreateCoreThreads()
-    {
-        AtomicInteger threadCounter = new AtomicInteger( 0 );
-
-        executorService = factory.create( 5, 10, Duration.ZERO, newThreadFactoryWithCounter( threadCounter ) );
-
-        assertNotNull( executorService );
-        assertEquals( 5, threadCounter.get() );
     }
 
     private static Runnable newInfiniteWaitingRunnable( AtomicBoolean exitCondition )
@@ -228,6 +217,5 @@ public class CachedThreadPoolExecutorFactoryTest
             return Executors.defaultThreadFactory().newThread( job );
         };
     }
-
 
 }

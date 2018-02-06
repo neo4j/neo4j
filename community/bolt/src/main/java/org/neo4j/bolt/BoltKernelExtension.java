@@ -27,15 +27,15 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.bolt.logging.BoltMessageLog;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.BoltScheduler;
+import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
-import org.neo4j.bolt.runtime.EndpointBasedOutOfBandStrategy;
 import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
+import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
@@ -153,8 +153,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
-        BoltScheduler boltScheduler = life.add( new ExecutorBoltScheduler( config, new CachedThreadPoolExecutorFactory( log ), scheduler, logService ) );
-        BoltConnectionFactory boltConnectionFactory = createConnectionFactory( boltFactory, boltScheduler, dependencies, logService, clock );
+        BoltSchedulerProvider boltSchedulerProvider =
+                life.add( new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( log ), scheduler, logService ) );
+        BoltConnectionFactory boltConnectionFactory = createConnectionFactory( boltFactory, boltSchedulerProvider, dependencies, logService, clock );
         ConnectorPortRegister connectionRegister = dependencies.connectionRegister();
 
         TransportThrottleGroup throttleGroup = new TransportThrottleGroup( config, clock );
@@ -179,10 +180,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, clock );
     }
 
-    private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltScheduler scheduler,
+    private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
             Dependencies dependencies, LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( boltFactory, scheduler, new EndpointBasedOutOfBandStrategy(), logService, clock,
+        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
                 new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ) );
     }
 
@@ -226,7 +227,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
                     logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", listenAddress );
 
-                    return new SocketTransport( listenAddress, sslCtx, requireEncryption,
+                    return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption,
                             logService.getInternalLogProvider(), boltLogging, throttleGroup, handlerFactory );
                 } ) );
 

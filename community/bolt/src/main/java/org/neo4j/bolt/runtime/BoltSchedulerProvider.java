@@ -19,9 +19,12 @@
  */
 package org.neo4j.bolt.runtime;
 
-public interface OutOfBandStrategy
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+public interface BoltSchedulerProvider extends Lifecycle
 {
 
-    boolean isOutOfBand( BoltConnection connection );
+    BoltScheduler get( BoltChannel channel );
 
 }

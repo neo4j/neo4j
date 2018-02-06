@@ -20,8 +20,10 @@
 package org.neo4j.bolt.runtime;
 
 import java.time.Duration;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
@@ -49,11 +51,9 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
     }
 
     @Override
-    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepLive, ThreadFactory threadFactory )
+    public ExecutorService create( int corePoolSize, int maxPoolSize, Duration keepLive, int queueSize, ThreadFactory threadFactory )
     {
-        ThreadPool result = new ThreadPool( corePoolSize, maxPoolSize, keepLive, new SynchronousQueue<>(), threadFactory, rejectionHandler );
-
-        result.prestartAllCoreThreads();
+        ThreadPool result = new ThreadPool( corePoolSize, maxPoolSize, keepLive, createTaskQueue( queueSize ), threadFactory, rejectionHandler );
 
         return result;
     }
@@ -63,7 +63,8 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
     {
         if ( !( executor instanceof ThreadPool ) )
         {
-            throw new IllegalArgumentException( String.format( "The passed executor should already be created by '%s#create()'.", CachedThreadPoolExecutorFactory.class.getName() ) );
+            throw new IllegalArgumentException(
+                    String.format( "The passed executor should already be created by '%s#create()'.", CachedThreadPoolExecutorFactory.class.getName() ) );
         }
 
         executor.shutdown();
@@ -86,6 +87,24 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
         }
     }
 
+    private static BlockingQueue createTaskQueue( int queueSize )
+    {
+        if ( queueSize == -1 )
+        {
+            return new LinkedBlockingQueue();
+        }
+        else if ( queueSize == 0 )
+        {
+            return new SynchronousQueue();
+        }
+        else if ( queueSize > 0 )
+        {
+            return new ArrayBlockingQueue( queueSize );
+        }
+
+        throw new IllegalArgumentException( String.format( "Unsupported queue size %d for thread pool creation.", queueSize ) );
+    }
+
     private class ThreadPool extends ThreadPoolExecutor
     {
 
@@ -93,18 +112,6 @@ public class CachedThreadPoolExecutorFactory implements ExecutorFactory
                 RejectedExecutionHandler rejectionHandler )
         {
             super( corePoolSize, maxPoolSize, keepLive.toMillis(), MILLISECONDS, workQueue, threadFactory, rejectionHandler );
-        }
-
-        @Override
-        protected void beforeExecute( Thread t, Runnable r )
-        {
-            super.beforeExecute( t, r );
-        }
-
-        @Override
-        protected void afterExecute( Runnable r, Throwable t )
-        {
-            super.afterExecute( r, t );
         }
 
     }
