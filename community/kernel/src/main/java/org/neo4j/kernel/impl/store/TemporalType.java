@@ -282,7 +282,7 @@ public enum TemporalType
 
     private static TemporalType find( int temporalType )
     {
-        if ( temporalType < TYPES.length )
+        if ( temporalType < TYPES.length && temporalType >= 0 )
         {
             return TYPES[temporalType];
         }

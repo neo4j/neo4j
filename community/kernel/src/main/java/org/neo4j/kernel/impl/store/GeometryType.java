@@ -218,7 +218,7 @@ public enum GeometryType
 
     private static GeometryType find( int gtype )
     {
-        if ( gtype < TYPES.length )
+        if ( gtype < TYPES.length && gtype >= 0 )
         {
             return TYPES[gtype];
         }
