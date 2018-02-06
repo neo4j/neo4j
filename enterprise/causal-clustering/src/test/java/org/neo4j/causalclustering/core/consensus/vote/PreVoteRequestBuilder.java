@@ -21,10 +21,10 @@ package org.neo4j.causalclustering.core.consensus.vote;
 
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 
-public class VoteRequestBuilder extends AnyVoteRequestBuilder<RaftMessages.Vote.Request>
+public class PreVoteRequestBuilder extends AnyVoteRequestBuilder<RaftMessages.PreVote.Request>
 {
-    public VoteRequestBuilder()
+    public PreVoteRequestBuilder()
     {
-        super( RaftMessages.Vote.Request::new );
+        super( RaftMessages.PreVote.Request::new );
     }
 }

@@ -66,7 +66,11 @@ trait GraphIcing {
 
     def shutdown() = graph.shutdown()
 
+    def createNode() = graph.createNode()
+
     def createNode(label: Label) = graph.createNode(label)
+
+    def createNode(label1: Label, label2: Label) = graph.createNode(label1, label2)
 
     def execute(query: String) = graph.execute(query)
 

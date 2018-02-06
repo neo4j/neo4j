@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.security.AnonymousContext
@@ -29,11 +30,13 @@ import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
 
-  var db: GraphDatabaseCypherService = null
-  var lastCommittedTxIdProvider: LastCommittedTxIdProvider = null
+  var graph: GraphDatabaseService = _
+  var db: GraphDatabaseCypherService = _
+  var lastCommittedTxIdProvider: LastCommittedTxIdProvider = _
 
   override protected def beforeAll(): Unit = {
-    db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())
+    graph = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    db = new GraphDatabaseCypherService(graph)
     lastCommittedTxIdProvider = LastCommittedTxIdProvider(db)
   }
 
@@ -61,7 +64,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   private def createNode(): Unit = {
     val tx = db.beginTransaction( Transaction.Type.explicit, AnonymousContext.write() )
     try {
-      db.createNode()
+      graph.createNode()
       tx.success()
     }
     finally {

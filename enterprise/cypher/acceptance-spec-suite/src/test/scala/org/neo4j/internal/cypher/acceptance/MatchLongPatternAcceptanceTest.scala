@@ -199,6 +199,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       runWithConfig(config.toSeq: _*) {
         (engine, db) =>
           graph = db
+          graphOps = db.getGraphDatabaseService
           eengine = engine
           makeLargeMatrixDataset(100)
           val monitor = TestIDPSolverMonitor()

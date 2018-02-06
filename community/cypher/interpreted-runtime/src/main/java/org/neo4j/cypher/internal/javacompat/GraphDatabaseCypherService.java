@@ -53,36 +53,6 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public Node createNode()
-    {
-        return graph.createNode();
-    }
-
-    @Override
-    public Long createNodeId()
-    {
-        return graph.createNodeId();
-    }
-
-    @Override
-    public Node createNode( Label... labels )
-    {
-        return graph.createNode( labels );
-    }
-
-    @Override
-    public Node getNodeById( long id )
-    {
-        return graph.getNodeById( id );
-    }
-
-    @Override
-    public Relationship getRelationshipById( long id )
-    {
-        return graph.getRelationshipById( id );
-    }
-
-    @Override
     public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
         return graph.beginTransaction( type, securityContext );

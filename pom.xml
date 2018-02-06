@@ -76,7 +76,7 @@
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
-    <jetty.version>9.2.22.v20170606</jetty.version>
+    <jetty.version>9.4.8.v20171121</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>

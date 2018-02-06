@@ -20,24 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
-import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
-
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-  }
-
-  val expectedSucceed: TestConfiguration = Configs.Interpreted - Configs.Cost2_3
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 
@@ -50,7 +40,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        executeWith(Configs.UpdateConf, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -71,7 +61,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        executeWith(Configs.UpdateConf, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -92,7 +82,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
+        executeWith(Configs.UpdateConf, "merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -112,7 +102,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> 23), "User")
 
       // when + then
-      failWithError(expectedSucceed + Configs.Procs, "merge (a:Person:User {id: 23}) return a",
+      failWithError(Configs.UpdateConf + Configs.Procs, "merge (a:Person:User {id: 23}) return a",
         List("can not create a new node due to conflicts with existing unique nodes"))
       countNodes() should equal(2)
     }
@@ -124,7 +114,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
+        executeWith(Configs.UpdateConf, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
 
       // then
       results.toSet should equal(Set(Map("a.id" -> 23, "a.mail" -> "emil@neo.com", "a.country" -> "Sweden", "labels(a)" -> List("Person"))))
@@ -137,7 +127,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        executeWith(expectedSucceed, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
+        executeWith(Configs.UpdateConf, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a.id, a.mail, a.country, labels(a)")
 
       // then
       results.toSet should equal(Set(Map("a.id" -> 23, "a.mail" -> "emil@neo.com", "a.country" -> "Sweden", "labels(a)" -> List("Person", "User"))))

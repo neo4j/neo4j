@@ -37,8 +37,10 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
   test("should match paths correctly with rule planner in compatiblity mode") {
     runWithConfig() {
       db =>
-        graph = db
-        relate(createNode(), createNode(), "T")
+        // given
+        db.execute("CREATE ()-[:T]->()")
+
+        // then
         val query = "MATCH (n)-[r:T]->(m) RETURN count(*)"
         db.execute(s"CYPHER 2.3 planner=rule $query").columnAs[Long]("count(*)").next() shouldBe 1
         db.execute(s"CYPHER 2.3 $query").columnAs[Long]("count(*)").next() shouldBe 1

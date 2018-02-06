@@ -108,6 +108,69 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
+    public void shouldScanRelationshipInTransaction() throws Exception
+    {
+        final int nRelationshipsInStore = 10;
+
+        int type;
+        long n1, n2;
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            n1 = tx.dataWrite().nodeCreate();
+            n2 = tx.dataWrite().nodeCreate();
+
+            // setup some in store relationships
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            relateNTimes( nRelationshipsInStore, type, n1, n2, tx );
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            long r = tx.dataWrite().relationshipCreate( n1, type, n2 );
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
+            {
+                tx.dataRead().allRelationshipsScan( relationship );
+                assertCountRelationships( relationship, nRelationshipsInStore + 1, n1, type, n2 );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldNotScanRelationshipWhichWasDeletedInTransaction() throws Exception
+    {
+        final int nRelationshipsInStore = 5 + 1 + 5;
+
+        int type;
+        long n1, n2, r;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            n1 = tx.dataWrite().nodeCreate();
+            n2 = tx.dataWrite().nodeCreate();
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+
+            relateNTimes( 5, type, n1, n2, tx );
+            r = tx.dataWrite().relationshipCreate( n1, type, n2 );
+            relateNTimes( 5, type, n1, n2, tx );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
+            {
+                tx.dataRead().allRelationshipsScan( relationship );
+                assertCountRelationships( relationship, nRelationshipsInStore - 1, n1, type, n2 );
+            }
+            tx.success();
+        }
+    }
+
+    @Test
     public void shouldSeeRelationshipInTransaction() throws Exception
     {
         long n1, n2;
@@ -389,5 +452,28 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         expectedCounts.put( computeKey( newTypeName, BOTH ), 1 );
 
         return expectedCounts;
+    }
+
+    private void relateNTimes( int nRelationshipsInStore, int type, long n1, long n2, Transaction tx )
+            throws KernelException
+    {
+        for ( int i = 0; i < nRelationshipsInStore; i++ )
+        {
+            tx.dataWrite().relationshipCreate( n1, type, n2 );
+        }
+    }
+
+    private void assertCountRelationships(
+            RelationshipScanCursor relationship, int expectedCount, long sourceNode, int type, long targetNode )
+    {
+        int count = 0;
+        while ( relationship.next() )
+        {
+            assertEquals( sourceNode, relationship.sourceNodeReference() );
+            assertEquals( type, relationship.label() );
+            assertEquals( targetNode, relationship.targetNodeReference() );
+            count++;
+        }
+        assertEquals( expectedCount, count );
     }
 }
