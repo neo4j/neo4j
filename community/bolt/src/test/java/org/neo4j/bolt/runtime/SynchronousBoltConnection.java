@@ -71,12 +71,6 @@ public class SynchronousBoltConnection implements BoltConnection
     }
 
     @Override
-    public boolean isOutOfBand()
-    {
-        return false;
-    }
-
-    @Override
     public boolean hasPendingJobs()
     {
         return false;

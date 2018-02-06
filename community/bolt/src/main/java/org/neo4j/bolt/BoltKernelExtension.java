@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+<<<<<<< HEAD
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
@@ -32,6 +33,17 @@ import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
+=======
+import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
+import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
+import org.neo4j.bolt.runtime.BoltScheduler;
+import org.neo4j.bolt.runtime.BoltSchedulerProvider;
+import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
+import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
+import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
+import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
@@ -169,8 +181,20 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
                                                            Dependencies dependencies, LogService logService, Clock clock )
     {
+<<<<<<< HEAD
         return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
                 new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ), dependencies.monitors() );
+=======
+        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService, clock );
+        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, clock );
+    }
+
+    private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
+            Dependencies dependencies, LogService logService, Clock clock )
+    {
+        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
+                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ) );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,
@@ -211,8 +235,15 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                             break;
                     }
 
+<<<<<<< HEAD
                     return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
                             throttleGroup, handlerFactory );
+=======
+                    logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", listenAddress );
+
+                    return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption,
+                            logService.getInternalLogProvider(), boltLogging, throttleGroup, handlerFactory );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
                 } ) );
 
         return connectors;

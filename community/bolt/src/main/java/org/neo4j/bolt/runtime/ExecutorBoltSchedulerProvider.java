@@ -20,14 +20,22 @@
 package org.neo4j.bolt.runtime;
 
 import java.util.concurrent.ConcurrentHashMap;
+<<<<<<< HEAD
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+=======
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+=======
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobScheduler;
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
 public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements BoltSchedulerProvider
 {
@@ -37,8 +45,11 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     private final LogService logService;
     private final ConcurrentHashMap<String, BoltScheduler> boltSchedulers;
 
+<<<<<<< HEAD
     private ExecutorService forkJoinThreadPool;
 
+=======
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     public ExecutorBoltSchedulerProvider( Config config, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService )
     {
         this.config = config;
@@ -49,6 +60,7 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     }
 
     @Override
+<<<<<<< HEAD
     public void start()
     {
         forkJoinThreadPool = new ForkJoinPool();
@@ -66,11 +78,23 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
             {
                 throw new RuntimeException( throwable );
             }
+=======
+    public void start() throws Throwable
+    {
+        config.enabledBoltConnectors().forEach( connector ->
+        {
+            BoltScheduler boltScheduler =
+                    new ExecutorBoltScheduler( executorFactory, scheduler, logService, config.get( connector.thread_pool_core_size ),
+                            config.get( connector.thread_pool_max_size ), config.get( connector.thread_pool_keep_alive ),
+                            config.get( connector.thread_pool_queue_size ) );
+            boltScheduler.start();
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
             boltSchedulers.put( connector.key(), boltScheduler );
         } );
     }
 
     @Override
+<<<<<<< HEAD
     public void stop()
     {
         boltSchedulers.values().forEach( s -> {
@@ -87,6 +111,12 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
 
         forkJoinThreadPool.shutdown();
         forkJoinThreadPool = null;
+=======
+    public void stop() throws Throwable
+    {
+        boltSchedulers.values().forEach( s -> s.stop() );
+        boltSchedulers.clear();
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     }
 
     @Override

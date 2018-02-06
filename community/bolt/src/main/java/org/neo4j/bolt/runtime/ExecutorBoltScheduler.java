@@ -31,21 +31,34 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.util.JobScheduler;
+=======
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 import org.neo4j.logging.Log;
 
+<<<<<<< HEAD
 public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {
     private final String connector;
+=======
+public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionListener, BoltConnectionQueueMonitor
+{
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final Log log;
     private final ConcurrentHashMap<String, BoltConnection> activeConnections = new ConcurrentHashMap<>();
+<<<<<<< HEAD
     private final ConcurrentHashMap<String, CompletableFuture<Boolean>> activeWorkItems = new ConcurrentHashMap<>();
+=======
+    private final ConcurrentHashMap<String, CompletableFuture<Void>> activeWorkItems = new ConcurrentHashMap<>();
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     private final int corePoolSize;
     private final int maxPoolSize;
     private final Duration keepAlive;
     private final int queueSize;
+<<<<<<< HEAD
     private final ExecutorService forkJoinPool;
 
     private ExecutorService threadPool;
@@ -55,6 +68,14 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
                                   Duration keepAlive, int queueSize, ExecutorService forkJoinPool )
     {
         this.connector = connector;
+=======
+
+    private ExecutorService threadPool;
+
+    public ExecutorBoltScheduler( ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize, int maxPoolSize,
+            Duration keepAlive, int queueSize )
+    {
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
         this.executorFactory = executorFactory;
         this.scheduler = scheduler;
         this.log = logService.getInternalLog( getClass() );
@@ -62,7 +83,10 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         this.maxPoolSize = maxPoolSize;
         this.keepAlive = keepAlive;
         this.queueSize = queueSize;
+<<<<<<< HEAD
         this.forkJoinPool = forkJoinPool;
+=======
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     }
 
     boolean isRegistered( BoltConnection connection )
@@ -77,16 +101,24 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
 
     public void start()
     {
+<<<<<<< HEAD
         threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize,
                 new NameAppendingThreadFactory( connector, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) ) );
+=======
+        threadPool = executorFactory.create( corePoolSize, maxPoolSize, keepAlive, queueSize, scheduler.threadFactory( JobScheduler.Groups.boltWorker ) );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     }
 
     public void stop()
     {
+<<<<<<< HEAD
         if ( threadPool != null )
         {
             executorFactory.destroy( threadPool );
         }
+=======
+        executorFactory.destroy( threadPool );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     }
 
     @Override
@@ -130,6 +162,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
     {
         try
         {
+<<<<<<< HEAD
             activeWorkItems.computeIfAbsent( connection.id(),
                     key -> CompletableFuture.supplyAsync( () -> executeBatch( connection ), threadPool ).whenCompleteAsync(
                             ( result, error ) -> handleCompletion( connection, result, error ), forkJoinPool ) );
@@ -137,6 +170,16 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         catch ( RejectedExecutionException ex )
         {
             connection.handleSchedulingError( ex );
+=======
+            synchronized ( connection )
+            {
+                if ( !activeWorkItems.containsKey( id ) )
+                {
+                    activeWorkItems.put( id, CompletableFuture.runAsync( () -> connection.processNextBatch(), threadPool ).whenCompleteAsync(
+                            ( result, error ) -> handleCompletion( connection, result, error ), threadPool ) );
+                }
+            }
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
         }
     }
 
@@ -177,11 +220,19 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         {
             if ( (Boolean)shouldContinueScheduling && connection.hasPendingJobs() )
             {
+<<<<<<< HEAD
                 previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), forkJoinPool );
+=======
+                if ( connection.hasPendingJobs() )
+                {
+                    previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), threadPool );
+                }
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
             }
         }
     }
 
+<<<<<<< HEAD
     private static class NameAppendingThreadFactory implements ThreadFactory
     {
         private final String nameToAppend;
@@ -201,4 +252,6 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
             return newThread;
         }
     }
+=======
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 }

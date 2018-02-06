@@ -36,15 +36,24 @@ import java.util.function.BiFunction;
  */
 public class SocketTransport implements NettyServer.ProtocolInitializer
 {
+    private final String connector;
     private final ListenSocketAddress address;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private LogProvider logging;
     private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions;
 
+<<<<<<< HEAD
     public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
                             Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions )
+=======
+    public SocketTransport( String connector, ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
+                            LogProvider logging, BoltMessageLogging boltLogging,
+                            TransportThrottleGroup throttleGroup,
+                            BoltProtocolHandlerFactory handlerFactory )
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     {
+        this.connector = connector;
         this.address = address;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
@@ -61,8 +70,22 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             public void initChannel( SocketChannel ch ) throws Exception
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
+<<<<<<< HEAD
                 ch.pipeline().addLast(
                         new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions ) );
+=======
+
+                // install throttles
+                throttleGroup.install( ch );
+
+                // add a close listener that will uninstall throttles
+                ch.closeFuture().addListener( future -> throttleGroup.uninstall( ch ) );
+
+                TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler( connector, sslCtx,
+                        encryptionRequired, false, logging, handlerFactory, boltLogging );
+
+                ch.pipeline().addLast( transportSelectionHandler );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
             }
         };
     }

@@ -45,15 +45,23 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private static final int MAX_WEBSOCKET_HANDSHAKE_SIZE = 65536;
     private static final int MAX_WEBSOCKET_FRAME_SIZE = 65536;
 
+    private final String connector;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
     private final LogProvider logging;
     private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions;
 
+<<<<<<< HEAD
     TransportSelectionHandler( SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
                                Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions )
+=======
+    TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
+                               BoltProtocolHandlerFactory handlerFactory,
+                               BoltMessageLogging boltLogging )
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     {
+        this.connector = connector;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.isEncrypted = isEncrypted;
@@ -116,7 +124,12 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
+<<<<<<< HEAD
         p.addLast( new TransportSelectionHandler( null, encryptionRequired, true, logging, protocolVersions ) );
+=======
+        p.addLast( new TransportSelectionHandler( connector, null, encryptionRequired, true, logging,
+                handlerFactory, boltLogging ) );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
         p.remove( this );
     }
 
@@ -141,4 +154,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
                         new ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
         p.remove( this );
     }
+<<<<<<< HEAD
+=======
+
+    private SocketTransportHandler newSocketTransportHandler()
+    {
+        BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( handlerFactory,
+                encryptionRequired, isEncrypted );
+        return new SocketTransportHandler( connector, protocolHandler, logging, boltLogging );
+    }
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 }

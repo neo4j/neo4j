@@ -56,6 +56,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -165,9 +166,9 @@ public class BoltThrottleMaxDurationIT
             assertThat( e.getCause(), Matchers.instanceOf( SocketException.class ) );
         }
 
-        logProvider.assertAtLeastOnce(
-                AssertableLogProvider.inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error( containsString( "crashed" ),
-                        matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
+        logProvider.assertAtLeastOnce( AssertableLogProvider.inLog( Matchers.containsString( BoltConnection.class.getPackage().getName() ) ).error(
+                startsWith( "Unexpected error detected in bolt session" ),
+                matchesExceptionMessage( containsString( "will be closed because the client did not consume outgoing buffers for " ) ) ) );
     }
 
 }

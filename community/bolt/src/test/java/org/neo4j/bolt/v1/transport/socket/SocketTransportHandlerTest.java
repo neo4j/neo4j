@@ -49,6 +49,22 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SocketTransportHandlerTest
 {
+<<<<<<< HEAD
+=======
+    private static final String CONNECTOR = "default";
+    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
+    private static final BoltMessageLogging BOLT_LOGGING = BoltMessageLogging.none();
+
+    @Parameter
+    public Neo4jPack neo4jPack;
+
+    @Parameters( name = "{0}" )
+    public static List<Neo4jPack> parameters()
+    {
+        return Arrays.asList( new Neo4jPackV1(), new Neo4jPackV2() );
+    }
+
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     @Test
     public void shouldCloseProtocolOnChannelInactive() throws Throwable
     {
@@ -123,7 +139,12 @@ public class SocketTransportHandlerTest
         ChannelHandlerContext ctx = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
 
+<<<<<<< HEAD
         SocketTransportHandler handler = new SocketTransportHandler( protocolChooser( machine ), logging );
+=======
+        BoltHandshakeProtocolHandler handshakeHandler = newHandshakeHandler( machine );
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, logging, BOLT_LOGGING );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -144,7 +165,12 @@ public class SocketTransportHandlerTest
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
         AssertableLogProvider logging = new AssertableLogProvider();
+<<<<<<< HEAD
         SocketTransportHandler handler = new SocketTransportHandler( mock( ProtocolChooser.class ), logging );
+=======
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, mock( BoltHandshakeProtocolHandler.class ),
+                logging, BOLT_LOGGING );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
         // When
         Throwable cause = new Throwable( "Oh no!" );
@@ -164,7 +190,11 @@ public class SocketTransportHandlerTest
         ProtocolChooser chooser = protocolChooser( machine );
         ChannelHandlerContext context = channelHandlerContextMock();
 
+<<<<<<< HEAD
         SocketTransportHandler handler = new SocketTransportHandler( chooser, NullLogProvider.getInstance() );
+=======
+        SocketTransportHandler handler = new SocketTransportHandler( CONNECTOR, handshakeHandler, LOG_PROVIDER, BOLT_LOGGING );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
         handler.channelRead( context, handshake() );
         BoltProtocol protocol1 = chooser.chosenProtocol();
@@ -177,7 +207,11 @@ public class SocketTransportHandlerTest
 
     private static SocketTransportHandler newSocketTransportHandler( ProtocolChooser protocolChooser )
     {
+<<<<<<< HEAD
         return new SocketTransportHandler( protocolChooser, NullLogProvider.getInstance() );
+=======
+        return new SocketTransportHandler( CONNECTOR, handler, LOG_PROVIDER, BOLT_LOGGING );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     }
 
     private static ChannelHandlerContext channelHandlerContextMock()

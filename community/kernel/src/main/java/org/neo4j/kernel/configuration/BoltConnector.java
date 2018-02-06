@@ -68,6 +68,10 @@ public class BoltConnector extends Connector
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     public final Setting<Integer> thread_pool_queue_size;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     // Used by config doc generator
     public BoltConnector()
     {
@@ -87,7 +91,11 @@ public class BoltConnector extends Connector
         this.listen_address = group.scope( listenAddressSetting );
         this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
         this.thread_pool_core_size = group.scope( setting( "thread_pool_core_size", INTEGER, String.valueOf( 10 ) ) );
+<<<<<<< HEAD
         this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 400 ) ) );
+=======
+        this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 100 ) ) );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
         this.thread_pool_keep_alive = group.scope( setting( "thread_pool_keep_alive", DURATION, "5m" ) );
         this.thread_pool_queue_size = group.scope( setting( "thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
     }

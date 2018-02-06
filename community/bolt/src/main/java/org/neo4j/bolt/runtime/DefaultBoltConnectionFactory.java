@@ -28,30 +28,35 @@ import org.neo4j.kernel.impl.logging.LogService;
 public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 {
     private final BoltFactory machineFactory;
-    private final BoltScheduler scheduler;
-    private final OutOfBandStrategy outOfBandStrategy;
+    private final BoltSchedulerProvider schedulerProvider;
     private final LogService logService;
     private final Clock clock;
     private final BoltConnectionQueueMonitor queueMonitor;
 
-    public DefaultBoltConnectionFactory( BoltFactory machineFactory, BoltScheduler scheduler, OutOfBandStrategy outOfBandStrategy, LogService logService,
-            Clock clock, BoltConnectionQueueMonitor queueMonitor )
+    public DefaultBoltConnectionFactory( BoltFactory machineFactory, BoltSchedulerProvider schedulerProvider, LogService logService, Clock clock,
+            BoltConnectionQueueMonitor queueMonitor )
     {
         this.machineFactory = machineFactory;
-        this.scheduler = scheduler;
-        this.outOfBandStrategy = outOfBandStrategy;
+        this.schedulerProvider = schedulerProvider;
         this.logService = logService;
         this.clock = clock;
-        this.queueMonitor = queueMonitor == null ?  scheduler : new BoltConnectionQueueMonitorAggregate( scheduler, queueMonitor );
+        this.queueMonitor = queueMonitor;
     }
 
     @Override
     public BoltConnection newConnection( BoltChannel channel )
     {
+        BoltScheduler scheduler = schedulerProvider.get( channel );
+        BoltConnectionQueueMonitor connectionQueueMonitor =
+                queueMonitor == null ? scheduler : new BoltConnectionQueueMonitorAggregate( scheduler, queueMonitor );
         BoltConnection connection =
+<<<<<<< HEAD
                 new DefaultBoltConnection( channel, machineFactory.newMachine( channel, () -> {
                 }, clock ),
                         logService, outOfBandStrategy, scheduler, queueMonitor );
+=======
+                new DefaultBoltConnection( channel, machineFactory.newMachine( channel, clock ), logService, scheduler, connectionQueueMonitor );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
         connection.start();
 

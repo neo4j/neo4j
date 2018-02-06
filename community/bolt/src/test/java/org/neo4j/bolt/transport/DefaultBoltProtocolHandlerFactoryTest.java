@@ -43,6 +43,8 @@ import static org.mockito.Mockito.when;
 
 public class DefaultBoltProtocolHandlerFactoryTest
 {
+    private static final String CONNECTOR = "default";
+
     @Test
     public void shouldCreateV1Handler()
     {
@@ -71,7 +73,7 @@ public class DefaultBoltProtocolHandlerFactoryTest
 
     private static void testHandlerCreation( int protocolVersion )
     {
-        BoltChannel boltChannel = BoltChannel.open( newChannelCtxMock(), NullBoltMessageLogger.getInstance() );
+        BoltChannel boltChannel = BoltChannel.open( CONNECTOR, newChannelCtxMock(), NullBoltMessageLogger.getInstance() );
         BoltConnectionFactory connectionFactory = mock( BoltConnectionFactory.class );
 
         BoltConnection connection = mock( BoltConnection.class );

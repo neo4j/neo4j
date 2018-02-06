@@ -21,7 +21,9 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +38,11 @@ import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltScheduler;
+import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
-import org.neo4j.bolt.runtime.OutOfBandStrategy;
+import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -47,11 +50,18 @@ import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
+<<<<<<< HEAD
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+=======
+import org.neo4j.concurrent.Runnables;
+import org.neo4j.cypher.result.QueryResult;
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Connector;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -67,11 +77,19 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
+<<<<<<< HEAD
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResetFuzzTest
 {
     private final BoltChannel boltChannel = mock( BoltChannel.class );
+=======
+import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
+
+public class ResetFuzzTest
+{
+    private static final String CONNECTOR = "bolt";
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     // Because RESET has a "call ahead" mechanism where it will interrupt
     // the session before RESET arrives in order to purge any statements
     // ahead in the message queue, we use this test to convince ourselves
@@ -84,6 +102,7 @@ public class ResetFuzzTest
     private final LifeSupport life = new LifeSupport();
     /** We track the number of un-closed transactions, and fail if we ever leak one */
     private final AtomicLong liveTransactions = new AtomicLong();
+<<<<<<< HEAD
     private final Neo4jJobScheduler scheduler = life.add( new Neo4jJobScheduler() );
     private final BoltScheduler boltScheduler = life.add(
             new ExecutorBoltScheduler( Config.defaults(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ),
@@ -96,6 +115,18 @@ public class ResetFuzzTest
 
     private final ThreadedWorkerFactory sessions =
             new ThreadedWorkerFactory( ( enc, closer, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
+=======
+    private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
+    private final BoltSchedulerProvider boltSchedulerProvider = life.add(
+            new ExecutorBoltSchedulerProvider( createConfig(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
+                    NullLogService.getInstance() ) );
+    private final Clock clock = Clock.systemUTC();
+    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), mock( BoltChannel.class ), clock );
+    private final BoltConnectionFactory connectionFactory =
+            new DefaultBoltConnectionFactory( ( boltChannel, clock ) -> machine, boltSchedulerProvider, NullLogService.getInstance(),
+                    clock, null );
+    private BoltChannel boltChannel;
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
 
     private final List<List<RequestMessage>> sequences = asList(
             asList( run( "test", map() ), discardAll() ),
@@ -105,6 +136,17 @@ public class ResetFuzzTest
 
     private final List<RequestMessage> sent = new LinkedList<>();
 
+<<<<<<< HEAD
+=======
+    @Before
+    public void setup()
+    {
+        boltChannel = mock( BoltChannel.class );
+        when( boltChannel.id() ).thenReturn( UUID.randomUUID().toString() );
+        when( boltChannel.connector() ).thenReturn( CONNECTOR );
+    }
+
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     @Test
     public void shouldAlwaysReturnToReadyAfterReset() throws Throwable
     {
@@ -189,6 +231,19 @@ public class ResetFuzzTest
     public void cleanup()
     {
         life.shutdown();
+    }
+
+    private static Config createConfig()
+    {
+        Map<String, String> configProps = new HashMap<>();
+
+        configProps.put( new BoltConnector( CONNECTOR ).enabled.name(), "TRUE" );
+        configProps.put( new BoltConnector( CONNECTOR ).listen_address.name(), "localhost:0" );
+        configProps.put( new BoltConnector( CONNECTOR ).type.name(), BoltConnector.ConnectorType.BOLT.name() );
+        configProps.put( new BoltConnector( CONNECTOR ).thread_pool_core_size.name(), "5" );
+        configProps.put( new BoltConnector( CONNECTOR ).thread_pool_max_size.name(), "10" );
+
+        return Config.fromSettings( configProps ).build();
     }
 
     /**

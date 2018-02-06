@@ -23,6 +23,7 @@ import java.net.SocketAddress;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ServerChannel;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 
@@ -87,6 +88,11 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
         return connector;
     }
     @Override
+    public String connector()
+    {
+        return connector;
+    }
+    @Override
     public SocketAddress clientAddress()
     {
         return channelHandlerContext.channel().remoteAddress();
@@ -97,4 +103,5 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     {
         return channelHandlerContext.channel().localAddress();
     }
+
 }

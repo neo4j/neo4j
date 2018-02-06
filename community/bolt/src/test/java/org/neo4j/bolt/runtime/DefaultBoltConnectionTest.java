@@ -58,9 +58,9 @@ import static org.mockito.Mockito.when;
 
 public class DefaultBoltConnectionTest
 {
+    private final String connector = "default";
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
-    private final OutOfBandStrategy outOfBandStrategy = mock( OutOfBandStrategy.class );
     private final BoltConnectionListener connectionListener = mock( BoltConnectionListener.class );
     private final BoltConnectionQueueMonitor queueMonitor = mock( BoltConnectionQueueMonitor.class );
     private final EmbeddedChannel channel = new EmbeddedChannel();
@@ -74,7 +74,7 @@ public class DefaultBoltConnectionTest
     {
         ChannelHandlerContext handlerContext = mock( ChannelHandlerContext.class );
         when( handlerContext.channel() ).thenReturn( channel );
-        boltChannel = BoltChannel.open( handlerContext, messageLogger );
+        boltChannel = BoltChannel.open( connector, handlerContext, messageLogger );
         stateMachine = mock( BoltStateMachine.class ); // MachineRoom.newMachineWithOwner( BoltStateMachine.State.READY, "neo4j" );
         when( stateMachine.owner() ).thenReturn( "neo4j" );
     }
@@ -120,16 +120,6 @@ public class DefaultBoltConnectionTest
 
         verify( stateMachine ).owner();
         assertEquals( stateMachine.owner(), principal );
-    }
-
-    @Test
-    public void isOutOfBandIsDecidedByStrategy()
-    {
-        BoltConnection connection = newConnection();
-
-        connection.isOutOfBand();
-
-        verify( outOfBandStrategy ).isOutOfBand( connection );
     }
 
     @Test
@@ -288,8 +278,8 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertNone(
-                AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error( any( String.class ), any( Throwable.class ) ) );
+        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error( any( String.class ),
+                any( Throwable.class ) ) );
     }
 
     @Test
@@ -306,9 +296,8 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error( containsString( "Protocol breach detected in bolt session" ),
-                        is( exception ) ) );
+        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error(
+                containsString( "Protocol breach detected in bolt session" ), is( exception ) ) );
     }
 
     @Test
@@ -325,9 +314,8 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error( containsString( "Unexpected error detected in bolt session" ),
-                        is( exception ) ) );
+        logProvider.assertExactly( AssertableLogProvider.inLog( containsString( BoltKernelExtension.class.getPackage().getName() ) ).error(
+                containsString( "Unexpected error detected in bolt session" ), is( exception ) ) );
     }
 
     private DefaultBoltConnection newConnection()
@@ -337,7 +325,7 @@ public class DefaultBoltConnectionTest
 
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
-        return new DefaultBoltConnection( boltChannel, stateMachine, logService, outOfBandStrategy, connectionListener, queueMonitor, maxBatchSize );
+        return new DefaultBoltConnection( boltChannel, stateMachine, logService, connectionListener, queueMonitor, maxBatchSize );
     }
 
     private static void doNothing()

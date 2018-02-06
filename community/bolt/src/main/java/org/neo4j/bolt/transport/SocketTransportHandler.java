@@ -36,14 +36,27 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
  */
 public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 {
+<<<<<<< HEAD
     private final ProtocolChooser protocolChooser;
+=======
+    private final String connector;
+    private final BoltHandshakeProtocolHandler handshake;
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
     private final Log log;
 
     private BoltProtocol protocol;
 
+<<<<<<< HEAD
     public SocketTransportHandler( ProtocolChooser protocolChooser, LogProvider logging )
     {
         this.protocolChooser = protocolChooser;
+=======
+    public SocketTransportHandler( String connector, BoltHandshakeProtocolHandler handshake,
+            LogProvider logging, BoltMessageLogging boltLogging )
+    {
+        this.connector = connector;
+        this.handshake = handshake;
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
         this.log = logging.getLog( getClass() );
     }
 
@@ -55,7 +68,13 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             ByteBuf buffer = (ByteBuf) msg;
             if ( protocol == null )
             {
+<<<<<<< HEAD
                 chooseProtocolVersion( ctx, buffer );
+=======
+                BoltMessageLogger boltLogger = boltLogging.newLogger( ctx.channel() );
+                boltLogger.clientEvent( "OPEN" );
+                performHandshake( BoltChannel.open( connector, ctx, boltLogger ), buffer );
+>>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
             }
             else
             {
