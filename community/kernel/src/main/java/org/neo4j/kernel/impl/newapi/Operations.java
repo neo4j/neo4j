@@ -86,7 +86,7 @@ public class Operations implements Write, ExplicitIndexWrite
     private final IndexTxStateUpdater updater;
     private DefaultPropertyCursor propertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
-    private final DefaultCursors cursors;
+    private DefaultCursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
 
     public Operations(
@@ -109,8 +109,10 @@ public class Operations implements Write, ExplicitIndexWrite
         this.schemaMatcher = schemaMatcher;
     }
 
-    public void initialize()
+    public void initialize( DefaultCursors cursors )
     {
+        this.cursors = cursors;
+        this.allStoreHolder.initialize( cursors );
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
@@ -649,15 +651,5 @@ public class Operations implements Write, ExplicitIndexWrite
     public Read dataRead()
     {
         return allStoreHolder;
-    }
-
-    public DefaultNodeCursor nodeCursor()
-    {
-        return nodeCursor;
-    }
-
-    public DefaultPropertyCursor propertyCursor()
-    {
-        return propertyCursor;
     }
 }

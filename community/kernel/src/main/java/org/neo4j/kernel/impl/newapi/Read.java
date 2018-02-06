@@ -74,13 +74,18 @@ abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead
 {
-    private final DefaultCursors cursors;
+    private DefaultCursors cursors;
     final KernelTransactionImplementation ktx;
 
     Read( DefaultCursors cursors, KernelTransactionImplementation ktx )
     {
         this.cursors = cursors;
         this.ktx = ktx;
+    }
+
+    void initialize( DefaultCursors cursors )
+    {
+        this.cursors = cursors;
     }
 
     @Override

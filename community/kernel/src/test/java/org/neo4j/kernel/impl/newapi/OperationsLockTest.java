@@ -118,7 +118,7 @@ public class OperationsLockTest
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),
                 store, transaction, new KernelToken( storeReadLayer ), cursors, autoindexing,
                 mock( NodeSchemaMatcher.class ) );
-        operations.initialize();
+        operations.initialize( cursors );
 
         this.order = inOrder( locks, txState, storeReadLayer );
     }

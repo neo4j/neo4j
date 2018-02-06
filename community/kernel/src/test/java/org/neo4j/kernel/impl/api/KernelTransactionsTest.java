@@ -586,7 +586,7 @@ public class KernelTransactionsTest
         return new KernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
                 mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), new CanWrite(),
-                new KernelToken( storageEngine.storeReadLayer() ), new DefaultCursors(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
+                new KernelToken( storageEngine.storeReadLayer() ), DefaultCursors::new, AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -652,7 +652,7 @@ public class KernelTransactionsTest
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
                     indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, availabilityGuard, tracers, storageEngine, procedures,
                     transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                    accessCapability, token, cursors, autoIndexing, mock( ExplicitIndexStore.class ) );
+                    accessCapability, token, () -> cursors, autoIndexing, mock( ExplicitIndexStore.class ) );
         }
 
         @Override

@@ -155,7 +155,7 @@ public class KernelTransactionTestBase
         return new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory, commitProcess,
                 transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
-                new CanWrite(), mock( KernelToken.class ), new DefaultCursors(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
+                new CanWrite(), mock( KernelToken.class ), DefaultCursors::new, AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

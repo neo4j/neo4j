@@ -21,8 +21,6 @@ package org.neo4j.kernel.api;
 
 import java.util.Optional;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -203,10 +201,6 @@ public interface KernelTransaction extends Transaction
     long getCommitTime();
 
     Revertable overrideWith( SecurityContext context );
-
-    NodeCursor nodeCursor();
-
-    PropertyCursor propertyCursor();
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable
