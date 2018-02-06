@@ -22,6 +22,7 @@ package org.neo4j.bolt;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.Map;
 import java.util.function.Function;
@@ -192,12 +193,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         if ( !connectors.isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
-            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
+            NettyServer server = new NettyServer( scheduler.threadFactory( boltNetworkIO ),
+                                                  connectors, connectionRegister,
+                                                  logService.getUserLog( WorkerFactory.class ) );
+            life.add( server );
             log.info( "Bolt Server extension loaded." );
-            for ( ProtocolInitializer connector : connectors.values() )
-            {
-                logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
-            }
         }
 
         return life;

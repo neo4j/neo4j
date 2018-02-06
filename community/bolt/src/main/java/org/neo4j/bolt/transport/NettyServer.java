@@ -28,6 +28,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
@@ -38,7 +40,9 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -57,6 +61,7 @@ public class NettyServer extends LifecycleAdapter
     private final Map<BoltConnector, ProtocolInitializer> bootstrappersMap;
     private final ThreadFactory tf;
     private final ConnectorPortRegister connectionRegister;
+    private final Log log;
     private EventLoopGroup bossGroup;
     private EventLoopGroup selectorGroup;
 
@@ -75,11 +80,12 @@ public class NettyServer extends LifecycleAdapter
      * @param connectorRegister register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, Map<BoltConnector, ProtocolInitializer> initializersMap,
-            ConnectorPortRegister connectorRegister )
+                        ConnectorPortRegister connectorRegister, Log log )
     {
         this.bootstrappersMap = initializersMap;
         this.tf = tf;
         this.connectionRegister = connectorRegister;
+        this.log = log;
     }
 
     @Override
@@ -109,6 +115,9 @@ public class NettyServer extends LifecycleAdapter
                                 .bind( protocolInitializer.address().socketAddress() ).sync();
                 InetSocketAddress localAddress = (InetSocketAddress) channelFuture.channel().localAddress();
                 connectionRegister.register( boltConnector.key(), localAddress );
+                ListenSocketAddress listenSocketAddress = new ListenSocketAddress(
+                        protocolInitializer.address().getHostname(), localAddress.getPort() );
+                log.info( "Bolt enabled on %s.", listenSocketAddress );
             }
             catch ( Throwable e )
             {
