@@ -23,14 +23,15 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.ResourceIterator;
 
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.NOT_INITIALIZED;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.NO_ID;
+
 /**
  * Helper iterator for traversing specific types and directions of a dense node.
  */
 public final class RelationshipDenseSelectionIterator<R> extends RelationshipDenseSelection
         implements ResourceIterator<R>
 {
-    private final static long NO_ID = -1L;
-    private final static long NOT_INITIALIZED = -2L;
     private RelationshipFactory<R> factory;
     private long _next = NOT_INITIALIZED;
 
