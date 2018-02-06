@@ -782,6 +782,12 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
                 }
                 return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
             }
+
+            @Override
+            public boolean needsValues()
+            {
+                return true;
+            }
         };
     }
 
