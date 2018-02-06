@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.core.consensus.vote;
 
 import org.junit.Test;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.consensus.roles.Voting;
@@ -35,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 public class VotingTest
 {
     MemberId candidate = new MemberId( UUID.randomUUID() );
-    MemberId otherMember = new MemberId( UUID.randomUUID() );
 
     long logTerm = 10;
     long currentTerm = 20;
@@ -54,7 +52,7 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -70,7 +68,7 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -86,7 +84,7 @@ public class VotingTest
                 logTerm - 1,
                 appendIndex,
                 appendIndex,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -102,7 +100,7 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex - 1,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -118,7 +116,7 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -134,7 +132,7 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex + 1,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -150,7 +148,7 @@ public class VotingTest
                 logTerm + 1,
                 appendIndex,
                 appendIndex - 1,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -166,7 +164,7 @@ public class VotingTest
                 logTerm + 1,
                 appendIndex,
                 appendIndex,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -182,7 +180,7 @@ public class VotingTest
                 logTerm + 1,
                 appendIndex,
                 appendIndex + 1,
-                Optional.empty(),
+                false,
                 log
         ) );
     }
@@ -198,23 +196,7 @@ public class VotingTest
                 logTerm,
                 appendIndex,
                 appendIndex,
-                Optional.of( otherMember ),
-                log
-        ) );
-    }
-
-    @Test
-    public void shouldAcceptRequestIfAlreadyVotedForCandidate()
-    {
-        assertTrue( Voting.shouldVoteFor(
-                candidate,
-                currentTerm,
-                currentTerm,
-                logTerm,
-                logTerm,
-                appendIndex,
-                appendIndex,
-                Optional.of( candidate ),
+                true,
                 log
         ) );
     }

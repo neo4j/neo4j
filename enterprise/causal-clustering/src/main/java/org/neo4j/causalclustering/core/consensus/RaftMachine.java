@@ -74,7 +74,6 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private RaftMembershipManager membershipManager;
-    private final boolean refuseToBecomeLeader;
 
     private final VolatileFuture<MemberId> volatileLeader = new VolatileFuture<>( null );
 
@@ -84,10 +83,10 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     private RaftLogShippingManager logShipping;
 
-    public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage,
-            RaftLog entryLog, LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            LogProvider logProvider, RaftMembershipManager membershipManager, RaftLogShippingManager logShipping,
-            InFlightCache inFlightCache, boolean refuseToBecomeLeader, boolean supportPreVoting, Monitors monitors )
+    public RaftMachine( MemberId myself, StateStorage<TermState> termStorage, StateStorage<VoteState> voteStorage, RaftLog entryLog,
+            LeaderAvailabilityTimers leaderAvailabilityTimers, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LogProvider logProvider,
+            RaftMembershipManager membershipManager, RaftLogShippingManager logShipping, InFlightCache inFlightCache, boolean refuseToBecomeLeader,
+            boolean supportPreVoting, Monitors monitors )
     {
         this.myself = myself;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
@@ -97,11 +96,9 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         this.log = logProvider.getLog( getClass() );
 
         this.membershipManager = membershipManager;
-        this.refuseToBecomeLeader = refuseToBecomeLeader;
 
         this.inFlightCache = inFlightCache;
-        this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightCache,
-                logProvider, supportPreVoting );
+        this.state = new RaftState( myself, termStorage, membershipManager, entryLog, voteStorage, inFlightCache, logProvider, supportPreVoting, refuseToBecomeLeader );
 
         leaderNotFoundMonitor = monitors.newMonitor( LeaderNotFoundMonitor.class );
     }
@@ -113,13 +110,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
      */
     public synchronized void postRecoveryActions()
     {
-        if ( !refuseToBecomeLeader )
-        {
-            leaderAvailabilityTimers.start(
-                    this::electionTimeout,
-                    clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) )
-            );
-        }
+        leaderAvailabilityTimers.start( this::electionTimeout,
+                clock -> handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Heartbeat( myself ) ) ) );
 
         inFlightCache.enable();
     }
@@ -139,10 +131,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
 
     public void triggerElection( Clock clock ) throws IOException
     {
-        if ( !refuseToBecomeLeader )
-        {
             handle( RaftMessages.ReceivedInstantAwareMessage.of( clock.instant(), new RaftMessages.Timeout.Election( myself ) ) );
-        }
     }
 
     public void panic()

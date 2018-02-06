@@ -58,8 +58,9 @@ public class ComparableRaftState implements ReadableRaftState
     private final InFlightCache inFlightCache;
     private long commitIndex = -1;
     private boolean isPreElection = false;
+    private final boolean refusesToBeLeader;
 
-    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers,
+    ComparableRaftState( MemberId myself, Set<MemberId> votingMembers, Set<MemberId> replicationMembers, boolean refusesToBeLeader,
                          RaftLog entryLog, InFlightCache inFlightCache, LogProvider logProvider )
     {
         this.myself = myself;
@@ -68,11 +69,12 @@ public class ComparableRaftState implements ReadableRaftState
         this.entryLog = entryLog;
         this.inFlightCache = inFlightCache;
         this.log = logProvider.getLog( getClass() );
+        this.refusesToBeLeader = refusesToBeLeader;
     }
 
     ComparableRaftState( ReadableRaftState original ) throws IOException
     {
-        this( original.myself(), original.votingMembers(), original.replicationMembers(),
+        this( original.myself(), original.votingMembers(), original.replicationMembers(), original.refusesToBeLeader(),
                 new ComparableRaftLog( original.entryLog() ), new ConsecutiveInFlightCache(), NullLogProvider.getInstance() );
     }
 
@@ -170,6 +172,12 @@ public class ComparableRaftState implements ReadableRaftState
     public Set<MemberId> preVotesForMe()
     {
         return preVotesForMe;
+    }
+
+    @Override
+    public boolean refusesToBeLeader()
+    {
+        return refusesToBeLeader;
     }
 
     public void update( Outcome outcome ) throws IOException

@@ -141,9 +141,30 @@ public interface RaftMessages
         }
     }
 
+    interface AnyVote
+    {
+        interface Request
+        {
+            long term();
+
+            long lastLogTerm();
+
+            long lastLogIndex();
+
+            MemberId candidate();
+        }
+
+        interface Response
+        {
+            long term();
+
+            boolean voteGranted();
+        }
+    }
+
     interface Vote
     {
-        class Request extends BaseRaftMessage
+        class Request extends BaseRaftMessage implements AnyVote.Request
         {
             private long term;
             private MemberId candidate;
@@ -159,6 +180,7 @@ public interface RaftMessages
                 this.lastLogTerm = lastLogTerm;
             }
 
+            @Override
             public long term()
             {
                 return term;
@@ -205,23 +227,26 @@ public interface RaftMessages
                         from, term, candidate, lastLogIndex, lastLogTerm );
             }
 
+            @Override
             public long lastLogTerm()
             {
                 return lastLogTerm;
             }
 
+            @Override
             public long lastLogIndex()
             {
                 return lastLogIndex;
             }
 
+            @Override
             public MemberId candidate()
             {
                 return candidate;
             }
         }
 
-        class Response extends BaseRaftMessage
+        class Response extends BaseRaftMessage implements AnyVote.Response
         {
             private long term;
             private boolean voteGranted;
@@ -271,11 +296,13 @@ public interface RaftMessages
                 return format( "Vote.Response from %s {term=%d, voteGranted=%s}", from, term, voteGranted );
             }
 
+            @Override
             public long term()
             {
                 return term;
             }
 
+            @Override
             public boolean voteGranted()
             {
                 return voteGranted;
@@ -285,7 +312,7 @@ public interface RaftMessages
 
     interface PreVote
     {
-        class Request extends BaseRaftMessage
+        class Request extends BaseRaftMessage implements AnyVote.Request
         {
             private long term;
             private MemberId candidate;
@@ -301,6 +328,7 @@ public interface RaftMessages
                 this.lastLogTerm = lastLogTerm;
             }
 
+            @Override
             public long term()
             {
                 return term;
@@ -347,23 +375,26 @@ public interface RaftMessages
                         from, term, candidate, lastLogIndex, lastLogTerm );
             }
 
+            @Override
             public long lastLogTerm()
             {
                 return lastLogTerm;
             }
 
+            @Override
             public long lastLogIndex()
             {
                 return lastLogIndex;
             }
 
+            @Override
             public MemberId candidate()
             {
                 return candidate;
             }
         }
 
-        class Response extends BaseRaftMessage
+        class Response extends BaseRaftMessage implements AnyVote.Response
         {
             private long term;
             private boolean voteGranted;
@@ -413,11 +444,13 @@ public interface RaftMessages
                 return format( "PreVote.Response from %s {term=%d, voteGranted=%s}", from, term, voteGranted );
             }
 
+            @Override
             public long term()
             {
                 return term;
             }
 
+            @Override
             public boolean voteGranted()
             {
                 return voteGranted;
