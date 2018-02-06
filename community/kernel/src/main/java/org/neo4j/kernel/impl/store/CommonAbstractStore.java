@@ -47,6 +47,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
+import static java.lang.Math.max;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
@@ -713,46 +714,73 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
-            long nextPageId = storeFile.getLastPageId();
             int recordsPerPage = getRecordsPerPage();
             int recordSize = getRecordSize();
             long highestId = getNumberOfReservedLowIds();
-            while ( nextPageId >= 0 && cursor.next( nextPageId ) )
+            boolean found;
+            /*
+             * We do this in chunks of pages instead of one page at a time, the performance impact is significant.
+             * We first pre-fetch a large chunk sequentially, which is then scanned backwards for used records.
+             */
+            final long chunkSizeInPages = 256; // 2MiB (8192 bytes/page * 256 pages/chunk)
+
+            long chunkEndId = storeFile.getLastPageId();
+            while ( chunkEndId >= 0 )
             {
-                nextPageId--;
-                boolean found;
-                do
+                // Do pre-fetch of the chunk
+                long chunkStartId = max( chunkEndId - chunkSizeInPages, 0 );
+                preFetchChunk( cursor, chunkStartId, chunkEndId );
+
+                // Scan pages backwards in the chunk
+                for ( long currentId = chunkEndId; currentId >= chunkStartId && cursor.next( currentId ); currentId-- )
                 {
-                    found = false;
-                    int currentRecord = recordsPerPage;
-                    while ( currentRecord-- > 0 )
+                    do
                     {
-                        int offset = currentRecord * recordSize;
-                        cursor.setOffset( offset );
-                        long recordId = (cursor.getCurrentPageId() * recordsPerPage) + currentRecord;
-                        if ( isInUse( cursor ) )
+                        found = false;
+                        // Scan record backwards in the page
+                        for ( int offset = recordsPerPage * recordSize - recordSize; offset >= 0; offset -= recordSize )
                         {
-                            // We've found the highest id in use
-                            highestId = recordId + 1 /*+1 since we return the high id*/;
-                            found = true;
-                            break;
+                            cursor.setOffset( offset );
+                            if ( isInUse( cursor ) )
+                            {
+                                // We've found the highest id in use
+                                highestId = (cursor.getCurrentPageId() * recordsPerPage) + offset / recordSize + 1;
+                                found = true;
+                                break;
+                            }
                         }
                     }
+                    while ( cursor.shouldRetry() );
+
+                    checkIdScanCursorBounds( cursor );
+                    if ( found )
+                    {
+                        return highestId;
+                    }
                 }
-                while ( cursor.shouldRetry() );
-                checkIdScanCursorBounds( cursor );
-                if ( found )
-                {
-                    return highestId;
-                }
+                chunkEndId = chunkStartId - 1;
             }
 
             return getNumberOfReservedLowIds();
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
-                    "Unable to find high id by scanning backwards " + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to find high id by scanning backwards " + getStorageFileName(), e );
+        }
+    }
+
+    /**
+     * Do a pre-fetch of pages in sequential order on the range [{@code pageIdStart},{@code pageIdEnd}].
+     *
+     * @param cursor Cursor to pre-fetch on.
+     * @param pageIdStart Page id to start pre-fetching from.
+     * @param pageIdEnd Page id to end pre-fetching on, inclusive {@code pageIdEnd}.
+     */
+    private static void preFetchChunk( PageCursor cursor, long pageIdStart, long pageIdEnd ) throws IOException
+    {
+        for ( long currentPageId = pageIdStart; currentPageId <= pageIdEnd; currentPageId++ )
+        {
+            cursor.next( currentPageId );
         }
     }
 
