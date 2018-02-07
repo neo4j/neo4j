@@ -247,47 +247,47 @@ public final class Values
 
     public static TextArray stringArray( String... value )
     {
-        return new StringArray.Direct( value );
+        return new StringArray( value );
     }
 
     public static ByteArray byteArray( byte[] value )
     {
-        return new ByteArray.Direct( value );
+        return new ByteArray( value );
     }
 
     public static LongArray longArray( long[] value )
     {
-        return new LongArray.Direct( value );
+        return new LongArray( value );
     }
 
     public static IntArray intArray( int[] value )
     {
-        return new IntArray.Direct( value );
+        return new IntArray( value );
     }
 
     public static DoubleArray doubleArray( double[] value )
     {
-        return new DoubleArray.Direct( value );
+        return new DoubleArray( value );
     }
 
     public static FloatArray floatArray( float[] value )
     {
-        return new FloatArray.Direct( value );
+        return new FloatArray( value );
     }
 
     public static BooleanArray booleanArray( boolean[] value )
     {
-        return new BooleanArray.Direct( value );
+        return new BooleanArray( value );
     }
 
     public static CharArray charArray( char[] value )
     {
-        return new CharArray.Direct( value );
+        return new CharArray( value );
     }
 
     public static ShortArray shortArray( short[] value )
     {
-        return new ShortArray.Direct( value );
+        return new ShortArray( value );
     }
 
     public static PointValue pointValue( CoordinateReferenceSystem crs, double... coordinate )
@@ -315,12 +315,12 @@ public final class Values
         {
             values[i] = Values.point( points[i] );
         }
-        return new PointArray.Direct( values );
+        return new PointArray( values );
     }
 
     public static PointArray pointArray( PointValue[] points )
     {
-        return new PointArray.Direct( points );
+        return new PointArray( points );
     }
 
     public static CoordinateReferenceSystem crs( CRS crs )
@@ -388,14 +388,44 @@ public final class Values
         return duration;
     }
 
-    public static ArrayValue temporalArray( Temporal[] temporals )
+    public static ArrayValue dateTimeArray( ZonedDateTime[] values )
     {
-        throw new UnsupportedOperationException( "TODO: add support for arrays of temporal values" );
+        return new DateTimeArray( values );
     }
 
-    public static ArrayValue durationArray( TemporalAmount[] amounts )
+    public static ArrayValue localDateTimeArray( LocalDateTime[] values )
     {
-        throw new UnsupportedOperationException( "TODO: add support for arrays of durations" );
+        return new LocalDateTimeArray( values );
+    }
+
+    public static ArrayValue localTimeArray( LocalTime[] values )
+    {
+        return new LocalTimeArray( values );
+    }
+
+    public static ArrayValue timeArray( OffsetTime[] values )
+    {
+        return new TimeArray( values );
+    }
+
+    public static ArrayValue dateArray( LocalDate[] values )
+    {
+        return new DateArray( values );
+    }
+
+    public static ArrayValue durationArray( DurationValue[] values )
+    {
+        return new DurationArray( values );
+    }
+
+    public static ArrayValue durationArray( TemporalAmount[] values )
+    {
+        DurationValue[] durations = new DurationValue[values.length];
+        for ( int i = 0; i < values.length; i++ )
+        {
+            durations[i] = durationValue( values[i] );
+        }
+        return new DurationArray( durations );
     }
 
     // BOXED FACTORY METHODS
@@ -592,10 +622,25 @@ public final class Values
             // no need to copy here, since the pointArray(...) method will copy into a PointValue[]
             return pointArray( (Point[])value );
         }
-        if ( value instanceof Temporal[] )
+        if ( value instanceof ZonedDateTime[] )
         {
-            // no need to copy here, since the temporalArray(...) method will perform copying as appropriate
-            return temporalArray( (Temporal[]) value );
+            return dateTimeArray( copy( value, new ZonedDateTime[value.length] ) );
+        }
+        if ( value instanceof LocalDateTime[] )
+        {
+            return localDateTimeArray( copy( value, new LocalDateTime[value.length] ) );
+        }
+        if ( value instanceof LocalTime[] )
+        {
+            return localTimeArray( copy( value, new LocalTime[value.length] ) );
+        }
+        if ( value instanceof OffsetTime[] )
+        {
+            return timeArray( copy( value, new OffsetTime[value.length] ) );
+        }
+        if ( value instanceof LocalDate[] )
+        {
+            return dateArray( copy( value, new LocalDate[value.length] ) );
         }
         if ( value instanceof TemporalAmount[] )
         {

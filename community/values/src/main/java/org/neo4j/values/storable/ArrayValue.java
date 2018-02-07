@@ -24,7 +24,6 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
-import org.neo4j.values.ValueMapper;
 
 /**
  * Array of one of the storable primitives
@@ -66,31 +65,42 @@ public abstract class ArrayValue extends Value implements SequenceValue
     }
 
     @Override
-    public boolean equals( boolean x )
+    public final boolean eq( Object other )
+    {
+        if ( other == null )
+        {
+            return false;
+        }
+
+        return other instanceof SequenceValue && this.equals( (SequenceValue) other );
+    }
+
+    @Override
+    public final boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( long x )
+    public final boolean equals( long x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( double x )
+    public final boolean equals( double x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char x )
+    public final boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String x )
+    public final boolean equals( String x )
     {
         return false;
     }

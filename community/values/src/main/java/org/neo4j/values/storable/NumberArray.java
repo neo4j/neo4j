@@ -19,6 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+
 import org.neo4j.graphdb.spatial.Geometry;
 
 public abstract class NumberArray extends ArrayValue
@@ -28,25 +34,61 @@ public abstract class NumberArray extends ArrayValue
     abstract int compareTo( FloatingPointArray other );
 
     @Override
-    public boolean equals( boolean[] x )
+    public final boolean equals( boolean[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char[] x )
+    public final boolean equals( char[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String[] x )
+    public final boolean equals( String[] x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( Geometry[] x )
+    public final boolean equals( Geometry[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( ZonedDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( LocalDate[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( DurationValue[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( LocalDateTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( LocalTime[] x )
+    {
+        return false;
+    }
+
+    @Override
+    public final boolean equals( OffsetTime[] x )
     {
         return false;
     }

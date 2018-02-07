@@ -39,19 +39,19 @@ public abstract class NumberValue extends ScalarValue
     }
 
     @Override
-    public boolean equals( boolean x )
+    public final boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( char x )
+    public final boolean equals( char x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( String x )
+    public final boolean equals( String x )
     {
         return false;
     }

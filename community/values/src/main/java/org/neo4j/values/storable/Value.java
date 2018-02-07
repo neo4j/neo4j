@@ -19,6 +19,12 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -36,35 +42,110 @@ public abstract class Value extends AnyValue
 
     public abstract boolean equals( Value other );
 
-    public abstract boolean equals( byte[] x );
+    public boolean equals( byte[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( short[] x );
+    public boolean equals( short[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( int[] x );
+    public boolean equals( int[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( long[] x );
+    public boolean equals( long[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( float[] x );
+    public boolean equals( float[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( double[] x );
+    public boolean equals( double[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( boolean x );
+    public boolean equals( boolean x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( boolean[] x );
+    public boolean equals( boolean[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( long x );
+    public boolean equals( long x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( double x );
+    public boolean equals( double x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( char x );
+    public boolean equals( char x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( String x );
+    public boolean equals( String x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( char[] x );
+    public boolean equals( char[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( String[] x );
+    public boolean equals( String[] x )
+    {
+        return false;
+    }
 
-    public abstract boolean equals( Geometry[] x );
+    public boolean equals( Geometry[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( ZonedDateTime[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( LocalDate[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( DurationValue[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( LocalDateTime[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( LocalTime[] x )
+    {
+        return false;
+    }
+
+    public boolean equals( OffsetTime[] x )
+    {
+        return false;
+    }
 
     @Override
     public Boolean ternaryEquals( AnyValue other )

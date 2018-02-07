@@ -71,19 +71,19 @@ public abstract class TextValue extends ScalarValue
     public abstract int compareTo( TextValue other );
 
     @Override
-    public boolean equals( boolean x )
+    public final boolean equals( boolean x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( long x )
+    public final boolean equals( long x )
     {
         return false;
     }
 
     @Override
-    public boolean equals( double x )
+    public final boolean equals( double x )
     {
         return false;
     }

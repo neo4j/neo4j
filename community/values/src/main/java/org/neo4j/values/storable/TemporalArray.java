@@ -19,57 +19,34 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.ValueMapper;
+import java.time.temporal.Temporal;
 
-import static java.lang.String.format;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.values.AnyValue;
 
-public final class FloatValue extends FloatingPointValue
+public abstract class TemporalArray<T extends Temporal & Comparable<? super T>, V extends TemporalValue<T,V>> extends NonPrimitiveArray<T>
 {
-    private final float value;
 
-    FloatValue( float value )
+    @Override
+    public boolean equals( Geometry[] x )
     {
-        this.value = value;
+        return false;
     }
 
-    public float value()
+    protected final <E extends Exception> void writeTo( ValueWriter<E> writer, ValueWriter.ArrayType type, Temporal[] values ) throws E
     {
-        return value;
+        writer.beginArray( values.length, type );
+        for ( Temporal x : values )
+        {
+            Value value = Values.temporalValue( x );
+            value.writeTo( writer );
+        }
+        writer.endArray();
     }
 
     @Override
-    public double doubleValue()
+    public final AnyValue value( int offset )
     {
-        return value;
-    }
-
-    @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeFloatingPoint( value );
-    }
-
-    @Override
-    public Float asObjectCopy()
-    {
-        return value;
-    }
-
-    @Override
-    public String prettyPrint()
-    {
-        return Float.toString( value );
-    }
-
-    @Override
-    public String toString()
-    {
-        return format( "Float(%e)", value );
-    }
-
-    @Override
-    public <T> T map( ValueMapper<T> mapper )
-    {
-        return mapper.mapFloat( this );
+        return Values.temporalValue( value()[offset] );
     }
 }

@@ -19,57 +19,65 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Arrays;
+
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-import static java.lang.String.format;
-
-public final class FloatValue extends FloatingPointValue
+public class DurationArray extends NonPrimitiveArray<DurationValue>
 {
-    private final float value;
+    private final DurationValue[] value;
 
-    FloatValue( float value )
+    DurationArray( DurationValue[] value )
     {
+        assert value != null;
         this.value = value;
     }
 
-    public float value()
+    @Override
+    protected DurationValue[] value()
     {
         return value;
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        return value;
-    }
-
-    @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeFloatingPoint( value );
-    }
-
-    @Override
-    public Float asObjectCopy()
-    {
-        return value;
-    }
-
-    @Override
-    public String prettyPrint()
-    {
-        return Float.toString( value );
-    }
-
-    @Override
-    public String toString()
-    {
-        return format( "Float(%e)", value );
     }
 
     @Override
     public <T> T map( ValueMapper<T> mapper )
     {
-        return mapper.mapFloat( this );
+        return mapper.mapDurationArray( this );
+    }
+
+    @Override
+    public boolean equals( Value other )
+    {
+        return other.equals( value );
+    }
+
+    @Override
+    public boolean equals( DurationValue[] x )
+    {
+        return Arrays.equals( value, x);
+    }
+
+    @Override
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
+    {
+        writer.beginArray( value.length, ValueWriter.ArrayType.DURATION );
+        for ( DurationValue x : value )
+        {
+            x.writeTo( writer );
+        }
+        writer.endArray();
+    }
+
+    @Override
+    public AnyValue value( int offset )
+    {
+        return Values.durationValue( value[offset] );
+    }
+
+    @Override
+    public ValueGroup valueGroup()
+    {
+        return ValueGroup.DURATION_ARRAY;
     }
 }

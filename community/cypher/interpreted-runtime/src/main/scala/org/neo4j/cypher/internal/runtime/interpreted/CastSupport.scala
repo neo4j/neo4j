@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import java.time.temporal.{Temporal, TemporalAmount}
-import java.time.{ZoneId, ZoneOffset}
+import java.time._
+import java.time.temporal.TemporalAmount
 
 import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.graphdb.spatial.Point
@@ -141,17 +141,17 @@ object CastSupport {
     case _: Point => Converter(
       transform(new ArrayConverterWriter(classOf[Point], a => Values.pointArray(a.asInstanceOf[Array[Point]]))))
     case _: DurationValue => Converter(
-      transform(new ArrayConverterWriter(classOf[DurationValue], a => Values.durationArray(a.asInstanceOf[Array[TemporalAmount]]))))
-    case _: DateValue => Converter(
-      transform(new ArrayConverterWriter(classOf[DateValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
-    case _: LocalTimeValue => Converter(
-      transform(new ArrayConverterWriter(classOf[LocalTimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
-    case _: TimeValue => Converter(
-      transform(new ArrayConverterWriter(classOf[TimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
-    case _: LocalDateTimeValue => Converter(
-      transform(new ArrayConverterWriter(classOf[LocalDateTimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
+      transform(new ArrayConverterWriter(classOf[TemporalAmount], a => Values.durationArray(a.asInstanceOf[Array[TemporalAmount]]))))
     case _: DateTimeValue => Converter(
-      transform(new ArrayConverterWriter(classOf[DateTimeValue], a => Values.temporalArray(a.asInstanceOf[Array[Temporal]]))))
+      transform(new ArrayConverterWriter(classOf[ZonedDateTime], a => Values.dateTimeArray(a.asInstanceOf[Array[ZonedDateTime]]))))
+    case _: DateValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDate], a => Values.dateArray(a.asInstanceOf[Array[LocalDate]]))))
+    case _: LocalTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalTime], a => Values.localTimeArray(a.asInstanceOf[Array[LocalTime]]))))
+    case _: TimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[OffsetTime], a => Values.timeArray(a.asInstanceOf[Array[OffsetTime]]))))
+    case _: LocalDateTimeValue => Converter(
+      transform(new ArrayConverterWriter(classOf[LocalDateTime], a => Values.localDateTimeArray(a.asInstanceOf[Array[LocalDateTime]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 

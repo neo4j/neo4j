@@ -19,57 +19,54 @@
  */
 package org.neo4j.values.storable;
 
+import java.time.ZonedDateTime;
+import java.util.Arrays;
+
 import org.neo4j.values.ValueMapper;
 
-import static java.lang.String.format;
-
-public final class FloatValue extends FloatingPointValue
+public class DateTimeArray extends TemporalArray<ZonedDateTime, DateTimeValue>
 {
-    private final float value;
+    private final ZonedDateTime[] value;
 
-    FloatValue( float value )
+    DateTimeArray( ZonedDateTime[] value )
     {
+        assert value != null;
         this.value = value;
     }
 
-    public float value()
+    @Override
+    protected ZonedDateTime[] value()
     {
         return value;
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        return value;
-    }
-
-    @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
-    {
-        writer.writeFloatingPoint( value );
-    }
-
-    @Override
-    public Float asObjectCopy()
-    {
-        return value;
-    }
-
-    @Override
-    public String prettyPrint()
-    {
-        return Float.toString( value );
-    }
-
-    @Override
-    public String toString()
-    {
-        return format( "Float(%e)", value );
     }
 
     @Override
     public <T> T map( ValueMapper<T> mapper )
     {
-        return mapper.mapFloat( this );
+        return mapper.mapDateTimeArray( this );
+    }
+
+    @Override
+    public boolean equals( Value other )
+    {
+        return other.equals( value );
+    }
+
+    @Override
+    public boolean equals( ZonedDateTime[] x )
+    {
+        return Arrays.equals( value, x);
+    }
+
+    @Override
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
+    {
+        writeTo( writer, ValueWriter.ArrayType.ZONED_DATE_TIME ,value );
+    }
+
+    @Override
+    public ValueGroup valueGroup()
+    {
+        return ValueGroup.ZONED_DATE_TIME_ARRAY;
     }
 }

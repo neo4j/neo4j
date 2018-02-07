@@ -119,6 +119,24 @@ public class ValueComparator implements Comparator<Value>
                 // Currently just Points
                 return ((PointArray) v1).compareTo( (PointArray) v2);
 
+            case ZONED_DATE_TIME_ARRAY:
+                return ((DateTimeArray) v1).compareTo( (DateTimeArray) v2);
+
+            case LOCAL_DATE_TIME_ARRAY:
+                return ((LocalDateTimeArray) v1).compareTo( (LocalDateTimeArray) v2);
+
+            case LOCAL_TIME_ARRAY:
+                return ((LocalTimeArray) v1).compareTo( (LocalTimeArray) v2);
+
+            case ZONED_TIME_ARRAY:
+                return ((TimeArray) v1).compareTo( (TimeArray) v2);
+
+            case DATE_ARRAY:
+                return ((DateArray) v1).compareTo( (DateArray) v2);
+
+            case DURATION_ARRAY:
+                return ((DurationArray) v1).compareTo( (DurationArray) v2);
+
             default:
                 throw new UnsupportedOperationException( format(
                         "Cannot compare ValueGroup id '%s' using ValueComparator", id1

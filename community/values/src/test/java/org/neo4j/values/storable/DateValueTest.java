@@ -39,6 +39,8 @@ import static org.neo4j.values.storable.DateValue.ordinalDate;
 import static org.neo4j.values.storable.DateValue.parse;
 import static org.neo4j.values.storable.DateValue.quarterDate;
 import static org.neo4j.values.storable.DateValue.weekDate;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
+import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 
 @SuppressWarnings( "ThrowableNotThrown" )
@@ -248,5 +250,17 @@ public class DateValueTest
             return e;
         }
         throw new AssertionError( String.format( "'%s' parsed to %s", text, value ) );
+    }
+
+    @Test
+    public void shouldEqualItself()
+    {
+        assertEqual( date( 2018, 1, 31 ), date( 2018, 1, 31 ) );
+    }
+
+    @Test
+    public void shouldNotEqualOther()
+    {
+        assertNotEqual( date( 2018, 1, 31 ), date( 2018, 1, 30 ) );
     }
 }

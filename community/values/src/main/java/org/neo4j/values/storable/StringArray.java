@@ -21,91 +21,74 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
-import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 import static java.lang.String.format;
 
-public abstract class StringArray extends TextArray
+public class StringArray extends TextArray
 {
-    abstract String[] value();
+    private final String[] value;
+
+    StringArray( String[] value )
+    {
+        assert value != null;
+        this.value = value;
+    }
 
     @Override
     public int length()
     {
-        return value().length;
+        return value.length;
     }
 
     @Override
     public String stringValue( int offset )
     {
-        return value()[offset];
+        return value[offset];
     }
 
     @Override
     public boolean equals( Value other )
     {
-        return other.equals( value() );
+        return other.equals( value );
     }
 
     @Override
     public boolean equals( char[] x )
     {
-        return PrimitiveArrayValues.equals( x, value() );
+        return PrimitiveArrayValues.equals( x, value );
     }
 
     @Override
     public boolean equals( String[] x )
     {
-        return Arrays.equals( value(), x );
-    }
-
-    @Override
-    public boolean equals( Geometry[] x )
-    {
-        return false;
-    }
-
-    @Override
-    public final boolean eq( Object other )
-    {
-        if ( other == null )
-        {
-            return false;
-        }
-
-        if ( other instanceof SequenceValue )
-        {
-            return this.equals( (SequenceValue) other );
-        }
-        return other instanceof Value && equals( (Value) other );
+        return Arrays.equals( value, x );
     }
 
     @Override
     public int computeHash()
     {
-        return Arrays.hashCode( value() );
+        return Arrays.hashCode( value );
     }
 
     @Override
     public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
-        PrimitiveArrayWriting.writeTo( writer, value() );
+        PrimitiveArrayWriting.writeTo( writer, value );
     }
 
     @Override
     public String[] asObjectCopy()
     {
-        return value().clone();
+        return value.clone();
     }
 
     @Override
     @Deprecated
     public String[] asObject()
     {
-        return value();
+        return value;
     }
 
     @Override
@@ -117,7 +100,7 @@ public abstract class StringArray extends TextArray
     @Override
     public String prettyPrint()
     {
-        return Arrays.toString( value() );
+        return Arrays.toString( value );
     }
 
     @Override
@@ -132,26 +115,9 @@ public abstract class StringArray extends TextArray
         return mapper.mapStringArray( this );
     }
 
-    static final class Direct extends StringArray
+    @Override
+    public String toString()
     {
-        final String[] value;
-
-        Direct( String[] value )
-        {
-            assert value != null;
-            this.value = value;
-        }
-
-        @Override
-        String[] value()
-        {
-            return value;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "StringArray%s", Arrays.toString( value() ) );
-        }
+        return format( "StringArray%s", Arrays.toString( value ) );
     }
 }
