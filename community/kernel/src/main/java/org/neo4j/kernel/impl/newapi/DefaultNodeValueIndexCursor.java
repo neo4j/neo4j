@@ -50,6 +50,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private Value[] values;
     private PrimitiveLongIterator added = emptyIterator();
     private PrimitiveLongSet removed = emptySet();
+    private boolean needsValues;
 
     DefaultNodeValueIndexCursor()
     {
@@ -113,6 +114,12 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.values = values;
             return true;
         }
+    }
+
+    @Override
+    public boolean needsValues()
+    {
+        return needsValues;
     }
 
     @Override
@@ -207,6 +214,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void prefixQuery( IndexDescriptor descriptor, IndexQuery.StringPrefixPredicate predicate )
     {
+        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -219,6 +227,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void stringRangeQuery( IndexDescriptor descriptor, IndexQuery.StringRangePredicate predicate )
     {
+        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -232,6 +241,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void numericRangeQuery( IndexDescriptor descriptor, IndexQuery.NumberRangePredicate predicate )
     {
+        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -245,6 +255,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void scanQuery( IndexDescriptor descriptor )
     {
+        needsValues = true;
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
@@ -256,6 +267,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
 
     private void seekQuery( IndexDescriptor descriptor, IndexQuery[] query )
     {
+        needsValues = false;
         IndexQuery.ExactPredicate[] exactPreds = assertOnlyExactPredicates( query );
         if ( read.hasTxStateWithChanges() )
         {

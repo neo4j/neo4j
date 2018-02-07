@@ -213,6 +213,12 @@ class FusionIndexReader implements IndexReader
         }
 
         @Override
+        public boolean needsValues()
+        {
+            return client.needsValues();
+        }
+
+        @Override
         public void close()
         {
             progressors.forEach( IndexProgressor::close );

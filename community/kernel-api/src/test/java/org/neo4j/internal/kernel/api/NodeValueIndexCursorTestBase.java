@@ -123,63 +123,63 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "zero" ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability );
+            assertFoundNodesAndNoValue( node, uniqueIds );
 
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "one" ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability, strOne );
+            assertFoundNodesAndNoValue( node, uniqueIds, strOne );
 
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "two" ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability, strTwo1, strTwo2 );
+            assertFoundNodesAndNoValue( node, uniqueIds, strTwo1, strTwo2 );
 
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, "three" ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability, strThree1, strThree2, strThree3 );
+            assertFoundNodesAndNoValue( node, uniqueIds, strThree1, strThree2, strThree3 );
 
             // when
             valueCapability = index.valueCapability( ValueGroup.NUMBER );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, 1 ) );
 
             // then
-            assertFoundNodesAndValue( node, 1, uniqueIds, valueCapability );
+            assertFoundNodesAndNoValue( node, 1, uniqueIds );
 
             //when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, 2 ) );
 
             // then
-            assertFoundNodesAndValue( node, 2, uniqueIds, valueCapability );
+            assertFoundNodesAndNoValue( node, 2, uniqueIds );
 
             //when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, 3 ) );
 
             // then
-            assertFoundNodesAndValue( node, 3, uniqueIds, valueCapability );
+            assertFoundNodesAndNoValue( node, 3, uniqueIds );
 
             //when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, 6 ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability, num6 );
+            assertFoundNodesAndNoValue( node, uniqueIds, num6 );
 
             // when
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, 12.0 ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability, num12a, num12b );
+            assertFoundNodesAndNoValue( node, uniqueIds, num12a, num12b );
 
             // when
             valueCapability = index.valueCapability( ValueGroup.BOOLEAN );
             read.nodeIndexSeek( index, node, IndexOrder.NONE, IndexQuery.exact( prop, true ) );
 
             // then
-            assertFoundNodesAndValue( node, uniqueIds, valueCapability, boolTrue );
+            assertFoundNodesAndNoValue( node, uniqueIds, boolTrue );
         }
     }
 
@@ -484,11 +484,37 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         assertFalse( "no more than " + nodes + " nodes", node.next() );
     }
 
+    private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, int nodes, PrimitiveLongSet uniqueIds )
+    {
+        uniqueIds.clear();
+        for ( int i = 0; i < nodes; i++ )
+        {
+            assertTrue( "at least " + nodes + " nodes, was " + uniqueIds.size(), node.next() );
+            long nodeReference = node.nodeReference();
+            assertTrue( "all nodes are unique", uniqueIds.add( nodeReference ) );
+
+            assertFalse( node.hasValue() );
+        }
+
+        assertFalse( "no more than " + nodes + " nodes", node.next() );
+    }
+
     private void assertFoundNodesAndValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds,
             IndexValueCapability expectValue,
             long... expected )
     {
         assertFoundNodesAndValue( node, expected.length, uniqueIds, expectValue );
+
+        for ( long expectedNode : expected )
+        {
+            assertTrue( "expected node " + expectedNode, uniqueIds.contains( expectedNode ) );
+        }
+    }
+
+    private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, PrimitiveLongSet uniqueIds,
+            long... expected )
+    {
+        assertFoundNodesAndNoValue( node, expected.length, uniqueIds );
 
         for ( long expectedNode : expected )
         {

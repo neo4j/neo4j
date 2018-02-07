@@ -120,6 +120,12 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
+    public boolean needsValues()
+    {
+        return true;
+    }
+
+    @Override
     public boolean next()
     {
         return progressor.next();

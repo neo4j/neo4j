@@ -89,6 +89,8 @@ public interface IndexProgressor extends AutoCloseable
          * @return true if the entry is accepted, false otherwise
          */
         boolean acceptNode( long reference, Value... values );
+
+        boolean needsValues();
     }
 
     /**

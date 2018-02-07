@@ -160,6 +160,12 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
+    public boolean needsValues()
+    {
+        return true;
+    }
+
+    @Override
     public boolean next()
     {
         events.add( Event.NEXT );
