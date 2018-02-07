@@ -32,8 +32,11 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.NodeValueIndexProgressor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyIterator;
@@ -291,6 +294,13 @@ class HashBasedIndex extends InMemoryIndexImplementation
         default:
             throw new RuntimeException( "Unsupported query: " + Arrays.toString( predicates ) );
         }
+    }
+
+    @Override
+    public IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+            throws IndexNotApplicableKernelException
+    {
+        return new NodeValueIndexProgressor( query( predicates ), client );
     }
 
     @Override

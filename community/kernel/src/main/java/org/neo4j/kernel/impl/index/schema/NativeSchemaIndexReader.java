@@ -133,6 +133,31 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey, VALUE extend
     }
 
     @Override
+    public IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+            throws IndexNotApplicableKernelException
+    {
+        KEY treeKeyFrom = layout.newKey();
+        KEY treeKeyTo = layout.newKey();
+
+        initializeRangeForQuery( treeKeyFrom, treeKeyTo, predicates );
+        if ( isBackwardsSeek( treeKeyFrom, treeKeyTo ) )
+        {
+            return IndexProgressor.EMPTY;
+        }
+
+        try
+        {
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
+            openSeekers.add( seeker );
+            return new NativeHitIndexProgressor<>( seeker, client, openSeekers );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
     public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, IndexQuery... predicates )
     {
         validateQuery( indexOrder, predicates );

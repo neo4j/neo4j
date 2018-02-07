@@ -53,6 +53,16 @@ public interface IndexReader extends Resource
     /**
      * Queries the index for the given {@link IndexQuery} predicates.
      *
+     * @param client the client the progressor should communicate with
+     * @param predicates the predicates to query for.
+     * @return a progressor over the matching entity IDs.
+     */
+    IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+            throws IndexNotApplicableKernelException;
+
+    /**
+     * Queries the index for the given {@link IndexQuery} predicates.
+     *
      * @param client the client which will control the progression though query results.
      * @param query the query so serve.
      */
@@ -90,6 +100,13 @@ public interface IndexReader extends Resource
         public PrimitiveLongResourceIterator query( IndexQuery[] predicates )
         {
             return PrimitiveLongResourceCollections.emptyIterator();
+        }
+
+        @Override
+        public IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+                throws IndexNotApplicableKernelException
+        {
+            return IndexProgressor.EMPTY;
         }
 
         @Override

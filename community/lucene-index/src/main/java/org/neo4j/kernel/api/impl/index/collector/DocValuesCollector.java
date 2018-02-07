@@ -55,6 +55,8 @@ import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.impl.lucene.explicit.EmptyIndexHits;
 import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.values.storable.Value;
 
 /**
  * Collector to record per-segment {@code DocIdSet}s and {@code LeafReaderContext}s for every
@@ -100,6 +102,16 @@ public class DocValuesCollector extends SimpleCollector
     public LongValuesIterator getValuesIterator( String field )
     {
         return new LongValuesIterator( getMatchingDocs(), getTotalHits(), field );
+    }
+
+    /**
+     * @param client the client to interact with
+     * @param field the field that contains the values
+     * @return an index progressor over all NumericDocValues from the given field
+     */
+    public IndexProgressor getIndexProgressor( IndexProgressor.NodeValueClient client, String field )
+    {
+        return new NodeValueIndexProgressor( getMatchingDocs(), field, client );
     }
 
     /**
@@ -318,7 +330,7 @@ public class DocValuesCollector extends SimpleCollector
      * Two, lookup a value for the current doc in a sidecar {@code NumericDocValues} field.
      * That is, this iterator has a main field, that drives the iteration and allow for lookups
      * in other, secondary fields based on the current document of the main iteration.
-     *
+     * <p>
      * Lookups from this class are not thread-safe. Races can happen when the segment barrier
      * is crossed; one thread might think it is reading from one segment while another thread has
      * already advanced this Iterator to the next segment, having raced the first thread.
@@ -337,7 +349,8 @@ public class DocValuesCollector extends SimpleCollector
          * @param totalHits the total number of hits across all segments
          * @param field the main field, whose values drive the iteration
          */
-        public LongValuesIterator( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits, String field )
+        public LongValuesIterator( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, int totalHits,
+                String field )
         {
             super( totalHits );
             this.field = field;
@@ -407,6 +420,93 @@ public class DocValuesCollector extends SimpleCollector
             }
 
             return false;
+        }
+
+        /**
+         * @return true if it was able to make sure, that currentDisi is valid
+         */
+        private boolean ensureValidDisi()
+        {
+            try
+            {
+                while ( currentIdIterator == null )
+                {
+                    if ( matchingDocs.hasNext() )
+                    {
+                        currentDocs = matchingDocs.next();
+                        currentIdIterator = currentDocs.docIdSet.iterator();
+                        if ( currentIdIterator != null )
+                        {
+                            docValuesCache.clear();
+                            currentDocValues = currentDocs.readDocValues( field );
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        @Override
+        public void close()
+        {
+            //nothing to close
+        }
+    }
+
+    public static final class NodeValueIndexProgressor implements IndexProgressor
+    {
+        private final Iterator<DocValuesCollector.MatchingDocs> matchingDocs;
+        private final String field;
+        private final NodeValueClient client;
+        private DocIdSetIterator currentIdIterator;
+        private NumericDocValues currentDocValues;
+        private DocValuesCollector.MatchingDocs currentDocs;
+        private final Map<String,NumericDocValues> docValuesCache;
+
+        /**
+         * @param allMatchingDocs all {@link DocValuesCollector.MatchingDocs} across all segments
+         * @param field the main field, whose values drive the iteration
+         */
+        NodeValueIndexProgressor( Iterable<DocValuesCollector.MatchingDocs> allMatchingDocs, String field,
+                NodeValueClient client )
+        {
+            this.field = field;
+            this.client = client;
+            matchingDocs = allMatchingDocs.iterator();
+            docValuesCache = new HashMap<>();
+        }
+
+        @Override
+        public boolean next()
+        {
+            try
+            {
+                while ( ensureValidDisi() )
+                {
+                    for ( int nextDoc = currentIdIterator.nextDoc(); nextDoc != DocIdSetIterator.NO_MORE_DOCS;
+                          nextDoc = currentIdIterator.nextDoc() )
+                    {
+                        if ( client.acceptNode( currentDocValues.get( nextDoc ), (Value[]) null ) )
+                        {
+                            return true;
+                        }
+                    }
+                    currentIdIterator = null;
+                }
+                return false;
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
 
         /**
@@ -829,7 +929,8 @@ public class DocValuesCollector extends SimpleCollector
             }
             catch ( IOException e )
             {
-                throw new RuntimeException( "Fail to read numeric doc values field " + field + " from the document.", e );
+                throw new RuntimeException( "Fail to read numeric doc values field " + field + " from the document.",
+                        e );
             }
         }
 
