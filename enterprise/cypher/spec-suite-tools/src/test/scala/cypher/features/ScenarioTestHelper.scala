@@ -29,6 +29,7 @@ import org.junit.jupiter.api.function.Executable
 import org.opencypher.tools.tck.api.Scenario
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -37,6 +38,7 @@ object ScenarioTestHelper {
                   config: TestConfig,
                   debugOutput: Boolean = false): util.Collection[DynamicTest] = {
     val blacklist = config.blacklist.map(parseBlacklist).getOrElse(Set.empty[BlacklistEntry])
+    checkForDuplicates(scenarios, blacklist.toList)
     val (expectFail, expectPass) = scenarios.partition { s => blacklist.exists(_.isBlacklisted(s)) }
     if (debugOutput) {
       val unusedBlacklistEntries = blacklist.filterNot(b => expectFail.exists(s => b.isBlacklisted(s)))
@@ -69,7 +71,28 @@ object ScenarioTestHelper {
     (expectPassTests ++ expectFailTests).asJavaCollection
   }
 
-  def parseBlacklist(blacklistFile: String): Set[BlacklistEntry] = {
+  def checkForDuplicates(scenarios: Seq[Scenario], blacklist: Seq[BlacklistEntry]): Unit = {
+    // test scenarios
+    var testScenarios = new mutable.HashSet[Scenario]()
+    for (s <- scenarios) {
+      if (testScenarios.contains(s)) {
+        throw new IllegalStateException("Multiple scenarios exists for the following name: " + s)
+      } else {
+        testScenarios += s
+      }
+    }
+    // test blacklist
+    var testBlacklist = new mutable.HashSet[BlacklistEntry]()
+    for (b <- blacklist) {
+      if (testBlacklist.contains(b)) {
+        throw new IllegalStateException("Multiple blacklists entrys exists for the following scenario: " + b)
+      } else {
+        testBlacklist += b
+      }
+    }
+  }
+
+  def parseBlacklist(blacklistFile: String): Seq[BlacklistEntry] = {
     def validate(scenarioName: String): Unit = {
       if (scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
         throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $blacklistFile")
@@ -80,7 +103,7 @@ object ScenarioTestHelper {
     val url = getClass.getResource(uri.getPath)
     if (url == null) throw new FileNotFoundException(s"Blacklist file not found at: $blacklistFile")
     val lines = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
-    val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toSet // comments in blacklist are being ignored
+    val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toList // comments in blacklist are being ignored
     scenarios.foreach(validate)
     scenarios.map(BlacklistEntry(_))
   }
@@ -90,7 +113,7 @@ object ScenarioTestHelper {
     It can be very useful when adding a new runtime for example.
    */
   def printComputedBlacklist(scenarios: Seq[Scenario],
-                             config: TestConfig): List[String] = {
+                             config: TestConfig): Set[String] = {
     //Sometime this method doesn't print its progress output (but is actually working (Do not cancel)!).
     //TODO: Investigate this!
     println("Evaluating scenarios")
@@ -100,7 +123,7 @@ object ScenarioTestHelper {
       print(s"Processing scenario ${index + 1}/$numberOfScenarios\n")
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenario.toString) else None
-    }.toList
+    }.toSet
     println()
     println(blacklist.mkString("\n"))
     blacklist
