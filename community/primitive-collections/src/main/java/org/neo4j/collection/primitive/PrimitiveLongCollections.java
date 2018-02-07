@@ -656,7 +656,6 @@ public class PrimitiveLongCollections
         return out;
     }
 
-    @SuppressWarnings( "UnusedDeclaration" )
     public static Iterator<Long> toIterator( final PrimitiveLongIterator primIterator )
     {
         return new Iterator<Long>()
