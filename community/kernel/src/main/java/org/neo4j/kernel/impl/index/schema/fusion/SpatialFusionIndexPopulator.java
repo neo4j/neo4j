@@ -68,14 +68,13 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         {
             throw new IOException( "Trying to create a new spatial populator when the index had already been created." );
         }
-        // TODO should we clear out all the SpatialKnownIndex on drop()?
-        // Currently create -> drop -> create works due to the recreated index getting a new indexId
     }
 
     @Override
     public void drop() throws IOException
     {
         forAll( entry -> ((SpatialKnownIndex) entry).drop(), indexMap.values().toArray() );
+        indexMap.clear();
     }
 
     @Override
