@@ -31,8 +31,8 @@ import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -195,7 +195,7 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         if ( BEGIN.matcher( statement ).matches() )
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
+                            ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
 
                             Bookmark bookmark = Bookmark.fromParamsOrNull( params );
                             if ( bookmark != null )
@@ -241,7 +241,7 @@ public class TransactionStateMachine implements StatementProcessor
                             }
                             else
                             {
-                                ctx.currentTransaction = spi.beginTransaction( ctx.loginContext );
+                                ctx.currentTransaction = spi.beginTransaction( ctx.securityContext );
                                 BoltResultHandle resultHandle = execute( ctx, spi, statement, params );
                                 ctx.currentResultHandle = resultHandle;
                                 ctx.currentResult = resultHandle.start();
@@ -407,7 +407,7 @@ public class TransactionStateMachine implements StatementProcessor
                                                   MapValue params, ThrowingAction<KernelException> onFail )
             throws QueryExecutionKernelException
     {
-        return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params, onFail );
+        return spi.executeQuery( ctx.querySource, ctx.securityContext, statement, params, onFail );
     }
 
     /**
@@ -424,7 +424,7 @@ public class TransactionStateMachine implements StatementProcessor
     static class MutableTransactionState
     {
         /** The current session security context to be used for starting transactions */
-        final LoginContext loginContext;
+        final SecurityContext securityContext;
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
@@ -455,7 +455,7 @@ public class TransactionStateMachine implements StatementProcessor
         private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
         {
             this.clock = clock;
-            this.loginContext = authenticationResult.getLoginContext();
+            this.securityContext = authenticationResult.getSecurityContext();
         }
     }
 
@@ -465,7 +465,7 @@ public class TransactionStateMachine implements StatementProcessor
 
         long newestEncounteredTxId();
 
-        KernelTransaction beginTransaction( LoginContext loginContext );
+        KernelTransaction beginTransaction( SecurityContext securityContext );
 
         void bindTransactionToCurrentThread( KernelTransaction tx );
 
@@ -474,7 +474,7 @@ public class TransactionStateMachine implements StatementProcessor
         boolean isPeriodicCommit( String query );
 
         BoltResultHandle executeQuery( BoltQuerySource querySource,
-                LoginContext loginContext,
+                SecurityContext securityContext,
                 String statement,
                 MapValue params,
                 ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException;

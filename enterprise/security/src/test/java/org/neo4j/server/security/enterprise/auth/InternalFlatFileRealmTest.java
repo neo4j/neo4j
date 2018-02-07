@@ -37,12 +37,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.scheduler.JobScheduler;
@@ -77,12 +76,10 @@ public class InternalFlatFileRealmTest
 
     private MultiRealmAuthManager authManager;
     private TestRealm testRealm;
-    private Token token;
 
     @Before
     public void setup() throws Throwable
     {
-        token = mock( Token.class );
         testRealm = new TestRealm(
                         new InMemoryUserRepository(),
                         new InMemoryRoleRepository(),
@@ -96,7 +93,7 @@ public class InternalFlatFileRealmTest
         List<Realm> realms = listOf( testRealm );
 
         authManager = new MultiRealmAuthManager( testRealm, realms, new MemoryConstrainedCacheManager(),
-                mock( SecurityLog.class ), true, false, Collections.emptyMap() );
+                mock( SecurityLog.class ), true );
 
         authManager.init();
         authManager.start();
@@ -108,7 +105,7 @@ public class InternalFlatFileRealmTest
     public void shouldNotCacheAuthenticationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
         assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
         assertThat( "Test realm did not receive a call", testRealm.takeAuthenticationFlag(), is( true ) );
 
@@ -124,14 +121,14 @@ public class InternalFlatFileRealmTest
     public void shouldNotCacheAuthorizationInfo() throws InvalidAuthTokenException
     {
         // Given
-        EnterpriseLoginContext mike = authManager.login( authToken( "mike", "123" ) );
+        EnterpriseSecurityContext mike = authManager.login( authToken( "mike", "123" ) );
         assertThat( mike.subject().getAuthenticationResult(), equalTo( AuthenticationResult.SUCCESS ) );
 
-        mike.authorize( token ).mode().allowsReads();
+        mike.mode().allowsReads();
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );
 
         // When
-        mike.authorize( token ).mode().allowsWrites();
+        mike.mode().allowsWrites();
 
         // Then
         assertThat( "Test realm did not receive a call", testRealm.takeAuthorizationFlag(), is( true ) );

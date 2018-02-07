@@ -26,13 +26,13 @@ import java.util.Set;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.security.PasswordPolicy;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -116,7 +116,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public BasicSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
         assertValidScheme( authToken );
 
@@ -133,7 +133,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
                 result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
             }
         }
-        return new BasicLoginContext( user, result );
+        return new BasicSecurityContext( this, user, result );
     }
 
     @Override
@@ -224,7 +224,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public UserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
+    public UserManager getUserManager( SecurityContext securityContext )
     {
         return this;
     }

@@ -28,10 +28,10 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -53,16 +53,16 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
-        return graph.beginTransaction( type, loginContext );
+        return graph.beginTransaction( type, securityContext );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
             long timeout, TimeUnit unit )
     {
-        return graph.beginTransaction( type, loginContext, timeout, unit );
+        return graph.beginTransaction( type, securityContext, timeout, unit );
     }
 
     @Override

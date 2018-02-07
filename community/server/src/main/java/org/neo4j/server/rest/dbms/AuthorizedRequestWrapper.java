@@ -22,33 +22,33 @@ package org.neo4j.server.rest.dbms;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.api.core.HttpRequestContext;
 
-import java.security.Principal;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
+import java.security.Principal;
 
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
 {
-    public static LoginContext getLoginContextFromHttpServletRequest( HttpServletRequest request )
+    public static SecurityContext getSecurityContextFromHttpServletRequest( HttpServletRequest request )
     {
         Principal principal = request.getUserPrincipal();
-        return getLoginContextFromUserPrincipal( principal );
+        return getSecurityContextFromUserPrincipal( principal );
     }
 
-    public static LoginContext getLoginContextFromHttpContext( HttpContext httpContext )
+    public static SecurityContext getSecurityContextFromHttpContext( HttpContext httpContext )
     {
         HttpRequestContext requestContext = httpContext.getRequest();
         Principal principal = requestContext.getUserPrincipal();
-        return getLoginContextFromUserPrincipal( principal );
+        return getSecurityContextFromUserPrincipal( principal );
     }
 
-    public static LoginContext getLoginContextFromUserPrincipal( Principal principal )
+    public static SecurityContext getSecurityContextFromUserPrincipal( Principal principal )
     {
         if ( principal instanceof DelegatingPrincipal )
         {
-            return ((DelegatingPrincipal) principal).getLoginContext();
+            return ((DelegatingPrincipal) principal).getSecurityContext();
         }
         // If whitelisted uris can start transactions we cannot throw exception here
         //throw new IllegalArgumentException( "Tried to get access mode on illegal user principal" );
@@ -59,11 +59,11 @@ public class AuthorizedRequestWrapper extends HttpServletRequestWrapper
     private final DelegatingPrincipal principal;
 
     public AuthorizedRequestWrapper( final String authType, final String username, final HttpServletRequest request,
-            LoginContext loginContext )
+            SecurityContext securityContext )
     {
         super( request );
         this.authType = authType;
-        this.principal = new DelegatingPrincipal( username, loginContext );
+        this.principal = new DelegatingPrincipal( username, securityContext );
     }
 
     @Override

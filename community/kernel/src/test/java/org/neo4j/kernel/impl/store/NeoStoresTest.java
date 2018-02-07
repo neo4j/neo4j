@@ -109,7 +109,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;

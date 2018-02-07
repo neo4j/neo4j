@@ -59,7 +59,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.helpers.collection.ResourceIterableWrapper;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
@@ -95,16 +95,16 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
-        return actual.beginTransaction( type, loginContext );
+        return actual.beginTransaction( type, securityContext );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout,
             TimeUnit unit )
     {
-        return actual.beginTransaction( type, loginContext, timeout, unit );
+        return actual.beginTransaction( type, securityContext, timeout, unit );
     }
 
     @Override

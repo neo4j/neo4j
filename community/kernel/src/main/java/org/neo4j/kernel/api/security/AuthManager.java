@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.security;
 
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -36,7 +36,7 @@ public interface AuthManager extends Lifecycle
      * @return An AuthSubject representing the newly logged-in user
      * @throws InvalidAuthTokenException if the authentication token is malformed
      */
-    LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
+    SecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException;
 
     /**
      * Implementation that does no authentication.
@@ -64,9 +64,9 @@ public interface AuthManager extends Lifecycle
         }
 
         @Override
-        public LoginContext login( Map<String,Object> authToken )
+        public SecurityContext login( Map<String,Object> authToken )
         {
-            return LoginContext.AUTH_DISABLED;
+            return SecurityContext.AUTH_DISABLED;
         }
     };
 }

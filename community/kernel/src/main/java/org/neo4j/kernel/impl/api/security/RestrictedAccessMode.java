@@ -57,12 +57,6 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean allowsPropertyReads( int propertyKey )
-    {
-        return original.allowsPropertyReads( propertyKey ) && wrapping.allowsPropertyReads( propertyKey );
-    }
-
-    @Override
     public boolean allowsProcedureWith( String[] allowed )
     {
         return false;

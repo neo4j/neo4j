@@ -64,7 +64,7 @@ public class AuthProceduresBase
         }
         catch ( Exception e )
         {
-            securityLog.error( securityContext.subject(), "failed to terminate running transaction and bolt connections for " +
+            securityLog.error( securityContext, "failed to terminate running transaction and bolt connections for " +
                     "user `%s` following %s: %s", username, reason, e.getMessage() );
             throw e;
         }

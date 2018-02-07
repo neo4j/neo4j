@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 
@@ -32,13 +32,13 @@ import org.neo4j.kernel.api.KernelTransaction;
 class KernelSession implements Session
 {
     private final InwardKernel kernel;
-    private final LoginContext loginContext;
+    private final SecurityContext securityContext;
     private final KernelToken token;
 
-    KernelSession( KernelToken token, InwardKernel kernel, LoginContext loginContext )
+    KernelSession( KernelToken token, InwardKernel kernel, SecurityContext securityContext )
     {
         this.kernel = kernel;
-        this.loginContext = loginContext;
+        this.securityContext = securityContext;
         this.token = token;
     }
 
@@ -51,7 +51,7 @@ class KernelSession implements Session
     @Override
     public Transaction beginTransaction( KernelTransaction.Type type ) throws KernelException
     {
-        return kernel.newTransaction( type, loginContext );
+        return kernel.newTransaction( type, securityContext );
     }
 
     @Override

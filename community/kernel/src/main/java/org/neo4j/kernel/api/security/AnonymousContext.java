@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /** Controls the capabilities of a KernelTransaction. */
-public class AnonymousContext implements LoginContext
+public class AnonymousContext implements SecurityContext
 {
     private final AccessMode accessMode;
 
@@ -67,8 +65,32 @@ public class AnonymousContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Token token )
+    public boolean isAdmin()
     {
-        return new SecurityContext( subject(), accessMode );
+        return false;
+    }
+
+    @Override
+    public SecurityContext freeze()
+    {
+        return this;
+    }
+
+    @Override
+    public SecurityContext withMode( AccessMode mode )
+    {
+        return new Frozen( subject(), mode );
+    }
+
+    @Override
+    public AccessMode mode()
+    {
+        return accessMode;
+    }
+
+    @Override
+    public String toString()
+    {
+        return defaultString( "anonymous" );
     }
 }

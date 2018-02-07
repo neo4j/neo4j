@@ -46,8 +46,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -188,22 +186,9 @@ public class TransactionEventsIT
         } ) );
         AuthSubject subject = mock( AuthSubject.class );
         when( subject.username() ).thenReturn( "Christof" );
-        LoginContext loginContext = new LoginContext()
-        {
-            @Override
-            public AuthSubject subject()
-            {
-                return subject;
-            }
-
-            @Override
-            public SecurityContext authorize( Token token )
-            {
-                return new SecurityContext( subject, AccessMode.Static.WRITE );
-            }
-        };
+        SecurityContext securityContext = new SecurityContext.Frozen( subject, AccessMode.Static.WRITE );
         Map<String,Object> metadata = genericMap( "username", "joe" );
-        runTransaction( loginContext, metadata );
+        runTransaction( securityContext, metadata );
 
         assertThat( "Should have specified username", usernameRef.get(), equalTo( "Christof" ) );
         assertThat( "Should have metadata with specified username", metaDataRef.get(), equalTo( metadata ) );
@@ -321,9 +306,9 @@ public class TransactionEventsIT
         runTransaction( AnonymousContext.write(), Collections.emptyMap() );
     }
 
-    private void runTransaction( LoginContext loginContext, Map<String,Object> metaData )
+    private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData )
     {
-        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext );
+        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
               Statement statement = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
         {
             statement.queryRegistration().setMetaData( metaData );

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
@@ -50,16 +50,16 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
-        return graph.beginTransaction( type, loginContext );
+        return graph.beginTransaction( type, securityContext );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext,
             long timeout, TimeUnit unit )
     {
-        return graph.beginTransaction( type, loginContext, timeout, unit );
+        return graph.beginTransaction( type, securityContext, timeout, unit );
     }
 
     @Override

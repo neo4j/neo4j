@@ -38,7 +38,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.logging.Log;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
@@ -83,10 +83,10 @@ public class TransactionalService
         try
         {
             usage.get( features ).flag( http_tx_endpoint );
-            LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+            SecurityContext securityContext = AuthorizedRequestWrapper.getSecurityContextFromHttpServletRequest( request );
             long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
             TransactionHandle transactionHandle =
-                    facade.newTransactionHandle( uriScheme, false, loginContext, customTransactionTimeout );
+                    facade.newTransactionHandle( uriScheme, false, securityContext, customTransactionTimeout );
             return createdResponse(
                     transactionHandle,
                     executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request )
@@ -147,9 +147,9 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         try
         {
-            LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
+            SecurityContext securityContext = AuthorizedRequestWrapper.getSecurityContextFromHttpServletRequest( request );
             long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-            transactionHandle = facade.newTransactionHandle( uriScheme, true, loginContext, customTransactionTimeout );
+            transactionHandle = facade.newTransactionHandle( uriScheme, true, securityContext, customTransactionTimeout );
         }
         catch ( TransactionLifecycleException e )
         {

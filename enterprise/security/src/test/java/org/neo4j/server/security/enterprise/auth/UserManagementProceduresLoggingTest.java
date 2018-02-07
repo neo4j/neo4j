@@ -19,22 +19,20 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.apache.shiro.mgt.SecurityManager;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
@@ -66,10 +64,8 @@ public class UserManagementProceduresLoggingTest
         authProcedures.securityLog = securityLog;
 
         generalUserManager = getUserManager();
-        EnterpriseSecurityContext adminContext =
-                new EnterpriseSecurityContext( new MockAuthSubject( "admin" ), AccessMode.Static.FULL, Collections.emptySet(), true );
-        matsContext =
-                new EnterpriseSecurityContext( new MockAuthSubject( "mats" ), AccessMode.Static.NONE, Collections.emptySet(), false );
+        EnterpriseSecurityContext adminContext = new TestSecurityContext( "admin", true, generalUserManager );
+        matsContext = new TestSecurityContext( "mats", false, generalUserManager );
 
         setSubject( adminContext );
     }
@@ -77,8 +73,8 @@ public class UserManagementProceduresLoggingTest
     private void setSubject( EnterpriseSecurityContext securityContext )
     {
         authProcedures.securityContext = securityContext;
-        authProcedures.userManager = new PersonalUserManager( generalUserManager, securityContext.subject(),
-                authProcedures.securityLog, securityContext.isAdmin() );
+        authProcedures.userManager = new PersonalUserManager( generalUserManager, securityContext,
+                authProcedures.securityLog );
     }
 
     private EnterpriseUserManager getUserManager() throws Throwable
@@ -645,43 +641,48 @@ public class UserManagementProceduresLoggingTest
         return inLog( this.getClass() ).error( message, (Object[]) arguments );
     }
 
-    private static class MockAuthSubject implements AuthSubject
+    private static class TestSecurityContext extends StandardEnterpriseSecurityContext
+    {
+        private final String name;
+        private final boolean isAdmin;
+        private final EnterpriseUserManager userManager;
+
+        TestSecurityContext( String name, boolean isAdmin, EnterpriseUserManager userManager )
+        {
+            super( null, new TestShiroSubject( name ) );
+            this.name = name;
+            this.isAdmin = isAdmin;
+            this.userManager = userManager;
+        }
+
+        @Override
+        public boolean isAdmin()
+        {
+            return isAdmin;
+        }
+
+        @Override
+        public EnterpriseUserManager getUserManager()
+        {
+            return userManager;
+        }
+    }
+
+    private static class TestShiroSubject extends ShiroSubject
     {
         private final String name;
 
-        private MockAuthSubject( String name )
+        TestShiroSubject( String name )
         {
+            super( mock( SecurityManager.class ), AuthenticationResult.SUCCESS );
             this.name = name;
         }
 
         @Override
-        public void logout()
+        public Object getPrincipal()
         {
-            throw new UnsupportedOperationException();
+            return name;
         }
-
-        @Override
-        public AuthenticationResult getAuthenticationResult()
-        {
-            return AuthenticationResult.SUCCESS;
-        }
-
-        @Override
-        public void setPasswordChangeNoLongerRequired()
-        {
-        }
-
-        @Override
-        public boolean hasUsername( String username )
-        {
-            return name.equals( username );
-        }
-
-        @Override
-        public String username()
-            {
-                return name;
-            }
     }
 
     private static class TestUserManagementProcedures extends UserManagementProcedures

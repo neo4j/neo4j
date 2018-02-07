@@ -25,10 +25,8 @@ import org.apache.shiro.realm.Realm;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -109,7 +107,7 @@ public class EnterpriseSecurityModule extends SecurityModule
              || config.get( SecuritySettings.native_authorization_enabled ) )
         {
             procedures.registerComponent( EnterpriseUserManager.class,
-                    ctx -> authManager.getUserManager( ctx.get( SECURITY_CONTEXT ).subject(), ctx.get( SECURITY_CONTEXT ).isAdmin() ), true );
+                    ctx -> authManager.getUserManager( asEnterprise( ctx.get( SECURITY_CONTEXT ) ) ), true );
             if ( config.get( SecuritySettings.auth_providers ).size() > 1 )
             {
                 procedures.registerProcedure( UserManagementProcedures.class, true,
@@ -173,8 +171,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         }
 
         return new MultiRealmAuthManager( internalRealm, orderedActiveRealms, createCacheManager( config ),
-                securityLog, config.get( SecuritySettings.security_log_successful_authentication ),
-                securityConfig.propertyAuthorization, securityConfig.propertyBlacklist );
+                securityLog, config.get( SecuritySettings.security_log_successful_authentication ) );
     }
 
     private static List<Realm> selectOrderedActiveRealms( List<String> configuredRealms, List<Realm> availableRealms )
@@ -321,12 +318,12 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new FileUserRepository( fileSystem, getDefaultAdminRepositoryFile( config ), logProvider );
     }
 
-    private static File getRoleRepositoryFile( Config config )
+    public static File getRoleRepositoryFile( Config config )
     {
         return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ), ROLE_STORE_FILENAME );
     }
 
-    private static File getDefaultAdminRepositoryFile( Config config )
+    public static File getDefaultAdminRepositoryFile( Config config )
     {
         return new File( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
                 DEFAULT_ADMIN_STORE_FILENAME );
@@ -337,7 +334,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         return new IllegalArgumentException( "Illegal configuration: " + message );
     }
 
-    static class SecurityConfig
+    class SecurityConfig
     {
         final List<String> authProviders;
         final boolean hasNativeProvider;
@@ -349,9 +346,6 @@ public class EnterpriseSecurityModule extends SecurityModule
         final boolean ldapAuthorization;
         final boolean pluginAuthentication;
         final boolean pluginAuthorization;
-        final boolean propertyAuthorization;
-        private final String propertyAuthMapping;
-        final Map<String,List<String>> propertyBlacklist = new HashMap<>();
 
         SecurityConfig( Config config )
         {
@@ -368,8 +362,6 @@ public class EnterpriseSecurityModule extends SecurityModule
             ldapAuthorization = config.get( SecuritySettings.ldap_authorization_enabled );
             pluginAuthentication = config.get( SecuritySettings.plugin_authentication_enabled );
             pluginAuthorization = config.get( SecuritySettings.plugin_authorization_enabled );
-            propertyAuthorization = config.get( SecuritySettings.property_level_authorization_enabled );
-            propertyAuthMapping = config.get( SecuritySettings.property_level_authorization_permissions );
         }
 
         void validate()
@@ -401,48 +393,6 @@ public class EnterpriseSecurityModule extends SecurityModule
                 throw illegalConfiguration(
                         "Plugin auth provider configured, but both authentication and authorization are disabled." );
             }
-            if ( propertyAuthorization && !parsePropertyPermissions() )
-            {
-                throw illegalConfiguration(
-                        "Property level authorization is enabled but there is a error in the permissions mapping." );
-            }
-        }
-
-        private boolean parsePropertyPermissions()
-        {
-            if ( propertyAuthMapping != null && !propertyAuthMapping.isEmpty() )
-            {
-                String rolePattern = "\\s*[a-zA-Z0-9_]+\\s*";
-                String propertyPattern = "\\s*[a-zA-Z0-9_]+\\s*";
-                String roleToPerm = rolePattern + "=" + propertyPattern + "(," + propertyPattern + ")*";
-                String multiLine = roleToPerm + "(;" + roleToPerm + ")*";
-
-                boolean valid = propertyAuthMapping.matches( multiLine );
-                if ( !valid )
-                {
-                    return false;
-                }
-
-                for ( String rolesAndPermissions : propertyAuthMapping.split( ";" ) )
-                {
-                    if ( !rolesAndPermissions.isEmpty() )
-                    {
-                        String[] split = rolesAndPermissions.split( "=" );
-                        String role = split[0].trim();
-                        String permissions = split[1];
-                        List<String> permissionsList = new ArrayList<>();
-                        for ( String perm : permissions.split( "," ) )
-                        {
-                            if ( !perm.isEmpty() )
-                            {
-                                permissionsList.add( perm.trim() );
-                            }
-                        }
-                        propertyBlacklist.put( role, permissionsList );
-                    }
-                }
-            }
-            return true;
         }
 
         public boolean onlyPluginAuthentication()

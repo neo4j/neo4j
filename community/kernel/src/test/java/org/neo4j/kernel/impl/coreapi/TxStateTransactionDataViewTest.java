@@ -30,15 +30,14 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -346,7 +345,7 @@ public class TxStateTransactionDataViewTest
     @Test
     public void shouldGetEmptyUsernameForAnonymousContext()
     {
-        when( transaction.securityContext() ).thenReturn( AnonymousContext.read().authorize( mock( Token.class ) ) );
+        when( transaction.securityContext() ).thenReturn( AnonymousContext.read() );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "", transactionDataSnapshot.username() );
@@ -358,7 +357,7 @@ public class TxStateTransactionDataViewTest
         AuthSubject authSubject = mock( AuthSubject.class );
         when( authSubject.username() ).thenReturn( "Christof" );
         when( transaction.securityContext() )
-                .thenReturn( new SecurityContext( authSubject, AccessMode.Static.FULL ) );
+                .thenReturn( new SecurityContext.Frozen( authSubject, AccessMode.Static.FULL ) );
 
         TxStateTransactionDataSnapshot transactionDataSnapshot = snapshot();
         assertEquals( "Christof", transactionDataSnapshot.username() );

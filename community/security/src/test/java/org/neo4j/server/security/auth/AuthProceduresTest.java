@@ -25,12 +25,10 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 
-import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 
 public class AuthProceduresTest extends KernelIntegrationTest
@@ -50,8 +48,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
         exception.expectMessage( "Anonymous cannot change password" );
 
         // When
-        dbmsOperations().procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray,
-                AnonymousContext.none().authorize( mock( Token.class ) ) );
+        dbmsOperations()
+                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, AnonymousContext.none() );
     }
 
     @Test
@@ -66,8 +64,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         exception.expectMessage( "Anonymous cannot change password" );
 
         // When
-        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray,
-                AnonymousContext.none().authorize( mock( Token.class ) ) );
+        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray, AnonymousContext.none() );
     }
 
     @Override

@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
+import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.Transaction.Type
-import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -315,7 +315,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {
     val r = new Random(seed)
 
-    var tx = graph.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
+    var tx = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
     var count = 0
 
     def checkAndSwitch() = {
@@ -323,7 +323,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       if (count == 1000) {
         tx.success()
         tx.close()
-        tx = graph.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
+        tx = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
         count = 0
       }
     }

@@ -30,7 +30,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 /**
  * Creates a key within its own transaction, such that the command(s) for creating the key

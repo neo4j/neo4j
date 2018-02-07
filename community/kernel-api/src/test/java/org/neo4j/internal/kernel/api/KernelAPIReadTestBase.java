@@ -29,7 +29,7 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
@@ -78,7 +78,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
             testSupport.setup( folder.getRoot(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
-        session = kernel.beginSession( LoginContext.AUTH_DISABLED );
+        session = kernel.beginSession( SecurityContext.AUTH_DISABLED );
         cursors = new ManagedTestCursors( kernel.cursors() );
         tx = session.beginTransaction( Transaction.Type.explicit );
         token = session.token();

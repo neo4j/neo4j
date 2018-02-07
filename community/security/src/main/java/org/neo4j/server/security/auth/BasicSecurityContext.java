@@ -19,11 +19,9 @@
  */
 package org.neo4j.server.security.auth;
 
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.security.User;
 
@@ -31,13 +29,15 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.FAILUR
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 
-public class BasicLoginContext implements LoginContext
+public class BasicSecurityContext implements SecurityContext
 {
+    private final BasicAuthManager authManager;
     private final BasicAuthSubject authSubject;
     private AccessMode accessMode;
 
-    public BasicLoginContext( User user, AuthenticationResult authenticationResult )
+    public BasicSecurityContext( BasicAuthManager authManager, User user, AuthenticationResult authenticationResult )
     {
+        this.authManager = authManager;
         this.authSubject = new BasicAuthSubject( user, authenticationResult );
 
         switch ( authenticationResult )
@@ -107,8 +107,33 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( Token token )
+    public boolean isAdmin()
     {
-        return new SecurityContext( authSubject, accessMode );
+        return true;
+    }
+
+    @Override
+    public SecurityContext freeze()
+    {
+        return this;
+    }
+
+    @Override
+    public SecurityContext withMode( AccessMode mode )
+    {
+        return new Frozen( authSubject, mode );
+    }
+
+    @Override
+    public AccessMode mode()
+    {
+        return accessMode;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format( "BasicSecurityContext{ securityContext=%s, accessMode=%s }", authSubject.username(),
+                accessMode );
     }
 }

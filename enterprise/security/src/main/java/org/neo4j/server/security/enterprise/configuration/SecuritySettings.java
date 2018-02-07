@@ -342,23 +342,4 @@ public class SecuritySettings implements LoadableConfig
                   "system account." )
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
             setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
-
-    //=========================================================================
-    // Property level security settings
-    //=========================================================================
-
-    @Description( "Set to true to enable property level security." )
-    public static final Setting<Boolean> property_level_authorization_enabled =
-            setting( "dbms.security.property_level.enabled", BOOLEAN, "false" );
-
-    @Description( "An authorization mapping for property level access for roles. " +
-            "The map should be formatted as a semicolon separated list of key-value pairs, where the " +
-            "key is the role name and the value is a comma separated list of blacklisted properties. " +
-            "For example: role1=prop1;role2=prop2;role3=prop3,prop4,prop5\n\n" +
-            "You could also use whitespaces and quotes around group names to make this mapping more readable, " +
-            "for example: dbms.security.property_level.blacklist=\\\n" +
-            "         \"role1\"      = ssn;    \\\n" +
-            "         \"role2\"      = ssn,income; \\\n" )
-    public static final Setting<String> property_level_authorization_permissions =
-            setting( "dbms.security.property_level.blacklist", STRING, NO_DEFAULT );
 }

@@ -42,20 +42,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.graphdb.security.AuthProviderTimeoutException;
-import org.neo4j.internal.kernel.api.Token;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
+import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.neo4j.helpers.Strings.escape;
@@ -69,11 +62,9 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     private final CacheManager cacheManager;
     private final SecurityLog securityLog;
     private final boolean logSuccessfulLogin;
-    private final boolean propertyAuthorization;
-    private final Map<String,List<String>> roleToPropertyBlacklist;
 
     MultiRealmAuthManager( EnterpriseUserManager userManager, Collection<Realm> realms, CacheManager cacheManager,
-            SecurityLog securityLog, boolean logSuccessfulLogin, boolean propertyAuthorization, Map<String,List<String>> roleToPropertyBlacklist )
+            SecurityLog securityLog, boolean logSuccessfulLogin )
     {
         this.userManager = userManager;
         this.realms = realms;
@@ -82,8 +73,6 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         securityManager = new DefaultSecurityManager( realms );
         this.securityLog = securityLog;
         this.logSuccessfulLogin = logSuccessfulLogin;
-        this.propertyAuthorization = propertyAuthorization;
-        this.roleToPropertyBlacklist = roleToPropertyBlacklist;
         securityManager.setSubjectFactory( new ShiroSubjectFactory() );
         ((ModularRealmAuthenticator) securityManager.getAuthenticator())
                 .setAuthenticationStrategy( new ShiroAuthenticationStrategy() );
@@ -101,37 +90,37 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     }
 
     @Override
-    public EnterpriseLoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
+    public EnterpriseSecurityContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        EnterpriseLoginContext securityContext;
+        EnterpriseSecurityContext securityContext;
 
         ShiroAuthToken token = new ShiroAuthToken( authToken );
         assertValidScheme( token );
 
         try
         {
-            securityContext = new StandardEnterpriseLoginContext(
+            securityContext = new StandardEnterpriseSecurityContext(
                     this, (ShiroSubject) securityManager.login( null, token ) );
             AuthenticationResult authenticationResult = securityContext.subject().getAuthenticationResult();
             if ( authenticationResult == AuthenticationResult.SUCCESS )
             {
                 if ( logSuccessfulLogin )
                 {
-                    securityLog.info( securityContext.subject(), "logged in" );
+                    securityLog.info( securityContext, "logged in" );
                 }
             }
             else if ( authenticationResult == AuthenticationResult.PASSWORD_CHANGE_REQUIRED )
             {
-                securityLog.info( securityContext.subject(), "logged in (password change required)" );
+                securityLog.info( securityContext, "logged in (password change required)" );
             }
             else
             {
-                String errorMessage = ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject())
+                String errorMessage = ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject())
                         .getAuthenticationFailureMessage();
                 securityLog.error( "[%s]: failed to log in: %s", escape( token.getPrincipal().toString() ), errorMessage );
             }
             // No need to keep full Shiro authentication info around on the subject
-            ((StandardEnterpriseLoginContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
+            ((StandardEnterpriseSecurityContext.NeoShiroSubject) securityContext.subject()).clearAuthenticationInfo();
         }
         catch ( UnsupportedTokenException e )
         {
@@ -146,7 +135,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
         catch ( ExcessiveAttemptsException e )
         {
             // NOTE: We only get this with single (internal) realm authentication
-            securityContext = new StandardEnterpriseLoginContext( this,
+            securityContext = new StandardEnterpriseSecurityContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.TOO_MANY_ATTEMPTS ) );
             securityLog.error( "[%s]: failed to log in: too many failed attempts",
                     escape( token.getPrincipal().toString() ) );
@@ -169,7 +158,7 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
                         cause != null && cause.getMessage() != null ? " (" + cause.getMessage() + ")" : "" );
                 throw new AuthProviderFailedException( e.getCause().getMessage(), e.getCause() );
             }
-            securityContext = new StandardEnterpriseLoginContext( this,
+            securityContext = new StandardEnterpriseSecurityContext( this,
                     new ShiroSubject( securityManager, AuthenticationResult.FAILURE ) );
             Throwable cause = e.getCause();
             Throwable causeCause = e.getCause() != null ? e.getCause().getCause() : null;
@@ -256,9 +245,9 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
     }
 
     @Override
-    public EnterpriseUserManager getUserManager( AuthSubject authSubject, boolean isUserManager )
+    public EnterpriseUserManager getUserManager( SecurityContext securityContext )
     {
-        return new PersonalUserManager( userManager, authSubject, securityLog, isUserManager );
+        return new PersonalUserManager( userManager, securityContext, securityLog );
     }
 
     @Override
@@ -307,38 +296,5 @@ class MultiRealmAuthManager implements EnterpriseAuthAndUserManager
             }
         }
         return infoList;
-    }
-
-    IntPredicate getPropertyPermissions( Set<String> roles, Token token )
-    {
-        if ( propertyAuthorization )
-        {
-            PrimitiveIntSet blackListed = Primitive.intSet();
-            for ( String role : roles )
-            {
-                if ( roleToPropertyBlacklist.containsKey( role ) )
-                {
-                    assert roleToPropertyBlacklist.get( role ) != null : "Blacklist has to contain properties";
-                    for ( String propName : roleToPropertyBlacklist.get( role ) )
-                    {
-
-                        try
-                        {
-                            blackListed.add( token.propertyKeyGetOrCreateForName( propName ) );
-                        }
-                        catch ( IllegalTokenNameException e )
-                        {
-                            // This can't happen since propName has already been checked to be valid
-                            securityLog.error( "Error in setting up property permissions, '" + propName + "' is not a valid property name." );
-                        }
-                    }
-                }
-            }
-            return property -> !blackListed.contains( property );
-        }
-        else
-        {
-            return property -> true;
-        }
     }
 }

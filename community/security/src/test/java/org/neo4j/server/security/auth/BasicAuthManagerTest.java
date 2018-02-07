@@ -25,7 +25,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
@@ -258,7 +258,7 @@ public class BasicAuthManagerTest extends InitialUserTest
     private void assertLoginGivesResult( String username, String password, AuthenticationResult expectedResult )
             throws InvalidAuthTokenException
     {
-        LoginContext securityContext = manager.login( authToken( username, password ) );
+        SecurityContext securityContext = manager.login( authToken( username, password ) );
         assertThat( securityContext.subject().getAuthenticationResult(), equalTo( expectedResult ) );
     }
 

@@ -28,9 +28,9 @@ import java.util.Map;
 
 import org.neo4j.cypher.internal.CommunityCompatibilityFactory;
 import org.neo4j.graphdb.Result;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -66,7 +66,7 @@ public class ExecutionEngineTest
 
         Result result;
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+                .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED ) )
         {
             String query = "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}";
             TransactionalContext tc = createTransactionContext( graph, tx, query );

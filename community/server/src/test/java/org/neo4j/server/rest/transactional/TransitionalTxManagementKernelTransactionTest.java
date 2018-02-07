@@ -23,9 +23,9 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -38,28 +38,28 @@ public class TransitionalTxManagementKernelTransactionTest
 
     private GraphDatabaseFacade databaseFacade = mock( GraphDatabaseFacade.class );
     private ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
-    private LoginContext loginContext = AnonymousContext.read();
+    private SecurityContext securityContext = AnonymousContext.read();
     private KernelTransaction.Type type = KernelTransaction.Type.implicit;
 
     @Test
     public void reopenStartTransactionWithCustomTimeoutIfSpecified() throws Exception
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
-                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, 10, contextBridge );
+                new TransitionalTxManagementKernelTransaction( databaseFacade, type, securityContext, 10, contextBridge );
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 
-        verify( databaseFacade, times( 2 ) ).beginTransaction( type, loginContext, 10, TimeUnit.MILLISECONDS);
+        verify( databaseFacade, times( 2 ) ).beginTransaction( type, securityContext, 10, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void reopenStartDefaultTransactionIfTimeoutNotSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
-                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, -1, contextBridge );
+                new TransitionalTxManagementKernelTransaction( databaseFacade, type, securityContext, -1, contextBridge );
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 
-        verify( databaseFacade, times( 2 ) ).beginTransaction( type, loginContext );
+        verify( databaseFacade, times( 2 ) ).beginTransaction( type, securityContext );
     }
 }

@@ -25,20 +25,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
-import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.enterprise.api.security.EnterpriseLoginContext;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 
-class StandardEnterpriseLoginContext implements EnterpriseLoginContext
+class StandardEnterpriseSecurityContext implements EnterpriseSecurityContext
 {
     private static final String SCHEMA_READ_WRITE = "schema:read,write";
     private static final String TOKEN_CREATE = "token:create";
@@ -49,14 +45,20 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
     private final ShiroSubject shiroSubject;
     private final NeoShiroSubject neoShiroSubject;
 
-    StandardEnterpriseLoginContext( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
+    StandardEnterpriseSecurityContext( MultiRealmAuthManager authManager, ShiroSubject shiroSubject )
     {
         this.authManager = authManager;
         this.shiroSubject = shiroSubject;
         this.neoShiroSubject = new NeoShiroSubject();
     }
 
-    private boolean isAdmin()
+    public EnterpriseUserManager getUserManager()
+    {
+        return authManager.getUserManager( this );
+    }
+
+    @Override
+    public boolean isAdmin()
     {
         return shiroSubject.isAuthenticated() && shiroSubject.isPermitted( "*" );
     }
@@ -67,7 +69,8 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         return neoShiroSubject;
     }
 
-    private StandardAccessMode mode( Token token )
+    @Override
+    public StandardAccessMode mode()
     {
         boolean isAuthenticated = shiroSubject.isAuthenticated();
         return new StandardAccessMode(
@@ -76,16 +79,27 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 isAuthenticated && shiroSubject.isPermitted( TOKEN_CREATE ),
                 isAuthenticated && shiroSubject.isPermitted( SCHEMA_READ_WRITE ),
                 shiroSubject.getAuthenticationResult() == AuthenticationResult.PASSWORD_CHANGE_REQUIRED,
-                queryForRoleNames(),
-                queryForPropertyPermissions( token )
+                queryForRoleNames()
             );
     }
 
     @Override
-    public EnterpriseSecurityContext authorize( Token token )
+    public String toString()
     {
-        StandardAccessMode mode = mode( token );
-        return new EnterpriseSecurityContext( neoShiroSubject, mode, mode.roles, isAdmin() );
+        return defaultString( "enterprise-security-context" );
+    }
+
+    @Override
+    public EnterpriseSecurityContext freeze()
+    {
+        StandardAccessMode mode = mode();
+        return new Frozen( neoShiroSubject, mode, mode.roles, isAdmin() );
+    }
+
+    @Override
+    public EnterpriseSecurityContext withMode( AccessMode mode )
+    {
+        return new Frozen( neoShiroSubject, mode, queryForRoleNames(), isAdmin() );
     }
 
     @Override
@@ -107,11 +121,6 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
                 .collect( Collectors.toSet() );
     }
 
-    private IntPredicate queryForPropertyPermissions( Token token )
-    {
-        return authManager.getPropertyPermissions( roles(), token );
-    }
-
     private static class StandardAccessMode implements AccessMode
     {
         private final boolean allowsReads;
@@ -120,10 +129,9 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         private final boolean allowsTokenCreates;
         private final boolean passwordChangeRequired;
         private final Set<String> roles;
-        private final IntPredicate propertyPermissions;
 
         StandardAccessMode( boolean allowsReads, boolean allowsWrites, boolean allowsTokenCreates, boolean allowsSchemaWrites,
-                boolean passwordChangeRequired, Set<String> roles, IntPredicate propertyPermissions )
+                boolean passwordChangeRequired, Set<String> roles )
         {
             this.allowsReads = allowsReads;
             this.allowsWrites = allowsWrites;
@@ -131,7 +139,6 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
             this.allowsSchemaWrites = allowsSchemaWrites;
             this.passwordChangeRequired = passwordChangeRequired;
             this.roles = roles;
-            this.propertyPermissions = propertyPermissions;
         }
 
         @Override
@@ -156,12 +163,6 @@ class StandardEnterpriseLoginContext implements EnterpriseLoginContext
         public boolean allowsSchemaWrites()
         {
             return allowsSchemaWrites;
-        }
-
-        @Override
-        public boolean allowsPropertyReads( int propertyKey )
-        {
-            return propertyPermissions.test( propertyKey );
         }
 
         @Override

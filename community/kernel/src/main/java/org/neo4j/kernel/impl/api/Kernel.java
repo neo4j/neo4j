@@ -24,7 +24,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -93,18 +93,18 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public KernelTransaction newTransaction( Transaction.Type type, LoginContext loginContext )
+    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext )
             throws TransactionFailureException
     {
-        return newTransaction( type, loginContext, config.get( transaction_timeout ).toMillis() );
+        return newTransaction( type, securityContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public KernelTransaction newTransaction( Transaction.Type type, LoginContext loginContext, long timeout ) throws
+    public KernelTransaction newTransaction( Transaction.Type type, SecurityContext securityContext, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, loginContext, timeout );
+        KernelTransaction transaction = transactions.newInstance( type, securityContext, timeout );
         transactionMonitor.transactionStarted();
         return transaction;
     }
@@ -152,9 +152,9 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public Session beginSession( LoginContext loginContext )
+    public Session beginSession( SecurityContext securityContext )
     {
-        return newKernel.beginSession( loginContext );
+        return newKernel.beginSession( securityContext );
     }
 
     @Override

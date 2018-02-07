@@ -75,7 +75,7 @@ public class PersonalUserManagerTest
                         new InternalFlatFileRealmIT.TestJobScheduler(), new InMemoryUserRepository(),
                         new InMemoryUserRepository() ) );
         log = spy( Log.class );
-        userManager = new PersonalUserManager( evilUserManager, AuthSubject.AUTH_DISABLED, new SecurityLog( log ), true );
+        userManager = new PersonalUserManager( evilUserManager, SecurityContext.AUTH_DISABLED, new SecurityLog( log ) );
     }
 
     private String withSubject( AuthSubject subject, String msg )

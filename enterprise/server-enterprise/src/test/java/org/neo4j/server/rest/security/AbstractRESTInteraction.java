@@ -37,10 +37,10 @@ import javax.ws.rs.core.HttpHeaders;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
@@ -130,8 +130,8 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     public InternalTransaction beginLocalTransactionAsUser( RESTSubject subject, KernelTransaction.Type txType )
             throws Throwable
     {
-        LoginContext loginContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
-        return getLocalGraph().beginTransaction( txType, loginContext );
+        SecurityContext securityContext = authManager.login( newBasicAuthToken( subject.username, subject.password ) );
+        return getLocalGraph().beginTransaction( txType, securityContext );
     }
 
     @Override

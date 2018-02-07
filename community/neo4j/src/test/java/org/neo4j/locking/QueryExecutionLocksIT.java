@@ -53,7 +53,6 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExplicitIndexHits;
@@ -207,7 +206,7 @@ public class QueryExecutionLocksIT
         GraphDatabaseQueryService graph = databaseRule.resolveDependency( GraphDatabaseQueryService.class );
         QueryExecutionEngine executionEngine = databaseRule.resolveDependency( QueryExecutionEngine.class );
         try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+                .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED ) )
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );

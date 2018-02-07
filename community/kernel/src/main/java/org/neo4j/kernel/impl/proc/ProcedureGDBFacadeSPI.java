@@ -29,12 +29,11 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -172,7 +171,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext ignored, long timeout )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, SecurityContext ignoredSecurityContext, long timeout )
     {
         try
         {

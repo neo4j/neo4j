@@ -40,7 +40,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -326,13 +325,13 @@ public class ConstraintIndexCreatorTest
         private final List<KernelStatement> statements = new ArrayList<>();
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext )
+        public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
         {
             return new StubKernelTransaction();
         }
 
         @Override
-        public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
+        public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext, long timeout )
                 throws TransactionFailureException
         {
             return new StubKernelTransaction( timeout );
@@ -370,7 +369,7 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public Session beginSession( LoginContext loginContext )
+        public Session beginSession( SecurityContext securityContext )
         {
             throw new UnsupportedOperationException();
         }
