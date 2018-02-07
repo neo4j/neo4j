@@ -74,11 +74,16 @@ public class SslSocketConnectorFactory extends HttpConnectorFactory
         {
             sslContextFactory.setIncludeCipherSuites( ciphers.toArray( new String[ciphers.size()] ) );
         }
+        // regardless whether cipher suites are provided by user or not,
+        // we always remove the cipher filter added in jetty 9.4 to keep the back-compatibility of jetty 9.2
+        sslContextFactory.setExcludeCipherSuites();
 
         List<String> protocols = sslPolicy.getTlsVersions();
         if ( protocols != null )
         {
+            // If a user specified what protocols they want to use, then apply whatever they added by removing extra jetty filter
             sslContextFactory.setIncludeProtocols( protocols.toArray( new String[protocols.size()] ) );
+            sslContextFactory.setExcludeProtocols(); // remove jetty filter
         }
 
         switch ( sslPolicy.getClientAuth() )

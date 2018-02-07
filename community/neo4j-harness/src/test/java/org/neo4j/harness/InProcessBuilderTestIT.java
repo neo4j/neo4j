@@ -118,12 +118,13 @@ public class InProcessBuilderTestIT
                 .withConfig( httpsConnector.type, "HTTP" )
                 .withConfig( httpsConnector.enabled, "true" )
                 .withConfig( httpsConnector.encryption, "TLS" )
-                .withConfig( httpsConnector.address, "localhost:" + PortAuthority.allocatePort() )
+                .withConfig( httpsConnector.listen_address, "localhost:" + PortAuthority.allocatePort() )
                 .withConfig( LegacySslPolicyConfig.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
         {
             // Then
+            assertThat( HTTP.GET( server.httpURI().toString() ).status(), equalTo( 200 ) );
             assertThat( HTTP.GET( server.httpsURI().get().toString() ).status(), equalTo( 200 ) );
             assertDBConfig( server, "20", GraphDatabaseSettings.dense_node_threshold.name() );
         }
