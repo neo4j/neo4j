@@ -242,7 +242,8 @@ public class BatchingTransactionAppenderTest
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChannel channel = spy( new InMemoryClosableChannel() );
+        FlushablePositionAwareChannel channel =
+                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ) ) );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );

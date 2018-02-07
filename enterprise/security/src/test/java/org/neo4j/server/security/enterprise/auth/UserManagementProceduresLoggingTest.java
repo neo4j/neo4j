@@ -707,5 +707,4 @@ public class UserManagementProceduresLoggingTest
         {
         }
     }
-
 }

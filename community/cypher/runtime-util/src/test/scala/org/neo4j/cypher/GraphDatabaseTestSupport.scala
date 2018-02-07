@@ -59,7 +59,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     graph = new GraphDatabaseCypherService(graphOps)
   }
 
-  private def graphDatabaseFactory(config: Map[Setting[_], String] = databaseConfig()): TestGraphDatabaseFactory = {
+  protected def graphDatabaseFactory(config: Map[Setting[_], String] = databaseConfig()): TestGraphDatabaseFactory = {
     val factory = createDatabaseFactory()
     this match {
       case custom: FakeClock =>
