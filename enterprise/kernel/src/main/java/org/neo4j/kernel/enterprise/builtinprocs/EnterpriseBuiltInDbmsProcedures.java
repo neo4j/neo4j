@@ -216,12 +216,14 @@ public class EnterpriseBuiltInDbmsProcedures
         public final String signature;
         public final String description;
         public final List<String> roles;
+        public final String mode;
 
         public ProcedureResult( ProcedureSignature signature )
         {
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
             roles = new ArrayList<>();
             switch ( signature.mode() )
             {

@@ -1261,6 +1261,18 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldShowModeWhenListingProcedures() throws Throwable
+    {
+        // Given/When
+        List<Map<String,Object>> results = db.execute( "CALL dbms.procedures()" ).stream().filter( record ->
+                record.get( "name" ).equals( "org.neo4j.procedure.nodeWithDescription" ) )
+                .collect( Collectors.toList() );
+        // Then
+        assertFalse( "Expected to find test procedure", results.isEmpty() );
+        assertThat( results.get( 0 ).get( "mode" ), equalTo( "WRITE" ) );
+    }
+
+    @Test
     public void shouldIndicateDefaultValueWhenListingFunctions() throws Throwable
     {
         // Given/When
