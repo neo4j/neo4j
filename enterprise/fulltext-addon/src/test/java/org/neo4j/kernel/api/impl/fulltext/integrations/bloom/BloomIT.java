@@ -629,8 +629,12 @@ public class BloomIT
 
         db.execute( AWAIT_POPULATION );
         Result result = db.execute( STATUS );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
+        Map<String,Object> output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomNodes", output.get( "name" ) );
+        output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomRelationships", output.get( "name" ) );
         assertFalse( result.hasNext() );
     }
 

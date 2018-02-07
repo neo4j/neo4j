@@ -89,9 +89,9 @@ public class BloomProcedures
     @Procedure( name = "bloom.indexStatus", mode = READ )
     public Stream<StatusOutput> indexStatus() throws Exception
     {
-        InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
-        InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
-        return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
+        StatusOutput nodeIndexState = new StatusOutput(BLOOM_NODES,provider.getState( BLOOM_NODES, NODES ));
+        StatusOutput relationshipIndexState = new StatusOutput(BLOOM_RELATIONSHIPS,provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ));
+        return Stream.of( nodeIndexState, relationshipIndexState );
     }
 
     @Description( "Query the Bloom fulltext index for nodes" )
@@ -158,10 +158,12 @@ public class BloomProcedures
 
     public class StatusOutput
     {
+        public final String name;
         public final String state;
 
-        StatusOutput( InternalIndexState internalIndexState )
+        StatusOutput( String name, InternalIndexState internalIndexState )
         {
+            this.name = name;
             switch ( internalIndexState )
             {
             case POPULATING:
