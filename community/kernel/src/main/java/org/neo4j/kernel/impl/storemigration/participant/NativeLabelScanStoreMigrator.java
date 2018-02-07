@@ -70,7 +70,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         if ( isNativeLabelScanStoreMigrationRequired( storeDir ) )
         {
             StoreFactory storeFactory = getStoreFactory( storeDir, versionToMigrateFrom );
-            try ( NeoStores neoStores = storeFactory.openAllNeoStores();
+            try ( NeoStores neoStores = storeFactory.openAllNeoStores(true);
                     Lifespan lifespan = new Lifespan() )
             {
                 neoStores.verifyStoreOk();
