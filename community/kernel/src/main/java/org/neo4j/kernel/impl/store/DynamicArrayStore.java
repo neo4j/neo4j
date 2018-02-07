@@ -113,7 +113,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( fileName, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
-        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES );
+        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES )
+                && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override

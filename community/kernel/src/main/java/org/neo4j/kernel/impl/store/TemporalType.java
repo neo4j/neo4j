@@ -103,7 +103,7 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new RuntimeException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
 
@@ -143,7 +143,7 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new RuntimeException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
 
@@ -184,7 +184,7 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new RuntimeException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
             },
@@ -222,7 +222,7 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new RuntimeException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
             },
@@ -285,7 +285,7 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new RuntimeException(
+                        throw new InvalidRecordException(
                                 "LocalTime array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
@@ -330,7 +330,7 @@ public enum TemporalType
                 }
                 else
                 {
-                    throw new RuntimeException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                    throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                 }
             }
         };
@@ -400,19 +400,6 @@ public enum TemporalType
         {
             // Kernel code requires no exceptions in deeper PropertyChain processing of corrupt/invalid data
             return TEMPORAL_INVALID;
-        }
-    }
-
-    public static TemporalType find( String name )
-    {
-        TemporalType table = all.get( name );
-        if ( table != null )
-        {
-            return table;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Temporal Type: " + name );
         }
     }
 
