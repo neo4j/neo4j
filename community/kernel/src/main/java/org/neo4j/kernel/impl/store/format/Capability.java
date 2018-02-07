@@ -58,6 +58,11 @@ public enum Capability
     POINT_PROPERTIES( CapabilityType.STORE ),
 
     /**
+     * Temporal types are an addition to the format, not a change
+     */
+    TEMPORAL_PROPERTIES( CapabilityType.STORE ),
+
+    /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
     SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );

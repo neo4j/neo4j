@@ -77,6 +77,11 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
         return new DateTimeValue( ZonedDateTime.of( year, month, day, hour, minute, second, nanoOfSecond, zone ) );
     }
 
+    public static DateTimeValue datetime( long epochSecond, long nano, ZoneOffset zoneOffset )
+    {
+        return new DateTimeValue( ofInstant( ofEpochSecond( epochSecond, nano ), zoneOffset ) );
+    }
+
     public static DateTimeValue datetime( ZonedDateTime datetime )
     {
         return new DateTimeValue( requireNonNull( datetime, "ZonedDateTime" ) );
@@ -371,7 +376,7 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     @Override
     protected int computeHash()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return value.toInstant().hashCode();
     }
 
     @Override

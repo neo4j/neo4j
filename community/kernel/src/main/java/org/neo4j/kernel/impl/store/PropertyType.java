@@ -208,6 +208,20 @@ public enum PropertyType
         {
             return GeometryType.calculateNumberOfBlocksUsed( firstBlock );
         }
+    },
+    TEMPORAL( 14 )
+    {
+        @Override
+        public Value value( PropertyBlock block, PropertyStore store )
+        {
+            return TemporalType.decode( block );
+        }
+
+        @Override
+        public int calculateNumberOfBlocksUsed( long firstBlock )
+        {
+            return TemporalType.calculateNumberOfBlocksUsed( firstBlock );
+        }
     };
 
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -279,6 +293,8 @@ public enum PropertyType
             return SHORT_ARRAY;
         case 13:
             return GEOMETRY;
+        case 14:
+            return TEMPORAL;
         default:
             return null;
         }

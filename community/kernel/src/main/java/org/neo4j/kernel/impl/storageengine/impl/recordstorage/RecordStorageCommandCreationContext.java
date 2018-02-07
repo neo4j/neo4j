@@ -67,7 +67,7 @@ public class RecordStorageCommandCreationContext implements CommandCreationConte
                 new StandardDynamicRecordAllocator( idBatches.idGenerator( StoreType.PROPERTY_ARRAY ),
                         neoStores.getPropertyStore().getArrayStore().getRecordDataSize() ),
                 idBatches.idGenerator( StoreType.PROPERTY ),
-                propertyTraverser, neoStores.getPropertyStore().allowStorePoints() );
+                propertyTraverser, neoStores.getPropertyStore().allowStorePointsAndTemporal() );
     }
 
     public long nextId( StoreType storeType )

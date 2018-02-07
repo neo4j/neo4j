@@ -21,11 +21,13 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Array;
+import java.time.ZoneId;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.Node;
@@ -34,6 +36,12 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -322,6 +330,115 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         thrown.expect(Exception.class);
         node1.setProperty( "location", Values.pointValue( CoordinateReferenceSystem.Cartesian, 1, 1, 1, 1 ) );
         newTransaction();
+    }
+
+    @Test
+    public void testDateTypeSmallEpochDay()
+    {
+        DateValue date = DateValue.date( 2018, 1, 31 );
+        String key = "dt";
+        node1.setProperty( key, date );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( date.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testDateTypeLargeEpochDay()
+    {
+        DateValue date = DateValue.epochDate( 2147483648L );
+        String key = "dt";
+        node1.setProperty( key, date );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( date.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testLocalTimeTypeSmallNano()
+    {
+        LocalTimeValue time = LocalTimeValue.localTime( 0, 0, 0, 37 );
+        String key = "dt";
+        node1.setProperty( key, time );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( time.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testLocalTimeTypeLargeNano()
+    {
+        LocalTimeValue time = LocalTimeValue.localTime( 0, 0, 13, 37 );
+        String key = "dt";
+        node1.setProperty( key, time );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( time.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testLocalDateTimeType()
+    {
+        LocalDateTimeValue dateTime = LocalDateTimeValue.localDateTime( 1991, 1, 1, 0, 0, 13, 37 );
+        String key = "dt";
+        node1.setProperty( key, dateTime );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( dateTime.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testTimeType()
+    {
+        TimeValue time = TimeValue.time( 23, 11, 8, 0, "+17:59" );
+        String key = "dt";
+        node1.setProperty( key, time );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( time.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testDurationType()
+    {
+        DurationValue duration = DurationValue.duration( 57, 57, 57, 57 );
+        String key = "dt";
+        node1.setProperty( key, duration );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( duration.asObjectCopy(), property );
+    }
+
+    @Test
+    public void testDateTimeTypeWithZoneOffset()
+    {
+        DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "+01:00" );
+        String key = "dt";
+        node1.setProperty( key, dateTime );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( dateTime.asObjectCopy(), property );
+    }
+
+    // TODO unignore when zone IDs are supported in the property store
+    @Ignore
+    public void testDateTimeTypeWithZoneId()
+    {
+        DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, ZoneId.of( "Europe/Stockholm" ) );
+        String key = "dt";
+        node1.setProperty( key, dateTime );
+        newTransaction();
+
+        Object property = node1.getProperty( key );
+        assertEquals( dateTime.asObjectCopy(), property );
     }
 
     @Test
