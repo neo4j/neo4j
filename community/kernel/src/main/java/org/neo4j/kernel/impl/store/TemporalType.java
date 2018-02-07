@@ -103,7 +103,8 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
 
@@ -143,7 +144,8 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
 
@@ -184,7 +186,8 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
             },
@@ -222,7 +225,8 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
                     }
                 }
             },
