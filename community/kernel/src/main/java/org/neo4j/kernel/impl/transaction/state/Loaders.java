@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
@@ -52,6 +53,7 @@ public class Loaders
     private final Loader<SchemaRecord,SchemaRule> schemaRuleLoader;
     private final Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
     private final Loader<LabelTokenRecord,Void> labelTokenLoader;
+    private final Loader<TimeZoneTokenRecord,Void> timeZoneTokenLoader;
     private final Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;
 
     public Loaders( NeoStores neoStores )
@@ -64,6 +66,7 @@ public class Loaders
                 neoStores.getPropertyKeyTokenStore(),
                 neoStores.getRelationshipTypeTokenStore(),
                 neoStores.getLabelTokenStore(),
+                neoStores.getTimeZoneTokenStore(),
                 neoStores.getSchemaStore() );
     }
 
@@ -75,6 +78,7 @@ public class Loaders
             RecordStore<PropertyKeyTokenRecord> propertyKeyTokenStore,
             RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore,
             RecordStore<LabelTokenRecord> labelTokenStore,
+            RecordStore<TimeZoneTokenRecord> timeZoneTokenStore,
             SchemaStore schemaStore )
     {
         nodeLoader = nodeLoader( nodeStore );
@@ -84,6 +88,7 @@ public class Loaders
         schemaRuleLoader = schemaRuleLoader( schemaStore );
         propertyKeyTokenLoader = propertyKeyTokenLoader( propertyKeyTokenStore );
         labelTokenLoader = labelTokenLoader( labelTokenStore );
+        timeZoneTokenLoader = timeZoneTokenLoader( timeZoneTokenStore );
         relationshipTypeTokenLoader = relationshipTypeTokenLoader( relationshipTypeTokenStore );
     }
 
@@ -120,6 +125,11 @@ public class Loaders
     public Loader<LabelTokenRecord,Void> labelTokenLoader()
     {
         return labelTokenLoader;
+    }
+
+    public Loader<TimeZoneTokenRecord,Void> timeZoneTokenLoader()
+    {
+        return timeZoneTokenLoader;
     }
 
     public Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader()
@@ -354,6 +364,37 @@ public class Loaders
 
             @Override
             public LabelTokenRecord clone( LabelTokenRecord record )
+            {
+                return record.clone();
+            }
+        };
+    }
+
+    public static Loader<TimeZoneTokenRecord,Void> timeZoneTokenLoader(
+            final RecordStore<TimeZoneTokenRecord> store )
+    {
+        return new Loader<TimeZoneTokenRecord, Void>()
+        {
+            @Override
+            public TimeZoneTokenRecord newUnused( long key, Void additionalData )
+            {
+                return andMarkAsCreated( new TimeZoneTokenRecord( toIntExact( key ) ) );
+            }
+
+            @Override
+            public TimeZoneTokenRecord load( long key, Void additionalData )
+            {
+                return store.getRecord( key, store.newRecord(), NORMAL );
+            }
+
+            @Override
+            public void ensureHeavy( TimeZoneTokenRecord record )
+            {
+                store.ensureHeavy( record );
+            }
+
+            @Override
+            public TimeZoneTokenRecord clone( TimeZoneTokenRecord record )
             {
                 return record.clone();
             }

@@ -43,6 +43,7 @@ import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistenc
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
+import org.neo4j.consistency.report.ConsistencyReport.TimeZoneTokenConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -59,13 +60,16 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.neo4j.consistency.RecordType.ARRAY_PROPERTY;
+import static org.neo4j.consistency.RecordType.LABEL_NAME;
 import static org.neo4j.consistency.RecordType.PROPERTY_KEY_NAME;
 import static org.neo4j.consistency.RecordType.RELATIONSHIP_TYPE_NAME;
 import static org.neo4j.consistency.RecordType.STRING_PROPERTY;
+import static org.neo4j.consistency.RecordType.TIME_ZONE_NAME;
 
 class OwnerCheck implements CheckDecorator
 {
@@ -305,7 +309,8 @@ class OwnerCheck implements CheckDecorator
     public RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
             RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker )
     {
-        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( RELATIONSHIP_TYPE_NAME );
+        // TODO Was this wrongly using RELATIONSHIP_TYPE_NAME?
+        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( LABEL_NAME );
         if ( dynamicOwners == null )
         {
             return checker;
@@ -316,6 +321,25 @@ class OwnerCheck implements CheckDecorator
             DynamicOwner.NameOwner owner( LabelTokenRecord record )
             {
                 return new DynamicOwner.LabelToken( record );
+            }
+        };
+    }
+
+    @Override
+    public RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> decorateTimeZoneTokenChecker(
+            RecordCheck<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport> checker )
+    {
+        ConcurrentMap<Long, DynamicOwner> dynamicOwners = dynamicOwners( TIME_ZONE_NAME );
+        if ( dynamicOwners == null )
+        {
+            return checker;
+        }
+        return new NameCheckerDecorator<TimeZoneTokenRecord,TimeZoneTokenConsistencyReport>( checker, dynamicOwners )
+        {
+            @Override
+            DynamicOwner.NameOwner owner( TimeZoneTokenRecord record )
+            {
+                return new DynamicOwner.TimeZoneToken( record );
             }
         };
     }

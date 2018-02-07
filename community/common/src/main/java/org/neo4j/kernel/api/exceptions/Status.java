@@ -330,6 +330,8 @@ public interface Status
                 "The database failed to drop a requested index." ),
         LabelAccessFailed( DatabaseError,
                 "The request accessed a label that did not exist." ),
+        TimeZoneAccessFailed( DatabaseError,
+                "The request accessed a time zone that did not exist." ),
         LabelLimitReached( DatabaseError,
                 "The maximum number of labels supported has been reached, no more labels can be created." ),
         PropertyKeyAccessFailed( DatabaseError,

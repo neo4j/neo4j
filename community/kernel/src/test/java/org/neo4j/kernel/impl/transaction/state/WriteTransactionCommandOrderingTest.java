@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -136,6 +137,7 @@ public class WriteTransactionCommandOrderingTest
         RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
         RecordChanges<LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
+        RecordChanges<TimeZoneTokenRecord,Void> timeZoneTokenChanges = mock( RecordChanges.class );
         RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
                 mock( RecordChanges.class );
         RecordChanges<PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
@@ -146,6 +148,7 @@ public class WriteTransactionCommandOrderingTest
         RecordChanges<SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
         when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
+        when( recordChangeSet.getTimeZoneTokenChanges() ).thenReturn( timeZoneTokenChanges );
         when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
         when( recordChangeSet.getPropertyKeyTokenChanges() ).thenReturn( propertyKeyTokenChanges );
         when( recordChangeSet.getNodeRecords() ).thenReturn( nodeRecordChanges );
@@ -176,6 +179,8 @@ public class WriteTransactionCommandOrderingTest
         when( recordChangeSet.changeSize() ).thenReturn( 3 );
 
         when( labelTokenChanges.changes() )
+                .thenReturn( Collections.emptyList() );
+        when( timeZoneTokenChanges.changes() )
                 .thenReturn( Collections.emptyList() );
         when( relationshipTypeTokenChanges.changes() ).thenReturn(
                 Collections.emptyList() );

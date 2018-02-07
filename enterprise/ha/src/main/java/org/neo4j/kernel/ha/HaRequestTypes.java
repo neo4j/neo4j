@@ -41,7 +41,8 @@ public interface HaRequestTypes
         NEW_LOCK_SESSION,
         PUSH_TRANSACTIONS,
         CREATE_PROPERTY_KEY,
-        CREATE_LABEL;
+        CREATE_LABEL,
+        CREATE_TIME_ZONE;
 
         public boolean is( RequestType<?> type )
         {

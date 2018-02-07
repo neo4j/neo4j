@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
@@ -138,7 +139,8 @@ public class TransactionRecordState implements RecordState
         int noOfCommands = recordChangeSet.changeSize() +
                            (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
 
-        for ( RecordProxy<LabelTokenRecord, Void> record : recordChangeSet.getLabelTokenChanges().changes() )
+        for ( RecordProxy<LabelTokenRecord, Void> record :
+                recordChangeSet.getLabelTokenChanges().changes() )
         {
             commands.add( new Command.LabelTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
@@ -151,6 +153,11 @@ public class TransactionRecordState implements RecordState
             recordChangeSet.getPropertyKeyTokenChanges().changes() )
         {
             commands.add( new Command.PropertyKeyTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
+        }
+        for ( RecordProxy<TimeZoneTokenRecord, Void> record :
+            recordChangeSet.getTimeZoneTokenChanges().changes() )
+        {
+            commands.add( new Command.TimeZoneTokenCommand( record.getBefore(), record.forReadingLinkage() ) );
         }
 
         // Collect nodes, relationships, properties
@@ -445,6 +452,13 @@ public class TransactionRecordState implements RecordState
         TokenCreator<LabelTokenRecord, Token> creator =
                 new TokenCreator<>( neoStores.getLabelTokenStore() );
         creator.createToken( name, id, recordChangeSet.getLabelTokenChanges() );
+    }
+
+    public void createTimeZoneToken( String name, int id )
+    {
+        TokenCreator<TimeZoneTokenRecord, Token> creator =
+                new TokenCreator<>( neoStores.getTimeZoneTokenStore() );
+        creator.createToken( name, id, recordChangeSet.getTimeZoneTokenChanges() );
     }
 
     /**

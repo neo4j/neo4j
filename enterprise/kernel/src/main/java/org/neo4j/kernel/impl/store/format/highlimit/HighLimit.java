@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.LabelTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.PropertyKeyTokenRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.RelationshipTypeTokenRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.TimeZoneTokenRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static org.neo4j.kernel.impl.store.format.highlimit.HighLimitFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS;
 
@@ -53,8 +55,8 @@ public class HighLimit extends BaseRecordFormats
 
     public HighLimit()
     {
-        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_4_0.introductionVersion(), 5, Capability.DENSE_NODES,
-                Capability.RELATIONSHIP_TYPE_3BYTES, Capability.SCHEMA, Capability.LUCENE_5, Capability.POINT_PROPERTIES,
+        super( STORE_VERSION, StoreVersion.HIGH_LIMIT_V3_4_0.introductionVersion(), 5, Capability.DENSE_NODES, Capability.RELATIONSHIP_TYPE_3BYTES,
+                Capability.SCHEMA, Capability.LUCENE_5, Capability.POINT_PROPERTIES, Capability.TIME_ZONE_TOKENS,
                 Capability.SECONDARY_RECORD_UNITS );
     }
 
@@ -86,6 +88,12 @@ public class HighLimit extends BaseRecordFormats
     public RecordFormat<LabelTokenRecord> labelToken()
     {
         return new LabelTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<TimeZoneTokenRecord> timeZoneToken()
+    {
+        return new TimeZoneTokenRecordFormat();
     }
 
     @Override

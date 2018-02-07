@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
 import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
@@ -157,6 +158,13 @@ public class StoreProcessor extends AbstractStoreProcessor
                                             checker )
     {
         report.forLabelName( label, checker );
+    }
+
+    @Override
+    protected void checkTimeZoneToken( RecordStore<TimeZoneTokenRecord> store, TimeZoneTokenRecord record,
+            RecordCheck<TimeZoneTokenRecord,ConsistencyReport.TimeZoneTokenConsistencyReport> checker )
+    {
+        report.forTimeZoneName( record, checker );
     }
 
     @Override

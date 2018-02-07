@@ -30,6 +30,10 @@ public final class StandardFormatSettings
     static final int PROPERTY_MAXIMUM_ID_BITS = 36;
     public static final int DYNAMIC_MAXIMUM_ID_BITS = 36;
     public static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
+    // There are 561 timezones in the IANA database as of writing this.
+    // This requires at least 10 bits. 15 is compatible with what we need
+    // for zone offsets and gives us plenty of buffer for future time zones
+    public static final int TIMEZONE_TOKEN_MAXIMUM_ID_BITS = 15;
     public static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
     static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
 

@@ -30,6 +30,8 @@ public interface TokenWriteOperations
      */
     int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
 
+    int timeZoneGetOrCreateForName( String timeZoneName ) throws IllegalTokenNameException;
+
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
@@ -39,6 +41,8 @@ public interface TokenWriteOperations
     int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
 
     void labelCreateForName( String labelName, int id ) throws IllegalTokenNameException, TooManyLabelsException;
+
+    void timeZoneCreateForName( String timeZoneName, int id ) throws IllegalTokenNameException;
 
     void propertyKeyCreateForName( String propertyKeyName, int id ) throws IllegalTokenNameException;
 

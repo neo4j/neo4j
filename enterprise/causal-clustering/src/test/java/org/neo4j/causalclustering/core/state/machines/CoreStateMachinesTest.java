@@ -156,6 +156,8 @@ public class CoreStateMachinesTest
     @SuppressWarnings( "unchecked" )
     private final ReplicatedTokenStateMachine<Token> labelTokenSM = mock( ReplicatedTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
+    private final ReplicatedTokenStateMachine<Token> timeZoneTokenSM = mock( ReplicatedTokenStateMachine.class );
+    @SuppressWarnings( "unchecked" )
     private final ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenSM =
             mock( ReplicatedTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
@@ -168,7 +170,7 @@ public class CoreStateMachinesTest
     private final DummyMachine dummySM = mock( DummyMachine.class );
     private final RecoverConsensusLogIndex recoverConsensusLogIndex = mock( RecoverConsensusLogIndex.class );
 
-    private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM,
+    private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM, timeZoneTokenSM,
             relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM, dummySM,
             mock( LocalDatabase.class ), recoverConsensusLogIndex );
 

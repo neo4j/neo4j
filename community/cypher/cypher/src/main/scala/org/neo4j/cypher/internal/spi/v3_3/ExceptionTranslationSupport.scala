@@ -36,6 +36,9 @@ trait ExceptionTranslationSupport {
 
       def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
 
+      // TimeZones did not exist back then
+      def timeZoneGetName(timeZoneId: Int) = "TimeZone"
+
       def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)

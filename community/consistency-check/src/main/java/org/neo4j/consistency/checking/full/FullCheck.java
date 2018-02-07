@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
@@ -162,7 +163,9 @@ public class FullCheck
                 new DirectRecordAccess( store, cacheAccess ),
                 readAllRecords( PropertyKeyTokenRecord.class, store.getPropertyKeyTokenStore() ),
                 readAllRecords( RelationshipTypeTokenRecord.class, store.getRelationshipTypeTokenStore() ),
-                readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ) );
+                readAllRecords( LabelTokenRecord.class, store.getLabelTokenStore() ),
+                readAllRecords( TimeZoneTokenRecord.class, store.getTimeZoneTokenStore() )
+        );
     }
 
     private static <T extends AbstractBaseRecord> T[] readAllRecords( Class<T> type, RecordStore<T> store )

@@ -57,6 +57,8 @@ public class StoreFactory
                                                                           NAMES_PART;
     public static final String LABEL_TOKEN_STORE_NAME = ".labeltokenstore.db";
     public static final String LABEL_TOKEN_NAMES_STORE_NAME = LABEL_TOKEN_STORE_NAME + NAMES_PART;
+    public static final String TIME_ZONE_TOKEN_STORE_NAME = ".timezonetokenstore.db";
+    public static final String TIME_ZONE_TOKEN_NAMES_STORE_NAME = TIME_ZONE_TOKEN_STORE_NAME + NAMES_PART;
     public static final String SCHEMA_STORE_NAME = ".schemastore.db";
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     public static final String COUNTS_STORE = ".counts.db";

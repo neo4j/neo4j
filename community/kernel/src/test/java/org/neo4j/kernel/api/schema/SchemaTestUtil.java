@@ -58,6 +58,12 @@ public class SchemaTestUtil
         }
 
         @Override
+        public String timeZoneGetName( int timeZoneId )
+        {
+            return "TimeZone" + timeZoneId;
+        }
+
+        @Override
         public String relationshipTypeGetName( int relationshipTypeId )
         {
             return "RelType" + relationshipTypeId;

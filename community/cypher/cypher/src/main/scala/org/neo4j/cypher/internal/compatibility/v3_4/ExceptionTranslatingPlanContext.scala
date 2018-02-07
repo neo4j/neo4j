@@ -81,6 +81,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def getLabelName(id: Int): String =
     translateException(inner.getLabelName(id))
 
+  override def getTimeZoneName(id: Int) =
+    translateException(inner.getTimeZoneName(id))
+
   override def getOptLabelId(labelName: String): Option[Int] =
     translateException(inner.getOptLabelId(labelName))
 

@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public interface ConsistencyReport
@@ -70,6 +71,9 @@ public interface ConsistencyReport
 
         void forLabelName( LabelTokenRecord label,
                            RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker );
+
+        void forTimeZoneName( TimeZoneTokenRecord record,
+                           RecordCheck<TimeZoneTokenRecord, TimeZoneTokenConsistencyReport> checker );
 
         void forPropertyKey( PropertyKeyTokenRecord key,
                              RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker );
@@ -363,6 +367,12 @@ public interface ConsistencyReport
     {
         @Documented( "The string record referred from this label name is also referred from a another label name." )
         void nameMultipleOwners( LabelTokenRecord otherOwner );
+    }
+
+    interface TimeZoneTokenConsistencyReport extends NameConsistencyReport
+    {
+        @Documented( "The string record referred from this time zone name is also referred from a another time zone name." )
+        void nameMultipleOwners( TimeZoneTokenRecord otherOwner );
     }
 
     interface PropertyKeyTokenConsistencyReport extends NameConsistencyReport

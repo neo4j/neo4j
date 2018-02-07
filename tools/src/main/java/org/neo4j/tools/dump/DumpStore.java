@@ -164,6 +164,9 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
             case LABEL_TOKEN:
                 dumpLabels( neoStores, ids );
                 break;
+            case TIME_ZONE_TOKEN:
+                dumpTimeZones( neoStores, ids );
+                break;
             case RELATIONSHIP_TYPE_TOKEN:
                 dumpRelationshipTypes( neoStores, ids );
                 break;
@@ -200,6 +203,11 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
     private static void dumpLabels( NeoStores neoStores, IdRange[] ids ) throws Exception
     {
         dumpTokens( neoStores.getLabelTokenStore(), ids );
+    }
+
+    private static void dumpTimeZones( NeoStores neoStores, IdRange[] ids ) throws Exception
+    {
+        dumpTokens( neoStores.getTimeZoneTokenStore(), ids );
     }
 
     private static void dumpRelationshipTypes( NeoStores neoStores, IdRange[] ids ) throws Exception

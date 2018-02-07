@@ -17,33 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.kernel.impl.store.record;
 
-public enum Comparison
+public class TimeZoneTokenRecord extends TokenRecord
 {
-    LHS_SMALLER_THAN_RHS( 1 ),
-    LHS_EQUAL_TO_RHS( 0 ),
-    LHS_GREATER_THAN_RHS( -1 );
-    private final int cmp;
-
-    Comparison( int cmp )
+    public TimeZoneTokenRecord( int id )
     {
-        this.cmp = cmp;
+        super( id );
     }
 
-    public static Comparison comparison( long cmp )
+    @Override
+    public TimeZoneTokenRecord initialize( boolean inUse, int nameId )
     {
-        if ( cmp == 0 )
+        super.initialize( inUse, nameId );
+        return this;
+    }
+
+    @Override
+    protected String simpleName()
+    {
+        return "TimeZone";
+    }
+
+    @Override
+    public TimeZoneTokenRecord clone()
+    {
+        TimeZoneTokenRecord timeZoneTokenRecord = new TimeZoneTokenRecord( getIntId() );
+        timeZoneTokenRecord.setInUse( inUse() );
+        if ( isCreated() )
         {
-            return LHS_EQUAL_TO_RHS;
+            timeZoneTokenRecord.setCreated();
         }
-        if ( cmp < 0 )
-        {
-            return LHS_SMALLER_THAN_RHS;
-        }
-        else
-        {
-            return LHS_GREATER_THAN_RHS;
-        }
+        timeZoneTokenRecord.setNameId( getNameId() );
+        timeZoneTokenRecord.addNameRecords( getNameRecords() );
+        return timeZoneTokenRecord;
     }
 }

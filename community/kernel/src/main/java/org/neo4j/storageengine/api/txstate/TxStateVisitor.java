@@ -65,6 +65,8 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitCreatedLabelToken( String name, int id );
 
+    void visitCreatedTimeZoneToken( String name, int id );
+
     void visitCreatedPropertyKeyToken( String name, int id );
 
     void visitCreatedRelationshipTypeToken( String name, int id );
@@ -142,6 +144,11 @@ public interface TxStateVisitor extends AutoCloseable
 
         @Override
         public void visitCreatedLabelToken( String name, int id )
+        {
+        }
+
+        @Override
+        public void visitCreatedTimeZoneToken( String name, int id )
         {
         }
 
@@ -255,6 +262,12 @@ public interface TxStateVisitor extends AutoCloseable
         public void visitCreatedLabelToken( String name, int id )
         {
             actual.visitCreatedLabelToken( name, id );
+        }
+
+        @Override
+        public void visitCreatedTimeZoneToken( String name, int id )
+        {
+            actual.visitCreatedTimeZoneToken( name, id );
         }
 
         @Override

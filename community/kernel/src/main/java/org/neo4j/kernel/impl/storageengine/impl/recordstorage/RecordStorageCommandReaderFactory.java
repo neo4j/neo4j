@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_10;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_11;
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
@@ -36,13 +37,14 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
 
     public RecordStorageCommandReaderFactory()
     {
-        readers = new CommandReader[11]; // pessimistic size
+        readers = new CommandReader[12]; // pessimistic size
         readers[-LogEntryVersion.V2_3.byteCode()] = new PhysicalLogCommandReaderV2_2_4();
         readers[-LogEntryVersion.V3_0.byteCode()] = new PhysicalLogCommandReaderV3_0();
         readers[-LogEntryVersion.V2_3_5.byteCode()] = new PhysicalLogCommandReaderV2_2_10();
         readers[-LogEntryVersion.V3_0_2.byteCode()] = new PhysicalLogCommandReaderV3_0_2();
         // The 3_0_10 version bump is only to prevent mixed-version clusters; format is otherwise backwards compatible.
         readers[-LogEntryVersion.V3_0_10.byteCode()] = new PhysicalLogCommandReaderV3_0_2();
+        readers[-LogEntryVersion.V3_0_11.byteCode()] = new PhysicalLogCommandReaderV3_0_11();
 
         // A little extra safety check so that we got 'em all
         LogEntryVersion[] versions = LogEntryVersion.values();

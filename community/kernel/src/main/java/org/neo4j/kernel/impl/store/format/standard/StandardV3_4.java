@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 public class StandardV3_4 extends BaseRecordFormats
 {
@@ -42,8 +43,8 @@ public class StandardV3_4 extends BaseRecordFormats
 
     public StandardV3_4()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V3_4.introductionVersion(), 8, Capability.SCHEMA,
-                Capability.DENSE_NODES, Capability.LUCENE_5, Capability.POINT_PROPERTIES );
+        super( STORE_VERSION, StoreVersion.STANDARD_V3_4.introductionVersion(), 8, Capability.SCHEMA, Capability.DENSE_NODES, Capability.LUCENE_5,
+                Capability.POINT_PROPERTIES, Capability.TIME_ZONE_TOKENS );
     }
 
     @Override
@@ -74,6 +75,12 @@ public class StandardV3_4 extends BaseRecordFormats
     public RecordFormat<LabelTokenRecord> labelToken()
     {
         return new LabelTokenRecordFormat();
+    }
+
+    @Override
+    public RecordFormat<TimeZoneTokenRecord> timeZoneToken()
+    {
+        return new TimeZoneTokenRecordFormat();
     }
 
     @Override

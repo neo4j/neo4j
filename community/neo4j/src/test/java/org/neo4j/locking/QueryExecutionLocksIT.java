@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -399,6 +400,24 @@ public class QueryExecutionLocksIT
         public Iterator<Token> labelsGetAllTokens()
         {
             return readOperations.labelsGetAllTokens();
+        }
+
+        @Override
+        public int timeZoneGetForName( String timeZoneName )
+        {
+            return readOperations.timeZoneGetForName( timeZoneName );
+        }
+
+        @Override
+        public String timeZoneGetName( int timeZoneId ) throws TimeZoneNotFoundKernelException
+        {
+            return readOperations.timeZoneGetName( timeZoneId );
+        }
+
+        @Override
+        public Iterator<Token> timeZonesGetAllTokens()
+        {
+            return readOperations.timeZonesGetAllTokens();
         }
 
         @Override

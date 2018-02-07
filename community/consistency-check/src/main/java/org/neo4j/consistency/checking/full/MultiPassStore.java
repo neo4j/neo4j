@@ -92,6 +92,14 @@ public enum MultiPassStore
                     return storeAccess.getLabelTokenStore();
                 }
             },
+    TIME_ZONES
+            {
+                @Override
+                RecordStore<?> getRecordStore( StoreAccess storeAccess )
+                {
+                    return storeAccess.getTimeZoneTokenStore();
+                }
+            },
     RELATIONSHIP_GROUPS
             {
                 @Override

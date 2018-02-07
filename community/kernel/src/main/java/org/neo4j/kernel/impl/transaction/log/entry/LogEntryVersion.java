@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_11;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -56,9 +56,9 @@ import static java.lang.String.format;
  * the log entry version will be bumped.
  * The process of making an update to log entry or command format is to:
  * <ol>
- * <li>Copy {@link PhysicalLogCommandReaderV3_0_2} or similar and modify the new copy</li>
+ * <li>Copy {@link PhysicalLogCommandReaderV3_0_11} or similar and modify the new copy</li>
  * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy if entry layout has changed</li>
- * <li>Add an entry in this enum, like {@link #V3_0_10} pointing to the above new classes, version needs to be negative
+ * <li>Add an entry in this enum, like {@link #V3_0_11} pointing to the above new classes, version needs to be negative
  * to detect log files from older versions of neo4j</li>
  * <li>Modify {@link StorageCommand#serialize(WritableChannel)}.
  * Also {@link LogEntryWriter} (if log entry layout has changed) with required changes</li>
@@ -79,10 +79,12 @@ public enum LogEntryVersion
     // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised
     // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
     // log version to prevent mixed-version clusters from forming.
-    V3_0_10( -10, LogEntryParsersV2_3.class );
-    // Method moreRecentVersionExists() relies on the fact that we have negative numbers, thus next version to use is -11
+    V3_0_10( -10, LogEntryParsersV2_3.class ),
+    // as of 2018-02-06: log entries for time zone tokens are added, no format changes
+    V3_0_11( -11, LogEntryParsersV2_3.class );
+    // Method moreRecentVersionExists() relies on the fact that we have negative numbers, thus next version to use is -12
 
-    public static final LogEntryVersion CURRENT = V3_0_10;
+    public static final LogEntryVersion CURRENT = V3_0_11;
     private static final byte LOWEST_VERSION = (byte)-V2_3.byteCode();
     private static final LogEntryVersion[] ALL = values();
     private static final LogEntryVersion[] LOOKUP_BY_VERSION;

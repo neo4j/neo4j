@@ -46,6 +46,8 @@ public interface Master
 
     Response<Integer> createLabel( RequestContext context, String name );
 
+    Response<Integer> createTimeZone( RequestContext context, String name );
+
     /**
      * Calling this method will validate, persist to log and apply changes to stores on
      * the master.

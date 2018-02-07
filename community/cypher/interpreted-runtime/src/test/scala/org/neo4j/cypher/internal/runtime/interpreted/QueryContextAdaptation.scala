@@ -176,6 +176,8 @@ trait QueryContextAdaptation {
 
   override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = ???
 
+  override def getTimeZoneName(id: Int) = ???
+
   override def getLabelName(id: Int): String = ???
 
   override def getOptLabelId(labelName: String): Option[Int] = ???

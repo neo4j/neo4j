@@ -166,9 +166,11 @@ public class ConsistencyCheckTasks
             tasks.add( create( "RelationshipTypeTokenStore", nativeStores.getRelationshipTypeTokenStore(), ROUND_ROBIN ) );
             tasks.add( create( "PropertyKeyTokenStore", nativeStores.getPropertyKeyTokenStore(), ROUND_ROBIN ) );
             tasks.add( create( "LabelTokenStore", nativeStores.getLabelTokenStore(), ROUND_ROBIN ) );
+            tasks.add( create( "TimeZoneTokenStore", nativeStores.getTimeZoneTokenStore(), ROUND_ROBIN ) );
             tasks.add( create( "RelationshipTypeNameStore", nativeStores.getRelationshipTypeNameStore(), ROUND_ROBIN ) );
             tasks.add( create( "PropertyKeyNameStore", nativeStores.getPropertyKeyNameStore(), ROUND_ROBIN ) );
             tasks.add( create( "LabelNameStore", nativeStores.getLabelNameStore(), ROUND_ROBIN ) );
+            tasks.add( create( "TimeZoneNameStore", nativeStores.getTimeZoneNameStore(), ROUND_ROBIN ) );
             tasks.add( create( "NodeDynamicLabelStore", nativeStores.getNodeDynamicLabelStore(), ROUND_ROBIN ) );
         }
 

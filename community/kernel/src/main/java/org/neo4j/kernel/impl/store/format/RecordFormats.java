@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 /**
  * The record formats that a store version uses. Contains all formats for all different stores as well as
@@ -79,6 +80,8 @@ public interface RecordFormats
     RecordFormat<PropertyRecord> property();
 
     RecordFormat<LabelTokenRecord> labelToken();
+
+    RecordFormat<TimeZoneTokenRecord> timeZoneToken();
 
     RecordFormat<PropertyKeyTokenRecord> propertyKeyToken();
 

@@ -69,6 +69,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getLabelName(id: Int): String = singleDbHit(inner.getLabelName(id))
 
+  override def getTimeZoneName(id: Int) = singleDbHit(inner.getTimeZoneName(id))
+
   override def getOptLabelId(labelName: String): Option[Int] = singleDbHit(inner.getOptLabelId(labelName))
 
   override def getLabelId(labelName: String): Int = singleDbHit(inner.getLabelId(labelName))

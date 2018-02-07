@@ -411,6 +411,12 @@ public class MasterImplConversationStopFuzzIT
         }
 
         @Override
+        public int getOrCreateTimeZone( String name )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public int getOrCreateLabel( String name )
         {
             throw new UnsupportedOperationException();

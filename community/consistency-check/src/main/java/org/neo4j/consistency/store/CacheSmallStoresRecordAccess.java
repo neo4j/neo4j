@@ -22,22 +22,26 @@ package org.neo4j.consistency.store;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
 {
     private final PropertyKeyTokenRecord[] propertyKeys;
     private final RelationshipTypeTokenRecord[] relationshipTypes;
     private final LabelTokenRecord[] labels;
+    private final TimeZoneTokenRecord[] timeZones;
 
     public CacheSmallStoresRecordAccess( RecordAccess delegate,
                                          PropertyKeyTokenRecord[] propertyKeys,
                                          RelationshipTypeTokenRecord[] relationshipTypes,
-                                         LabelTokenRecord[] labels )
+                                         LabelTokenRecord[] labels,
+                                         TimeZoneTokenRecord[] timeZones )
     {
         super( delegate );
         this.propertyKeys = propertyKeys;
         this.relationshipTypes = relationshipTypes;
         this.labels = labels;
+        this.timeZones = timeZones;
     }
 
     @Override
@@ -76,6 +80,19 @@ public class CacheSmallStoresRecordAccess extends DelegatingRecordAccess
         else
         {
             return super.label( id );
+        }
+    }
+
+    @Override
+    public RecordReference<TimeZoneTokenRecord> timeZone( int id )
+    {
+        if ( id < labels.length )
+        {
+            return new DirectRecordReference<>( timeZones[id], this );
+        }
+        else
+        {
+            return super.timeZone( id );
         }
     }
 }

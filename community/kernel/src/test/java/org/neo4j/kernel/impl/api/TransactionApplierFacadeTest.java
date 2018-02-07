@@ -213,6 +213,27 @@ public class TransactionApplierFacadeTest
     }
 
     @Test
+    public void testVisitTimeZoneTokenCommand() throws Exception
+    {
+        Command.TimeZoneTokenCommand cmd = mock( Command.TimeZoneTokenCommand.class );
+        when( cmd.handle( any( CommandVisitor.class ) ) ).thenCallRealMethod();
+
+        // WHEN
+        boolean result = facade.visitTimeZoneTokenCommand( cmd );
+
+        // THEN
+        InOrder inOrder = inOrder( txApplier1, txApplier2, txApplier3 );
+
+        inOrder.verify( txApplier1 ).visitTimeZoneTokenCommand( cmd );
+        inOrder.verify( txApplier2 ).visitTimeZoneTokenCommand( cmd );
+        inOrder.verify( txApplier3 ).visitTimeZoneTokenCommand( cmd );
+
+        inOrder.verifyNoMoreInteractions();
+
+        assertFalse( result );
+    }
+
+    @Test
     public void testVisitPropertyKeyTokenCommand() throws Exception
     {
         // Make sure it just calls through to visit

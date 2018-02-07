@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TransactionId;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -411,6 +412,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                         StoreFile.NODE_LABEL_STORE,
                         StoreFile.LABEL_TOKEN_STORE,
                         StoreFile.LABEL_TOKEN_NAMES_STORE,
+                        StoreFile.TIME_ZONE_TOKEN_STORE,
+                        StoreFile.TIME_ZONE_TOKEN_NAMES_STORE,
                         StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE,
                         StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE,
                         StoreFile.PROPERTY_KEY_TOKEN_STORE,
@@ -450,7 +453,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
             RecordFormats newFormat ) throws IOException
     {
-        createStore( migrationDir, newFormat );
+        createStore( migrationDir, newFormat, StoreType.values() );
 
         // We use the batch importer for migrating the data, and we use it in a special way where we only
         // rewrite the stores that have actually changed format. We know that to be node and relationship
@@ -496,6 +499,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
             StoreType[] storesToMigrate = {
                     StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                    StoreType.TIME_ZONE_TOKEN, StoreType.TIME_ZONE_TOKEN_NAME,
                     StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
                     StoreType.NODE_LABEL,
@@ -508,22 +512,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private void createStore( File migrationDir, RecordFormats newFormat )
+    private void createStore( File storeDir, RecordFormats newFormat, StoreType... types )
     {
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory(
-                migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider );
-        try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
-        {
-            neoStores.getMetaDataStore();
-            neoStores.getLabelTokenStore();
-            neoStores.getNodeStore();
-            neoStores.getPropertyStore();
-            neoStores.getRelationshipGroupStore();
-            neoStores.getRelationshipStore();
-            neoStores.getSchemaStore();
-        }
+                storeDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider );
+        storeFactory.openNeoStores( true, types ).close();
     }
 
     private AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum,
@@ -635,6 +630,13 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 true, // allow to skip non existent source files
                 ExistingTargetStrategy.OVERWRITE, // allow to overwrite target files
                 StoreFileType.values() );
+        RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
+        if ( !oldFormat.hasCapability( Capability.TIME_ZONE_TOKENS ) && newFormat.hasCapability( Capability.TIME_ZONE_TOKENS ) )
+        {
+            createStore( storeDir, newFormat, StoreType.TIME_ZONE_TOKEN );
+        }
+
         // Since some of the files might only be accessible through the file system provided by the page cache (i.e.
         // block devices), we also try to move the files with the page cache.
         try

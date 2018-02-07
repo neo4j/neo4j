@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -32,6 +33,7 @@ import org.neo4j.storageengine.api.Token;
 public interface KeyReadOperations
 {
     int NO_SUCH_LABEL = StatementConstants.NO_SUCH_LABEL;
+    int NO_SUCH_TIME_ZONE = StatementConstants.NO_SUCH_TIME_ZONE;
     int NO_SUCH_PROPERTY_KEY = StatementConstants.NO_SUCH_PROPERTY_KEY;
     int NO_SUCH_RELATIONSHIP_TYPE = StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 
@@ -40,6 +42,12 @@ public interface KeyReadOperations
 
     /** Returns the label name for the given label id. */
     String labelGetName( Statement state, int labelId ) throws LabelNotFoundKernelException;
+
+    /** Returns a timeZone id for a timeZone name. If the timeZone doesn't exist, {@link #NO_SUCH_TIME_ZONE} will be returned. */
+    int timeZoneGetForName( Statement state, String timeZoneName );
+
+    /** Returns the timeZone name for the given timeZone id. */
+    String timeZoneGetName( Statement state, int timeZoneId ) throws TimeZoneNotFoundKernelException;
 
     /**
      * Returns a property key id for the given property key. If the property key doesn't exist,
@@ -55,6 +63,9 @@ public interface KeyReadOperations
 
     /** Returns the labels currently stored in the database **/
     Iterator<Token> labelsGetAllTokens( Statement state ); // TODO: Token is a store level concern, should not make it this far up the stack
+
+    /** Returns the time zones currently stored in the database **/
+    Iterator<Token> timeZonesGetAllTokens( Statement state );
 
     /** Returns the relationship types currently stored in the database */
     Iterator<Token> relationshipTypesGetAllTokens( Statement state );

@@ -104,6 +104,12 @@ public class TransactionApplierFacade extends TransactionApplier.Adapter
     }
 
     @Override
+    public boolean visitTimeZoneTokenCommand( Command.TimeZoneTokenCommand command ) throws IOException
+    {
+        return visit( command );
+    }
+
+    @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
         return visit( command );

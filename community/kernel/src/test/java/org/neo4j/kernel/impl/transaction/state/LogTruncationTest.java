@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
@@ -109,6 +110,9 @@ public class LogTruncationTest
         permutations.put( Command.LabelTokenCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
+        permutations.put( Command.TimeZoneTokenCommand.class,
+                new Command[] { new Command.TimeZoneTokenCommand( new TimeZoneTokenRecord( 1 ),
+                        createTimeZoneTokenRecord( 1 ) ) } );
 
         // Index commands
         AddRelationshipCommand addRelationshipCommand = new AddRelationshipCommand();
@@ -260,6 +264,15 @@ public class LogTruncationTest
         labelTokenRecord.setNameId( 333 );
         labelTokenRecord.addNameRecord( new DynamicRecord( 43 ) );
         return labelTokenRecord;
+    }
+
+    private TimeZoneTokenRecord createTimeZoneTokenRecord( int id )
+    {
+        TimeZoneTokenRecord timeZoneTokenRecord = new TimeZoneTokenRecord( id );
+        timeZoneTokenRecord.setInUse( true );
+        timeZoneTokenRecord.setNameId( 333 );
+        timeZoneTokenRecord.addNameRecord( new DynamicRecord( 43 ) );
+        return timeZoneTokenRecord;
     }
 
     private RelationshipTypeTokenRecord createRelationshipTypeTokenRecord( int id )

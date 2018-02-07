@@ -32,5 +32,7 @@ public interface CacheAccessBackDoor
 
     void addLabelToken( Token labelId );
 
+    void addTimeZoneToken( Token timeZoneId );
+
     void addPropertyKeyToken( Token index );
 }

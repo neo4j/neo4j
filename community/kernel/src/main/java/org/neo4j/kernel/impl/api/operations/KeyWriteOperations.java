@@ -34,6 +34,13 @@ public interface KeyWriteOperations
             throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
+     * Returns a timeZone id for a timeZone name. If the timeZone doesn't exist prior to
+     * this call it gets created.
+     */
+    int timeZoneGetOrCreateForName( Statement state, String timeZoneName )
+            throws IllegalTokenNameException;
+
+    /**
      * Returns a property key id for a property key. If the key doesn't exist prior to
      * this call it gets created.
      */
@@ -48,6 +55,13 @@ public interface KeyWriteOperations
      */
     void labelCreateForName( KernelStatement state, String labelName,
                              int id ) throws IllegalTokenNameException, TooManyLabelsException;
+
+    /**
+     * Returns a timeZone id for a timeZone name. If the timeZone doesn't exist prior to
+     * this call it gets created.
+     */
+    void timeZoneCreateForName( KernelStatement state, String timeZoneName,
+                             int id ) throws IllegalTokenNameException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to

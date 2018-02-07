@@ -120,6 +120,13 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
+    public boolean visitTimeZoneTokenCommand( Command.TimeZoneTokenCommand command ) throws IOException
+    {
+        trackToken( neoStores.getTimeZoneTokenStore(), command );
+        return false;
+    }
+
+    @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
     {
         trackToken( neoStores.getPropertyKeyTokenStore(), command );

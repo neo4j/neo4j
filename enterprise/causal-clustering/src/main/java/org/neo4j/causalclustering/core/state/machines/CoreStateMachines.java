@@ -49,6 +49,7 @@ public class CoreStateMachines
     private final ReplicatedTransactionStateMachine replicatedTxStateMachine;
 
     private final ReplicatedTokenStateMachine<Token> labelTokenStateMachine;
+    private final ReplicatedTokenStateMachine<Token> timeZoneTokenStateMachine;
     private final ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine;
     private final ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine;
 
@@ -66,6 +67,7 @@ public class CoreStateMachines
     CoreStateMachines(
             ReplicatedTransactionStateMachine replicatedTxStateMachine,
             ReplicatedTokenStateMachine<Token> labelTokenStateMachine,
+            ReplicatedTokenStateMachine<Token> timeZoneTokenStateMachine,
             ReplicatedTokenStateMachine<RelationshipTypeToken> relationshipTypeTokenStateMachine,
             ReplicatedTokenStateMachine<Token> propertyKeyTokenStateMachine,
             ReplicatedLockTokenStateMachine replicatedLockTokenStateMachine,
@@ -76,6 +78,7 @@ public class CoreStateMachines
     {
         this.replicatedTxStateMachine = replicatedTxStateMachine;
         this.labelTokenStateMachine = labelTokenStateMachine;
+        this.timeZoneTokenStateMachine = timeZoneTokenStateMachine;
         this.relationshipTypeTokenStateMachine = relationshipTypeTokenStateMachine;
         this.propertyKeyTokenStateMachine = propertyKeyTokenStateMachine;
         this.replicatedLockTokenStateMachine = replicatedLockTokenStateMachine;
@@ -107,6 +110,7 @@ public class CoreStateMachines
         replicatedTxStateMachine.flush();
 
         labelTokenStateMachine.flush();
+        timeZoneTokenStateMachine.flush();
         relationshipTypeTokenStateMachine.flush();
         propertyKeyTokenStateMachine.flush();
 
@@ -140,6 +144,7 @@ public class CoreStateMachines
         replicatedTxStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
 
         labelTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
+        timeZoneTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         relationshipTypeTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
         propertyKeyTokenStateMachine.installCommitProcess( localCommit, lastAppliedIndex );
     }
@@ -173,6 +178,9 @@ public class CoreStateMachines
                 break;
             case LABEL:
                 labelTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
+                break;
+            case TIME_ZONE:
+                timeZoneTokenStateMachine.applyCommand( tokenRequest, commandIndex, callback );
                 break;
             default:
                 throw new IllegalStateException();

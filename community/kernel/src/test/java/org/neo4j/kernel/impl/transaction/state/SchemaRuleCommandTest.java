@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
+import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_11;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -90,7 +90,7 @@ public class SchemaRuleCommandTest
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
             labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
             new PropertyPhysicalToLogicalConverter( propertyStore ) );
-    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
+    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_11();
     private final IndexRule rule = IndexRule.indexRule( id, IndexDescriptorFactory.forLabel( labelId, propertyKey ),
             PROVIDER_DESCRIPTOR );
 

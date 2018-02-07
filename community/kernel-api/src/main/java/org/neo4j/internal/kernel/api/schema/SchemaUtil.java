@@ -67,6 +67,12 @@ public class SchemaUtil
         }
 
         @Override
+        public String timeZoneGetName( int timeZoneId )
+        {
+            return format( "timeZone[%d]", timeZoneId );
+        }
+
+        @Override
         public String relationshipTypeGetName( int relationshipTypeId )
         {
             return format( "relType[%d]", relationshipTypeId );

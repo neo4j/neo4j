@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -87,6 +88,13 @@ public class TransactionWriter
         otherCommands.add( new Command.LabelTokenCommand( before, after ) );
     }
 
+    public void timeZone( int id, String name, int... dynamicIds )
+    {
+        TimeZoneTokenRecord before = new TimeZoneTokenRecord( id );
+        TimeZoneTokenRecord after = withName( new TimeZoneTokenRecord( id ), dynamicIds, name );
+        otherCommands.add( new Command.TimeZoneTokenCommand( before, after ) );
+    }
+
     public void relationshipType( int id, String label, int... dynamicIds )
     {
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( id );
@@ -104,6 +112,11 @@ public class TransactionWriter
         otherCommands.add( new Command.LabelTokenCommand( before, after ) );
     }
 
+    public void update( TimeZoneTokenRecord before, TimeZoneTokenRecord after )
+    {
+        otherCommands.add( new Command.TimeZoneTokenCommand( before, after ) );
+    }
+
     public void create( NodeRecord node )
     {
         node.setCreated();
@@ -115,6 +128,12 @@ public class TransactionWriter
     {
         labelToken.setCreated();
         update( new LabelTokenRecord( labelToken.getIntId() ), labelToken );
+    }
+
+    public void create( TimeZoneTokenRecord timeZoneToken )
+    {
+        timeZoneToken.setCreated();
+        update( new TimeZoneTokenRecord( timeZoneToken.getIntId() ), timeZoneToken );
     }
 
     public void create( PropertyKeyTokenRecord token )

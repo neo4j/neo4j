@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -146,9 +147,21 @@ public class DirectRecordAccess implements RecordAccess
     }
 
     @Override
+    public RecordReference<TimeZoneTokenRecord> timeZone( int id )
+    {
+        return referenceTo( access.getTimeZoneTokenStore(), id );
+    }
+
+    @Override
     public RecordReference<DynamicRecord> labelName( int id )
     {
         return referenceTo( access.getLabelNameStore(), id );
+    }
+
+    @Override
+    public RecordReference<DynamicRecord> timeZoneName( int id )
+    {
+        return referenceTo( access.getTimeZoneNameStore(), id );
     }
 
     @Override

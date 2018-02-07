@@ -61,6 +61,10 @@ public class HighIdTransactionApplierTest
         tracker.visitLabelTokenCommand( Commands.createLabelToken( 3, 0 ) );
         tracker.visitLabelTokenCommand( Commands.createLabelToken( 5, 1 ) );
 
+        // Timezone tokens
+        tracker.visitTimeZoneTokenCommand( Commands.createTimeZoneToken( 3, 0 ) );
+        tracker.visitTimeZoneTokenCommand( Commands.createTimeZoneToken( 5, 1 ) );
+
         // Property tokens
         tracker.visitPropertyKeyTokenCommand( Commands.createPropertyKeyToken( 3, 0 ) );
         tracker.visitPropertyKeyTokenCommand( Commands.createPropertyKeyToken( 5, 1 ) );

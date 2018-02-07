@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.TimeZoneTokenStore;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
@@ -38,6 +39,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     private final CacheAccessBackDoor cacheAccess;
     private final RelationshipTypeTokenStore relationshipTypeTokenStore;
     private final LabelTokenStore labelTokenStore;
+    private final TimeZoneTokenStore timeZoneTokenStore;
     private final PropertyKeyTokenStore propertyKeyTokenStore;
 
     public CacheInvalidationTransactionApplier( NeoStores neoStores,
@@ -46,6 +48,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
         this.cacheAccess = cacheAccess;
         this.relationshipTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
         this.labelTokenStore = neoStores.getLabelTokenStore();
+        this.timeZoneTokenStore = neoStores.getTimeZoneTokenStore();
         this.propertyKeyTokenStore = neoStores.getPropertyKeyTokenStore();
     }
 
@@ -63,6 +66,15 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     {
         Token labelId = labelTokenStore.getToken( (int) command.getKey() );
         cacheAccess.addLabelToken( labelId );
+
+        return false;
+    }
+
+    @Override
+    public boolean visitTimeZoneTokenCommand( Command.TimeZoneTokenCommand command ) throws IOException
+    {
+        Token timeZoneId = timeZoneTokenStore.getToken( (int) command.getKey() );
+        cacheAccess.addTimeZoneToken( timeZoneId );
 
         return false;
     }

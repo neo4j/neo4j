@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 
 public class PrepareTrackingRecordFormats implements RecordFormats
 {
@@ -54,6 +55,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     private final Set<DynamicRecord> dynamicPrepare = new HashSet<>();
     private final Set<PropertyKeyTokenRecord> propertyKeyTokenPrepare = new HashSet<>();
     private final Set<LabelTokenRecord> labelTokenPrepare = new HashSet<>();
+    private final Set<TimeZoneTokenRecord> timeZomeTokenPrepare = new HashSet<>();
     private final Set<RelationshipTypeTokenRecord> relationshipTypeTokenPrepare = new HashSet<>();
     private final Set<MetaDataRecord> metaDataPrepare = new HashSet<>();
 
@@ -102,6 +104,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     public PrepareTrackingRecordFormat<LabelTokenRecord> labelToken()
     {
         return new PrepareTrackingRecordFormat<>( actual.labelToken(), labelTokenPrepare );
+    }
+
+    @Override
+    public RecordFormat<TimeZoneTokenRecord> timeZoneToken()
+    {
+        return  new PrepareTrackingRecordFormat<>( actual.timeZoneToken(), timeZomeTokenPrepare );
     }
 
     @Override

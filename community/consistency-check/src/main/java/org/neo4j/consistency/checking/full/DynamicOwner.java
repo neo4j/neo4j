@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TimeZoneTokenRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 import static org.neo4j.consistency.store.RecordReference.SkippingReference.skipReference;
@@ -208,6 +209,22 @@ abstract class DynamicOwner<RECORD extends AbstractBaseRecord> implements Owner
         RecordReference<LabelTokenRecord> record( RecordAccess records )
         {
             return records.label( id );
+        }
+    }
+
+    static class TimeZoneToken extends NameOwner<TimeZoneTokenRecord, ConsistencyReport.TimeZoneTokenConsistencyReport>
+    {
+        private final int id;
+
+        TimeZoneToken( TimeZoneTokenRecord record )
+        {
+            this.id = record.getIntId();
+        }
+
+        @Override
+        RecordReference<TimeZoneTokenRecord> record( RecordAccess records )
+        {
+            return records.timeZone( id );
         }
     }
 

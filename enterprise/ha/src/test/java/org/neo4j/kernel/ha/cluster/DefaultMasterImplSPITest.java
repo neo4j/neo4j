@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.TimeZoneTokenHolder;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -60,7 +61,7 @@ public class DefaultMasterImplSPITest
         when( dataSource.listStoreFiles( anyBoolean() ) ).thenReturn( Iterators.emptyResourceIterator() );
 
         DefaultMasterImplSPI master = new DefaultMasterImplSPI( mock( GraphDatabaseAPI.class, RETURNS_MOCKS ),
-                mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ),
+                mock( FileSystemAbstraction.class ), new Monitors(), mock( LabelTokenHolder.class ), mock( TimeZoneTokenHolder.class ),
                 mock( PropertyKeyTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ),
                 mock( IdGeneratorFactory.class ), mock( TransactionCommitProcess.class ), checkPointer,
                 mock( TransactionIdStore.class ), mock( LogicalTransactionStore.class ),

@@ -206,6 +206,14 @@ public class MasterClient214 extends Client<Master> implements MasterClient
     }
 
     @Override
+    public Response<Integer> createTimeZone( RequestContext context, String name )
+    {
+        Serializer serializer = buffer -> writeString( buffer, name );
+        Deserializer<Integer> deserializer = ( buffer, temporaryBuffer ) -> buffer.readInt();
+        return sendRequest( requestTypes.type( HaRequestTypes.Type.CREATE_TIME_ZONE ), context, serializer, deserializer );
+    }
+
+    @Override
     public Response<Void> newLockSession( RequestContext context )
     {
         return sendRequest( requestTypes.type( HaRequestTypes.Type.NEW_LOCK_SESSION ), context, EMPTY_SERIALIZER,
