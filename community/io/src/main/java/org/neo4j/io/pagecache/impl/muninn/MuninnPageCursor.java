@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import org.neo4j.io.pagecache.CursorException;
@@ -820,6 +821,53 @@ abstract class MuninnPageCursor extends PageCursor
         }
         outOfBounds = true;
         return 0;
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer buf )
+    {
+        if ( buf.getClass() == UnsafeUtil.directByteBufferClass )
+        {
+            // Here we expect that the read-only direct ByteBuffer is implemented with a different class than the
+            // writable direct ByteBuffer.
+            assert isDirectWritableByteBuffer( buf ) : "Unexpected direct byte buffer class hierarchy.";
+            return copyToDirectByteBuffer( sourceOffset, buf );
+        }
+        return copyToByteBufferByteWise( sourceOffset, buf );
+    }
+
+    private boolean isDirectWritableByteBuffer( ByteBuffer buf )
+    {
+        return buf.isDirect() && !buf.isReadOnly();
+    }
+
+    private int copyToDirectByteBuffer( int sourceOffset, ByteBuffer buf )
+    {
+        int pos = buf.position();
+        int bytesToCopy = Math.min( buf.limit() - pos, pageSize - sourceOffset );
+        long source = pointer + sourceOffset;
+        if ( sourceOffset < getCurrentPageSize() & sourceOffset >= 0 )
+        {
+            long target = UnsafeUtil.getDirectByteBufferAddress( buf );
+            UnsafeUtil.copyMemory( source, target + pos, bytesToCopy );
+            buf.position( pos + bytesToCopy );
+        }
+        else
+        {
+            outOfBounds = true;
+        }
+        return bytesToCopy;
+    }
+
+    private int copyToByteBufferByteWise( int sourceOffset, ByteBuffer buf )
+    {
+        int bytesToCopy = Math.min( buf.limit() - buf.position(), pageSize - sourceOffset );
+        for ( int i = 0; i < bytesToCopy; i++ )
+        {
+            byte b = getByte( sourceOffset + i );
+            buf.put( b );
+        }
+        return bytesToCopy;
     }
 
     @Override

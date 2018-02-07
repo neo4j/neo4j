@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.memory.GlobalMemoryTracker;
 
@@ -553,6 +554,27 @@ public class UnsafeUtilTest
         finally
         {
             free( address, sizeInBytes, GlobalMemoryTracker.INSTANCE );
+        }
+    }
+
+    @Test
+    public void getAddressOfDirectByteBuffer() throws Exception
+    {
+        ByteBuffer buf = ByteBuffer.allocateDirect( 8 );
+        long address = UnsafeUtil.getDirectByteBufferAddress( buf );
+        long expected = ThreadLocalRandom.current().nextLong();
+        // Disable native access checking, because UnsafeUtil doesn't know about the memory allocation in the
+        // ByteBuffer.allocateDirect( … ) call.
+        boolean nativeAccessCheckEnabled = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
+        try
+        {
+            UnsafeUtil.putLong( address, expected );
+            long actual = buf.getLong();
+            assertThat( actual, isOneOf( expected, Long.reverseBytes( expected ) ) );
+        }
+        finally
+        {
+            UnsafeUtil.exchangeNativeAccessCheckEnabled( nativeAccessCheckEnabled );
         }
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -444,6 +445,12 @@ public class CompositePageCursor extends PageCursor
 
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
+    {
+        throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
+    }
+
+    @Override
+    public int copyTo( int sourceOffset, ByteBuffer targetBuffer )
     {
         throw new UnsupportedOperationException( "Composite cursor does not support copyTo functionality." );
     }
