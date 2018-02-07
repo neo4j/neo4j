@@ -28,6 +28,7 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.time.temporal.TemporalUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -191,10 +192,20 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
 
     private static final DurationValue ZERO = new DurationValue( 0, 0, 0, 0 );
     private static final List<TemporalUnit> UNITS = unmodifiableList( asList( MONTHS, DAYS, SECONDS, NANOS ) );
+    // This comparator is safe until 292,271,023,045 years. After that, we have an overflow.
+    private static final Comparator<DurationValue> COMPARATOR = Comparator.comparingLong(DurationValue::averageLengthInSeconds)
+            // nanos are guaranteed to be smaller than NANOS_PER_SECOND
+            .thenComparingLong( d -> d.nanos )
+            // At this point, the durations have the same length and we compare by the individual fields.
+            .thenComparingLong( d -> d.months )
+            .thenComparingLong( d -> d.days )
+            .thenComparingLong( d -> d.seconds );
+
     static final int NANOS_PER_SECOND = 1_000_000_000;
     static final long SECONDS_PER_DAY = DAYS.getDuration().getSeconds();
     /** 30.4375 days = 30 days, 10 hours, 30 minutes */
-    private static final double AVERAGE_DAYS_PER_MONTH = 365.25 / 12;
+    private static final double AVERAGE_DAYS_PER_MONTH = 365.2425 / 12;
+    private static final long AVG_SECONDS_PER_MONTH = 2_629_746;
     private final long months;
     private final long days;
     private final long seconds;
@@ -203,7 +214,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
     private static DurationValue newDuration( long months, long days, long seconds, int nanos )
     {
         return seconds == 0 && days == 0 && months == 0 && nanos == 0 // ordered by probability of non-zero
-                ? ZERO : new DurationValue( months, days, seconds, nanos );
+               ? ZERO : new DurationValue( months, days, seconds, nanos );
     }
 
     private DurationValue( long months, long days, long seconds, long nanos )
@@ -224,6 +235,16 @@ public final class DurationValue extends ScalarValue implements TemporalAmount
         this.days = days;
         this.seconds = seconds;
         this.nanos = (int) nanos;
+    }
+
+    public int compareTo( DurationValue other )
+    {
+        return COMPARATOR.compare( this, other );
+    }
+
+    private long averageLengthInSeconds()
+    {
+        return this.seconds + this.days * SECONDS_PER_DAY + this.months * AVG_SECONDS_PER_MONTH;
     }
 
     long nanosOfDay()

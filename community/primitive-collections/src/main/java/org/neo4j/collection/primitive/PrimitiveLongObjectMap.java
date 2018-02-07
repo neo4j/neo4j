@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive;
 
+import java.util.function.LongFunction;
+
 public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
 {
     VALUE put( long key, VALUE value );
@@ -39,4 +41,15 @@ public interface PrimitiveLongObjectMap<VALUE> extends PrimitiveLongCollection
      * @return iterable with all map values
      */
     Iterable<VALUE> values();
+
+    default VALUE computeIfAbsent( long key, LongFunction<VALUE> function )
+    {
+        VALUE value = get( key );
+        if ( value == null )
+        {
+            value = function.apply( key );
+            put( key, value );
+        }
+        return value;
+    }
 }

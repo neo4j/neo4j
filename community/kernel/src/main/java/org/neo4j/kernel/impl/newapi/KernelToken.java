@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -64,6 +65,18 @@ public class KernelToken implements Token
     public int nodeLabel( String name )
     {
         return store.labelGetForName( name );
+    }
+
+    @Override
+    public String timeZoneName( int timeZoneId ) throws TimeZoneNotFoundKernelException
+    {
+        return store.timeZoneGetName( timeZoneId );
+    }
+
+    @Override
+    public int timeZone( String name )
+    {
+        return store.timeZoneGetForName( name );
     }
 
     @Override

@@ -95,11 +95,7 @@ import static org.neo4j.helpers.collection.Iterables.map;
  */
 public class TxState implements TransactionState, RelationshipVisitor.Home
 {
-    private static final LabelState.Defaults LABEL_STATE = new TransactionLabelState();
-    private static final NodeStateImpl.Defaults NODE_STATE = new TransactionNodeState();
-    private static final RelationshipStateImpl.Defaults RELATIONSHIP_STATE = new TransactionRelationshipState();
-
-    private PrimitiveLongObjectMap<LabelState.Mutable> labelStatesMap;
+    private PrimitiveIntObjectMap<DiffSets<Long>> labelStatesMap;
     private PrimitiveLongObjectMap<NodeStateImpl> nodeStatesMap;
     private PrimitiveLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
@@ -306,13 +302,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         {
             @Override
             public void visitAdded( IndexDescriptor index )
-                    throws ConstraintValidationException, CreateConstraintFailureException
             {
                 visitor.visitAddedIndex( index );
             }
 
             @Override
-            public void visitRemoved( IndexDescriptor index ) throws ConstraintValidationException
+            public void visitRemoved( IndexDescriptor index )
             {
                 visitor.visitRemovedIndex( index );
             }
@@ -359,18 +354,32 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public Iterable<NodeState> modifiedNodes()
     {
-        return NODE_STATE.values( this );
+        return nodeStatesMap == null ? Iterables.empty() : Iterables.cast( nodeStatesMap.values() );
     }
 
     private DiffSets<Long> getOrCreateLabelStateNodeDiffSets( int labelId )
     {
-        return LABEL_STATE.getOrCreate( this, labelId ).getOrCreateNodeDiffSets();
+        if ( labelStatesMap == null )
+        {
+            labelStatesMap = Primitive.intObjectMap();
+        }
+        return labelStatesMap.computeIfAbsent( labelId, unused -> new DiffSets<>() );
+    }
+
+    private ReadableDiffSets<Long> getLabelStateNodeDiffSets( int labelId )
+    {
+        if ( labelStatesMap == null )
+        {
+            return ReadableDiffSets.Empty.instance();
+        }
+        final DiffSets<Long> nodeDiffSets = labelStatesMap.get( labelId );
+        return ReadableDiffSets.Empty.ifNull( nodeDiffSets );
     }
 
     @Override
     public ReadableDiffSets<Integer> nodeStateLabelDiffSets( long nodeId )
     {
-        return NODE_STATE.get( this, nodeId ).labelDiffSets();
+        return getNodeState( nodeId ).labelDiffSets();
     }
 
     private DiffSets<Integer> getOrCreateNodeStateLabelDiffSets( long nodeId )
@@ -502,7 +511,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoDeleteAddedInThisTx( long relationshipId )
     {
-        RELATIONSHIP_STATE.get( this, relationshipId ).accept( this::relationshipDoDelete );
+        getRelationshipState( relationshipId ).accept( this::relationshipDoDelete );
     }
 
     @Override
@@ -642,13 +651,23 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public NodeState getNodeState( long id )
     {
-        return NODE_STATE.get( this, id );
+        if ( nodeStatesMap == null )
+        {
+            return NodeStateImpl.EMPTY;
+        }
+        final NodeState nodeState = nodeStatesMap.get( id );
+        return nodeState == null ? NodeStateImpl.EMPTY : nodeState;
     }
 
     @Override
     public RelationshipState getRelationshipState( long id )
     {
-        return RELATIONSHIP_STATE.get( this, id );
+        if ( relationshipStatesMap == null )
+        {
+            return RelationshipStateImpl.EMPTY;
+        }
+        final RelationshipStateImpl relationshipState = relationshipStatesMap.get( id );
+        return relationshipState == null ? RelationshipStateImpl.EMPTY : relationshipState;
     }
 
     @Override
@@ -723,7 +742,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public ReadableDiffSets<Long> nodesWithLabelChanged( int label )
     {
-        return LABEL_STATE.get( this, label ).nodeDiffSets();
+        return getLabelStateNodeDiffSets( label );
     }
 
     @Override
@@ -735,7 +754,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         Set<Long> removed = new HashSet<>();
         for ( int i = 0; i < labels.length; i++ )
         {
-            ReadableDiffSets<Long> nodeDiffSets = LABEL_STATE.get( this, labels[i] ).nodeDiffSets();
+            ReadableDiffSets<Long> nodeDiffSets = getLabelStateNodeDiffSets( labels[i] );
             if ( i == 0 )
             {
                 removed.addAll( nodeDiffSets.getRemoved() );
@@ -756,9 +775,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         DiffSets<Long> changes = new DiffSets<>();
         for ( int label : labels )
         {
-            LabelState labelState = LABEL_STATE.get( this, label );
-            changes.addAll( labelState.nodeDiffSets().getAdded().iterator() );
-            changes.removeAll( labelState.nodeDiffSets().getRemoved().iterator() );
+            final ReadableDiffSets<Long> nodeDiffSets = getLabelStateNodeDiffSets( label );
+            changes.addAll( nodeDiffSets.getAdded().iterator() );
+            changes.removeAll( nodeDiffSets.getRemoved().iterator() );
         }
         return changes;
     }
@@ -826,19 +845,19 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public int augmentNodeDegree( long nodeId, int degree, Direction direction )
     {
-        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree );
+        return getNodeState( nodeId ).augmentDegree( direction, degree );
     }
 
     @Override
     public int augmentNodeDegree( long nodeId, int degree, Direction direction, int typeId )
     {
-        return NODE_STATE.get( this, nodeId ).augmentDegree( direction, degree, typeId );
+        return getNodeState( nodeId ).augmentDegree( direction, degree, typeId );
     }
 
     @Override
     public PrimitiveIntSet nodeRelationshipTypes( long nodeId )
     {
-        return NODE_STATE.get( this, nodeId ).relationshipTypes();
+        return getNodeState( nodeId ).relationshipTypes();
     }
 
     @Override
@@ -859,17 +878,25 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public Iterable<RelationshipState> modifiedRelationships()
     {
-        return RELATIONSHIP_STATE.values( this );
+        return relationshipStatesMap == null ? Iterables.empty() : Iterables.cast( relationshipStatesMap.values() );
     }
 
     private NodeStateImpl getOrCreateNodeState( long nodeId )
     {
-        return NODE_STATE.getOrCreate( this, nodeId );
+        if ( nodeStatesMap == null )
+        {
+            nodeStatesMap = Primitive.longObjectMap();
+        }
+        return nodeStatesMap.computeIfAbsent( nodeId, unused -> new NodeStateImpl( nodeId, this ) );
     }
 
     private RelationshipStateImpl getOrCreateRelationshipState( long relationshipId )
     {
-        return RELATIONSHIP_STATE.getOrCreate( this, relationshipId );
+        if ( relationshipStatesMap == null )
+        {
+            relationshipStatesMap = Primitive.longObjectMap();
+        }
+        return relationshipStatesMap.computeIfAbsent( relationshipId, unused -> new RelationshipStateImpl( relationshipId ) );
     }
 
     private GraphState getOrCreateGraphState()
@@ -987,7 +1014,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public PrimitiveLongReadableDiffSets indexUpdatesForSeek( IndexDescriptor descriptor, ValueTuple values )
     {
-        assert values != null;
         PrimitiveLongDiffSets indexUpdatesForSeek = getIndexUpdatesForSeek( descriptor.schema(), values, /*create=*/false );
         return indexUpdatesForSeek == null ? EmptyPrimitiveLongReadableDiffSets.INSTANCE : indexUpdatesForSeek;
     }
@@ -1267,7 +1293,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public <EX extends Exception> boolean relationshipVisit( long relId, RelationshipVisitor<EX> visitor ) throws EX
     {
-        return RELATIONSHIP_STATE.get( this, relId ).accept( visitor );
+        return getRelationshipState( relId ).accept( visitor );
     }
 
     @Override
@@ -1320,7 +1346,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public boolean visited( int key, String value ) throws RuntimeException
+        public boolean visited( int key, String value )
         {
             visitor.visitCreatedPropertyKeyToken( value, key );
             return false;
@@ -1337,7 +1363,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public boolean visited( int key, String value ) throws RuntimeException
+        public boolean visited( int key, String value )
         {
             visitor.visitCreatedRelationshipTypeToken( value, key );
             return false;
@@ -1354,61 +1380,15 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
 
         @Override
-        public void visitAdded( ConstraintDescriptor constraint )
-                throws ConstraintValidationException, CreateConstraintFailureException
+        public void visitAdded( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
         {
             visitor.visitAddedConstraint( constraint );
         }
 
         @Override
-        public void visitRemoved( ConstraintDescriptor constraint ) throws ConstraintValidationException
+        public void visitRemoved( ConstraintDescriptor constraint )
         {
             visitor.visitRemovedConstraint( constraint );
-        }
-    }
-
-    private static class TransactionLabelState extends LabelState.Defaults
-    {
-        @Override
-        PrimitiveLongObjectMap<LabelState.Mutable> getMap( TxState state )
-        {
-            return state.labelStatesMap;
-        }
-
-        @Override
-        void setMap( TxState state, PrimitiveLongObjectMap<LabelState.Mutable> map )
-        {
-            state.labelStatesMap = map;
-        }
-    }
-
-    private static class TransactionNodeState extends NodeStateImpl.Defaults
-    {
-        @Override
-        PrimitiveLongObjectMap<NodeStateImpl> getMap( TxState state )
-        {
-            return state.nodeStatesMap;
-        }
-
-        @Override
-        void setMap( TxState state, PrimitiveLongObjectMap<NodeStateImpl> map )
-        {
-            state.nodeStatesMap = map;
-        }
-    }
-
-    private static class TransactionRelationshipState extends RelationshipStateImpl.Defaults
-    {
-        @Override
-        PrimitiveLongObjectMap<RelationshipStateImpl> getMap( TxState state )
-        {
-            return state.relationshipStatesMap;
-        }
-
-        @Override
-        void setMap( TxState state, PrimitiveLongObjectMap<RelationshipStateImpl> map )
-        {
-            state.relationshipStatesMap = map;
         }
     }
 

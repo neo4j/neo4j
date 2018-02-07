@@ -412,6 +412,8 @@ public interface StoreReadLayer
 
     boolean nodeExists( long id );
 
+    boolean relationshipExists( long id );
+
     PrimitiveIntSet relationshipTypes( StorageStatement statement, NodeItem node );
 
     void degrees( StorageStatement statement, NodeItem nodeItem, DegreeVisitor visitor );

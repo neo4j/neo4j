@@ -25,29 +25,26 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   private val expectedToSucceed = Configs.Interpreted
-  private val ignoreConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1
 
   test("Plan should have right relationship direction") {
     setUp("From")
     val query = "MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
 
-    val ignoreConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
         plan should useOperatorWithText("VarLengthExpand(All)", "(e)<-[:*..4]-(a)")
         plan should useOperatorWithText("NodeByLabelScan", ":To")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
   }
 
   test("Plan should have right relationship direction, other direction") {
     setUp("To")
     val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
-    val ignoreConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperatorWithText("VarLengthExpand(All)", "(a)-[:*..4]->(e)")
         plan should useOperatorWithText("NodeByLabelScan", ":From")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
   }
 
   test("Plan pruning var expand on distinct var-length match") {
@@ -55,7 +52,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("Plan pruning var expand on distinct var-length match with projection and aggregation") {
@@ -63,7 +60,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("query with distinct aggregation") {
@@ -71,7 +68,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("Simple query that filters between expand and distinct") {
@@ -79,16 +76,15 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("Query that aggregates before making the result DISTINCT") {
     val query = "MATCH (a)-[:R*1..3]->(b) WITH count(*) AS count RETURN DISTINCT count"
-    val ignoreConfiguration = Configs.AllRulePlanners
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(All)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("Double var expand with distinct result") {
@@ -96,7 +92,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("var expand followed by normal expand") {
@@ -104,7 +100,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("optional match can be solved with PruningVarExpand") {
@@ -112,16 +108,15 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("should not rewrite when doing non-distinct aggregation") {
     val query = "MATCH (a)-[*1..3]->(b) RETURN b, count(*)"
-    val ignoreConfiguration = Configs.AllRulePlanners
     executeWith(Configs.Interpreted + Configs.Cost2_3, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(All)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("on longer var-lengths, we also use PruningVarExpand") {
@@ -129,25 +124,23 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("Do not plan pruning var expand for length=1") {
     val query = "MATCH (a)-[*1..1]->(b) RETURN DISTINCT b"
-    val ignoreConfiguration = Configs.AllRulePlanners
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(All)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("Do not plan pruning var executeWithCostPlannerAndInterpretedRuntimeOnly when path is needed") {
     val query = "MATCH p=(from)-[r*0..1]->(to) WITH nodes(p) AS d RETURN DISTINCT d"
-    val ignoreConfiguration = Configs.AllRulePlanners
     executeWith(expectedToSucceed, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should useOperators("VarLengthExpand(All)")
-      }, expectPlansToFail = ignoreConfiguration))
+      }, expectPlansToFail = Configs.AllRulePlanners))
   }
 
   private def setUp(startLabel: String) {

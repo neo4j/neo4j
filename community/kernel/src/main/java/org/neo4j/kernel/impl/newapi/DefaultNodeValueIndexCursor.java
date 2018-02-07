@@ -198,8 +198,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         }
         else
         {
-            return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" +
-                   Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) ) +
+            String keys = query == null ? "unknown" : Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) );
+            return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" + keys +
                    ", values=" + Arrays.toString( values ) +
                    ", underlying record=" + super.toString() + " ]";
         }

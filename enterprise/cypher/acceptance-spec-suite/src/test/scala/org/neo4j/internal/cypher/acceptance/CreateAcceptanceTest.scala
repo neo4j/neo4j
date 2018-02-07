@@ -27,12 +27,12 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   with CreateTempFileTestSupport {
 
   //Rule planners will start working after next patch relese
-  val conf: TestConfiguration = Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3
+  val tmpConf: TestConfiguration = Configs.AllRulePlanners
 
   test("handle null value in property map from parameter for create node") {
     val query = "CREATE (a {props}) RETURN a.foo, a.bar"
 
-    val result = executeWith(conf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.UpdateConf - tmpConf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
@@ -42,7 +42,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     createNode(("foo", 42), ("bar", "fu"))
     val query = "MATCH (a) SET a = {props} RETURN a.foo, a.bar"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.UpdateConf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
     assertStats(result, propertiesWritten = 2)
@@ -51,7 +51,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("handle null value in property map from parameter for create relationship") {
     val query = "CREATE (a)-[r:REL {props}]->() RETURN r.foo, r.bar"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.UpdateConf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("r.foo" -> null, "r.bar" -> "baz")))
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1)
@@ -60,7 +60,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("handle null value in property map from parameter") {
     val query = "CREATE (a {props})-[r:REL {props}]->() RETURN a.foo, a.bar, r.foo, r.bar"
 
-    val result = executeWith(conf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.UpdateConf - tmpConf, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz", "r.foo" -> null, "r.bar" -> "baz")))
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
@@ -72,7 +72,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = s"CREATE (a) WITH a LOAD CSV FROM '$url' AS line CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -81,7 +81,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should have bound node recognized after projection with WITH + CALL") {
     val query = "CREATE (a:L) WITH a CALL db.labels() YIELD label CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.UpdateConf - Configs.AllRulePlanners, query)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 1)
   }
@@ -90,7 +90,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should have bound node recognized after projection with WITH + FOREACH") {
     val query = "CREATE (a) WITH a FOREACH (i in [] | SET a.prop = 1) CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -102,7 +102,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(amount)("(:Bar)-[:FOO]->(:Baz)").mkString(", ")
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     assertStats(result, nodesCreated = 2 * amount, relationshipsCreated = amount, labelsAdded = 2 * amount)
 
@@ -113,7 +113,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should allow create, delete and return in one go (relationship)") {
     val typ = "ThisIsTheRelationshipType"
     val query = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf - Configs.SlottedInterpreted, query)
     result.toList should equal(List(Map("type(r)" -> typ)))
   }
 
@@ -123,7 +123,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(createdNumber)("(:Bar{prop: 1})").mkString(", ")
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.UpdateConf, query)
 
     assertStats(result, nodesCreated = createdNumber, labelsAdded = createdNumber, propertiesWritten = createdNumber)
 

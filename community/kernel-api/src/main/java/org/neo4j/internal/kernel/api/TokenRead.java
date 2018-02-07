@@ -22,6 +22,7 @@ package org.neo4j.internal.kernel.api;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.TimeZoneNotFoundKernelException;
 
 public interface TokenRead
 {
@@ -46,6 +47,23 @@ public interface TokenRead
      * @return the label id, or NO_TOKEN
      */
     int nodeLabel( String name );
+
+    /**
+     * Returns the name of a timeZone given its timeZone id
+     *
+     * @param timeZoneId The timeZone id
+     * @return The name of the timeZone
+     * @throws TimeZoneNotFoundKernelException if no timeZone is associates with this id
+     */
+    String timeZoneName( int timeZoneId ) throws TimeZoneNotFoundKernelException;
+
+    /**
+     * Return the id of the provided timeZone, or NO_TOKEN if the timeZone isn't known to the graph.
+     *
+     * @param name The timeZone name.
+     * @return the timeZone id, or NO_TOKEN
+     */
+    int timeZone( String name );
 
     /**
      * Return the id of the provided relationship type, or NO_TOKEN if the type isn't known to the graph.
