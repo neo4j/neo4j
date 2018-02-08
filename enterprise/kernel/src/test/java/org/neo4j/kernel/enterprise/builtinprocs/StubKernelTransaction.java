@@ -224,15 +224,4 @@ class StubKernelTransaction implements KernelTransaction
         return null;
     }
 
-    @Override
-    public NodeCursor nodeCursor()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public PropertyCursor propertyCursor()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
 }

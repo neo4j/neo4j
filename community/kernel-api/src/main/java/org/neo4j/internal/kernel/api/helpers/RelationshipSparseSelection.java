@@ -46,7 +46,7 @@ abstract class RelationshipSparseSelection
      *
      * @param relationshipCursor Relationship traversal cursor to use. Pre-initialized on node.
      */
-    public void outgoing( RelationshipTraversalCursor relationshipCursor )
+    public final void outgoing( RelationshipTraversalCursor relationshipCursor )
     {
         init( relationshipCursor, null, Dir.OUT );
     }
@@ -57,7 +57,7 @@ abstract class RelationshipSparseSelection
      * @param relationshipCursor Relationship traversal cursor to use. Pre-initialized on node.
      * @param types Relationship types to traverse
      */
-    public void outgoing(
+    public final void outgoing(
             RelationshipTraversalCursor relationshipCursor,
             int[] types )
     {
@@ -69,7 +69,7 @@ abstract class RelationshipSparseSelection
      *
      * @param relationshipCursor Relationship traversal cursor to use. Pre-initialized on node.
      */
-    public void incoming( RelationshipTraversalCursor relationshipCursor )
+    public final void incoming( RelationshipTraversalCursor relationshipCursor )
     {
         init( relationshipCursor, null, Dir.IN );
     }
@@ -80,7 +80,7 @@ abstract class RelationshipSparseSelection
      * @param relationshipCursor Relationship traversal cursor to use. Pre-initialized on node.
      * @param types Relationship types to traverse
      */
-    public void incoming(
+    public final void incoming(
             RelationshipTraversalCursor relationshipCursor,
             int[] types )
     {
@@ -92,7 +92,7 @@ abstract class RelationshipSparseSelection
      *
      * @param relationshipCursor Relationship traversal cursor to use. Pre-initialized on node.
      */
-    public void all( RelationshipTraversalCursor relationshipCursor )
+    public final void all( RelationshipTraversalCursor relationshipCursor )
     {
         init( relationshipCursor, null, Dir.BOTH );
     }
@@ -103,7 +103,7 @@ abstract class RelationshipSparseSelection
      * @param relationshipCursor Relationship traversal cursor to use. Pre-initialized on node.
      * @param types Relationship types to traverse
      */
-    public void all(
+    public final void all(
             RelationshipTraversalCursor relationshipCursor,
             int[] types )
     {
@@ -120,12 +120,11 @@ abstract class RelationshipSparseSelection
     }
 
     /**
-     * Fetch the next valid relationship. If a valid relationship is found, will callback
-     * using {@link #setRelationship(long, long, int, long)}
+     * Fetch the next valid relationship. If a valid relationship is found.
      *
      * @return True is a valid relationship was found
      */
-    protected boolean fetchNext()
+    protected final boolean fetchNext()
     {
         if ( onRelationship || firstNext )
         {
@@ -136,25 +135,8 @@ abstract class RelationshipSparseSelection
             } while ( onRelationship && (!correctDirection() || !correctType()) );
         }
 
-        if ( onRelationship )
-        {
-           setRelationship( cursor.relationshipReference(),
-                            cursor.sourceNodeReference(),
-                            cursor.label(),
-                            cursor.targetNodeReference() );
-        }
         return onRelationship;
     }
-
-    /**
-     * Called when {@link #fetchNext()} finds a valid relationship.
-     *
-     * @param id relationship id
-     * @param sourceNode source node id
-     * @param type relationship type
-     * @param targetNode target node id
-     */
-    protected abstract void setRelationship( long id, long sourceNode, int type, long targetNode );
 
     private boolean correctDirection()
     {

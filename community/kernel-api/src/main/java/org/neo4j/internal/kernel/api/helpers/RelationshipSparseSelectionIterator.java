@@ -23,33 +23,33 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.ResourceIterator;
 
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.NOT_INITIALIZED;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.NO_ID;
+
 /**
  * Helper iterator for traversing specific types and directions of a sparse node.
  */
 public final class RelationshipSparseSelectionIterator<R> extends RelationshipSparseSelection
         implements ResourceIterator<R>
 {
-
     private final RelationshipFactory<R> factory;
-    private R _next;
-    private boolean initialized;
+    private long _next  = NOT_INITIALIZED;
 
-    public RelationshipSparseSelectionIterator( RelationshipFactory<R> factory )
+    RelationshipSparseSelectionIterator( RelationshipFactory<R> factory )
     {
         this.factory = factory;
-        this.initialized = false;
     }
 
     @Override
     public boolean hasNext()
     {
-        if ( !initialized )
+        if ( _next == NOT_INITIALIZED )
         {
             fetchNext();
-            initialized = true;
+            _next = cursor.relationshipReference();
         }
 
-        if ( _next == null )
+        if ( _next == NO_ID )
         {
             close();
             return false;
@@ -64,17 +64,12 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSp
         {
             throw new NoSuchElementException();
         }
-        R current = _next;
+        R current = factory.relationship( cursor.relationshipReference(), cursor.sourceNodeReference(), cursor.label(),
+            cursor.targetNodeReference() );
         if ( !fetchNext() )
         {
-            _next = null;
+            _next = NO_ID;
         }
         return current;
-    }
-
-    @Override
-    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
-    {
-        _next = factory.relationship( id, sourceNode, type, targetNode );
     }
 }

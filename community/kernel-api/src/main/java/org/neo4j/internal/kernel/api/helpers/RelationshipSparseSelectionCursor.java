@@ -65,10 +65,4 @@ public final class RelationshipSparseSelectionCursor extends RelationshipSparseS
     {
         return cursor.targetNodeReference();
     }
-
-    @Override
-    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
-    {
-        // nothing to do
-    }
 }

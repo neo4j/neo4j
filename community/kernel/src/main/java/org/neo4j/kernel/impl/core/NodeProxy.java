@@ -39,6 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -320,8 +321,9 @@ public class NodeProxy implements Node
             throw new IllegalArgumentException( "(null) property key is not allowed" );
         }
         KernelTransaction transaction = safeAcquireTransaction();
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        CursorFactory cursors = transaction.cursors();
+        NodeCursor nodes = cursors.allocateNodeCursor();
+        PropertyCursor properties = cursors.allocatePropertyCursor();
         int propertyKey = transaction.tokenRead().propertyKey( key );
         if ( propertyKey == KeyReadOperations.NO_SUCH_PROPERTY_KEY )
         {
@@ -347,8 +349,9 @@ public class NodeProxy implements Node
         List<String> keys = new ArrayList<>();
         try
         {
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor properties = transaction.propertyCursor();
+            CursorFactory cursors = transaction.cursors();
+            NodeCursor nodes = cursors.allocateNodeCursor();
+            PropertyCursor properties = cursors.allocatePropertyCursor();
             singleNode( transaction, nodes );
             TokenRead token = transaction.tokenRead();
             nodes.properties( properties );
@@ -393,8 +396,9 @@ public class NodeProxy implements Node
             propertyIds[i] = token.propertyKey( key );
         }
 
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor propertyCursor = transaction.propertyCursor();
+        CursorFactory cursors = transaction.cursors();
+        NodeCursor nodes = cursors.allocateNodeCursor();
+        PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
         singleNode( transaction, nodes );
         nodes.properties( propertyCursor );
         int propertiesToFind = itemsToReturn;
@@ -424,8 +428,9 @@ public class NodeProxy implements Node
 
         try
         {
-            NodeCursor nodes = transaction.nodeCursor();
-            PropertyCursor propertyCursor = transaction.propertyCursor();
+            CursorFactory cursors = transaction.cursors();
+            NodeCursor nodes = cursors.allocateNodeCursor();
+            PropertyCursor propertyCursor = cursors.allocatePropertyCursor();
             TokenRead token = transaction.tokenRead();
             singleNode( transaction, nodes );
             nodes.properties( propertyCursor );
@@ -456,8 +461,9 @@ public class NodeProxy implements Node
             throw new NotFoundException( format( "No such property, '%s'.", key ) );
         }
 
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        CursorFactory cursors = transaction.cursors();
+        NodeCursor nodes = cursors.allocateNodeCursor();
+        PropertyCursor properties = cursors.allocatePropertyCursor();
         singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
@@ -490,8 +496,9 @@ public class NodeProxy implements Node
             return false;
         }
 
-        NodeCursor nodes = transaction.nodeCursor();
-        PropertyCursor properties = transaction.propertyCursor();
+        CursorFactory cursors = transaction.cursors();
+        NodeCursor nodes = cursors.allocateNodeCursor();
+        PropertyCursor properties = cursors.allocatePropertyCursor();
         singleNode( transaction, nodes );
         nodes.properties( properties );
         while ( properties.next() )
@@ -753,7 +760,7 @@ public class NodeProxy implements Node
     private ResourceIterator<Relationship> getRelationshipSelectionIterator( Direction direction, int[] typeIds )
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        NodeCursor node = transaction.nodeCursor();
+        NodeCursor node = transaction.cursors().allocateNodeCursor();
         transaction.dataRead().singleNode( getId(), node );
         if ( !node.next() )
         {

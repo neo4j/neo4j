@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -34,17 +36,20 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeN
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
 
-class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
+final class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements RelationshipGroupCursor
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
+    private final Consumer<DefaultRelationshipGroupCursor> pool;
+
     private BufferedGroup bufferedGroup;
     private PageCursor page;
     private PageCursor edgePage;
 
-    DefaultRelationshipGroupCursor()
+    DefaultRelationshipGroupCursor( Consumer<DefaultRelationshipGroupCursor> pool )
     {
         super( NO_ID );
+        this.pool = pool;
     }
 
     void buffer( long nodeReference, long relationshipReference, Read read )
@@ -157,21 +162,27 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public void close()
     {
-        if ( page != null )
-        {
-            page.close();
-            page = null;
-        }
+        bufferedGroup = null;
+        read = null;
+        setId( NO_ID );
+        clear();
 
         if ( edgePage != null )
         {
             edgePage.close();
             edgePage = null;
         }
-        bufferedGroup = null;
-        read = null;
-        setId( NO_ID );
-        clear();
+
+        if ( page != null )
+        {
+            page.close();
+            page = null;
+
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
+        }
     }
 
     @Override

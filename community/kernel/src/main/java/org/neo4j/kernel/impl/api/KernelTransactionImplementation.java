@@ -38,8 +38,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -132,6 +130,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final AccessCapability accessCapability;
+    private final Supplier<DefaultCursors> cursors;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -180,7 +179,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
-            StorageEngine storageEngine, AccessCapability accessCapability, KernelToken token, DefaultCursors cursors, AutoIndexing autoIndexing,
+            StorageEngine storageEngine, AccessCapability accessCapability, KernelToken token, Supplier<DefaultCursors> cursors, AutoIndexing autoIndexing,
             ExplicitIndexStore explicitIndexStore )
     {
         this.statementOperations = statementOperations;
@@ -203,8 +202,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
+        this.cursors = cursors;
         AllStoreHolder allStoreHolder =
-                new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
+                new AllStoreHolder( storageEngine, storageStatement, this, cursors.get(), explicitIndexStore );
         org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
                 new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
         this.operations =
@@ -212,7 +212,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         allStoreHolder,
                         new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
                         storageStatement,
-                        this, token, cursors, autoIndexing, matcher );
+                        this, token, cursors.get(), autoIndexing, matcher );
     }
 
     /**
@@ -244,7 +244,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( Thread.currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer );
-        this.operations.initialize();
+        this.operations.initialize( cursors.get() );
         return this;
     }
 
@@ -1071,18 +1071,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             waitingTimeNanos = 0;
             transactionThreadId = -1;
         }
-    }
-
-    @Override
-    public NodeCursor nodeCursor()
-    {
-        return operations.nodeCursor();
-    }
-
-    @Override
-    public PropertyCursor propertyCursor()
-    {
-        return operations.propertyCursor();
     }
 
     /**

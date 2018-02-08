@@ -35,6 +35,9 @@ public final class RelationshipSelections
         throw new UnsupportedOperationException( "Do not instantiate" );
     }
 
+    static final long NO_ID = -1L;
+    static final long NOT_INITIALIZED = -2L;
+
     /**
      * Returns an outgoing selection cursor given the provided node cursor and relationship types.
      *
