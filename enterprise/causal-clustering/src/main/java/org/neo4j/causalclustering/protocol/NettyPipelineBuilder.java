@@ -86,7 +86,7 @@ public class NettyPipelineBuilder
     {
         clear();
         handlers.forEach( pipeline::addLast );
-        installErrorHandling();
+//         installErrorHandling(); -- temporarily disabled for debugging purposes
     }
 
     private void clear()
