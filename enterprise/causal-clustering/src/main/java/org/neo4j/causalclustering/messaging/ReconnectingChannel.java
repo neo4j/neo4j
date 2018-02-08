@@ -55,7 +55,7 @@ public class ReconnectingChannel implements Channel
     ReconnectingChannel( Bootstrap bootstrap, final SocketAddress destination, final Log log,
             Function<io.netty.channel.Channel,ChannelInterceptor> channelInterceptorFactory )
     {
-        this( bootstrap, destination, log, channelInterceptorFactory, new ExponentialBackoffStrategy( 10, 2000, MILLISECONDS ) );
+        this( bootstrap, destination, log, channelInterceptorFactory, new ExponentialBackoffStrategy( 100, 1600, MILLISECONDS ) );
     }
 
     private ReconnectingChannel( Bootstrap bootstrap, final SocketAddress destination, final Log log,
@@ -66,6 +66,7 @@ public class ReconnectingChannel implements Channel
         this.log = log;
         this.channelInterceptorFactory = channelInterceptorFactory;
         this.connectionBackoffStrategy = connectionBackoffStrategy;
+        this.connectionBackoff = connectionBackoffStrategy.newTimeout();
     }
 
     void start()
@@ -83,8 +84,6 @@ public class ReconnectingChannel implements Channel
         {
             return;
         }
-
-        connectionBackoff = connectionBackoffStrategy.newTimeout();
 
         fChannel = bootstrap.connect( destination.socketAddress() );
         channel = fChannel.channel();
