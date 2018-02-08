@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateCol
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LazyTypes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, LazyTypes}
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans
@@ -48,6 +48,13 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.numberOfLongs,
           slots.numberOfReferences,
           slots.getLongOffsetFor(column))
+
+      case plans.NodeByLabelScan(column, label, _) =>
+        new LabelScanOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          LazyLabel(label)(SemanticTable()))
 
       case plans.Argument(_) =>
         new ArgumentOperator
