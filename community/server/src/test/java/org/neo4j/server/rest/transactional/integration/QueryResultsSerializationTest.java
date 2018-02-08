@@ -396,13 +396,14 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     public void shouldFailIfTryingToReturnPropsOfDeletedRelationshipRest()
     {
         // given
-        graphdb().execute( "CREATE (:Start)-[:R {p: 'a property'}]->(:End)" );
+        graphdb().execute( "CREATE (:Start)-[:MARKER {p: 'a property'}]->(:End)" );
 
         // execute and commit
         Response commit = http.POST( commitResource,
-                queryAsJsonRest( "MATCH (s)-[r:R]->(e) DELETE r RETURN r.p" ) );
+                queryAsJsonRest( "MATCH (s)-[r:MARKER]->(e) DELETE r RETURN r.p" ) );
 
-        assertThat( commit, hasErrors( Status.Statement.EntityNotFound ) );
+        assertThat( "Error raw response: " + commit.rawContent(), commit,
+                hasErrors( Status.Statement.EntityNotFound ) );
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( nodesInDatabase(), equalTo( 2L ) );
     }
