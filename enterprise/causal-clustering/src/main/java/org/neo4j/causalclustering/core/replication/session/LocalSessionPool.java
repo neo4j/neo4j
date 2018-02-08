@@ -19,13 +19,14 @@
  */
 package org.neo4j.causalclustering.core.replication.session;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.EmptyStackException;
-import java.util.Stack;
 
 /** Keeps a pool of local sub-sessions, to be used under a single global session. */
 public class LocalSessionPool
 {
-    private final Stack<LocalSession> sessionStack = new Stack<>();
+    private final Deque<LocalSession> sessionStack = new ArrayDeque<>();
 
     private final GlobalSession globalSession;
     private long nextLocalSessionId;
