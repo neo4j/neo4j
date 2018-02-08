@@ -27,6 +27,14 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String) {
   def isBlacklisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name && (featureName.isEmpty || featureName.get == scenario.featureName)
   }
+
+  override def toString: String = {
+    if (featureName.isDefined) {
+      s"""Feature "${featureName.get}": Scenario "$scenarioName""""
+    } else {
+      s"""$scenarioName"""  // legacy version
+    }
+  }
 }
 
 object BlacklistEntry {

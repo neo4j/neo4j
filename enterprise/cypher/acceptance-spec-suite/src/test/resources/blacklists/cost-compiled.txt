@@ -178,7 +178,6 @@ Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths tha
 Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate"
 Feature "ShortestPathAcceptance": Scenario "Find a shortest path without loosing context information at runtime"
 Feature "ShortestPathAcceptance": Scenario "Find a shortest path in an expression context"
-Feature "ShortestPathAcceptance": Scenario "Find a shortest path among paths that fulfill a predicate on all relationships"
 Feature "ShortestPathAcceptance": Scenario "Finds shortest path"
 Feature "ShortestPathAcceptance": Scenario "Optionally finds shortest path"
 Feature "ShortestPathAcceptance": Scenario "Optionally finds shortest path using previously bound nodes"
