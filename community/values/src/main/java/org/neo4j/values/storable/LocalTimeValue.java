@@ -39,6 +39,8 @@ import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
+import static org.neo4j.values.storable.TimeValue.validNano;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
@@ -109,7 +111,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
             @Override
             protected LocalTimeValue selectTime( AnyValue temporal )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                // TODO other cases, e.g. DateTimeValue
+                if ( temporal instanceof LocalTimeValue )
+                {
+                    return (LocalTimeValue) temporal;
+                }
+                throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", temporal ) );
             }
 
             @Override
@@ -121,7 +128,12 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( hour, "hour", minute, "minute", second, "second", oneOf( millisecond, microsecond, nanosecond ), "subsecond" );
+                return localTime(
+                        (int) safeCastIntegral( "hour", hour, 0 ),
+                        (int) safeCastIntegral( "minute", minute, 0 ),
+                        (int) safeCastIntegral( "second", second, 0 ),
+                        validNano( millisecond, microsecond, nanosecond ) );
             }
         };
     }

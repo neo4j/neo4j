@@ -1016,4 +1016,43 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         }
         return newValue;
     }
+
+    static void assertDefinedInOrder( AnyValue a, String aName, AnyValue b, String bName,
+            AnyValue c, String cName)
+    {
+        assertDefinedInOrder( a, aName, b, bName, c, cName, null, "" );
+    }
+
+    static void assertDefinedInOrder( AnyValue a, String aName, AnyValue b, String bName,
+            AnyValue c, String cName, AnyValue d, String dName )
+    {
+        if ( a == null )
+        {
+            throw new IllegalArgumentException(
+                    aName + " must be specified");
+        }
+        if ( b == null )
+        {
+            if( c != null )
+            {
+                throw new IllegalArgumentException(
+                        cName + " cannot be specified without " + bName);
+            }
+            else if( d != null )
+            {
+                throw new IllegalArgumentException(
+                        dName + " cannot be specified without " + bName);
+            }
+        }
+        else if( c == null && d != null)
+        {
+            throw new IllegalArgumentException(
+                    dName + " cannot be specified without " + cName);
+        }
+    }
+
+    static AnyValue oneOf(AnyValue a, AnyValue b, AnyValue c)
+    {
+        return a != null ? a : b != null ? b : c;
+    }
 }

@@ -19,6 +19,9 @@
  */
 package cypher.features
 
+import java.time._
+import java.time.temporal.TemporalAmount
+
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
@@ -73,17 +76,19 @@ object Neo4jValueToString extends (Any => String) {
         s"<$string>"
 
       case s: String => s"'$s'"
-
       case l: Long => l.toString
-
       case i: Integer => i.toString
-
       case d: Double => d.toString
-
       case f: Float => f.toString
-
       case b: Boolean => b.toString
-
+      // TODO workaround to escape date time strings until TCK error
+      // with colons in unescaped strings is fixed.
+      case x: LocalTime => s"'${x.toString}'"
+      case x: LocalDate => s"'${x.toString}'"
+      case x: LocalDateTime => s"'${x.toString}'"
+      case x: OffsetTime => s"'${x.toString}'"
+      case x: ZonedDateTime => s"'${x.toString}'"
+      case x: TemporalAmount => s"'${x.toString}'"
 
       case other =>
         println(s"could not convert $other of type ${other.getClass}")
