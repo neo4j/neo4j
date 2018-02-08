@@ -58,7 +58,10 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
     if (processedRows >= data.validRows )
       ContinueWithSource(nodeCursor, iterationState, needsSameThread = true)
     else {
-      nodeCursor.close()
+      if (nodeCursor != null) {
+        nodeCursor.close()
+        nodeCursor = null
+      }
       EndOfLoop(iterationState)
     }
   }
