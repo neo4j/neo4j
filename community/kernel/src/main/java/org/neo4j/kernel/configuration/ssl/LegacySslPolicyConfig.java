@@ -20,6 +20,7 @@
 package org.neo4j.kernel.configuration.ssl;
 
 import java.io.File;
+import java.util.List;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
@@ -27,8 +28,12 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 
 import static org.neo4j.kernel.configuration.Settings.PATH;
+import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.configuration.ssl.SslPolicyConfig.CIPHER_SUITES_DEFAULTS;
+import static org.neo4j.kernel.configuration.ssl.SslPolicyConfig.TLS_VERSION_DEFAULTS;
 
 /**
  * To be removed in favour of {@link SslPolicyConfig}. The settings below are still
@@ -54,4 +59,15 @@ public class LegacySslPolicyConfig implements LoadableConfig
     public static final Setting<File> tls_key_file =
             derivedSetting( "unsupported.dbms.security.tls_key_file", certificates_directory,
                     certificates -> new File( certificates, "neo4j.key" ), PATH );
+
+    @Internal
+    @Description( "Default encryption protocol used for legacy SSl policy." )
+    static final Setting<List<String>> default_security_protocol =
+            setting( "unsupported.dbms.security.protocol", STRING_LIST, TLS_VERSION_DEFAULTS );
+
+    @Internal
+    @Description( "Default encryption protocol used for legacy SSl policy." )
+    static final Setting<List<String>> default_security_cipher_suites =
+            setting( "unsupported.dbms.security.cipher_suites", STRING_LIST, CIPHER_SUITES_DEFAULTS );
+
 }

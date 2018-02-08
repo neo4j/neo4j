@@ -57,6 +57,8 @@ import org.neo4j.ssl.SslPolicy;
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.default_security_cipher_suites;
+import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.default_security_protocol;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component
@@ -157,7 +159,10 @@ public class SslPolicyLoader
         PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
         X509Certificate[] keyCertChain = loadCertificateChain( certficateFile );
 
-        return new SslPolicy( privateKey, keyCertChain, null, null,
+        List<String> ciphers = config.get( default_security_cipher_suites );
+        List<String> tlsVersions = config.get( default_security_protocol );
+
+        return new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers,
                 ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider );
     }
 

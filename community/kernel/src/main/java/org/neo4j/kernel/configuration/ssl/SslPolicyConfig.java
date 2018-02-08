@@ -44,7 +44,8 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 @Group( "dbms.ssl.policy" )
 public class SslPolicyConfig
 {
-    private static final String TLS_VERSION_DEFAULTS = join( ",", new String[]{"TLSv1.2"} );
+    public static final String TLS_VERSION_DEFAULTS = join( ",", new String[]{"TLSv1.2"} );
+    public static final String CIPHER_SUITES_DEFAULTS = NO_DEFAULT;
 
     @Description( "The mandatory base directory for cryptographic objects of this policy." +
                   " It is also possible to override each individual configuration with absolute paths." )
@@ -99,7 +100,7 @@ public class SslPolicyConfig
         this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ) );
         this.client_auth = group.scope( setting( "client_auth", options( ClientAuth.class, true ), ClientAuth.REQUIRE.name() ) );
         this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, TLS_VERSION_DEFAULTS ) );
-        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, NO_DEFAULT ) );
+        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, CIPHER_SUITES_DEFAULTS ) );
     }
 
     // TODO: can we make this handle relative paths?
