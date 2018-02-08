@@ -37,9 +37,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 public class Neo4jPackV2 extends Neo4jPackV1
 {
     public static final byte POINT_2D = 'X';
-
-    static final int MIN_POINT_DIMENSIONS = 2;
-    static final int MAX_POINT_DIMENSIONS = 2;
+    public static final byte POINT_3D = 'Y';
 
     @Override
     public Neo4jPack.Packer newPacker( PackOutput output )
@@ -63,13 +61,23 @@ public class Neo4jPackV2 extends Neo4jPackV1
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
         {
-            if ( coordinate.length != 2 )
+            if ( coordinate.length == 2 )
             {
-                throw new IllegalArgumentException( "Point with 2D coordinate expected but got crs=" + crs + ", coordinate=" + Arrays.toString( coordinate ) );
+                packStructHeader( 2, POINT_2D );
+                pack( crs.getCode() );
+                pack( coordinate[0], coordinate[1] );
             }
-            packStructHeader( 2, POINT_2D );
-            pack( crs.getCode() );
-            pack( coordinate[0], coordinate[1] );
+            else if ( coordinate.length == 3 )
+            {
+                packStructHeader( 2, POINT_3D );
+                pack( crs.getCode() );
+                pack( coordinate[0], coordinate[1], coordinate[2] );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Point with 2D or 3D coordinate expected, " +
+                                                    "got crs=" + crs + ", coordinate=" + Arrays.toString( coordinate ) );
+            }
         }
 
         @Override
@@ -78,6 +86,15 @@ public class Neo4jPackV2 extends Neo4jPackV1
             out.writeByte( PackStream.FLOAT_64_PAIR )
                     .writeDouble( value1 )
                     .writeDouble( value2 );
+        }
+
+        @Override
+        public void pack( double value1, double value2, double value3 ) throws IOException
+        {
+            out.writeByte( PackStream.FLOAT_64_TRIPLE )
+                    .writeDouble( value1 )
+                    .writeDouble( value2 )
+                    .writeDouble( value3 );
         }
     }
 
@@ -93,9 +110,16 @@ public class Neo4jPackV2 extends Neo4jPackV1
         {
             if ( signature == POINT_2D )
             {
-                return unpackPoint();
+                return unpackPoint2D();
             }
-            return super.unpackStruct( signature );
+            else if ( signature == POINT_3D )
+            {
+                return unpackPoint3D();
+            }
+            else
+            {
+                return super.unpackStruct( signature );
+            }
         }
 
         @Override
@@ -109,11 +133,30 @@ public class Neo4jPackV2 extends Neo4jPackV1
             throw new PackStream.Unexpected( PackType.FLOAT_PAIR, markerByte );
         }
 
-        private PointValue unpackPoint() throws IOException
+        @Override
+        public double[] unpackDoubleTriple() throws IOException
+        {
+            byte markerByte = in.readByte();
+            if ( markerByte == PackStream.FLOAT_64_TRIPLE )
+            {
+                return new double[]{in.readDouble(), in.readDouble(), in.readDouble()};
+            }
+            throw new PackStream.Unexpected( PackType.FLOAT_TRIPLE, markerByte );
+        }
+
+        private PointValue unpackPoint2D() throws IOException
         {
             int crsCode = unpackInteger();
             CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsCode );
             double[] coordinates = unpackDoublePair();
+            return pointValue( crs, coordinates );
+        }
+
+        private PointValue unpackPoint3D() throws IOException
+        {
+            int crsCode = unpackInteger();
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsCode );
+            double[] coordinates = unpackDoubleTriple();
             return pointValue( crs, coordinates );
         }
     }

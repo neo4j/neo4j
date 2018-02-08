@@ -104,7 +104,7 @@ public class PackStream
     public static final byte FALSE = (byte) 0xC2;
     public static final byte TRUE = (byte) 0xC3;
     public static final byte FLOAT_64_PAIR = (byte) 0xC4;
-    public static final byte RESERVED_C5 = (byte) 0xC5;
+    public static final byte FLOAT_64_TRIPLE = (byte) 0xC5;
     public static final byte RESERVED_C6 = (byte) 0xC6;
     public static final byte RESERVED_C7 = (byte) 0xC7;
     public static final byte INT_8 = (byte) 0xC8;
@@ -196,6 +196,8 @@ public class PackStream
             return PackType.FLOAT;
         case FLOAT_64_PAIR:
             return PackType.FLOAT_PAIR;
+        case FLOAT_64_TRIPLE:
+            return PackType.FLOAT_TRIPLE;
         case BYTES_8:
         case BYTES_16:
         case BYTES_32:
@@ -301,6 +303,11 @@ public class PackStream
         public void pack( double value1, double value2 ) throws IOException
         {
             throw new Unsupported( getClass(), PackType.FLOAT_PAIR );
+        }
+
+        public void pack( double value1, double value2, double value3 ) throws IOException
+        {
+            throw new Unsupported( getClass(), PackType.FLOAT_TRIPLE );
         }
 
         public void pack( char character ) throws IOException
@@ -617,6 +624,11 @@ public class PackStream
             throw new Unsupported( getClass(), PackType.FLOAT_PAIR );
         }
 
+        public double[] unpackDoubleTriple() throws IOException
+        {
+            throw new Unsupported( getClass(), PackType.FLOAT_TRIPLE );
+        }
+
         public byte[] unpackBytes() throws IOException
         {
             int size = unpackBytesHeader();
@@ -807,21 +819,7 @@ public class PackStream
         public Unexpected( PackType expectedType, byte unexpectedMarkerByte )
         {
             super( "Wrong type received. Expected " + expectedType + ", received: " + type( unexpectedMarkerByte ) +
-                   " " + "(" + toHexString( unexpectedMarkerByte ) + ")." );
-        }
-
-        private static String toHexString( byte unexpectedMarkerByte )
-        {
-            String s = Integer.toHexString( unexpectedMarkerByte );
-            if ( s.length() > 2 )
-            {
-                s = s.substring( 0, 2 );
-            }
-            else if ( s.length() < 2 )
-            {
-                return "0" + s;
-            }
-            return "0x" + s;
+                   " (0x" + Integer.toHexString( unexpectedMarkerByte ) + ")." );
         }
     }
 

@@ -35,6 +35,8 @@ public enum PackType
     FLOAT,
     /** two 64-bit floating point numbers */
     FLOAT_PAIR,
+    /** three 64-bit floating point numbers */
+    FLOAT_TRIPLE,
     /** Binary data */
     BYTES,
     /** Unicode string */
