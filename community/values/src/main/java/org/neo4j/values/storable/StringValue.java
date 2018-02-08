@@ -144,7 +144,7 @@ public abstract class StringValue extends TextValue
             }
             k += Character.charCount( c1 );
         }
-        return len1 - len2;
+        return length() - other.length();
     }
 
     static TextValue EMTPY = new StringValue()

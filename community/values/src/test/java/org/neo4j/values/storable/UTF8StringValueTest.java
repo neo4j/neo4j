@@ -39,7 +39,8 @@ public class UTF8StringValueTest
     private String[] strings = {"", "1337", " ", "普通话/普通話", "\uD83D\uDE21", " a b c ", "䤹᳽", "熨", "ۼ",
             "ⲹ楡톜ഷۢ⼈늉₭샺ጚ砧攡跿家䯶鲏⬖돛犽ۼ",
             " 㺂࿝鋦毠",//first character is a thin space,
-            "\u0018", ";먵熍裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩萌 ", "\u001cӳ"
+            "\u0018", ";먵熍裬岰鷲趫\uA8C5얱㓙髿ᚳᬼ≩萌 ", "\u001cӳ",
+            "\uD83D\uDE21\uD83D\uDCA9\uD83D\uDC7B"
     };
 
     @Test
