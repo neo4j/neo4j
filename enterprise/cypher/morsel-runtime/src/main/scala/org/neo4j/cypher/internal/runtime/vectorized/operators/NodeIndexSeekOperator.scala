@@ -40,7 +40,6 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
     reference
   }
 
-
   override def operate(message: Message,
                        data: Morsel,
                        context: QueryContext,
@@ -65,16 +64,18 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
     val longs: Array[Long] = data.longs
 
     var processedRows = 0
-    while (processedRows < data.validRows && nodeCursor.next()) {
-      longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
-      processedRows += 1
+    var hasMore = true
+    while (processedRows < data.validRows && hasMore) {
+      hasMore = nodeCursor.next()
+      if (hasMore) {
+        longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
+        processedRows += 1
+      }
     }
 
     data.validRows = processedRows
 
-    //we have filled up the rows, it is likely that there is more data
-    //left in the cursor but we postpone the actual call to nodeCursor.next
-    if (processedRows >= data.validRows )
+    if (hasMore)
       ContinueWithSource(nodeCursor, iterationState, needsSameThread = true)
     else {
       if (nodeCursor != null) {
