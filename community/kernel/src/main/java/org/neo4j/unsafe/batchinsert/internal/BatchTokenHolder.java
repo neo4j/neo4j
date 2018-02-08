@@ -19,16 +19,17 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.storageengine.api.Token;
 
 class BatchTokenHolder
 {
-    private final ArrayMap<String,Token> nameToToken = new ArrayMap<>( (byte) 5, false, false );
+    private final Map<String, Token> nameToToken = new HashMap<>();
     private final PrimitiveIntObjectMap<Token> idToToken = Primitive.intObjectMap( 20 );
 
     BatchTokenHolder( List<? extends Token> tokens )
