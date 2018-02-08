@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.internal.kernel.api.NodeCursor
 
 class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extends Operator {
 
@@ -29,32 +29,38 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
                        data: Morsel,
                        context: QueryContext,
                        state: QueryState): Continuation = {
-    var nodeIterator: PrimitiveLongIterator = null
+    var nodeCursor: NodeCursor = null
     var iterationState: Iteration = null
+    val read = context.transactionalContext.dataRead
 
     message match {
       case StartLeafLoop(is) =>
-        nodeIterator = context.nodeOps.allPrimitive
+        nodeCursor = context.transactionalContext.cursors.allocateNodeCursor()
+        read.allNodesScan(nodeCursor)
         iterationState = is
       case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
-        nodeIterator = it.asInstanceOf[PrimitiveLongIterator]
+        nodeCursor = it.asInstanceOf[NodeCursor]
         iterationState = is
     }
 
     val longs: Array[Long] = data.longs
 
     var processedRows = 0
-    while (nodeIterator.hasNext && processedRows < data.validRows) {
-      longs(processedRows * longsPerRow + offset) = nodeIterator.next()
+    while (processedRows < data.validRows && nodeCursor.next()) {
+      longs(processedRows * longsPerRow + offset) = nodeCursor.nodeReference()
       processedRows += 1
     }
 
     data.validRows = processedRows
 
-    if (nodeIterator.hasNext)
-      ContinueWithSource(nodeIterator, iterationState, needsSameThread = true)
-    else
+    //we have filled up the rows, it is likely that there is more data
+    //left in the cursor but we postpone the actual call to nodeCursor.next
+    if (processedRows >= data.validRows )
+      ContinueWithSource(nodeCursor, iterationState, needsSameThread = true)
+    else {
+      nodeCursor.close()
       EndOfLoop(iterationState)
+    }
   }
 
   override def addDependency(pipeline: Pipeline): Dependency = NoDependencies
