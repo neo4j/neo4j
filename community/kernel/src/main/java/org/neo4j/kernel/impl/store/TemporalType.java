@@ -20,10 +20,18 @@
 package org.neo4j.kernel.impl.store;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.ArrayValue;
@@ -32,8 +40,12 @@ import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.LongArray;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
+
+import static java.time.ZoneOffset.UTC;
 
 /**
  * For the PropertyStore format, check {@link PropertyStore}.
@@ -56,7 +68,7 @@ public enum TemporalType
                 }
 
                 @Override
-                public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+                public ArrayValue decodeArray( Value dataValue )
                 {
                     throw new UnsupportedOperationException( "Cannot decode invalid temporal array" );
                 }
@@ -77,9 +89,23 @@ public enum TemporalType
                 }
 
                 @Override
-                public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+                public ArrayValue decodeArray( Value dataValue )
                 {
-                    throw new UnsupportedOperationException( "Add support for arrays" );
+                    if ( dataValue instanceof LongArray )
+                    {
+                        LongArray numbers = (LongArray) dataValue;
+                        LocalDate[] dates = new LocalDate[numbers.length()];
+                        for ( int i = 0; i < dates.length; i++ )
+                        {
+                            dates[i] = LocalDate.ofEpochDay( numbers.longValue( i ) );
+                        }
+                        return Values.dateArray( dates );
+                    }
+                    else
+                    {
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                    }
                 }
 
                 private boolean valueIsInlined( long firstBlock )
@@ -104,9 +130,23 @@ public enum TemporalType
                 }
 
                 @Override
-                public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+                public ArrayValue decodeArray( Value dataValue )
                 {
-                    throw new UnsupportedOperationException( "Add support for arrays" );
+                    if ( dataValue instanceof LongArray )
+                    {
+                        LongArray numbers = (LongArray) dataValue;
+                        LocalTime[] times = new LocalTime[numbers.length()];
+                        for ( int i = 0; i < times.length; i++ )
+                        {
+                            times[i] = LocalTime.ofNanoOfDay( numbers.longValue( i ) );
+                        }
+                        return Values.localTimeArray( times );
+                    }
+                    else
+                    {
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                    }
                 }
 
                 private boolean valueIsInlined( long firstBlock )
@@ -132,9 +172,23 @@ public enum TemporalType
                 }
 
                 @Override
-                public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+                public ArrayValue decodeArray( Value dataValue )
                 {
-                    throw new UnsupportedOperationException( "Add support for arrays" );
+                    if ( dataValue instanceof LongArray )
+                    {
+                        LongArray numbers = (LongArray) dataValue;
+                        LocalDateTime[] dateTimes = new LocalDateTime[numbers.length() / 2];
+                        for ( int i = 0; i < dateTimes.length; i++ )
+                        {
+                            dateTimes[i] = LocalDateTime.ofInstant( Instant.ofEpochSecond( numbers.longValue( i * 2 ), numbers.longValue( i * 2 + 1 ) ), UTC );
+                        }
+                        return Values.localDateTimeArray( dateTimes );
+                    }
+                    else
+                    {
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                    }
                 }
             },
     TEMPORAL_TIME( 4, "Time" )
@@ -142,9 +196,9 @@ public enum TemporalType
                 @Override
                 public Value decodeForTemporal( long[] valueBlocks, int offset )
                 {
-                    int secondOffset = (int) (valueBlocks[offset] >>> 32);
+                    int minuteOffset = (int) (valueBlocks[offset] >>> 32);
                     long nanoOfDay = valueBlocks[1 + offset];
-                    return TimeValue.time( nanoOfDay, ZoneOffset.ofTotalSeconds( secondOffset ) );
+                    return TimeValue.time( nanoOfDay, ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
                 }
 
                 @Override
@@ -154,9 +208,26 @@ public enum TemporalType
                 }
 
                 @Override
-                public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+                public ArrayValue decodeArray( Value dataValue )
                 {
-                    throw new UnsupportedOperationException( "Add support for arrays" );
+                    if ( dataValue instanceof LongArray )
+                    {
+                        LongArray numbers = (LongArray) dataValue;
+                        OffsetTime[] times = new OffsetTime[(int) (numbers.length() / 1.25)];
+                        for ( int i = 0; i < times.length; i++ )
+                        {
+                            long nanoOfDay = numbers.longValue( i );
+                            int shift = (i % 4) * 16;
+                            short minuteOffset = (short) (numbers.longValue( times.length + i / 4 ) >>> shift);
+                            times[i] = OffsetTime.of( LocalTime.ofNanoOfDay( nanoOfDay ), ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
+                        }
+                        return Values.timeArray( times );
+                    }
+                    else
+                    {
+                        throw new InvalidRecordException( "Array with unexpected type. Actual:"
+                                + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                    }
                 }
             },
     TEMPORAL_DATE_TIME( 5, "DateTime" )
@@ -168,12 +239,12 @@ public enum TemporalType
                     {
                         int nanoOfSecond = (int) (valueBlocks[offset] >>> 33);
                         long epochSecond = valueBlocks[1 + offset];
-                        int secondOffset = (int) valueBlocks[2 + offset];
-                        return DateTimeValue.datetime( epochSecond, nanoOfSecond, ZoneOffset.ofTotalSeconds( secondOffset ) );
+                        int minuteOffset = (int) valueBlocks[2 + offset];
+                        return DateTimeValue.datetime( epochSecond, nanoOfSecond, ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
                     }
                     else
                     {
-                        throw new UnsupportedOperationException( "..." );
+                        throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
                     }
                 }
 
@@ -192,9 +263,35 @@ public enum TemporalType
                 }
 
                 @Override
-                public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+                public ArrayValue decodeArray( Value dataValue )
                 {
-                    throw new UnsupportedOperationException( "Add support for arrays" );
+                    if ( dataValue instanceof LongArray )
+                    {
+                        LongArray numbers = (LongArray) dataValue;
+                        ZonedDateTime[] dateTimes = new ZonedDateTime[numbers.length() / 3];
+                        for ( int i = 0; i < dateTimes.length; i++ )
+                        {
+                            long epochSecond = numbers.longValue( i * 3 );
+                            long nanos = numbers.longValue( i * 3 + 1 );
+                            long zoneValue = numbers.longValue( i * 3 + 2 );
+                            if ( (zoneValue & 1) == 1 )
+                            {
+                                short minuteOffset = (short) (zoneValue >>> 1);
+                                dateTimes[i] =
+                                        ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nanos ), ZoneOffset.ofTotalSeconds( minuteOffset * 60 ) );
+                            }
+                            else
+                            {
+                                throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                            }
+                        }
+                        return Values.dateTimeArray( dateTimes );
+                    }
+                    else
+                    {
+                        throw new InvalidRecordException(
+                                "LocalTime array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                    }
                 }
 
                 private boolean storingZoneOffset( long firstBlock )
@@ -222,9 +319,23 @@ public enum TemporalType
             }
 
             @Override
-            public ArrayValue decodeArray( TemporalHeader header, byte[] data )
+            public ArrayValue decodeArray( Value dataValue )
             {
-                throw new UnsupportedOperationException( "Add support for arrays" );
+                if ( dataValue instanceof LongArray )
+                {
+                    LongArray numbers = (LongArray) dataValue;
+                    DurationValue[] durations = new DurationValue[(int) (numbers.length() / 3)];
+                    for ( int i = 0; i < durations.length; i++ )
+                    {
+                        durations[i] = DurationValue.duration( numbers.longValue( i * 4 ), numbers.longValue( i * 4 + 1 ), numbers.longValue( i * 4 + 2 ),
+                                numbers.longValue( i * 4 + 3 ) );
+                    }
+                    return Values.durationArray( durations );
+                }
+                else
+                {
+                    throw new InvalidRecordException( "Array with unexpected type. Actual:" + dataValue.getClass().getSimpleName() + ". Expected: LongArray." );
+                }
             }
         };
 
@@ -242,17 +353,20 @@ public enum TemporalType
 
         private void writeArrayHeaderTo( byte[] bytes )
         {
-            throw new UnsupportedOperationException( "Add support for arrays" );
+            bytes[0] = (byte) PropertyType.TEMPORAL.intValue();
+            bytes[1] = (byte) temporalType;
         }
 
         static TemporalHeader fromArrayHeaderBytes( byte[] header )
         {
-            throw new UnsupportedOperationException( "Add support for arrays" );
+            int temporalType = Byte.toUnsignedInt( header[1] );
+            return new TemporalHeader( temporalType );
         }
 
         public static TemporalHeader fromArrayHeaderByteBuffer( ByteBuffer buffer )
         {
-            throw new UnsupportedOperationException( "Add support for arrays" );
+            int temporalType = Byte.toUnsignedInt( buffer.get() );
+            return new TemporalHeader( temporalType );
         }
     }
 
@@ -290,19 +404,6 @@ public enum TemporalType
         {
             // Kernel code requires no exceptions in deeper PropertyChain processing of corrupt/invalid data
             return TEMPORAL_INVALID;
-        }
-    }
-
-    public static TemporalType find( String name )
-    {
-        TemporalType table = all.get( name );
-        if ( table != null )
-        {
-            return table;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "No known Temporal Type: " + name );
         }
     }
 
@@ -374,6 +475,7 @@ public enum TemporalType
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, int secondOffset )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
+        int minuteOffset = secondOffset / 60;
 
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_DATE_TIME.temporalType << (idBits + 4);
@@ -382,7 +484,7 @@ public enum TemporalType
         // nanoOfSecond will never require more than 30 bits
         data[0] = keyAndType | temporalTypeBits | (1L << 32) | (nanoOfSecond << 33);
         data[1] = epochSecond;
-        data[2] = secondOffset;
+        data[2] = minuteOffset;
 
         return data;
     }
@@ -390,13 +492,14 @@ public enum TemporalType
     public static long[] encodeTime( int keyId, long nanoOfDay, int secondOffset )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
+        int minuteOffset = secondOffset / 60;
 
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_TIME.temporalType << (idBits + 4);
 
         long[] data = new long[2];
-        // Offset are always in the range +-18:00:00, so secondOffset will never require more than 17 bits
-        data[0] = keyAndType | temporalTypeBits | ((long) secondOffset << 32);
+        // Offset are always in the range +-18:00, so minuteOffset will never require more than 12 bits
+        data[0] = keyAndType | temporalTypeBits | ((long) minuteOffset << 32);
         data[1] = nanoOfDay;
 
         return data;
@@ -418,11 +521,127 @@ public enum TemporalType
         return data;
     }
 
-    // TODO encode Array methods.
+    public static byte[] encodeDateArray( LocalDate[] dates )
+    {
+        long[] data = new long[dates.length];
+        for ( int i = 0; i < data.length; i++ )
+        {
+            data[i] = dates[i].toEpochDay();
+        }
+        TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_DATE.temporalType );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
+        header.writeArrayHeaderTo( bytes );
+        return bytes;
+    }
+
+    public static byte[] encodeLocalTimeArray( LocalTime[] times )
+    {
+        long[] data = new long[times.length];
+        for ( int i = 0; i < data.length; i++ )
+        {
+            data[i] = times[i].toNanoOfDay();
+        }
+        TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_LOCAL_TIME.temporalType );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
+        header.writeArrayHeaderTo( bytes );
+        return bytes;
+    }
+
+    public static byte[] encodeLocalDateTimeArray( LocalDateTime[] dateTimes )
+    {
+        long[] data = new long[dateTimes.length * 2];
+        for ( int i = 0; i < dateTimes.length; i++ )
+        {
+            data[i * 2] = dateTimes[i].toEpochSecond( UTC );
+            data[i * 2 + 1] = dateTimes[i].getNano();
+        }
+        TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_LOCAL_DATE_TIME.temporalType );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
+        header.writeArrayHeaderTo( bytes );
+        return bytes;
+    }
+
+    public static byte[] encodeTimeArray( OffsetTime[] times )
+    {
+        // TODO this sucks in terms of cache locality
+        long[] data = new long[(int) (Math.ceil( times.length * 1.25 ))];
+        // First all nano of days (each is a long)
+        int i;
+        for ( i = 0; i < times.length; i++ )
+        {
+            data[i] = times[i].toLocalTime().toNanoOfDay();
+        }
+        // Then all minuteOffsets (each fits in a short)
+        for ( int j = 0; j < times.length; j++ )
+        {
+            int shift = (j % 4) * 16;
+            short minuteOffset = (short) (times[j].getOffset().getTotalSeconds() / 60);
+            data[i] = (Short.toUnsignedLong( minuteOffset )) << shift | data[i];
+            if ( j % 4 == 3 )
+            {
+                i++;
+            }
+        }
+
+        TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_TIME.temporalType );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
+        header.writeArrayHeaderTo( bytes );
+        return bytes;
+    }
+
+    public static byte[] encodeDateTimeArray( ZonedDateTime[] dateTimes )
+    {
+        // TODO we can store this in dateTimes.length * 2.25
+        long[] data = new long[dateTimes.length * 3];
+
+        int i;
+        for ( i = 0; i < dateTimes.length; i++ )
+        {
+            data[i * 3] = dateTimes[i].toEpochSecond();
+            data[i * 3 + 1] = dateTimes[i].getNano();
+            if ( dateTimes[i].getZone() instanceof ZoneOffset )
+            {
+                ZoneOffset offset = (ZoneOffset) dateTimes[i].getZone();
+                int minuteOffset = offset.getTotalSeconds() / 60;
+                // Set lowest bit to 1 means offset
+                data[i * 3 + 2] = minuteOffset << 1 | 1L;
+            }
+            else
+            {
+                // Set lowest bit to 0 means zone id
+                throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+            }
+        }
+
+        TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_DATE_TIME.temporalType );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
+        header.writeArrayHeaderTo( bytes );
+        return bytes;
+    }
+
+    public static byte[] encodeDurationArray( DurationValue[] durations )
+    {
+        long[] data = new long[durations.length * 4];
+        for ( int i = 0; i < durations.length; i++ )
+        {
+            data[i * 4] = durations[i].get( ChronoUnit.MONTHS );
+            data[i * 4 + 1] = durations[i].get( ChronoUnit.DAYS );
+            data[i * 4 + 2] = durations[i].get( ChronoUnit.SECONDS );
+            data[i * 4 + 3] = durations[i].get( ChronoUnit.NANOS );
+        }
+        TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_DURATION.temporalType );
+        byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
+        header.writeArrayHeaderTo( bytes );
+        return bytes;
+    }
 
     public static ArrayValue decodeTemporalArray( TemporalHeader header, byte[] data )
     {
-        return find( header.temporalType ).decodeArray( header, data );
+        byte[] dataHeader = PropertyType.ARRAY.readDynamicRecordHeader( data );
+        byte[] dataBody = new byte[data.length - dataHeader.length];
+        System.arraycopy( data, dataHeader.length, dataBody, 0, dataBody.length );
+        Value dataValue = DynamicArrayStore.getRightArray( Pair.of( dataHeader, dataBody ) );
+        return find( header.temporalType ).decodeArray( dataValue );
     }
 
     private final int temporalType;
@@ -438,12 +657,7 @@ public enum TemporalType
 
     public abstract int calculateNumberOfBlocksUsedForTemporal( long firstBlock );
 
-    public abstract ArrayValue decodeArray( TemporalHeader header, byte[] data );
-
-    public int getTemporalType()
-    {
-        return temporalType;
-    }
+    public abstract ArrayValue decodeArray( Value dataValue );
 
     public String getName()
     {

@@ -22,6 +22,14 @@ package org.neo4j.kernel.api.index;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.spatial.Point;
@@ -29,10 +37,16 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.time.ZoneOffset.UTC;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -94,10 +108,26 @@ public class ArrayEncoderTest
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
         assertEncoding( "LYWxp|YXJl|eW91|b2s=|", new String[]{"ali", "are", "you", "ok"} );
         assertEncoding( "", new String[]{} );
-        PointValue a = Values.pointValue( CoordinateReferenceSystem.WGS84, 1.234, 2.567 );
-        PointValue b = Values.pointValue( CoordinateReferenceSystem.WGS84, 2.345, 5.678 );
-        PointValue c = Values.pointValue( CoordinateReferenceSystem.Cartesian, 3, 4, 5 );
-        assertEncoding( "P1:4326:1.234;2.567|1:4326:2.345;5.678|2:7203:3.0;4.0;5.0|", new Point[]{a, b, c} );
+        assertEncoding( "P1:4326:1.234;2.567|1:4326:2.345;5.678|2:7203:3.0;4.0;5.0|",
+                new Point[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 1.234, 2.567 ),
+                        Values.pointValue( CoordinateReferenceSystem.WGS84, 2.345, 5.678 ),
+                        Values.pointValue( CoordinateReferenceSystem.Cartesian, 3, 4, 5 )} );
+        assertEncoding( "T1991-03-05|1992-04-06|", new LocalDate[]{DateValue.date( 1991, 3, 5 ).asObjectCopy(), DateValue.date( 1992, 4, 6 ).asObjectCopy()} );
+        assertEncoding( "T12:45:13.000008676|05:04:50.000000076|",
+                new LocalTime[]{LocalTimeValue.localTime( 12, 45, 13, 8676 ).asObjectCopy(), LocalTimeValue.localTime( 5, 4, 50, 76 ).asObjectCopy()} );
+        assertEncoding( "T1991-03-05T12:45:13.000008676|1992-04-06T05:04:50.000000076|",
+                new LocalDateTime[]{LocalDateTimeValue.localDateTime( 1991, 3, 5, 12, 45, 13, 8676 ).asObjectCopy(),
+                        LocalDateTimeValue.localDateTime( 1992, 4, 6, 5, 4, 50, 76 ).asObjectCopy()} );
+        assertEncoding( "T02:45:13.000008676Z|01:05:00.0000003+01:00|05:04:50.000000076+05:00|",
+                new OffsetTime[]{TimeValue.time( 2, 45, 13, 8676, UTC ).asObjectCopy(),
+                        TimeValue.time( OffsetTime.ofInstant( Instant.ofEpochSecond( 300, 300 ), ZoneId.of( "Europe/Stockholm" ) ) ).asObjectCopy(),
+                        TimeValue.time( 5, 4, 50, 76, "+05:00" ).asObjectCopy()} );
+        assertEncoding( "T1991-03-05T02:45:13.000008676Z|1991-03-05T02:45:13.000008676+01:00[Europe/Stockholm]|1992-04-06T05:04:50.000000076+05:00|",
+                new ZonedDateTime[]{DateTimeValue.datetime( 1991, 3, 5, 2, 45, 13, 8676, UTC ).asObjectCopy(),
+                        DateTimeValue.datetime( 1991, 3, 5, 2, 45, 13, 8676, ZoneId.of( "Europe/Stockholm" ) ).asObjectCopy(),
+                        DateTimeValue.datetime( 1992, 4, 6, 5, 4, 50, 76, "+05:00" ).asObjectCopy()} );
+        assertEncoding( "AP165Y11M3DT5.000000012S|P166Y4DT6.000000005S|",
+                new TemporalAmount[]{DurationValue.duration( 1991, 3, 5, 12 ).asObjectCopy(), DurationValue.duration( 1992, 4, 6, 5 ).asObjectCopy()} );
     }
 
     @Test
