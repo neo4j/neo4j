@@ -112,9 +112,18 @@ public class NettyServer extends LifecycleAdapter
                                 .bind( protocolInitializer.address().socketAddress() ).sync();
                 InetSocketAddress localAddress = (InetSocketAddress) channelFuture.channel().localAddress();
                 connectionRegister.register( boltConnector.key(), localAddress );
-                ListenSocketAddress listenSocketAddress = new ListenSocketAddress(
-                        protocolInitializer.address().getHostname(), localAddress.getPort() );
-                log.info( "Bolt enabled on %s.", listenSocketAddress );
+                String host = protocolInitializer.address().getHostname();
+                int port = localAddress.getPort();
+                if ( host.contains( ":" ) )
+                {
+                    // IPv6
+                    log.info( "Bolt enabled on [%s]:%s.", host, port );
+                }
+                else
+                {
+                    // IPv4
+                    log.info( "Bolt enabled on %s:%s.", host, port );
+                }
             }
             catch ( Throwable e )
             {
