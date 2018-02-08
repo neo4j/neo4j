@@ -40,13 +40,4 @@ class AcceptanceTests extends BaseFeatureTest {
     val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
     filterScenarios(all)
   }
-
-  @TestFactory
-  override def runCompatibility23(): Collection[DynamicTest] = {
-    //TODO: Investigate flakiness
-    def isFlakyOn23(scenario: Scenario): Boolean = {
-      scenario.name == "STARTS WITH should handle null prefix" && scenario.featureName == "IndexAcceptance"
-    }
-    createTests(scenarios.filterNot(isFlakyOn23), Compatibility23TestConfig)
-  }
 }

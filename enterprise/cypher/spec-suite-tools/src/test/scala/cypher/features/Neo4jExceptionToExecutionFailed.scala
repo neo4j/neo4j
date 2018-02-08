@@ -41,44 +41,46 @@ object Neo4jExceptionToExecutionFailed {
       case Phase.compile => compileTimeDetail(msg)
       case Phase.runtime => runtimeDetail(msg)
     }
-    ExecutionFailed(errorType.toString, phase, detail)
+    ExecutionFailed(if(errorType != null) errorType.toString else "", phase, detail)
   }
 
   private def runtimeDetail(msg: String): String = {
     import TCKErrorDetails._
-      if (msg.matches("Type mismatch: expected a map but was .+"))
-        PROPERTY_ACCESS_ON_NON_MAP
-      else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
-        MAP_ELEMENT_ACCESS_BY_NON_STRING
-      else if (msg.matches("Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+"))
-        LIST_ELEMENT_ACCESS_BY_NON_INTEGER
-      else if (msg.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
-        INVALID_ELEMENT_ACCESS
-      else if (msg.matches(s"\nElement access is only possible by performing a collection lookup using an integer index,\nor by performing a map lookup using a string key .+"))
-        INVALID_ELEMENT_ACCESS
-      else if (msg.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
-        "CreateBlockedByConstraint"
-      else if (msg.matches("Node\\(\\d+\\) already exists with label `.+` and property `.+` = .+"))
-        "CreateBlockedByConstraint"
-      else if (msg.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
-        DELETE_CONNECTED_NODE
-      else if (msg.matches("Don't know how to compare that\\..+"))
-        "IncomparableValues"
-      else if (msg.matches("Cannot perform .+ on mixed types\\..+"))
-        "IncomparableValues"
-      else if (msg.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
-        NUMBER_OUT_OF_RANGE
-      else if (msg.matches("step argument to range\\(\\) cannot be zero"))
-        NUMBER_OUT_OF_RANGE
-      else if (msg.matches("Expected a (.+), got: (.*)"))
-        INVALID_ARGUMENT_VALUE
-      else if (msg.matches("The expression .+ should have been a node or a relationship, but got .+"))
-        REQUIRES_DIRECTED_RELATIONSHIP
-      else if (msg.matches("((Node)|(Relationship)) with id \\d+ has been deleted in this transaction"))
-        DELETED_ENTITY_ACCESS
-      else
-        msg
-    }
+    if (msg == null)
+      ""
+    else if (msg.matches("Type mismatch: expected a map but was .+"))
+      PROPERTY_ACCESS_ON_NON_MAP
+    else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
+      MAP_ELEMENT_ACCESS_BY_NON_STRING
+    else if (msg.matches("Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+"))
+      LIST_ELEMENT_ACCESS_BY_NON_INTEGER
+    else if (msg.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
+      INVALID_ELEMENT_ACCESS
+    else if (msg.matches(s"\nElement access is only possible by performing a collection lookup using an integer index,\nor by performing a map lookup using a string key .+"))
+      INVALID_ELEMENT_ACCESS
+    else if (msg.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
+      "CreateBlockedByConstraint"
+    else if (msg.matches("Node\\(\\d+\\) already exists with label `.+` and property `.+` = .+"))
+      "CreateBlockedByConstraint"
+    else if (msg.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
+      DELETE_CONNECTED_NODE
+    else if (msg.matches("Don't know how to compare that\\..+"))
+      "IncomparableValues"
+    else if (msg.matches("Cannot perform .+ on mixed types\\..+"))
+      "IncomparableValues"
+    else if (msg.matches("Invalid input '.+' is not a valid argument, must be a number in the range 0.0 to 1.0"))
+      NUMBER_OUT_OF_RANGE
+    else if (msg.matches("step argument to range\\(\\) cannot be zero"))
+      NUMBER_OUT_OF_RANGE
+    else if (msg.matches("Expected a (.+), got: (.*)"))
+      INVALID_ARGUMENT_VALUE
+    else if (msg.matches("The expression .+ should have been a node or a relationship, but got .+"))
+      REQUIRES_DIRECTED_RELATIONSHIP
+    else if (msg.matches("((Node)|(Relationship)) with id \\d+ has been deleted in this transaction"))
+      DELETED_ENTITY_ACCESS
+    else
+      msg
+  }
 
   private def compileTimeDetail(msg: String): String = {
     import TCKErrorDetails._
