@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -129,12 +128,14 @@ public class HandshakeClient implements ClientMessageHandler
         future.complete( protocolStack );
     }
 
-    void checkTimeout( Duration timeout )
+    boolean failIfNotDone( String message )
     {
         if ( !future.isDone() )
         {
-            decline( "Timed out after " + timeout );
+            decline( message );
+            return true;
         }
+        return false;
     }
 
     private void decline( String message )

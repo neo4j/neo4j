@@ -30,6 +30,7 @@ import java.util.function.BiFunction;
 import org.neo4j.causalclustering.protocol.handshake.ClientHandshakeException;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeClientInitializer;
 import org.neo4j.causalclustering.protocol.handshake.HandshakeFinishedEvent;
+import org.neo4j.logging.Log;
 
 /**
  * Gates messages written before the handshake has completed. The handshake is finalized
@@ -41,8 +42,9 @@ public class HandshakeGate implements ChannelInterceptor
 
     private final CompletableFuture<Void> handshakePromise = new CompletableFuture<>();
 
-    HandshakeGate( Channel channel )
+    HandshakeGate( Channel channel, Log log )
     {
+        log.info( "Handshake gate added" );
         channel.pipeline().addFirst( HANDSHAKE_GATE, new ChannelInboundHandlerAdapter()
         {
             @Override
@@ -50,10 +52,12 @@ public class HandshakeGate implements ChannelInterceptor
             {
                 if ( HandshakeFinishedEvent.getSuccess().equals( evt ) )
                 {
+                    log.info( "Handshake gate success" );
                     handshakePromise.complete( null );
                 }
                 else if ( HandshakeFinishedEvent.getFailure().equals( evt ) )
                 {
+                    log.warn( "Handshake gate failed" );
                     handshakePromise.completeExceptionally( new ClientHandshakeException( "Handshake failed" ) );
                     channel.close();
                 }
