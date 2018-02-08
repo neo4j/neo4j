@@ -159,7 +159,7 @@ public class TransportErrorIT
         final PackStream.Packer packer = new PackStream.Packer( out );
 
         packer.packStructHeader( 2, RUN.signature() );
-        out.writeByte( PackStream.RESERVED_C4 ); // Invalid marker byte
+        out.writeByte( PackStream.RESERVED_C7 ); // Invalid marker byte
         out.flush();
 
         byte[] invalidMessage = rawData.getBytes();

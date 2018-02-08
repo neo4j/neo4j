@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
@@ -47,8 +49,10 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
@@ -259,8 +263,37 @@ public class Neo4jPackV1Test
         assertThat( unpacked, equalTo( textValue ) );
     }
 
-    private static class Unpackable
+    @Test
+    public void shouldFailToPackDoublePair() throws IOException
     {
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPackV1.PackerV1 packer = (Neo4jPackV1.PackerV1) neo4jPack.newPacker( output );
 
+        try
+        {
+            packer.pack( 42.0, 42.0 );
+            fail( "Exception expected" );
+        }
+        catch ( PackStream.Unsupported e )
+        {
+            assertThat( e.getMessage(), containsString( PackType.FLOAT_PAIR.toString() ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToUnpackDoublePair() throws IOException
+    {
+        PackedInputArray input = new PackedInputArray( new byte[]{PackStream.FLOAT_64_PAIR} );
+        Neo4jPackV1.UnpackerV1 unpacker = (Neo4jPackV1.UnpackerV1) neo4jPack.newUnpacker( input );
+
+        try
+        {
+            unpacker.unpackDoublePair();
+            fail( "Exception expected" );
+        }
+        catch ( PackStream.Unsupported e )
+        {
+            assertThat( e.getMessage(), containsString( PackType.FLOAT_PAIR.toString() ) );
+        }
     }
 }

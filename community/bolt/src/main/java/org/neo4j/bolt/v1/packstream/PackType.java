@@ -33,6 +33,8 @@ public enum PackType
     INTEGER,
     /** 64-bit floating point number */
     FLOAT,
+    /** two 64-bit floating point numbers */
+    FLOAT_PAIR,
     /** Binary data */
     BYTES,
     /** Unicode string */

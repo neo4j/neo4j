@@ -103,7 +103,7 @@ public class PackStream
     public static final byte FLOAT_64 = (byte) 0xC1;
     public static final byte FALSE = (byte) 0xC2;
     public static final byte TRUE = (byte) 0xC3;
-    public static final byte RESERVED_C4 = (byte) 0xC4;
+    public static final byte FLOAT_64_PAIR = (byte) 0xC4;
     public static final byte RESERVED_C5 = (byte) 0xC5;
     public static final byte RESERVED_C6 = (byte) 0xC6;
     public static final byte RESERVED_C7 = (byte) 0xC7;
@@ -194,6 +194,8 @@ public class PackStream
             return PackType.BOOLEAN;
         case FLOAT_64:
             return PackType.FLOAT;
+        case FLOAT_64_PAIR:
+            return PackType.FLOAT_PAIR;
         case BYTES_8:
         case BYTES_16:
         case BYTES_32:
@@ -232,8 +234,9 @@ public class PackStream
         private static final char PACKED_CHAR_START_CHAR = (char) 32;
         private static final char PACKED_CHAR_END_CHAR = (char) 126;
         private static final String[] PACKED_CHARS = prePackChars();
-        private PackOutput out;
         private UTF8Encoder utf8 = UTF8Encoder.fastestAvailableEncoder();
+
+        protected PackOutput out;
 
         public Packer( PackOutput out )
         {
@@ -293,6 +296,11 @@ public class PackStream
         public void pack( double value ) throws IOException
         {
             out.writeByte( FLOAT_64 ).writeDouble( value );
+        }
+
+        public void pack( double value1, double value2 ) throws IOException
+        {
+            throw new Unsupported( getClass(), PackType.FLOAT_PAIR );
         }
 
         public void pack( char character ) throws IOException
@@ -464,7 +472,7 @@ public class PackStream
     {
         private static final byte[] EMPTY_BYTE_ARRAY = {};
 
-        private PackInput in;
+        protected PackInput in;
 
         public Unpacker( PackInput in )
         {
@@ -602,6 +610,11 @@ public class PackStream
                 return in.readDouble();
             }
             throw new Unexpected( PackType.FLOAT, markerByte );
+        }
+
+        public double[] unpackDoublePair() throws IOException
+        {
+            throw new Unsupported( getClass(), PackType.FLOAT_PAIR );
         }
 
         public byte[] unpackBytes() throws IOException
@@ -809,6 +822,14 @@ public class PackStream
                 return "0" + s;
             }
             return "0x" + s;
+        }
+    }
+
+    public static class Unsupported extends PackStreamException
+    {
+        public Unsupported( Class<?> component, PackType type )
+        {
+            super( component.getSimpleName() + " does not support " + type + " pack stream type" );
         }
     }
 }

@@ -20,21 +20,26 @@
 package org.neo4j.bolt.v2.messaging;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
+import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 
-import static org.neo4j.values.storable.Values.doubleArray;
 import static org.neo4j.values.storable.Values.pointValue;
 
 public class Neo4jPackV2 extends Neo4jPackV1
 {
-    public static final byte POINT = 'X';
+    public static final byte POINT_2D = 'X';
+
+    static final int MIN_POINT_DIMENSIONS = 2;
+    static final int MAX_POINT_DIMENSIONS = 2;
 
     @Override
     public Neo4jPack.Packer newPacker( PackOutput output )
@@ -58,10 +63,21 @@ public class Neo4jPackV2 extends Neo4jPackV1
         @Override
         public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
         {
-            packStructHeader( 3, POINT );
-            pack( crs.getTable().getTableId() );
+            if ( coordinate.length != 2 )
+            {
+                throw new IllegalArgumentException( "Point with 2D coordinate expected but got crs=" + crs + ", coordinate=" + Arrays.toString( coordinate ) );
+            }
+            packStructHeader( 2, POINT_2D );
             pack( crs.getCode() );
-            pack( doubleArray( coordinate ) );
+            pack( coordinate[0], coordinate[1] );
+        }
+
+        @Override
+        public void pack( double value1, double value2 ) throws IOException
+        {
+            out.writeByte( PackStream.FLOAT_64_PAIR )
+                    .writeDouble( value1 )
+                    .writeDouble( value2 );
         }
     }
 
@@ -75,24 +91,29 @@ public class Neo4jPackV2 extends Neo4jPackV1
         @Override
         protected AnyValue unpackStruct( char signature ) throws IOException
         {
-            if ( signature == POINT )
+            if ( signature == POINT_2D )
             {
                 return unpackPoint();
             }
             return super.unpackStruct( signature );
         }
 
+        @Override
+        public double[] unpackDoublePair() throws IOException
+        {
+            byte markerByte = in.readByte();
+            if ( markerByte == PackStream.FLOAT_64_PAIR )
+            {
+                return new double[]{in.readDouble(), in.readDouble()};
+            }
+            throw new PackStream.Unexpected( PackType.FLOAT_PAIR, markerByte );
+        }
+
         private PointValue unpackPoint() throws IOException
         {
-            int tableId = unpackInteger();
-            int code = unpackInteger();
-            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( tableId, code );
-            int length = (int) unpackListHeader();
-            double[] coordinates = new double[length];
-            for ( int i = 0; i < length; i++ )
-            {
-                coordinates[i] = unpackDouble();
-            }
+            int crsCode = unpackInteger();
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( crsCode );
+            double[] coordinates = unpackDoublePair();
             return pointValue( crs, coordinates );
         }
     }
