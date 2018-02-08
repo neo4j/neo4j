@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
 import java.io.File;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,19 +35,20 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 @Service.Implementation( KernelExtensionFactory.class )
-public class FulltextindexProviderFactory extends KernelExtensionFactory<FulltextindexProviderFactory.Dependencies>
+public class FulltextIndexProviderFactory extends KernelExtensionFactory<FulltextIndexProviderFactory.Dependencies>
 {
     public static final String KEY = "fulltext";
     public static final IndexProvider.Descriptor DESCRIPTOR = new IndexProvider.Descriptor( KEY, "1.0" );
     private static final int PRIORITY = 0;
 
-    public FulltextindexProviderFactory()
+    public FulltextIndexProviderFactory()
     {
         super( KEY );
     }
@@ -62,8 +64,11 @@ public class FulltextindexProviderFactory extends KernelExtensionFactory<Fulltex
     {
         String analyzer = dependencies.getConfig().get( FulltextConfig.fulltext_default_analyzer );
 
-        return new FulltextIndexProvider( DESCRIPTOR, PRIORITY, subProviderDirectoryStructure( context.storeDir() ), dependencies.fileSystem(), analyzer,
-                dependencies.propertyKeyTokenHolder(), dependencies.logService(), dependencies.availabilityGuard(), dependencies.db(), dependencies.scheduler(), dependencies::transactionIdStore, context.storeDir() );
+        FulltextIndexProvider provider =
+                new FulltextIndexProvider( DESCRIPTOR, PRIORITY, subProviderDirectoryStructure( context.storeDir() ), dependencies.fileSystem(), analyzer,
+                        dependencies.propertyKeyTokenHolder(), dependencies.logService(), dependencies.availabilityGuard(), dependencies.db(),
+                        dependencies.scheduler(), dependencies::transactionIdStore, context.storeDir() );
+        return provider;
     }
 
     public interface Dependencies

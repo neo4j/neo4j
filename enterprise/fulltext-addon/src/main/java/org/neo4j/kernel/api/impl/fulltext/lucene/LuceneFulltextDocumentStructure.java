@@ -35,7 +35,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.apache.lucene.document.Field.Store.NO;
 
-class LuceneFulltextDocumentStructure
+public class LuceneFulltextDocumentStructure
 {
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
@@ -50,7 +50,7 @@ class LuceneFulltextDocumentStructure
         return doc;
     }
 
-    static Document documentRepresentingProperties( long id, Map<String,Object> values )
+    public static Document documentRepresentingProperties( long id, Map<String,Value> values )
     {
         DocWithId document = reuseDocument( id );
         document.setValues( values );
@@ -85,11 +85,11 @@ class LuceneFulltextDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValues( Map<String,Object> values )
+        private void setValues( Map<String,Value> values )
         {
-            for ( Map.Entry<String,Object> entry : values.entrySet() )
+            for ( Map.Entry<String,Value> entry : values.entrySet() )
             {
-                Field field = encodeValueField( entry.getKey(), Values.of( entry.getValue() ) );
+                Field field = encodeValueField( entry.getKey(), entry.getValue() );
                 document.add( field );
             }
         }

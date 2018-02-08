@@ -19,14 +19,20 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Predicate;
 
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.GENERAL;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.NON_SCHEMA;
+import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Filter.UNIQUE;
 
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
@@ -63,6 +69,14 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
                     public boolean test( IndexDescriptor index )
                     {
                         return index.type == Type.UNIQUE;
+                    }
+                },
+        NON_SCHEMA
+                {
+                    @Override
+                    public boolean test( IndexDescriptor index )
+                    {
+                        return index.type == Type.NON_SCHEMA;
                     }
                 },
         ANY

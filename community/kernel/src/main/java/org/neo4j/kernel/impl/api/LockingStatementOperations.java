@@ -416,12 +416,12 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
     {
         //TODO locking
 //        exclusiveLabelLock( state, descriptor.getLabelId() );
 //        state.assertOpen();
-        schemaWriteDelegate.nonSchemaIndexCreate( statement, indexDescriptor );
+        return schemaWriteDelegate.nonSchemaIndexCreate( statement, indexDescriptor );
     }
 
     @Override

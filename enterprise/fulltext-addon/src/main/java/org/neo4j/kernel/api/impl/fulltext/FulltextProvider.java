@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
 
 public interface FulltextProvider extends AutoCloseable
@@ -44,7 +45,7 @@ public interface FulltextProvider extends AutoCloseable
         }
 
         @Override
-        public void openIndex( String identifier, FulltextIndexType type ) throws IOException
+        public LuceneFulltext openIndex( String identifier, FulltextIndexType type ) throws IOException
         {
             throw noProvider();
         }
@@ -107,7 +108,7 @@ public interface FulltextProvider extends AutoCloseable
      */
     void awaitPopulation();
 
-    void openIndex( String identifier, FulltextIndexType type ) throws IOException;
+    LuceneFulltext openIndex( String identifier, FulltextIndexType type ) throws IOException;
 
     void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException;
 

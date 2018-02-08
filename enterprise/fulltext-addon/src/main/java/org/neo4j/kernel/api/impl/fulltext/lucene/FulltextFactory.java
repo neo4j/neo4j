@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.EntityType;
 
 /**
@@ -107,7 +108,7 @@ public class FulltextFactory
         return new LuceneFulltext( storage, partitionFactory, descriptor.propertyNames(), analyzer, descriptor.identifier(), getType( descriptor ) );
     }
 
-    public static FulltextIndexType getType( FulltextIndexDescriptor descriptor )
+    public static FulltextIndexType getType( IndexDescriptor descriptor )
     {
         return descriptor.schema().entityType() == EntityType.NODE ? FulltextIndexType.NODES : FulltextIndexType.RELATIONSHIPS;
     }

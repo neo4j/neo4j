@@ -107,8 +107,8 @@ class FulltextUpdateApplier extends LifecycleAdapter
     private static void updateDocument(
             PartitionedIndexWriter indexWriter, long entityId, Map<String,Object> properties ) throws IOException
     {
-        Document document = documentRepresentingProperties( entityId, properties );
-        indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
+//        Document document = documentRepresentingProperties( entityId, properties );
+//        indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
     }
 
     <E extends Entity> AsyncFulltextIndexOperation removePropertyData(
@@ -202,7 +202,8 @@ class FulltextUpdateApplier extends LifecycleAdapter
 
     private Supplier<Document> documentBuilder( long entityId, Map<String,Object> properties )
     {
-        return () -> documentRepresentingProperties( entityId, properties );
+//        return () -> documentRepresentingProperties( entityId, properties );
+        return null;
     }
 
     private Iterable<Document> reifyDocuments( ArrayList<Supplier<Document>> documents )

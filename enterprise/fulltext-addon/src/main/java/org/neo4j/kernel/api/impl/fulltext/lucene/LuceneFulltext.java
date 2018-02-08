@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,7 +40,7 @@ import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
-class LuceneFulltext extends AbstractLuceneIndex
+public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
 {
     private final Analyzer analyzer;
     private final String identifier;
@@ -119,7 +120,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return new PartitionedIndexWriter( writableIndex );
     }
 
-    ReadOnlyFulltext getIndexReader() throws IOException
+    public ReadOnlyFulltext getIndexReader() throws IOException
     {
         ensureOpen();
         List<AbstractIndexPartition> partitions = getPartitions();
@@ -172,7 +173,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return state;
     }
 
-    void setPopulated()
+    public void markAsOnline()
     {
         state = InternalIndexState.ONLINE;
     }

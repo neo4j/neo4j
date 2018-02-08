@@ -735,9 +735,9 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
     {
-        statement.txState().indexRuleDoAdd( indexDescriptor );
+        return statement.txState().indexRuleDoAdd( indexDescriptor );
     }
 
     @Override

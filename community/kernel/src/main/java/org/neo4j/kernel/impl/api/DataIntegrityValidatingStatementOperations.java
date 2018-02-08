@@ -226,12 +226,12 @@ public class DataIntegrityValidatingStatementOperations implements
     }
 
     @Override
-    public void nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
     {
         //TODO validate something?
 //        assertValidDescriptor( descriptor, OperationContext.INDEX_CREATION );
 //        assertIndexDoesNotExist( state, OperationContext.INDEX_CREATION, descriptor );
-        schemaWriteDelegate.nonSchemaIndexCreate( statement, indexDescriptor );
+        return schemaWriteDelegate.nonSchemaIndexCreate( statement, indexDescriptor );
     }
 
     private void assertIndexDoesNotExist( KernelStatement state, OperationContext context,

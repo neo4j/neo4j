@@ -78,7 +78,7 @@ public interface TransactionState extends ReadableTransactionState
 
     // SCHEMA RELATED
 
-    void indexRuleDoAdd( IndexDescriptor descriptor );
+    IndexDescriptor indexRuleDoAdd( IndexDescriptor descriptor );
 
     void indexDoDrop( IndexDescriptor descriptor );
 

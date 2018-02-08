@@ -303,6 +303,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean hasPropsBefore( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
+        boolean found = false;
         for ( int propertyId : propertyIds )
         {
             PropertyValue propertyValue = knownProperties.get( propertyId );
@@ -313,16 +314,17 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
                     return false;
                 }
             }
-            else if ( propertySchemaType == NON_SCHEMA_ANY )
+            else
             {
-                return true;
+                found = true;
             }
         }
-        return true;
+        return found;
     }
 
     private boolean hasPropsAfter( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
     {
+        boolean found = false;
         for ( int propertyId : propertyIds )
         {
             PropertyValue propertyValue = knownProperties.get( propertyId );
@@ -335,10 +337,10 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             }
             else if ( propertySchemaType == NON_SCHEMA_ANY )
             {
-                return true;
+                found = true;
             }
         }
-        return true;
+        return found;
     }
 
     private Value[] valuesBefore( int[] propertyIds )

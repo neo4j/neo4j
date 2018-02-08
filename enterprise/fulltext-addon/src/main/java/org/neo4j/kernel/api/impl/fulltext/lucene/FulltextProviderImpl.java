@@ -202,6 +202,7 @@ public class FulltextProviderImpl implements FulltextProvider
 
     private boolean matchesConfiguration( WritableFulltext index ) throws IOException
     {
+        System.out.println( "writableNodeIndices = " + writableNodeIndices );
         long txId = transactionIdStore.getLastCommittedTransactionId();
         FulltextIndexConfiguration currentConfig = new FulltextIndexConfiguration( index.getAnalyzerName(), index.getProperties(), txId );
 
@@ -215,7 +216,8 @@ public class FulltextProviderImpl implements FulltextProvider
 
     @Override
     public void awaitPopulation()
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         try
         {
             applier.writeBarrier().awaitCompletion();
@@ -231,27 +233,33 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void openIndex( String identifier, FulltextIndexType type ) throws IOException
-    {
+    public LuceneFulltext openIndex( String identifier, FulltextIndexType type ) throws IOException
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         LuceneFulltext index = factory.openFulltextIndex( identifier, type );
         register( index );
+        return index;
     }
 
     @Override
     public void createIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         LuceneFulltext index = factory.createFulltextIndex( identifier, type, properties );
         register( index );
     }
 
-    public void createIndex( FulltextIndexDescriptor schema ) throws IOException
-    {
+    public LuceneFulltext createIndexNoOpen( FulltextIndexDescriptor schema ) throws IOException
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         LuceneFulltext index = factory.createFulltextIndex( schema );
-        register( index );
+        registerNoOpen( index );
+        return index;
     }
 
     private void register( LuceneFulltext fulltextIndex ) throws IOException
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         configurationLock.writeLock().lock();
         try
         {
@@ -292,29 +300,56 @@ public class FulltextProviderImpl implements FulltextProvider
         }
     }
 
+    private void registerNoOpen( LuceneFulltext fulltextIndex ) throws IOException
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
+        try
+        {
+            WritableFulltext writableFulltext = new WritableFulltext( fulltextIndex );
+            if ( fulltextIndex.getType() == FulltextIndexType.NODES )
+            {
+                writableNodeIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
+                nodeProperties.addAll( fulltextIndex.getProperties() );
+            }
+            else
+            {
+                writableRelationshipIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
+                relationshipProperties.addAll( fulltextIndex.getProperties() );
+            }
+        }
+        finally
+        {
+        }
+    }
+
     String[] getNodeProperties()
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         return nodeProperties.toArray( new String[0] );
     }
 
     String[] getRelationshipProperties()
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         return relationshipProperties.toArray( new String[0] );
     }
 
     Collection<WritableFulltext> writableNodeIndices()
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         return Collections.unmodifiableCollection( writableNodeIndices.values() );
     }
 
     Collection<WritableFulltext> writableRelationshipIndices()
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         return Collections.unmodifiableCollection( writableRelationshipIndices.values() );
     }
 
     @Override
     public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         WritableFulltext writableFulltext = getIndexMap( type ).get( identifier );
         if ( writableFulltext == null )
         {
@@ -324,7 +359,8 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     private Map<String,WritableFulltext> getIndexMap( FulltextIndexType type )
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         switch ( type )
         {
         case NODES:
@@ -343,7 +379,8 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<WritableFulltext,E> function )
-    {
+    {        System.out.println( "writableNodeIndices = " + writableNodeIndices );
+
         if ( type == FulltextIndexType.NODES )
         {
             return function.apply( writableNodeIndices.get( identifier ) );

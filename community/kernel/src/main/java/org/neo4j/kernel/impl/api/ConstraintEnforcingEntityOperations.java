@@ -631,9 +631,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public void nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
+    public IndexDescriptor nonSchemaIndexCreate( KernelStatement statement, IndexDescriptor indexDescriptor )
     {
-        schemaWriteOperations.nonSchemaIndexCreate( statement, indexDescriptor );
+        return schemaWriteOperations.nonSchemaIndexCreate( statement, indexDescriptor );
     }
 
     @Override

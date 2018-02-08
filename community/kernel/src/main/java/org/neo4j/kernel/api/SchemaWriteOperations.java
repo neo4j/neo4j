@@ -68,5 +68,5 @@ public interface SchemaWriteOperations
 
     void constraintDrop( ConstraintDescriptor constraint ) throws DropConstraintFailureException;
 
-    void nonSchemaIndexCreate( IndexDescriptor fulltextIndexDescriptor );
+    IndexDescriptor nonSchemaIndexCreate( IndexDescriptor nonSchemaIndexDescriptor );
 }

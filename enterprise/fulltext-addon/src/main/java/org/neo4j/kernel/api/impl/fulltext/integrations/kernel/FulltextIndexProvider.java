@@ -21,8 +21,11 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -32,6 +35,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextProviderImpl;
+import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -46,13 +50,11 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory.getType;
-
 public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor>
 {
     private final FulltextFactory factory;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private final FulltextProviderImpl oldProvider;
+    private Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
 
     protected FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory,
             FileSystemAbstraction fileSystem, String analyzerClassName, PropertyKeyTokenHolder propertyKeyTokenHolder, LogService logging,
@@ -61,9 +63,14 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     {
         super( descriptor, priority, directoryStructureFactory );
         Log log = logging.getInternalLog( FulltextProviderImpl.class );
-        this.oldProvider = new FulltextProviderImpl( db, log, availabilityGuard, scheduler, transactionIdStore, fileSystem, storeDir, analyzerClassName );
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         factory = new FulltextFactory( fileSystem, directoryStructure().rootDirectory(), analyzerClassName );
+        accessors = new HashMap<FulltextIndexDescriptor,FulltextIndexAccessor>();
+    }
+
+    public PrimitiveLongIterator query( IndexDescriptor descriptor, String query ) throws IOException
+    {
+        return accessors.get( descriptor ).query(query);
     }
 
     @Override
@@ -82,14 +89,19 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     @Override
     public IndexPopulator getPopulator( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        //factory.createFulltextIndex( descriptor );
-        return new FulltextIndexPopulator(indexId, descriptor, samplingConfig, oldProvider);
+        WritableFulltext fulltextIndex = new WritableFulltext(factory.createFulltextIndex( descriptor ));
+        return new FulltextIndexPopulator( indexId, descriptor, samplingConfig, fulltextIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, FulltextIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        throw new IllegalStateException( "Not implemented" );
+        WritableFulltext fulltextIndex = new WritableFulltext(factory.createFulltextIndex( descriptor ));
+        fulltextIndex.open();
+
+        FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex );
+        accessors.put( descriptor, fulltextIndexAccessor );
+        return fulltextIndexAccessor;
     }
 
     @Override
@@ -101,15 +113,8 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     @Override
     public InternalIndexState getInitialState( long indexId, FulltextIndexDescriptor descriptor )
     {
-        try
-        {
-            oldProvider.openIndex( descriptor.identifier(), FulltextFactory.getType(descriptor) );
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace(  );
-        }
-        return oldProvider.getState( descriptor.identifier(), getType( descriptor )  );
+        System.out.println( "internal index state" );
+        return InternalIndexState.ONLINE;
     }
 
     @Override

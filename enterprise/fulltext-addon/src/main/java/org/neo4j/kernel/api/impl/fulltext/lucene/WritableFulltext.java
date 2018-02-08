@@ -26,11 +26,11 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
-class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
+public class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 {
     private PartitionedIndexWriter indexWriter;
 
-    WritableFulltext( LuceneFulltext luceneFulltext ) throws IOException
+    public WritableFulltext( LuceneFulltext luceneFulltext )
     {
         super( luceneFulltext );
     }
@@ -56,7 +56,13 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         indexWriter = null;
     }
 
-    PartitionedIndexWriter getIndexWriter()
+
+    public void markAsOnline()
+    {
+        luceneIndex.markAsOnline();
+    }
+
+    public PartitionedIndexWriter getIndexWriter()
     {
         return indexWriter;
     }
@@ -68,7 +74,7 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 
     void setPopulated()
     {
-        luceneIndex.setPopulated();
+        luceneIndex.markAsOnline();
     }
 
     void setFailed()
@@ -76,7 +82,7 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         luceneIndex.setFailed();
     }
 
-    ReadOnlyFulltext getIndexReader() throws IOException
+    public ReadOnlyFulltext getIndexReader() throws IOException
     {
         return luceneIndex.getIndexReader();
     }

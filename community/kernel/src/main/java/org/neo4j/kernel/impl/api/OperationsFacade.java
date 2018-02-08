@@ -997,10 +997,10 @@ public class OperationsFacade
     }
 
     @Override
-    public void nonSchemaIndexCreate( IndexDescriptor indexDescriptor )
+    public IndexDescriptor nonSchemaIndexCreate( IndexDescriptor indexDescriptor )
     {
         statement.assertOpen();
-        schemaWrite().nonSchemaIndexCreate( statement, indexDescriptor );
+        return schemaWrite().nonSchemaIndexCreate( statement, indexDescriptor );
     }
 
     // </SchemaWrite>
