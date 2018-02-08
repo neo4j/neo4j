@@ -24,6 +24,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
@@ -32,6 +33,7 @@ import org.neo4j.logging.Log;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
+@Ignore
 public class NettyPipelineBuilderTest
 {
     private AssertableLogProvider logProvider = new AssertableLogProvider();
