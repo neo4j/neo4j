@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
  * The Resource Allocation Graph manager is used for deadlock detection. It
@@ -69,9 +68,7 @@ public class RagManager
     // stopWaitOn( resource ) method must be invoked
 
     private final Map<Object,List<Object>> resourceMap = new HashMap<>();
-
-    private final ArrayMap<Object,Object> waitingTxMap =
-            new ArrayMap<>( (byte) 5, false, true );
+    private final Map<Object, Object> waitingTxMap = new HashMap<>();
 
     synchronized void lockAcquired( Object resource, Object tx )
     {
