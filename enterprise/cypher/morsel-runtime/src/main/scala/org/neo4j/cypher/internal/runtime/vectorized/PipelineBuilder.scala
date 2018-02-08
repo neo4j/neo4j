@@ -56,6 +56,13 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           slots.getLongOffsetFor(column),
           LazyLabel(label)(SemanticTable()))
 
+      case plans.NodeIndexSeek(column, label, propertyKeys, SingleQueryExpression(valueExpr),  _) if propertyKeys.size == 1 =>
+        new NodeIndexSeekOperator(
+          slots.numberOfLongs,
+          slots.numberOfReferences,
+          slots.getLongOffsetFor(column),
+          label, propertyKeys.head, converters.toCommandExpression(valueExpr))
+
       case plans.Argument(_) =>
         new ArgumentOperator
     }
