@@ -22,15 +22,10 @@ package org.neo4j.bolt.v1.runtime.integration;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.test.rule.SuppressOutput;
@@ -42,7 +37,7 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
-public class BoltConfigIT
+public class BoltConfigIT extends AbstractBoltTransportsTest
 {
     private static final String ANOTHER_CONNECTOR_KEY = "1";
 
@@ -61,27 +56,14 @@ public class BoltConfigIT
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
-    private final TransportTestUtil util = new TransportTestUtil( new Neo4jPackV1() );
-
     @Test
     public void shouldSupportMultipleConnectors() throws Throwable
     {
-        // Given
-        // When
-
-        // Then
         HostnamePort address0 = server.lookupConnector( DEFAULT_CONNECTOR_KEY );
-        assertConnectionAccepted( address0, new WebSocketConnection() );
-        assertConnectionAccepted( address0, new SecureWebSocketConnection() );
-        assertConnectionAccepted( address0, new SocketConnection() );
-        assertConnectionAccepted( address0, new SecureSocketConnection() );
+        assertConnectionAccepted( address0, newConnection() );
 
         HostnamePort address1 = server.lookupConnector( ANOTHER_CONNECTOR_KEY );
-        assertConnectionRejected( address1, new WebSocketConnection() );
-        assertConnectionAccepted( address1, new SecureWebSocketConnection() );
-        assertConnectionRejected( address1, new SocketConnection() );
-        assertConnectionAccepted( address1, new SecureSocketConnection() );
-
+        assertConnectionRejected( address1, newConnection() );
     }
 
     private void assertConnectionRejected( HostnamePort address, TransportConnection client ) throws Exception

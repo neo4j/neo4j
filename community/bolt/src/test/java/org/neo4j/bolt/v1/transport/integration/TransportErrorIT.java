@@ -19,29 +19,17 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
-import java.util.Collection;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.function.Factory;
-import org.neo4j.helpers.HostnamePort;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -49,41 +37,15 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
-@RunWith( Parameterized.class )
-public class TransportErrorIT
+public class TransportErrorIT extends AbstractBoltTransportsTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass() );
 
-    @Parameterized.Parameter
-    public Factory<TransportConnection> cf;
-
-    private HostnamePort address;
-    private TransportConnection client;
-    private TransportTestUtil util;
-
-    @Parameterized.Parameters
-    public static Collection<Factory<TransportConnection>> transports()
-    {
-        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
-                SecureWebSocketConnection::new );
-    }
-
     @Before
     public void setup()
     {
-        this.client = cf.newInstance();
-        this.address = server.lookupDefaultConnector();
-        this.util = new TransportTestUtil( new Neo4jPackV1() );
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
+        address = server.lookupDefaultConnector();
     }
 
     @Test
@@ -94,13 +56,13 @@ public class TransportErrorIT
         truncated = Arrays.copyOf(truncated, truncated.length - 12);
 
         // When
-        client.connect( address )
+        connection.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk( 32, truncated ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -118,13 +80,13 @@ public class TransportErrorIT
         byte[] invalidMessage = rawData.getBytes();
 
         // When
-        client.connect( address )
+        connection.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -141,13 +103,13 @@ public class TransportErrorIT
         byte[] invalidMessage = rawData.getBytes();
 
         // When
-        client.connect( address )
+        connection.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -165,12 +127,12 @@ public class TransportErrorIT
         byte[] invalidMessage = rawData.getBytes();
 
         // When
-        client.connect( address )
+        connection.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, eventuallyDisconnects() );
     }
 }

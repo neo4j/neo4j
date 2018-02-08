@@ -21,25 +21,16 @@ package org.neo4j.bolt.v1.transport.integration;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -58,7 +49,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,8 +59,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-@RunWith( Parameterized.class )
-public class BoltChannelAutoReadLimiterIT
+public class BoltChannelAutoReadLimiterIT extends AbstractBoltTransportsTest
 {
     private AssertableLogProvider logProvider;
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -79,18 +68,7 @@ public class BoltChannelAutoReadLimiterIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
-    @Parameterized.Parameter
-    public TransportConnection connection;
-
     private HostnamePort address;
-    private TransportTestUtil util;
-
-    @Parameterized.Parameters
-    public static Collection<TransportConnection> transports()
-    {
-        return asList( new SecureSocketConnection(), new SocketConnection(), new SecureWebSocketConnection(),
-                new WebSocketConnection() );
-    }
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
@@ -104,7 +82,7 @@ public class BoltChannelAutoReadLimiterIT
 
     }
 
-    protected Consumer<Map<String, String>> getSettingsFunction()
+    protected Consumer<Map<String,String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
     }
@@ -115,23 +93,13 @@ public class BoltChannelAutoReadLimiterIT
         installSleepProcedure( server.graphDatabaseService() );
 
         address = server.lookupDefaultConnector();
-        util = new TransportTestUtil( new Neo4jPackV1() );
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        if ( connection != null )
-        {
-            connection.disconnect();
-        }
     }
 
     @Test
     public void largeNumberOfSlowRunningJobsShouldChangeAutoReadState() throws Exception
     {
         int numberOfRunDiscardPairs = 1000;
-        String largeString = StringUtils.repeat( " ", 8 * 1024  );
+        String largeString = StringUtils.repeat( " ", 8 * 1024 );
 
         connection.connect( address )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
@@ -170,7 +138,7 @@ public class BoltChannelAutoReadLimiterIT
 
         dbApi.getDependencyResolver().resolveDependency( Procedures.class ).register(
                 new CallableProcedure.BasicProcedure(
-                        procedureSignature("boltissue", "sleep")
+                        procedureSignature( "boltissue", "sleep" )
                                 .in( "data", Neo4jTypes.NTString )
                                 .out( ProcedureSignature.VOID )
                                 .build() )
