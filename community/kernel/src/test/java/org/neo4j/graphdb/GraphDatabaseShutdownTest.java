@@ -122,8 +122,9 @@ public class GraphDatabaseShutdownTest
                 // Wait for T3 to start waiting for this node write lock
                 t3.get().waitUntilWaiting( details -> details.isAt( CommunityLockClient.class, "acquireExclusive" ) );
 
-                shutdownCalled.countDown();
                 db.shutdown();
+
+                shutdownCalled.countDown();
                 tx.success();
             }
             return null;
@@ -139,14 +140,12 @@ public class GraphDatabaseShutdownTest
                 // T2 awaits this thread to get into a waiting state for this node write lock
                 node.addLabel( label( "DEF" ) );
 
+                shutdownCalled.await();
                 tx.success();
             }
             return null;
         } );
 
-        // THEN
-        // tx in second thread should fail in reasonable time
-        shutdownCalled.await();
         // start waiting when the trap has been triggered
         try
         {
