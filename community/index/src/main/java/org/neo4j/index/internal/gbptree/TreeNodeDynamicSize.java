@@ -225,7 +225,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         removeSlotAt( cursor, pos, keyCount, keyPosOffsetLeaf( 0 ), bytesKeyOffset() );
     }
 
-
     @Override
     void removeKeyAndRightChildAt( PageCursor cursor, int keyPos, int keyCount )
     {
