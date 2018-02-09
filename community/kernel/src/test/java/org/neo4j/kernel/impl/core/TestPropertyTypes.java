@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,6 +40,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.kernel.impl.store.TimeZoneMapping;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -595,8 +595,21 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
-    // TODO unignore next 2 when zone IDs are supported in the property store
-    @Ignore
+    /**
+     * Update {@link TimeZoneMapping#TIME_ZONE_SHORT_TO_STRING} if this test fails.
+     * To do that, run {@link ZoneId#getAvailableZoneIds()} and add new time zones
+     * at the end.
+     *
+     * After that, change the test to expect the new Java version.
+     */
+    @Test
+    public void timeZoneTokenListIsUpToDate()
+    {
+        assertEquals( "When updating to a new Java version, make sure to update to time zone mappings.",
+                "1.8", Runtime.class.getPackage().getSpecificationVersion() );
+    }
+
+    @Test
     public void testDateTimeTypeWithZoneId()
     {
         DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, ZoneId.of( "Europe/Stockholm" ) );
@@ -608,7 +621,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( dateTime.asObjectCopy(), property );
     }
 
-    @Ignore
+    @Test
     public void testDateTimeArrayWithZoneOffsetAndZoneID()
     {
         ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),

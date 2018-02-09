@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -244,22 +245,18 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                        int nanoOfSecond = (int) (valueBlocks[offset] >>> 33);
+                        long epochSecond = valueBlocks[1 + offset];
+                        short zoneNumber = (short) valueBlocks[2 + offset];
+                        return DateTimeValue.datetime( epochSecond, nanoOfSecond,
+                                ZoneId.of( TimeZoneMapping.TIME_ZONE_SHORT_TO_STRING.get( zoneNumber ) ) );
                     }
                 }
 
                 @Override
                 public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
                 {
-                    if ( storingZoneOffset( firstBlock ) )
-                    {
-                        return 3;
-                    }
-                    else
-                    {
-                        // TODO proper number
-                        return 3;
-                    }
+                    return 3;
                 }
 
                 @Override
@@ -282,7 +279,9 @@ public enum TemporalType
                             }
                             else
                             {
-                                throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                                short zoneNumber = (short) (zoneValue >>> 1);
+                                dateTimes[i] = ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nanos ),
+                                        ZoneId.of( TimeZoneMapping.TIME_ZONE_SHORT_TO_STRING.get( zoneNumber ) ) );
                             }
                         }
                         return Values.dateTimeArray( dateTimes );
@@ -469,7 +468,19 @@ public enum TemporalType
 
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, String zoneId )
     {
-        throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+        int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
+        short zoneNumber = TimeZoneMapping.TIME_ZONE_STRING_TO_SHORT.get( zoneId );
+
+        long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
+        long temporalTypeBits = TemporalType.TEMPORAL_DATE_TIME.temporalType << (idBits + 4);
+
+        long[] data = new long[3];
+        // nanoOfSecond will never require more than 30 bits
+        data[0] = keyAndType | temporalTypeBits | (nanoOfSecond << 33);
+        data[1] = epochSecond;
+        data[2] = zoneNumber;
+
+        return data;
     }
 
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, int secondOffset )
@@ -563,7 +574,7 @@ public enum TemporalType
 
     public static byte[] encodeTimeArray( OffsetTime[] times )
     {
-        // TODO this sucks in terms of cache locality
+        // This way of storing sucks in terms of cache locality
         long[] data = new long[(int) (Math.ceil( times.length * 1.25 ))];
         // First all nano of days (each is a long)
         int i;
@@ -591,7 +602,7 @@ public enum TemporalType
 
     public static byte[] encodeDateTimeArray( ZonedDateTime[] dateTimes )
     {
-        // TODO we can store this in dateTimes.length * 2.25
+        // We could store this in dateTimes.length * 2.25 if we wanted
         long[] data = new long[dateTimes.length * 3];
 
         int i;
@@ -608,8 +619,10 @@ public enum TemporalType
             }
             else
             {
+                String timeZoneId = dateTimes[i].getZone().getId();
+                short zoneNumber = TimeZoneMapping.TIME_ZONE_STRING_TO_SHORT.get( timeZoneId );
                 // Set lowest bit to 0 means zone id
-                throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                data[i * 3 + 2] = zoneNumber << 1;
             }
         }
 
