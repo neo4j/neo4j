@@ -27,14 +27,16 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -81,6 +83,20 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
+    public IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+            throws IndexNotApplicableKernelException
+    {
+        try
+        {
+            return partitionedIndexProgressorOperation( reader -> innerQuery( reader, client, predicates ) );
+        }
+        catch ( InnerException e )
+        {
+            throw e.getCause();
+        }
+    }
+
+    @Override
     public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
         return false;
@@ -91,6 +107,18 @@ public class PartitionedIndexReader extends AbstractIndexReader
         try
         {
             return reader.query( predicates );
+        }
+        catch ( IndexNotApplicableKernelException e )
+        {
+            throw new InnerException( e );
+        }
+    }
+
+    private IndexProgressor innerQuery( IndexReader reader, IndexProgressor.NodeValueClient client, IndexQuery[] predicates )
+    {
+        try
+        {
+            return reader.query( client, predicates );
         }
         catch ( IndexNotApplicableKernelException e )
         {
@@ -146,6 +174,14 @@ public class PartitionedIndexReader extends AbstractIndexReader
             Function<SimpleIndexReader,PrimitiveLongResourceIterator> readerFunction )
     {
         return PrimitiveLongResourceCollections.concat( indexReaders.parallelStream()
+                .map( readerFunction )
+                .collect( Collectors.toList() ) );
+    }
+
+    private IndexProgressor partitionedIndexProgressorOperation(
+            Function<SimpleIndexReader,IndexProgressor> readerFunction )
+    {
+        return IndexProgressors.concat( indexReaders.parallelStream()
                 .map( readerFunction )
                 .collect( Collectors.toList() ) );
     }

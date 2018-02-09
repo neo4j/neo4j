@@ -72,6 +72,13 @@ public class DefaultIndexReaderTest
             }
 
             @Override
+            public IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+                    throws IndexNotApplicableKernelException
+            {
+                return null;
+            }
+
+            @Override
             public boolean hasFullNumberPrecision( IndexQuery... predicates )
             {
                 return false;

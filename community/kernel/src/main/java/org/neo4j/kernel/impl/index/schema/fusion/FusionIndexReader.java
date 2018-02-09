@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressors;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -109,6 +110,38 @@ class FusionIndexReader implements IndexReader
         }
 
         return luceneReader.query( predicates );
+    }
+
+    @Override
+    public IndexProgressor query( IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+            throws IndexNotApplicableKernelException
+    {
+        if ( predicates.length > 1 )
+        {
+            return luceneReader.query( client, predicates );
+        }
+
+        if ( predicates[0] instanceof ExactPredicate )
+        {
+            ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
+            return selector.select( nativeReader, luceneReader, exactPredicate.value() ).query( client, predicates );
+        }
+
+        if ( predicates[0] instanceof NumberRangePredicate )
+        {
+            return nativeReader.query(client, predicates[0] );
+        }
+
+        // todo: There will be no ordering of the node ids here. Is this a problem?
+        if ( predicates[0] instanceof ExistsPredicate )
+        {
+            IndexProgressor nativeResult = nativeReader.query( client, predicates[0] );
+            IndexProgressor luceneResult = luceneReader.query( client, predicates[0] );
+
+            return IndexProgressors.concat( nativeResult, luceneResult );
+        }
+
+        return luceneReader.query( client, predicates );
     }
 
     @Override
