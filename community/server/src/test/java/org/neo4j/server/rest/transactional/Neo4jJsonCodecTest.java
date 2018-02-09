@@ -34,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.SpatialMocks;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
@@ -47,6 +47,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
 
 public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
 {
@@ -229,7 +231,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testGeographicPointWriting() throws IOException
     {
         //Given
-        Point value = new MockPoint( 12.3, 45.6, mockWGS84() );
+        Point value = new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );
@@ -242,7 +244,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testCartesianPointWriting() throws IOException
     {
         //Given
-        Point value = new MockPoint( 123.0, 456.0, mockCartesian() );
+        Point value = new SpatialMocks.MockPoint( 123.0, 456.0, mockCartesian() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );
@@ -258,7 +260,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         List<Coordinate> points = new ArrayList<>();
         points.add( new Coordinate( 1, 2 ) );
         points.add( new Coordinate( 2, 3 ) );
-        Geometry value = new MockGeometry( "LineString", points, mockCartesian() );
+        Geometry value = new SpatialMocks.MockGeometry( "LineString", points, mockCartesian() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );
@@ -266,80 +268,4 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         //Then
         verify( jsonGenerator, times( 3 ) ).writeEndObject();
     }
-
-    public static CRS mockWGS84()
-    {
-        return mockCRS( 4326, "WGS-84", "http://spatialreference.org/ref/epsg/4326/" );
-    }
-
-    public static CRS mockCartesian()
-    {
-        return mockCRS( 7203, "cartesian", "http://spatialreference.org/ref/sr-org/7203/" );
-    }
-
-    public static CRS mockCRS( final int code, final String type, final String href )
-    {
-        return new CRS()
-        {
-            public int getCode()
-            {
-                return code;
-            }
-
-            public String getType()
-            {
-                return type;
-            }
-
-            public String getHref()
-            {
-                return href;
-            }
-        };
-    }
-
-    public static class MockPoint extends MockGeometry implements Point
-    {
-        private final Coordinate coordinate;
-
-        public MockPoint( final double x, final double y, final CRS crs )
-        {
-            super( "Point", new ArrayList<>(), crs );
-            this.coordinate = new Coordinate( x, y );
-            this.coordinates.add( this.coordinate );
-        }
-    }
-
-    public static class MockGeometry implements Geometry
-    {
-        protected final String geometryType;
-        protected final CRS crs;
-        protected final List<Coordinate> coordinates;
-
-        public MockGeometry( String geometryType, final List<Coordinate> coordinates, final CRS crs )
-        {
-            this.geometryType = geometryType;
-            this.coordinates = coordinates;
-            this.crs = crs;
-        }
-
-        @Override
-        public String getGeometryType()
-        {
-            return geometryType;
-        }
-
-        @Override
-        public List<Coordinate> getCoordinates()
-        {
-            return coordinates;
-        }
-
-        @Override
-        public CRS getCRS()
-        {
-            return crs;
-        }
-    }
-
 }

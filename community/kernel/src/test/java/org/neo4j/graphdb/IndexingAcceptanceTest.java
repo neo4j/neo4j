@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.ReadOperations;
@@ -44,12 +45,17 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.SpatialMocks.mockCartesian;
+import static org.neo4j.graphdb.SpatialMocks.mockWGS84;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -353,6 +359,10 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, 12L );
         assertCanCreateAndFind( db, LABEL1, property, (float)12. );
         assertCanCreateAndFind( db, LABEL1, property, 12. );
+        assertCanCreateAndFind( db, LABEL1, property, new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() ) );
+        assertCanCreateAndFind( db, LABEL1, property, new SpatialMocks.MockPoint( 123, 456, mockCartesian() ) );
+        assertCanCreateAndFind( db, LABEL1, property, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
+        assertCanCreateAndFind( db, LABEL1, property, Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 ) );
 
         assertCanCreateAndFind( db, LABEL1, property, new String[]{"A String"} );
         assertCanCreateAndFind( db, LABEL1, property, new boolean[]{true} );
@@ -371,6 +381,10 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, new Float[]{(float)19.} );
         assertCanCreateAndFind( db, LABEL1, property, new double[]{20.} );
         assertCanCreateAndFind( db, LABEL1, property, new Double[]{21.} );
+        assertCanCreateAndFind( db, LABEL1, property, new Point[]{new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() )} );
+        assertCanCreateAndFind( db, LABEL1, property, new Point[]{new SpatialMocks.MockPoint( 123, 456, mockCartesian() )} );
+        assertCanCreateAndFind( db, LABEL1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 )} );
+        assertCanCreateAndFind( db, LABEL1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 )} );
     }
 
     @Test

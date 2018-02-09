@@ -27,6 +27,9 @@ import java.util.Collections;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.EMPTY_LIST;
@@ -94,6 +97,42 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         assertThat( query( range( 1, (String)null, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
         assertThat( query( range( 1, "Anabelle", false, "Anna", true ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( range( 1, "Anabelle", false, "Bob", false ) ), equalTo( singletonList( 2L ) ) );
+    }
+
+    @Ignore
+    public void testIndexSeekByPoint() throws Exception
+    {
+        PointValue gpsPP = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
+        PointValue gpsNP = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, 56.7 );
+        PointValue gpsPN = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, -56.7 );
+        PointValue gpsNN = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -56.7 );
+        PointValue gps00 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 );
+        PointValue car2D = Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 );
+        PointValue car3D = Values.pointValue( CoordinateReferenceSystem.Cartesian, 12, 34, 56 );
+        updateAndCommit( asList(
+                add( 1L, descriptor.schema(), gpsPP ),
+                add( 2L, descriptor.schema(), gpsNP ),
+                add( 3L, descriptor.schema(), gpsPN ),
+                add( 4L, descriptor.schema(), gpsNN ),
+                add( 5L, descriptor.schema(), car2D ),
+                add( 6L, descriptor.schema(), car3D ) ) );
+
+        assertThat( query( range( 1, gpsNN, true, gpsPP, true ) ), equalTo( asList( 1L, 2L, 3L, 4L ) ) );
+        assertThat( query( range( 1, gpsNN, true, null, true ) ), equalTo( asList( 1L, 2L, 3L, 4L ) ) );
+        assertThat( query( range( 1, gpsNN, true, null, false ) ), equalTo( asList( 1L, 2L, 3L, 4L ) ) );
+        assertThat( query( range( 1, gpsNN, true, gpsPP, false ) ), equalTo( singletonList( 4L ) ) );
+        assertThat( query( range( 1, gpsPP, true, null, false ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( range( 1, gpsPP, false, null, false ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( range( 1, gpsNP, true, gpsPP, true ) ), equalTo( asList( 1L, 2L ) ) );
+        assertThat( query( range( 1, gpsNP, true, gpsPP, false ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( range( 1, null, true, gpsPP, false ) ), equalTo( singletonList( 4L ) ) );
+        assertThat( query( range( 1, null, false, gpsPP, true ) ), equalTo( asList( 1L, 2L, 3L, 4L ) ) );
+        assertThat( query( range( 1, gps00, false, null, true ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( range( 1, null, false, gps00, false ) ), equalTo( singletonList( 4L ) ) );
+        assertThat( query( range( 1, car2D, true, null, true ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( range( 1, car3D, true, null, true ) ), equalTo( singletonList( 6L ) ) );
+        assertThat( query( range( 1, null, true, car2D, true ) ), equalTo( singletonList( 5L ) ) );
+        assertThat( query( range( 1, null, true, car3D, true ) ), equalTo( singletonList( 6L ) ) );
     }
 
     @Test
