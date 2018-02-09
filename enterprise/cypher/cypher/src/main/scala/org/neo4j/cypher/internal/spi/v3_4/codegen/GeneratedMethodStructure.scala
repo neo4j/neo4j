@@ -44,9 +44,7 @@ import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.api.ReadOperations
-import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
@@ -111,8 +109,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       HashTable(valueType, listType, tableType, get, put, add)
   }
 
-  override def nextNode(targetVar: String, iterVar: String) =
-    generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), nextLong))
+  override def nodeFromNodeValueIndexCursor(targetVar: String, iterVar: String) =
+    generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar),
+                                                      method[NodeValueIndexCursor, Long]("nodeReference")))
 
   override def nodeFromNodeCursor(targetVar: String, iterVar: String) =
     generator.assign(typeRef[Long], targetVar, invoke(generator.load(iterVar), method[NodeCursor, Long]("nodeReference")))
@@ -129,8 +128,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(typeRef[Long], relVar, invoke(generator.load(cursor),
                                                    method[RelationshipSelectionCursor, Long]("relationshipReference")))
   }
-
-  private def relExtractor(relVar: String) = s"${relVar}Extractor"
   private def relCursor(relVar: String) = s"${relVar}Iter"
 
   override def nextRelationship(iterVar: String, ignored: SemanticDirection, relVar: String) = {
@@ -157,19 +154,16 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def lookupLabelId(labelIdVar: String, labelName: String) =
     generator.assign(typeRef[Int], labelIdVar,
-                     invoke(readOperations, labelGetForName, constant(labelName)))
+                     invoke(tokenRead, labelGetForName, constant(labelName)))
 
   override def lookupLabelIdE(labelName: String): Expression =
-    invoke(readOperations, labelGetForName, constant(labelName))
+    invoke(tokenRead, labelGetForName, constant(labelName))
 
   override def lookupRelationshipTypeId(typeIdVar: String, typeName: String) =
-    generator.assign(typeRef[Int], typeIdVar, invoke(readOperations, relationshipTypeGetForName, constant(typeName)))
+    generator.assign(typeRef[Int], typeIdVar, invoke(tokenRead, relationshipTypeGetForName, constant(typeName)))
 
   override def lookupRelationshipTypeIdE(typeName: String) =
-    invoke(readOperations, relationshipTypeGetForName, constant(typeName))
-
-  override def hasNextNode(iterVar: String) =
-    invoke(generator.load(iterVar), hasNextLong)
+    invoke(tokenRead, relationshipTypeGetForName, constant(typeName))
 
   override def advanceNodeCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[NodeCursor, Boolean]("next"))
@@ -180,6 +174,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def advanceRelationshipSelectionCursor(iterVar: String) =
     invoke(generator.load(iterVar), method[RelationshipSelectionCursor, Boolean]("next"))
 
+  override def advanceNodeValueIndexCursor(iterVar: String) =
+    invoke(generator.load(iterVar), method[NodeValueIndexCursor, Boolean]("next"))
 
   override def whileLoop(test: Expression)(block: MethodStructure[Expression] => Unit) =
     using(generator.whileLoop(test)) { body =>
@@ -550,6 +546,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def dataRead: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[Read], "getOrLoadDataRead"))
+
+  private def tokenRead: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[TokenRead], "getOrLoadTokenRead"))
+
+  private def schemaRead: Expression =
+    invoke(generator.self(), methodReference(generator.owner(), typeRef[SchemaRead], "getOrLoadSchemaRead"))
 
   private def cursors: Expression =
     invoke(generator.self(), methodReference(generator.owner(), typeRef[CursorFactory], "getOrLoadCursors"))
@@ -1364,7 +1366,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relCursor(relVar)),  method[RelationshipSelectionCursor, Int]("type"))
     handleKernelExceptions(generator, fields, _finalizers) { inner =>
-      val res = invoke(readOperations, relationshipTypeGetName, typeOfRel)
+      val res = invoke(tokenRead, relationshipTypeGetName, typeOfRel)
       inner.assign(variable, res)
       generator.load(variable.name())
     }
@@ -1436,7 +1438,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
     using(generator.ifStatement(and(
       gt(generator.load(nodeIdVar), constant(-1L)),
-      invoke(readOperations, nodeExists, generator.load(nodeIdVar))
+      invoke(dataRead, nodeExists, generator.load(nodeIdVar))
     ))) { ifBody =>
       block(copy(generator = ifBody))
     }
@@ -1469,29 +1471,35 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def lookupPropertyKey(propName: String, propIdVar: String) =
-    generator.assign(typeRef[Int], propIdVar, invoke(readOperations, propertyKeyGetForName, constant(propName)))
+    generator.assign(typeRef[Int], propIdVar, invoke(tokenRead, propertyKeyGetForName, constant(propName)))
 
-  override def newIndexDescriptor(descriptorVar: String, labelVar: String, propKeyVar: String) = {
-    val getIndexDescriptor = method[IndexDescriptorFactory, IndexDescriptor]("forLabel", typeRef[Int], typeRef[Array[Int]])
+  override def newIndexReference(referenceVar: String, labelVar: String, propKeyVar: String) = {
     val propertyIdsExpr = Expression.newArray(typeRef[Int], generator.load(propKeyVar))
-    generator.assign(typeRef[IndexDescriptor], descriptorVar,
-                      invoke(getIndexDescriptor, generator.load(labelVar), propertyIdsExpr ))
+
+    generator.assign(typeRef[CapableIndexReference], referenceVar,
+                     invoke(schemaRead,
+                           method[SchemaRead, CapableIndexReference]("index", typeRef[Int], typeRef[Array[Int]]),
+                            generator.load(labelVar), propertyIdsExpr)
+    )
   }
 
-  override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
-    val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
+  override def indexSeek(iterVar: String, indexReference: String, value: Expression, codeGenType: CodeGenType) = {
+    val local = generator.declare(typeRef[NodeValueIndexCursor], iterVar)
+    generator.assign(local, constant(null))
+    _finalizers.append((_: Boolean) => (block) =>
+      using(block.ifStatement(Expression.notNull(block.load(iterVar)))) { inner =>
+        inner.expression(
+          invoke(block.load(iterVar), method[NodeValueIndexCursor, Unit]("close")))
+      })
     val boxedValue =
-      if (codeGenType.isPrimitive) Expression.box(value)
-      else invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "makeValueNeoSafe", typeRef[Object]), value)
+      if (codeGenType.isPrimitive) Expression.box(value) else value
     handleKernelExceptions(generator, fields, _finalizers) { body =>
-      val descriptor = body.load(descriptorVar)
-      val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
-      val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
+      val index = body.load(indexReference)
       body.assign(local,
                   invoke(
-                    methodReference(typeRef[CompiledIndexUtils], typeRef[PrimitiveLongIterator], "indexSeek",
-                                    typeRef[ReadOperations], typeRef[IndexDescriptor], typeRef[Int], typeRef[AnyRef]),
-                    readOperations, descriptor, propertyKeyId, boxedValue)
+                    methodReference(typeRef[CompiledIndexUtils], typeRef[NodeValueIndexCursor], "indexSeek",
+                                    typeRef[Read], typeRef[CursorFactory], typeRef[CapableIndexReference], typeRef[AnyRef]),
+                    dataRead, cursors, index, boxedValue)
       )
     }
   }

@@ -26,16 +26,16 @@ case class ScanAllNodes(opName: String) extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
+  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.allNodesScan(iterVar)
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext) = {
     generator.incrementDbHits()
     generator.nodeFromNodeCursor(nextVar.name, iterVar)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceNodeCursor(iterVar)
+  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E = generator.advanceNodeCursor(iterVar)
 }

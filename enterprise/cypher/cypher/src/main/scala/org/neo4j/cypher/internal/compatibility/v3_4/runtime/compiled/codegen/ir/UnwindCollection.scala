@@ -27,19 +27,19 @@ case class UnwindCollection(opName: String, collection: CodeGenExpression) exten
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit =
     collection.init(generator)
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])
+  override def produceLoopData[E](iterVar: String, generator: MethodStructure[E])
                                  (implicit context: CodeGenContext): Unit = {
     generator.declareIterator(iterVar)
     val iterator = generator.iteratorFrom(collection.generateExpression(generator))
     generator.assign(iterVar, CodeGenType.Any, iterator)
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext): Unit = {
+  override def getNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
+                         (implicit context: CodeGenContext): Unit = {
     val next = generator.iteratorNext(generator.loadVariable(iterVar))
     generator.assign(nextVar.name, CodeGenType.Any, next)
   }
 
-  override def hasNext[E](generator: MethodStructure[E], iterVar: String): E =
+  override def checkNext[E](generator: MethodStructure[E], iterVar: String): E =
     generator.iteratorHasNext(generator.loadVariable(iterVar))
 }

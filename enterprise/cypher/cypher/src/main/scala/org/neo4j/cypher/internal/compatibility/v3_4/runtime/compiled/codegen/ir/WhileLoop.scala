@@ -27,10 +27,10 @@ case class WhileLoop(variable: Variable, producer: LoopDataGenerator, action: In
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     val iterator = s"${variable.name}Iter"
     generator.trace(producer.opName) { body =>
-      producer.produceIterator(iterator, body)
-      body.whileLoop(producer.hasNext(body, iterator)) { loopBody =>
+      producer.produceLoopData(iterator, body)
+      body.whileLoop(producer.checkNext(body, iterator)) { loopBody =>
         loopBody.incrementRows()
-        producer.produceNext(variable, iterator, loopBody)
+        producer.getNext(variable, iterator, loopBody)
         action.body(loopBody)
       }
     }
