@@ -224,7 +224,7 @@ public class TransactionStateMachineTest
     }
 
     @Test
-    public void shouldStartWithAutoCommitState() throws Exception
+    public void shouldStartWithAutoCommitState()
     {
         TransactionStateMachineSPI stateMachineSPI = mock( TransactionStateMachineSPI.class );
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );

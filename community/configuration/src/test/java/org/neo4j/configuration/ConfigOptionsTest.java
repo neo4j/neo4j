@@ -82,13 +82,13 @@ public class ConfigOptionsTest
     }
 
     @Test
-    public void setting() throws Exception
+    public void setting()
     {
         assertEquals( setting, configOptions.settingGroup() );
     }
 
     @Test
-    public void asConfigValue() throws Exception
+    public void asConfigValue()
     {
         List<ConfigValue> values = configOptions.asConfigValues( Collections.singletonMap( "myInt", "123" ) );
 

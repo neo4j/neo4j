@@ -97,7 +97,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldSetAndGetBasicTypes() throws Exception
+    public void shouldSetAndGetBasicTypes()
     {
         int index = 0;
         byte[] actualBytes = new byte[DEFAULT.length];
@@ -158,7 +158,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldDetectMinusOneFor3ByteInts() throws Exception
+    public void shouldDetectMinusOneFor3ByteInts()
     {
         // WHEN
         array.set3ByteInt( 10, 2, -1 );
@@ -170,7 +170,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldDetectMinusOneFor5ByteLongs() throws Exception
+    public void shouldDetectMinusOneFor5ByteLongs()
     {
         // WHEN
         array.set5ByteLong( 10, 2, -1 );
@@ -182,7 +182,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldDetectMinusOneFor6ByteLongs() throws Exception
+    public void shouldDetectMinusOneFor6ByteLongs()
     {
         // WHEN
         array.set6ByteLong( 10, 2, -1 );
@@ -194,7 +194,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
     }
 
     @Test
-    public void shouldHandleMultipleCallsToClose() throws Exception
+    public void shouldHandleMultipleCallsToClose()
     {
         // WHEN
         array.close();

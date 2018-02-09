@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.neo4j.graphalgo.CostAccumulator;
@@ -286,6 +287,11 @@ public class Dijkstra<CostType> implements
         @Override
         public Node next()
         {
+            if ( !hasNext() )
+            {
+                throw new NoSuchElementException();
+            }
+
             Node currentNode = queue.extractMin();
             CostType currentCost = mySeen.get( currentNode );
             // Already done with this node?

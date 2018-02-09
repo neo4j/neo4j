@@ -280,7 +280,7 @@ public class NeoStoreIndexStoreViewTest
         private final Set<NodeUpdates> updates = new HashSet<>();
 
         @Override
-        public boolean visit( NodeUpdates propertyUpdates ) throws Exception
+        public boolean visit( NodeUpdates propertyUpdates )
         {
             updates.add( propertyUpdates );
             return false;

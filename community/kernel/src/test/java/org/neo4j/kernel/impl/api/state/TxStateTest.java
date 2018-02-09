@@ -86,7 +86,7 @@ public class TxStateTest
     //region node label update tests
 
     @Test
-    public void shouldGetAddedLabels() throws Exception
+    public void shouldGetAddedLabels()
     {
         // GIVEN
         state.nodeDoAddLabel( 1, 0 );
@@ -101,7 +101,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGetRemovedLabels() throws Exception
+    public void shouldGetRemovedLabels()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -116,7 +116,7 @@ public class TxStateTest
     }
 
     @Test
-    public void removeAddedLabelShouldRemoveFromAdded() throws Exception
+    public void removeAddedLabelShouldRemoveFromAdded()
     {
         // GIVEN
         state.nodeDoAddLabel( 1, 0 );
@@ -131,7 +131,7 @@ public class TxStateTest
     }
 
     @Test
-    public void addRemovedLabelShouldRemoveFromRemoved() throws Exception
+    public void addRemovedLabelShouldRemoveFromRemoved()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -146,7 +146,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldHandleMultipleLabels() throws Exception
+    public void shouldHandleMultipleLabels()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -166,7 +166,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldMapFromRemovedLabelToNodes() throws Exception
+    public void shouldMapFromRemovedLabelToNodes()
     {
         // GIVEN
         state.nodeDoRemoveLabel( 1, 0 );
@@ -187,7 +187,7 @@ public class TxStateTest
     //region index rule tests
 
     @Test
-    public void shouldAddAndGetByLabel() throws Exception
+    public void shouldAddAndGetByLabel()
     {
         // WHEN
         state.indexRuleDoAdd( indexOn_1_1 );
@@ -199,7 +199,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldAddAndGetByRuleId() throws Exception
+    public void shouldAddAndGetByRuleId()
     {
         // GIVEN
         state.indexRuleDoAdd( indexOn_1_1 );
@@ -213,7 +213,7 @@ public class TxStateTest
     //region scan and seek index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForScanOrSeekOnAnEmptyTxState() throws Exception
+    public void shouldComputeIndexUpdatesForScanOrSeekOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1 );
@@ -223,7 +223,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForScanWhenThereAreNewNodes() throws Exception
+    public void shouldComputeIndexUpdatesForScanWhenThereAreNewNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -237,7 +237,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodes() throws Exception
+    public void shouldComputeIndexUpdatesForSeekWhenThereAreNewNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -255,7 +255,7 @@ public class TxStateTest
     //region range seek by number index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNoMatchingNodes() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNoMatchingNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( asList( of( 42L, 500 ), of( 43L, 550 ) ) );
@@ -270,7 +270,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNewNodesCreatedInSingleBatch()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( asList( of( 42L, 500 ), of( 43L, 550 ) ) );
@@ -285,7 +284,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWhenThereAreNewNodesCreatedInTwoBatches()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties( singletonList( of( 42L, 500 ) ) );
@@ -300,7 +298,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndIncludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -316,7 +314,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndExcludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -332,7 +330,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndIncludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -348,7 +346,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndExcludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withNumberProperties(
@@ -365,7 +363,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerExcludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -383,7 +380,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerIncludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -401,7 +397,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerExcludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -420,7 +415,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedLowerIncludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -438,7 +432,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperIncludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -456,7 +449,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperIncludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -474,7 +466,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperExcludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -492,7 +483,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithUnboundedUpperExcludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -510,7 +500,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithNoBounds() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByNumberWithNoBounds()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -529,7 +519,7 @@ public class TxStateTest
     //region range seek by string index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNoMatchingNodes() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNoMatchingNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Barbara" ) ) );
@@ -545,7 +535,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInSingleBatch()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties( asList( of( 42L, "Agatha" ), of( 43L, "Barbara" ) ) );
@@ -561,7 +550,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWhenThereAreNewNodesCreatedInTwoBatches()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties( singletonList( of( 42L, "Agatha" ) ) );
@@ -577,7 +565,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndIncludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -594,7 +582,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndExcludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithIncludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -611,7 +599,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndIncludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndIncludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -628,7 +616,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndExcludeUpper() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithExcludeLowerAndExcludeUpper()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -646,7 +634,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -665,7 +652,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -684,7 +670,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerExcludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -703,7 +688,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedLowerIncludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -722,7 +706,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -741,7 +724,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperIncludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -760,7 +742,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndIncludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -779,7 +760,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithUnboundedUpperExcludeLowerAndExcludeUpper()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -797,7 +777,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithNoBounds() throws Exception
+    public void shouldComputeIndexUpdatesForBetweenRangeSeekByStringWithNoBounds()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withBooleanProperties( asList( of( 39L, true ), of( 38L, false ) ) );
@@ -817,7 +797,7 @@ public class TxStateTest
     //region range seek by prefix index update tests
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingNodes() throws Exception
+    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNoMatchingNodes()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -831,7 +811,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInOneBatch() throws Exception
+    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInOneBatch()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L, 43L );
@@ -845,7 +825,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes1() throws Exception
+    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes1()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -862,7 +842,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes2() throws Exception
+    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingNewNodes2()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -880,7 +860,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingLeadingNewNodes()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -898,7 +877,6 @@ public class TxStateTest
 
     @Test
     public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereArePartiallyMatchingTrailingNewNodes()
-            throws Exception
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withStringProperties(
@@ -915,7 +893,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInTwoBatches() throws Exception
+    public void shouldComputeIndexUpdatesForRangeSeekByPrefixWhenThereAreNewNodesCreatedInTwoBatches()
     {
         // GIVEN
         addNodesToIndex( indexOn_1_1 ).withDefaultStringProperties( 42L );
@@ -934,7 +912,7 @@ public class TxStateTest
     //region miscellaneous
 
     @Test
-    public void shouldListNodeAsDeletedIfItIsDeleted() throws Exception
+    public void shouldListNodeAsDeletedIfItIsDeleted()
     {
         // Given
 
@@ -947,7 +925,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldAddUniquenessConstraint() throws Exception
+    public void shouldAddUniquenessConstraint()
     {
         // when
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
@@ -961,7 +939,7 @@ public class TxStateTest
     }
 
     @Test
-    public void addingUniquenessConstraintShouldBeIdempotent() throws Exception
+    public void addingUniquenessConstraintShouldBeIdempotent()
     {
         // given
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
@@ -977,7 +955,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels() throws Exception
+    public void shouldDifferentiateBetweenUniquenessConstraintsForDifferentLabels()
     {
         // when
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
@@ -1034,7 +1012,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldDifferentiateRelationshipPropertyExistenceConstraints() throws Exception
+    public void shouldDifferentiateRelationshipPropertyExistenceConstraints()
     {
         // Given
         ConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForRelType( 1, 11 );
@@ -1058,7 +1036,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldListRelationshipsAsCreatedIfCreated() throws Exception
+    public void shouldListRelationshipsAsCreatedIfCreated()
     {
         // When
         long relId = 10;
@@ -1070,7 +1048,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships() throws Exception
+    public void shouldGiveCorrectDegreeWhenAddingAndRemovingRelationships()
     {
         // Given
         int startNode = 1;
@@ -1093,7 +1071,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldGiveCorrectRelationshipTypesForNode() throws Exception
+    public void shouldGiveCorrectRelationshipTypesForNode()
     {
         // Given
         int startNode = 1;
@@ -1421,7 +1399,7 @@ public class TxStateTest
     }
 
     @Test
-    public void shouldObserveCorrectAugmentedNodeRelationshipsState() throws Exception
+    public void shouldObserveCorrectAugmentedNodeRelationshipsState()
     {
         // GIVEN random committed state
         TxState state = new TxState();
@@ -1649,7 +1627,7 @@ public class TxStateTest
     private TransactionState state;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         state = new TxState();
     }

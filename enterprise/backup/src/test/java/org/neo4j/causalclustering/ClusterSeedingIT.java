@@ -67,7 +67,7 @@ public class ClusterSeedingIT
     private File baseBackupDir;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         fsa = fileSystemRule.get();
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
@@ -82,7 +82,7 @@ public class ClusterSeedingIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( backupCluster != null )
         {

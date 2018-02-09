@@ -47,7 +47,7 @@ public class UsageTest
     }
 
     @Test
-    public void shouldPrintUsageForACommand() throws Exception
+    public void shouldPrintUsageForACommand()
     {
         // given
         AdminCommand.Provider commandProvider = mockCommand( "bam", "A summary", AdminCommandSection.general() );

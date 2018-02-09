@@ -44,7 +44,7 @@ public class CapturingStep<T> extends ProcessorStep<T>
     }
 
     @Override
-    protected void process( T batch, BatchSender sender ) throws Throwable
+    protected void process( T batch, BatchSender sender )
     {
         receivedBatches.add( batch );
     }

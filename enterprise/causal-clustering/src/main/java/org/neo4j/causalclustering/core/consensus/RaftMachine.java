@@ -219,7 +219,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         }
     }
 
-    private void handleLogShipping( Outcome outcome ) throws IOException
+    private void handleLogShipping( Outcome outcome )
     {
         LeaderContext leaderContext = new LeaderContext( outcome.getTerm(), outcome.getLeaderCommit() );
         if ( outcome.isElectedLeader() )

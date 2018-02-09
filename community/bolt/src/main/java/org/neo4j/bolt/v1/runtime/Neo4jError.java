@@ -174,7 +174,7 @@ public class Neo4jError
         // In this case, an error has "slipped out", and we don't have a good way to handle it. This indicates
         // a buggy code path, and we need to try to convince whoever ends up here to tell us about it.
 
-        return new Neo4jError( Status.General.UnknownError, any.getMessage(), any, isFatal );
+        return new Neo4jError( Status.General.UnknownError, any != null ? any.getMessage() : null, any, isFatal );
     }
 
     public static Neo4jError from( Status status, String message )

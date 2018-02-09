@@ -45,7 +45,7 @@ public class DebugUtilTest
     }
 
     @Test
-    public void shouldFigureOutThatWeStartedInATest() throws Exception
+    public void shouldFigureOutThatWeStartedInATest()
     {
         new Noise().white();
     }

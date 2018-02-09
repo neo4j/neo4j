@@ -33,7 +33,7 @@ import static java.util.Arrays.asList;
 public class DefaultSchemaIndexProviderMapTest
 {
     @Test
-    public void shouldNotSupportMultipleProvidersWithSameDescriptor() throws Exception
+    public void shouldNotSupportMultipleProvidersWithSameDescriptor()
     {
         // given
         SchemaIndexProvider.Descriptor descriptor = new SchemaIndexProvider.Descriptor( "provider", "1.2" );
@@ -55,7 +55,7 @@ public class DefaultSchemaIndexProviderMapTest
     }
 
     @Test
-    public void shouldThrowOnLookupOnUnknownProvider() throws Exception
+    public void shouldThrowOnLookupOnUnknownProvider()
     {
         // given
         SchemaIndexProvider provider = mock( SchemaIndexProvider.class );

@@ -342,7 +342,7 @@ class KeyValueWriter implements Closeable
         }
 
         @Override
-        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize ) throws IOException
+        KeyValueStoreFile open( Metadata metadata, int keySize, int valueSize )
         {
             KeyValueStoreFile result = new KeyValueStoreFile( file, keySize, valueSize, metadata );
             opened = true;

@@ -46,9 +46,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TransactionHook;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -333,7 +331,6 @@ public class ConstraintIndexCreatorTest
 
         @Override
         public KernelTransaction newTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
-                throws TransactionFailureException
         {
             return new StubKernelTransaction( timeout );
         }
@@ -351,14 +348,13 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public void registerUserFunction( CallableUserFunction function ) throws ProcedureException
+        public void registerUserFunction( CallableUserFunction function )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public void registerUserAggregationFunction( CallableUserAggregationFunction function )
-                throws ProcedureException
         {
             throw new UnsupportedOperationException();
         }
@@ -477,7 +473,7 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
-            public long closeTransaction() throws TransactionFailureException
+            public long closeTransaction()
             {
                 return ROLLBACK;
             }

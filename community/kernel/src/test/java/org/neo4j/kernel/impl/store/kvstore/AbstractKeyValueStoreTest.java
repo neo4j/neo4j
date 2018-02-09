@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingConsumer;
@@ -128,7 +127,7 @@ public class AbstractKeyValueStoreTest
     }
 
     @Test
-    public void shouldStartAndStopStore() throws Exception
+    public void shouldStartAndStopStore()
     {
         // given
         resourceManager.managed( new Store() );
@@ -337,7 +336,7 @@ public class AbstractKeyValueStoreTest
     @Test
     @Resources.Life( STARTED )
     public void postStateUpdatesCountedOnlyForTransactionsGreaterThanRotationVersion()
-            throws IOException, TimeoutException, InterruptedException, ExecutionException
+            throws IOException, InterruptedException, ExecutionException
     {
         final Store store = resourceManager.managed( createTestStore() );
 
@@ -529,7 +528,7 @@ public class AbstractKeyValueStoreTest
             int i;
 
             @Override
-            public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
+            public boolean visit( WritableBuffer key, WritableBuffer value )
             {
                 if ( i < data.length )
                 {
@@ -540,7 +539,7 @@ public class AbstractKeyValueStoreTest
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
         };

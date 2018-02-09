@@ -68,7 +68,7 @@ public class ConvertersTest
 
         // then
         assertTrue( port.isPresent() );
-        assertEquals( new Integer( 1234 ), port.get() );
+        assertEquals( Integer.valueOf( 1234 ), port.get() );
     }
 
     @Test

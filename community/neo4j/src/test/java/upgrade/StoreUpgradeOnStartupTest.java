@@ -92,7 +92,7 @@ public class StoreUpgradeOnStartupTest
     }
 
     @Test
-    public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws IOException, ConsistencyCheckIncompleteException
+    public void shouldUpgradeAutomaticallyOnDatabaseStartup() throws ConsistencyCheckIncompleteException
     {
         // when
         GraphDatabaseService database = createGraphDatabaseService();

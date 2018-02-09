@@ -61,7 +61,7 @@ public class RelationshipTypeTokenRecordFormatTest
     }
 
     @Test
-    public void shouldReport3BytesMaxIdForRelationshipTypes() throws Exception
+    public void shouldReport3BytesMaxIdForRelationshipTypes()
     {
         // given
         RecordFormat<RelationshipTypeTokenRecord> format = HighLimit.RECORD_FORMATS.relationshipTypeToken();

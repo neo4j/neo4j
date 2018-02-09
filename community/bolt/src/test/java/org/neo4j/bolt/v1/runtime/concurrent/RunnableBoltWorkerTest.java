@@ -102,7 +102,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void errorThrownDuringExecutionShouldCauseSessionClose() throws Throwable
+    public void errorThrownDuringExecutionShouldCauseSessionClose()
     {
         // Given
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, NullLogService.getInstance() );
@@ -119,7 +119,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void authExceptionShouldNotBeLoggedHere() throws Throwable
+    public void authExceptionShouldNotBeLoggedHere()
     {
         // Given
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService );
@@ -138,7 +138,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void protocolBreachesShouldBeLoggedWithStackTraces() throws Throwable
+    public void protocolBreachesShouldBeLoggedWithStackTraces()
     {
         // Given
         BoltProtocolBreachFatality error = new BoltProtocolBreachFatality( "protocol breach fatality" );
@@ -298,7 +298,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void shouldNotNotifyMonitorWhenNothingEnqueued() throws Exception
+    public void shouldNotNotifyMonitorWhenNothingEnqueued()
     {
         BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
@@ -309,7 +309,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void shouldNotifyMonitorWhenQueued() throws Exception
+    public void shouldNotifyMonitorWhenQueued()
     {
         BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
@@ -321,7 +321,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void shouldNotifyMonitorWhenDequeued() throws Exception
+    public void shouldNotifyMonitorWhenDequeued()
     {
         BoltWorkerQueueMonitor monitor = mock( BoltWorkerQueueMonitor.class );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logService, monitor );
@@ -336,7 +336,7 @@ public class RunnableBoltWorkerTest
     }
 
     @Test
-    public void shouldNotifyMonitorWhenDrained() throws Exception
+    public void shouldNotifyMonitorWhenDrained()
     {
         List<Job> drainedJobs = new ArrayList<>();
         BoltWorkerQueueMonitor monitor = newMonitor( drainedJobs );

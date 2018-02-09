@@ -73,7 +73,7 @@ public class UrlFormFormat extends RepresentationFormat
     }
 
     @Override
-    public Object readValue( final String input ) throws BadInputException
+    public Object readValue( final String input )
     {
         throw new RuntimeException( "Not implemented!" );
     }
@@ -139,13 +139,13 @@ public class UrlFormFormat extends RepresentationFormat
     }
 
     @Override
-    public List<Object> readList( final String input ) throws BadInputException
+    public List<Object> readList( final String input )
     {
         throw new RuntimeException( "Not implemented!" );
     }
 
     @Override
-    public URI readUri( final String input ) throws BadInputException
+    public URI readUri( final String input )
     {
         throw new RuntimeException( "Not implemented!" );
     }

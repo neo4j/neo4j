@@ -94,7 +94,6 @@ public interface IndexReader extends Resource
 
         @Override
         public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query )
-                throws IndexNotApplicableKernelException
         {
             //do nothing
         }

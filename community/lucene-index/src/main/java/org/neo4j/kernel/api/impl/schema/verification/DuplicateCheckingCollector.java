@@ -78,7 +78,7 @@ public class DuplicateCheckingCollector extends SimpleCollector
     }
 
     @Override
-    protected void doSetNextReader( LeafReaderContext context ) throws IOException
+    protected void doSetNextReader( LeafReaderContext context )
     {
         this.reader = context.reader();
     }

@@ -150,10 +150,6 @@ public class BadCollector implements Collector
         {
             logger.awaitTermination();
         }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-        }
         finally
         {
             out.flush();

@@ -44,7 +44,7 @@ public class PrintingImportLogicMonitorTest
     private final ImportLogic.Monitor monitor = new PrintingImportLogicMonitor( out, err );
 
     @Test
-    public void mayExceedNodeIdCapacity() throws Exception
+    public void mayExceedNodeIdCapacity()
     {
         // given
         long capacity = 10_000_000;
@@ -62,7 +62,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void mayExceedRelationshipIdCapacity() throws Exception
+    public void mayExceedRelationshipIdCapacity()
     {
         // given
         long capacity = 10_000_000;
@@ -80,7 +80,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void insufficientHeapSize() throws Exception
+    public void insufficientHeapSize()
     {
         // given
         long optimalHeapSize = gibiBytes( 2 );
@@ -98,7 +98,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void abundantHeapSize() throws Exception
+    public void abundantHeapSize()
     {
         // given
         long optimalHeapSize = gibiBytes( 2 );
@@ -116,7 +116,7 @@ public class PrintingImportLogicMonitorTest
     }
 
     @Test
-    public void insufficientAvailableMemory() throws Exception
+    public void insufficientAvailableMemory()
     {
         // given
         long estimatedCacheSize = gibiBytes( 2 );

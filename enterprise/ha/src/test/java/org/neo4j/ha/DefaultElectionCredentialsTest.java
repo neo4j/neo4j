@@ -34,7 +34,7 @@ import static org.junit.Assert.assertFalse;
 public class DefaultElectionCredentialsTest
 {
     @Test
-    public void testCompareToDifferentTxId() throws Exception
+    public void testCompareToDifferentTxId()
     {
         DefaultElectionCredentials highTxId =
                 new DefaultElectionCredentials( 3, 12, false );
@@ -56,7 +56,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testCompareToSameTxId() throws Exception
+    public void testCompareToSameTxId()
     {
         // Lower id means higher priority
         DefaultElectionCredentials highSameTxId = new DefaultElectionCredentials( 1, 10, false );
@@ -117,7 +117,7 @@ public class DefaultElectionCredentialsTest
     }
 
     @Test
-    public void testEquals() throws Exception
+    public void testEquals()
     {
         DefaultElectionCredentials sameAsNext =
                 new DefaultElectionCredentials( 1, 10, false );

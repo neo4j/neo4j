@@ -27,6 +27,7 @@ import java.time.Clock;
 
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
@@ -58,13 +59,13 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithoutRoles() throws Throwable
+    public void shouldMakeNiceDescriptionWithoutRoles() throws Exception
     {
         assertThat( context().description(), equalTo( "user 'mats' with no roles" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithRoles() throws Throwable
+    public void shouldMakeNiceDescriptionWithRoles() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
@@ -73,7 +74,7 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionWithMode() throws Throwable
+    public void shouldMakeNiceDescriptionWithMode() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
@@ -83,7 +84,7 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionRestricted() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
@@ -95,7 +96,7 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionOverridden() throws Throwable
+    public void shouldMakeNiceDescriptionOverridden() throws Exception
     {
         manager.newRole( "role1", "mats" );
         manager.addRoleToUser( PUBLISHER, "mats" );
@@ -107,14 +108,14 @@ public class EnterpriseSecurityContextDescriptionTest
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabled() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabled()
     {
         EnterpriseSecurityContext disabled = EnterpriseSecurityContext.AUTH_DISABLED;
         assertThat( disabled.description(), equalTo( "AUTH_DISABLED with FULL" ) );
     }
 
     @Test
-    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted() throws Throwable
+    public void shouldMakeNiceDescriptionAuthDisabledAndRestricted()
     {
         EnterpriseSecurityContext disabled = EnterpriseSecurityContext.AUTH_DISABLED;
         EnterpriseSecurityContext restricted =
@@ -122,7 +123,7 @@ public class EnterpriseSecurityContextDescriptionTest
         assertThat( restricted.description(), equalTo( "AUTH_DISABLED with FULL restricted to READ" ) );
     }
 
-    private EnterpriseSecurityContext context() throws Exception
+    private EnterpriseSecurityContext context() throws InvalidAuthTokenException
     {
         return authManagerRule.getManager().login( authToken( "mats", "foo" ) ).authorize( token );
     }

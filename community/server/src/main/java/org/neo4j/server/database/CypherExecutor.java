@@ -65,7 +65,7 @@ public class CypherExecutor extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         DependencyResolver resolver = database.getGraph().getDependencyResolver();
         this.executionEngine = (ExecutionEngine) resolver.resolveDependency( QueryExecutionEngine.class );
@@ -74,7 +74,7 @@ public class CypherExecutor extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         this.executionEngine = null;
         this.contextFactory = null;

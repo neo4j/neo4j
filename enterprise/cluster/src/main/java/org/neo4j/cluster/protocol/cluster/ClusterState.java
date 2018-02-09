@@ -20,6 +20,7 @@
 package org.neo4j.cluster.protocol.cluster;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,14 +49,13 @@ import static org.neo4j.helpers.collection.Iterables.count;
  * @see Cluster
  * @see ClusterMessage
  */
-public enum ClusterState
-        implements State<ClusterContext, ClusterMessage>
+public enum ClusterState implements State<ClusterContext, ClusterMessage>
 {
     start
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                public ClusterState handle( ClusterContext context, Message<ClusterMessage> message,
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
@@ -134,8 +134,8 @@ public enum ClusterState
     discovery
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                public ClusterState handle( ClusterContext context, Message<ClusterMessage> message,
+                                           MessageHolder outgoing ) throws URISyntaxException
                 {
                     List<ClusterMessage.ConfigurationRequestState> discoveredInstances = context.getDiscoveredInstances();
                     context.getLog( getClass() ).info( format( "Discovered instances are %s", discoveredInstances ) );
@@ -376,11 +376,10 @@ public enum ClusterState
     joining
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context,
+                public ClusterState handle( ClusterContext context,
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -449,8 +448,8 @@ public enum ClusterState
     entered
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context, Message<ClusterMessage> message,
-                                           MessageHolder outgoing ) throws Throwable
+                public ClusterState handle( ClusterContext context, Message<ClusterMessage> message,
+                                           MessageHolder outgoing )
                 {
                     switch ( message.getMessageType() )
                     {
@@ -568,11 +567,10 @@ public enum ClusterState
     leaving
             {
                 @Override
-                public State<?, ?> handle( ClusterContext context,
+                public ClusterState handle( ClusterContext context,
                                            Message<ClusterMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

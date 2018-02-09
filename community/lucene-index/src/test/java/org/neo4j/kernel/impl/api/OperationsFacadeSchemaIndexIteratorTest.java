@@ -139,8 +139,7 @@ public class OperationsFacadeSchemaIndexIteratorTest
     private IndexCoordinator indexCoordinator;
 
     @Before
-    public void setupDb() throws InvalidTransactionTypeKernelException, RepeatedPropertyInCompositeSchemaException, AlreadyIndexedException,
-            AlreadyConstrainedException, IndexNotFoundKernelException, InterruptedException
+    public void setupDb()
     {
         indexCoordinator = indexCoordinatorFactory.create( indexLabel, numberProp1, numberProp2, stringProp1, stringProp2 );
         indexCoordinator.init( db );
@@ -398,7 +397,6 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
         @Override
         PrimitiveLongIterator queryRange( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             throw new UnsupportedOperationException();
         }
@@ -463,7 +461,6 @@ public class OperationsFacadeSchemaIndexIteratorTest
 
         @Override
         PrimitiveLongIterator queryRange( ReadOperations readOperations )
-                throws IndexNotApplicableKernelException, IndexNotFoundKernelException
         {
             throw new UnsupportedOperationException();
         }

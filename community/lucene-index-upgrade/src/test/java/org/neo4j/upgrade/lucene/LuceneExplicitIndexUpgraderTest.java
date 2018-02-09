@@ -166,7 +166,7 @@ public class LuceneExplicitIndexUpgraderTest
         }
 
         @Override
-        public void upgradeIndex( Path indexPath ) throws Throwable
+        public void upgradeIndex( Path indexPath )
         {
             if ( failIndexUpgrade )
             {

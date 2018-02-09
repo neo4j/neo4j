@@ -36,7 +36,7 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class ConstraintRuleTest extends SchemaRuleTestBase
 {
     @Test
-    public void shouldCreateUniquenessConstraint() throws Exception
+    public void shouldCreateUniquenessConstraint()
     {
         // GIVEN
         ConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -50,7 +50,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateUniquenessConstraintWithOwnedIndex() throws Exception
+    public void shouldCreateUniquenessConstraintWithOwnedIndex()
     {
         // GIVEN
         UniquenessConstraintDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -62,7 +62,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateNodeKeyConstraint() throws Exception
+    public void shouldCreateNodeKeyConstraint()
     {
         // GIVEN
         ConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -76,7 +76,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateNodeKeyConstraintWithOwnedIndex() throws Exception
+    public void shouldCreateNodeKeyConstraintWithOwnedIndex()
     {
         // GIVEN
         NodeKeyConstraintDescriptor descriptor = nodeKeyForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -88,7 +88,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldCreateExistenceConstraint() throws Exception
+    public void shouldCreateExistenceConstraint()
     {
         // GIVEN
         ConstraintDescriptor descriptor = existsForLabel( LABEL_ID, PROPERTY_ID_1 );
@@ -102,7 +102,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void indexRulesAreEqualBasedOnConstraintDescriptor() throws Exception
+    public void indexRulesAreEqualBasedOnConstraintDescriptor()
     {
         assertEqualityByDescriptor( existsForLabel( LABEL_ID, PROPERTY_ID_1 ) );
         assertEqualityByDescriptor( uniqueForLabel( LABEL_ID, PROPERTY_ID_1 ) );

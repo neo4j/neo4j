@@ -52,7 +52,7 @@ class FulltextFactory
      * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
      * @throws IOException
      */
-    FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName ) throws IOException
+    FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
     {
         this.analyzer = getAnalyzer( analyzerClassName );
         this.fileSystem = fileSystem;
@@ -76,7 +76,7 @@ class FulltextFactory
         return analyzer;
     }
 
-    LuceneFulltext createFulltextIndex( String identifier, FulltextIndexType type, List<String> properties ) throws IOException
+    LuceneFulltext createFulltextIndex( String identifier, FulltextIndexType type, List<String> properties )
     {
         File indexRootFolder = new File( indexDir, identifier );
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();

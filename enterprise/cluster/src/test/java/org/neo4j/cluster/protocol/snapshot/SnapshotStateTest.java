@@ -55,7 +55,7 @@ public class SnapshotStateTest
         baseNoSendTest( extraMember );
     }
 
-    public void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
+    private void baseNoSendTest( Map<InstanceId,URI> extraMembers ) throws Throwable
     {
         URI me = URI.create( "cluster://me" );
 

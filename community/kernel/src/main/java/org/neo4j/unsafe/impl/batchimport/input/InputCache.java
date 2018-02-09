@@ -194,7 +194,7 @@ public class InputCache implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         fs.deleteFile( file( NODES ) );
         fs.deleteFile( file( RELATIONSHIPS ) );

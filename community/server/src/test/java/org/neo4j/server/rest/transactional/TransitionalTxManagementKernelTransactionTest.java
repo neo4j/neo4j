@@ -42,7 +42,7 @@ public class TransitionalTxManagementKernelTransactionTest
     private KernelTransaction.Type type = KernelTransaction.Type.implicit;
 
     @Test
-    public void reopenStartTransactionWithCustomTimeoutIfSpecified() throws Exception
+    public void reopenStartTransactionWithCustomTimeoutIfSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
                 new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, 10, contextBridge );

@@ -45,7 +45,7 @@ public class RelationshipChangesForNodeTest
     private static final int TYPE_DIR = 1;
 
     @Test
-    public void testOutgoingRelsWithTypeAndLoop() throws Exception
+    public void testOutgoingRelsWithTypeAndLoop()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -59,7 +59,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void testIncomingRelsWithTypeAndLoop() throws Exception
+    public void testIncomingRelsWithTypeAndLoop()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -73,7 +73,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void shouldGetRelationships() throws Exception
+    public void shouldGetRelationships()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );
@@ -92,7 +92,7 @@ public class RelationshipChangesForNodeTest
     }
 
     @Test
-    public void shouldGetRelationshipsByTypeAndDirection() throws Exception
+    public void shouldGetRelationshipsByTypeAndDirection()
     {
         RelationshipChangesForNode changes = new RelationshipChangesForNode(
                 RelationshipChangesForNode.DiffStrategy.ADD, mock( RelationshipVisitor.Home.class ) );

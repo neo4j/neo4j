@@ -38,11 +38,11 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.security.Credential;
+import org.neo4j.kernel.impl.security.User;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
-import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.server.security.auth.FileUserRepository;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -86,14 +86,14 @@ public class SetDefaultAdminCommandTest
     }
 
     @Test
-    public void shouldFailForNoArguments() throws Exception
+    public void shouldFailForNoArguments()
     {
         assertException( () -> setDefaultAdmin.execute( new String[0] ), IncorrectUsage.class,
                 "not enough arguments" );
     }
 
     @Test
-    public void shouldFailForTooManyArguments() throws Exception
+    public void shouldFailForTooManyArguments()
     {
         String[] arguments = {"", "123", "321"};
         assertException( () -> setDefaultAdmin.execute( arguments ), IncorrectUsage.class, "unrecognized arguments: '123 321'" );

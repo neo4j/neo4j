@@ -241,7 +241,7 @@ public class FreeListIdProviderTest
         assertTrue( expected.isEmpty() );
     }
 
-    private void fillPageWithRandomBytes( long releasedId ) throws IOException
+    private void fillPageWithRandomBytes( long releasedId )
     {
         cursor.next( releasedId );
         byte[] crapData = new byte[PAGE_SIZE];

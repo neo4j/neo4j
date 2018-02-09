@@ -258,7 +258,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return raftLogDir;
     }
 
-    public void stopCatchupServer() throws Throwable
+    public void stopCatchupServer()
     {
         database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
     }

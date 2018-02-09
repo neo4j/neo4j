@@ -38,7 +38,7 @@ public class PageCursorUtilTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldPutAndGet6BLongs() throws Exception
+    public void shouldPutAndGet6BLongs()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );
@@ -60,7 +60,7 @@ public class PageCursorUtilTest
     }
 
     @Test
-    public void shouldFailOnInvalidValues() throws Exception
+    public void shouldFailOnInvalidValues()
     {
         // GIVEN
         PageCursor cursor = ByteArrayPageCursor.wrap( 10 );

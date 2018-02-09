@@ -30,27 +30,27 @@ import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.causalclustering.messaging.ComposableMessageHandler;
+import org.neo4j.causalclustering.messaging.LifecycleMessageHandler;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.neo4j.function.Predicates.awaitForever;
 
-class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage>
+class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>>
 {
-    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler;
+    private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler;
     private final Log log;
     private final int maxBatch;
-    private final List<RaftMessages.ReceivedInstantClusterIdAwareMessage> batch;
-    private final BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage> messageQueue;
+    private final List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> batch;
+    private final BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> messageQueue;
     private final ContinuousJob job;
     private final ContentHandler contentHandler = new ContentHandler();
 
     private volatile boolean stopped;
 
-    BatchingMessageHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> handler, int queueSize, int maxBatch,
+    BatchingMessageHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> handler, int queueSize, int maxBatch,
             Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
     {
         this.handler = handler;
@@ -63,8 +63,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMe
 
     static ComposableMessageHandler composable( int queueSize, int maxBatch, Function<Runnable,ContinuousJob> jobSchedulerFactory, LogProvider logProvider )
     {
-        return ( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage> delegate ) ->
-                new BatchingMessageHandler( delegate, queueSize, maxBatch, jobSchedulerFactory, logProvider );
+        return delegate -> new BatchingMessageHandler( delegate, queueSize, maxBatch, jobSchedulerFactory, logProvider );
     }
     @Override
     public void start( ClusterId clusterId ) throws Throwable
@@ -82,7 +81,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMe
     }
 
     @Override
-    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage message )
+    public void handle( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message )
     {
         if ( stopped )
         {
@@ -97,7 +96,7 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMe
     @Override
     public void run()
     {
-        RaftMessages.ReceivedInstantClusterIdAwareMessage message = null;
+        RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message = null;
         try
         {
             message = messageQueue.poll( 1, SECONDS );
@@ -123,19 +122,19 @@ class BatchingMessageHandler implements Runnable, LifecycleMessageHandler<RaftMe
         }
     }
 
-    private void drain( BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage> messageQueue,
-                        List<RaftMessages.ReceivedInstantClusterIdAwareMessage> batch, int maxElements )
+    private void drain( BlockingQueue<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> messageQueue,
+                        List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> batch, int maxElements )
     {
-        List<RaftMessages.ReceivedInstantClusterIdAwareMessage> tempDraining = new ArrayList<>();
+        List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> tempDraining = new ArrayList<>();
         messageQueue.drainTo( tempDraining, maxElements );
         batch.addAll( tempDraining );
     }
 
-    private void collateAndHandleBatch( List<RaftMessages.ReceivedInstantClusterIdAwareMessage> batch )
+    private void collateAndHandleBatch( List<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> batch )
     {
         RaftMessages.ReceivedInstantClusterIdAwareMessage<RaftMessages.NewEntry.BatchRequest> batchRequest = null;
 
-        for ( RaftMessages.ReceivedInstantClusterIdAwareMessage message : batch )
+        for ( RaftMessages.ReceivedInstantClusterIdAwareMessage<?> message : batch )
         {
             if ( batchRequest != null && !message.clusterId().equals( batchRequest.clusterId() ) )
             {

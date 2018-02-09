@@ -423,7 +423,7 @@ public class TransactionGuardIT
     }
 
     @Test
-    public void changeTimeoutAtRuntime() throws Exception
+    public void changeTimeoutAtRuntime()
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
         KernelTransactionTimeoutMonitor timeoutMonitor =

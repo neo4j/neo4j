@@ -27,7 +27,7 @@ import static org.neo4j.graphdb.NodeIndexFacadeMethods.ALL_NODE_INDEX_FACADE_MET
 public class MandatoryTransactionsForNodeIndexFacadeTest extends AbstractMandatoryTransactionsTest<Index<Node>>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnNodeIndexFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NODE_INDEX_FACADE_METHODS );
     }

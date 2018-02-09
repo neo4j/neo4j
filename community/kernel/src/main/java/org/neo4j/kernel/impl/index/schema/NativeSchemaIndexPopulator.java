@@ -107,20 +107,19 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
     {
         applyWithWorkSync( updates );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-            throws IndexEntryConflictException, IOException
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
         return new IndexUpdater()
         {
@@ -128,14 +127,14 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
-            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+            public void process( IndexEntryUpdate<?> update )
             {
                 assertOpen();
                 updates.add( update );
             }
 
             @Override
-            public void close() throws IOException, IndexEntryConflictException
+            public void close() throws IOException
             {
                 applyWithWorkSync( updates );
                 closed = true;
@@ -201,7 +200,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
     }
 
     @Override
-    public void markAsFailed( String failure ) throws IOException
+    public void markAsFailed( String failure )
     {
         failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
     }

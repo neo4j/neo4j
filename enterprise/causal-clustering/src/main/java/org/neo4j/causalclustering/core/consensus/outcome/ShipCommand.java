@@ -30,8 +30,7 @@ import static java.lang.String.format;
 
 public abstract class ShipCommand
 {
-    public abstract void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext )
-            throws IOException;
+    public abstract void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext );
 
     public static class Mismatch extends ShipCommand
     {
@@ -45,7 +44,7 @@ public abstract class ShipCommand
         }
 
         @Override
-        public void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws IOException
+        public void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext )
         {
             if ( raftLogShipper.identity().equals( target ) )
             {
@@ -102,8 +101,7 @@ public abstract class ShipCommand
         }
 
         @Override
-        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws
-                IOException
+        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext )
         {
             if ( raftLogShipper.identity().equals( target ) )
             {
@@ -162,7 +160,7 @@ public abstract class ShipCommand
         }
 
         @Override
-        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws IOException
+        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext )
         {
             raftLogShipper.onNewEntries( prevLogIndex, prevLogTerm, newLogEntries, leaderContext );
         }
@@ -213,7 +211,7 @@ public abstract class ShipCommand
     public static class CommitUpdate extends ShipCommand
     {
         @Override
-        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext ) throws IOException
+        public  void applyTo( RaftLogShipper raftLogShipper, LeaderContext leaderContext )
         {
             raftLogShipper.onCommitUpdate( leaderContext );
         }

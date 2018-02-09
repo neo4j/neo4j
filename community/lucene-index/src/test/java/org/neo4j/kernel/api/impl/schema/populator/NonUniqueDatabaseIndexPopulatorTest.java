@@ -67,7 +67,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     private final LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         File folder = testDir.directory( "folder" );
         PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder, false );

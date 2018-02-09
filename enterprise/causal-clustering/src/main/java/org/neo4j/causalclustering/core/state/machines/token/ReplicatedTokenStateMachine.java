@@ -132,7 +132,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     }
 
     @Override
-    public synchronized void flush() throws IOException
+    public synchronized void flush()
     {
         // already implicitly flushed to the store
     }

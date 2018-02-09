@@ -33,7 +33,7 @@ public class RaftMessageProcessingMetricTest
     private RaftMessageProcessingMetric metric = RaftMessageProcessingMetric.createUsing( () -> new SlidingWindowReservoir( 1000 ) );
 
     @Test
-    public void shouldDefaultAllMessageTypesToEmptyTimer() throws Throwable
+    public void shouldDefaultAllMessageTypesToEmptyTimer()
     {
         for ( RaftMessages.Type type : RaftMessages.Type.values() )
         {
@@ -43,7 +43,7 @@ public class RaftMessageProcessingMetricTest
     }
 
     @Test
-    public void shouldBeAbleToUpdateAllMessageTypes() throws Throwable
+    public void shouldBeAbleToUpdateAllMessageTypes()
     {
         // given
         int durationNanos = 5;
@@ -63,13 +63,13 @@ public class RaftMessageProcessingMetricTest
     }
 
     @Test
-    public void shouldDefaultDelayToZero() throws Throwable
+    public void shouldDefaultDelayToZero()
     {
         assertEquals( 0, metric.delay() );
     }
 
     @Test
-    public void shouldUpdateDelay() throws Throwable
+    public void shouldUpdateDelay()
     {
         metric.setDelay( Duration.ofMillis( 5 ) );
         assertEquals( 5, metric.delay() );

@@ -93,7 +93,7 @@ public class StoreSizeBeanTest
     }
 
     @Before
-    public void setUp() throws Throwable
+    public void setUp()
     {
         DataSourceManager dataSourceManager = new DataSourceManager();
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );

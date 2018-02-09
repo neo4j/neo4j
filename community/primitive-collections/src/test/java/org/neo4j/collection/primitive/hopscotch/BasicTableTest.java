@@ -216,7 +216,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldSetAndGetSmallKey() throws Exception
+    public void shouldSetAndGetSmallKey()
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -239,7 +239,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldSetAndGetBigKey() throws Exception
+    public void shouldSetAndGetBigKey()
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -259,7 +259,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldRemoveBigKey() throws Exception
+    public void shouldRemoveBigKey()
     {
         assumeTrue( factory.supportsLongs() );
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
@@ -280,7 +280,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldSetHopBits() throws Exception
+    public void shouldSetHopBits()
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -299,7 +299,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldMoveHopBit() throws Exception
+    public void shouldMoveHopBit()
     {
         try ( Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {
@@ -317,7 +317,7 @@ public class BasicTableTest
     }
 
     @Test
-    public void shouldClearTable() throws Exception
+    public void shouldClearTable()
     {
         try ( Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY ) )
         {

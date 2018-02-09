@@ -37,7 +37,7 @@ public class SimpleBitSetTest
 {
 
     @Test
-    public void put() throws Exception
+    public void put()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -58,7 +58,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void putAndRemove() throws Exception
+    public void putAndRemove()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -78,7 +78,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void putOtherBitSet() throws Exception
+    public void putOtherBitSet()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -105,7 +105,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void removeOtherBitSet() throws Exception
+    public void removeOtherBitSet()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 16 );
@@ -132,7 +132,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void resize() throws Exception
+    public void resize()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 8 );
@@ -148,7 +148,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void shouldAllowIterating() throws Exception
+    public void shouldAllowIterating()
     {
         // Given
         SimpleBitSet set = new SimpleBitSet( 64 );
@@ -165,7 +165,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointOnUnchangedSetMustDoNothing() throws Exception
+    public void checkPointOnUnchangedSetMustDoNothing()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -177,7 +177,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointOnUnchangedSetButWithDifferentKeyMustUpdateSet() throws Exception
+    public void checkPointOnUnchangedSetButWithDifferentKeyMustUpdateSet()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -190,7 +190,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointOnChangedSetMustClearState() throws Exception
+    public void checkPointOnChangedSetMustClearState()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -204,7 +204,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void checkPointMustBeAbleToExpandCapacity() throws Exception
+    public void checkPointMustBeAbleToExpandCapacity()
     {
         SimpleBitSet set = new SimpleBitSet( 16 );
         int key = 10;
@@ -218,7 +218,7 @@ public class SimpleBitSetTest
     }
 
     @Test
-    public void modificationsMustTakeWriteLocks() throws Exception
+    public void modificationsMustTakeWriteLocks()
     {
         // We can observe that a write lock was taken, by seeing that an optimistic read lock was invalidated.
         SimpleBitSet set = new SimpleBitSet( 16 );

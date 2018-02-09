@@ -55,20 +55,17 @@ public class DatabaseAvailability implements Lifecycle
 
     @Override
     public void init()
-            throws Throwable
     {
     }
 
     @Override
     public void start()
-            throws Throwable
     {
         availabilityGuard.fulfill( AVAILABILITY_REQUIREMENT );
     }
 
     @Override
     public void stop()
-            throws Throwable
     {
         // Database is no longer available for use
         // Deny beginning new transactions
@@ -90,7 +87,6 @@ public class DatabaseAvailability implements Lifecycle
 
     @Override
     public void shutdown()
-            throws Throwable
     {
         // TODO: Starting database. Make sure none can access it through lock or CAS
     }

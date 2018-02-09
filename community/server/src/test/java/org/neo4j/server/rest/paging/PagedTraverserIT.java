@@ -96,7 +96,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     }
 
     @Before
-    public void setupTheDatabase() throws Exception
+    public void setupTheDatabase()
     {
         ServerHelper.cleanTheDatabase( server );
     }
@@ -133,7 +133,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
                  "options apply as for a regular traverser, meaning that +node+, +path+,\n" +
                  "or +fullpath+, can be targeted." )
     @Test
-    public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults() throws Exception
+    public void shouldPostATraverserWithDefaultOptionsAndReceiveTheFirstPageOfResults()
     {
         theStartNode = createLinkedList( SHORT_LIST_LENGTH, server.getDatabase() );
 

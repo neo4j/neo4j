@@ -26,20 +26,20 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.AuthToken;
 
 /**
  * A cacheable object that can be returned as the result of successful authentication by an
- * <tt>AuthPlugin</tt>.
+ * {@link AuthPlugin}.
  *
  * <p>This object can be cached by the Neo4j authentication cache.
  *
  * <p>This result type is used if you want Neo4j to manage secure hashing and matching of cached credentials.
  * If you instead want to manage this yourself you need to use the separate interfaces
- * <tt>AuthenticationPlugin</tt> and <tt>AuthorizationPlugin</tt> together with
- * a <tt>CustomCacheableAuthenticationInfo</tt> result.
+ * {@link AuthenticationPlugin} and {@link AuthorizationPlugin} together with
+ * a {@link CustomCacheableAuthenticationInfo} result.
  *
  * <p>NOTE: Caching of authentication info only occurs if it is explicitly enabled by the plugin, whereas
  * caching of authorization info (assigned roles) is enabled by default.
  *
- * <p>NOTE: Caching of the authorization info (assigned roles) does not require the use of a <tt>CacheableAuthInfo</tt>
- * but will work fine with a regular <tt>AuthInfo</tt>.
+ * <p>NOTE: Caching of the authorization info (assigned roles) does not require the use of a {@link CacheableAuthInfo}
+ * but will work fine with a regular {@link AuthInfo}.
  *
  * @see AuthPlugin#authenticateAndAuthorize(AuthToken)
  * @see AuthProviderOperations#setAuthenticationCachingEnabled(boolean)
@@ -65,8 +65,7 @@ public interface CacheableAuthInfo extends AuthInfo
 
     /**
      * Should return credentials that can be cached, so that successive authentication attempts could be performed
-     * against the cached authentication info from a previous successful authentication attempt, without having to
-     * call <tt>AuthInfo.getAuthInfo()</tt> again.
+     * against the cached authentication info from a previous successful authentication attempt.
      *
      * <p>NOTE: The returned credentials will be hashed using a cryptographic hash function together
      * with a random salt (generated with a secure random number generator) before being stored.

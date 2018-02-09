@@ -78,7 +78,7 @@ public class BatchAppendLogEntriesTest
     }
 
     @Test
-    public void applyTo() throws Exception
+    public void applyTo()
     {
         //Test that batch commands apply entries to the cache.
 

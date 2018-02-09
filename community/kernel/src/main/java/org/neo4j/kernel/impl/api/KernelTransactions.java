@@ -249,21 +249,21 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         stopped = false;
         unblockNewTransactions();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         blockNewTransactions();
         stopped = true;
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         disposeAll();
     }

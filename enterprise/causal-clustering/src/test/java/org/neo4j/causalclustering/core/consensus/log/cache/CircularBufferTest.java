@@ -33,7 +33,7 @@ public class CircularBufferTest
     private final ThreadLocalRandom tlr = ThreadLocalRandom.current();
 
     @Test
-    public void shouldBeInitiallyEmpty() throws Exception
+    public void shouldBeInitiallyEmpty()
     {
         // when
         CircularBuffer<Object> buffer = new CircularBuffer<>( 3 );
@@ -50,7 +50,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void removeShouldReturnNullWhenEmpty() throws Exception
+    public void removeShouldReturnNullWhenEmpty()
     {
         // given
         CircularBuffer<Object> buffer = new CircularBuffer<>( 3 );
@@ -69,7 +69,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void shouldEvictElementsWhenClearing() throws Exception
+    public void shouldEvictElementsWhenClearing()
     {
         // given
         CircularBuffer<Integer> buffer = new CircularBuffer<>( 3 );
@@ -86,7 +86,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void shouldNullRemovedElements() throws Exception
+    public void shouldNullRemovedElements()
     {
         // given
         CircularBuffer<Integer> buffer = new CircularBuffer<>( 3 );
@@ -107,7 +107,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void shouldNullClearedElements() throws Exception
+    public void shouldNullClearedElements()
     {
         // given
         CircularBuffer<Integer> buffer = new CircularBuffer<>( 3 );
@@ -126,7 +126,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRemove() throws Exception
+    public void comprehensivelyTestAppendRemove()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -138,7 +138,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRemoveHead() throws Exception
+    public void comprehensivelyTestAppendRemoveHead()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -150,7 +150,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRemoveReusingBuffer() throws Exception
+    public void comprehensivelyTestAppendRemoveReusingBuffer()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -162,7 +162,7 @@ public class CircularBufferTest
         }
     }
 
-    private void comprehensivelyTestAppendRemove( int capacity, int operations, CircularBuffer<Integer> buffer ) throws Exception
+    private void comprehensivelyTestAppendRemove( int capacity, int operations, CircularBuffer<Integer> buffer )
     {
         ArrayList<Integer> numbers = new ArrayList<>( operations );
 
@@ -189,7 +189,7 @@ public class CircularBufferTest
         assertEquals( 0, buffer.size() );
     }
 
-    private void comprehensivelyTestAppendRemoveHead( int capacity, int operations, CircularBuffer<Integer> buffer ) throws Exception
+    private void comprehensivelyTestAppendRemoveHead( int capacity, int operations, CircularBuffer<Integer> buffer )
     {
         ArrayList<Integer> numbers = new ArrayList<>( operations );
 
@@ -217,7 +217,7 @@ public class CircularBufferTest
     }
 
     @Test
-    public void comprehensivelyTestAppendRead() throws Exception
+    public void comprehensivelyTestAppendRead()
     {
         for ( int capacity = 1; capacity <= 128; capacity++ )
         {
@@ -228,7 +228,7 @@ public class CircularBufferTest
         }
     }
 
-    private void comprehensivelyTestAppendRead( int capacity, int operations ) throws Exception
+    private void comprehensivelyTestAppendRead( int capacity, int operations )
     {
         CircularBuffer<Integer> buffer = new CircularBuffer<>( capacity );
         ArrayList<Integer> numbers = new ArrayList<>( operations );

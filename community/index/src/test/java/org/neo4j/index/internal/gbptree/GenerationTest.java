@@ -26,13 +26,13 @@ import static org.junit.Assert.assertEquals;
 public class GenerationTest
 {
     @Test
-    public void shouldSetLowGenerations() throws Exception
+    public void shouldSetLowGenerations()
     {
         shouldComposeAndDecomposeGeneration( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
     }
 
     @Test
-    public void shouldSetHighGenerations() throws Exception
+    public void shouldSetHighGenerations()
     {
         shouldComposeAndDecomposeGeneration( GenerationSafePointer.MAX_GENERATION - 1, GenerationSafePointer.MAX_GENERATION );
     }

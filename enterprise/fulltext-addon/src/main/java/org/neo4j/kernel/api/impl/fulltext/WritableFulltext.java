@@ -30,7 +30,7 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 {
     private PartitionedIndexWriter indexWriter;
 
-    WritableFulltext( LuceneFulltext luceneFulltext ) throws IOException
+    WritableFulltext( LuceneFulltext luceneFulltext )
     {
         super( luceneFulltext );
     }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.server.enterprise;
 
-import java.io.PrintStream;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.PrintStream;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -50,7 +50,7 @@ public class ArbiterEntryPointTest
     }
 
     @Test
-    public void mainPrintsVersion() throws Exception
+    public void mainPrintsVersion()
     {
         // when
         ArbiterEntryPoint.main( new String[]{ "--version" } );

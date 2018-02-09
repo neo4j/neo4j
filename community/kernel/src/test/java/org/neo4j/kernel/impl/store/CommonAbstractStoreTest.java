@@ -192,7 +192,7 @@ public class CommonAbstractStoreTest
     }
 
     @Test
-    public void recordCursorPinsEachPageItReads() throws Exception
+    public void recordCursorPinsEachPageItReads()
     {
         File storeFile = dir.file( "a" );
         RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
@@ -307,7 +307,7 @@ public class CommonAbstractStoreTest
     }
 
     @Test
-    public void shouldDeleteOnCloseIfOpenOptionsSaysSo() throws Exception
+    public void shouldDeleteOnCloseIfOpenOptionsSaysSo()
     {
         // GIVEN
         File file = dir.file( "store" ).getAbsoluteFile();
@@ -372,7 +372,7 @@ public class CommonAbstractStoreTest
         }
 
         @Override
-        protected void initialiseNewStoreFile( PagedFile file ) throws IOException
+        protected void initialiseNewStoreFile( PagedFile file )
         {
         }
 

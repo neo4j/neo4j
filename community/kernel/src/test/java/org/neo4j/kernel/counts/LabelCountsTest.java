@@ -54,7 +54,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldGetNumberOfNodesWithLabel() throws Exception
+    public void shouldGetNumberOfNodesWithLabel()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -77,7 +77,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodes() throws Exception
+    public void shouldAccountForDeletedNodes()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -104,7 +104,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedNodesWithMultipleLabels() throws Exception
+    public void shouldAccountForDeletedNodesWithMultipleLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -134,7 +134,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForAddedLabels() throws Exception
+    public void shouldAccountForAddedLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -168,7 +168,7 @@ public class LabelCountsTest
     }
 
     @Test
-    public void shouldAccountForRemovedLabels() throws Exception
+    public void shouldAccountForRemovedLabels()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();

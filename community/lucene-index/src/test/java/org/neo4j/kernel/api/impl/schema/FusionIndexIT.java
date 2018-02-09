@@ -62,7 +62,7 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfNativePartIsMissing() throws Exception
+    public void mustRebuildFusionIndexIfNativePartIsMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
@@ -77,7 +77,7 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfLucenePartIsMissing() throws Exception
+    public void mustRebuildFusionIndexIfLucenePartIsMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();
@@ -92,7 +92,7 @@ public class FusionIndexIT
     }
 
     @Test
-    public void mustRebuildFusionIndexIfCompletelyMissing() throws Exception
+    public void mustRebuildFusionIndexIfCompletelyMissing()
     {
         // given
         initializeIndexWithDataAndShutdown();

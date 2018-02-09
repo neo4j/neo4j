@@ -33,7 +33,7 @@ public class Pullupdates extends NonTransactionProvidingApp
 {
     @Override
     protected Continuation exec( AppCommandParser parser, Session session, Output out )
-            throws ShellException, RemoteException
+            throws ShellException
     {
         try
         {

@@ -44,37 +44,37 @@ public class ProtocolInstallerRepositoryTest
             new ProtocolInstallerRepository<>( asList( raftProtocolServerInstaller ) );
 
     @Test
-    public void shouldReturnRaftServerInstaller() throws Throwable
+    public void shouldReturnRaftServerInstaller()
     {
         assertEquals( raftProtocolServerInstaller, serverRepository.installerFor( Protocol.Protocols.RAFT_1 ) );
     }
 
     @Test
-    public void shouldReturnRaftClientInstaller() throws Throwable
+    public void shouldReturnRaftClientInstaller()
     {
         assertEquals( raftProtocolClientInstaller, clientRepository.installerFor( Protocol.Protocols.RAFT_1 ) );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldNotInitialiseIfMultipleInstallersForSameProtocolForServer() throws Throwable
+    public void shouldNotInitialiseIfMultipleInstallersForSameProtocolForServer()
     {
         new ProtocolInstallerRepository<>( asList( raftProtocolServerInstaller, raftProtocolServerInstaller ) );
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldNotInitialiseIfMultipleInstallersForSameProtocolForClient() throws Throwable
+    public void shouldNotInitialiseIfMultipleInstallersForSameProtocolForClient()
     {
         new ProtocolInstallerRepository<>( asList( raftProtocolClientInstaller, raftProtocolClientInstaller ) );
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowIfUnknownProtocolForServer() throws Throwable
+    public void shouldThrowIfUnknownProtocolForServer()
     {
         serverRepository.installerFor( TestProtocols.RAFT_3 );
     }
 
     @Test( expected = IllegalStateException.class )
-    public void shouldThrowIfUnknownProtocolForClient() throws Throwable
+    public void shouldThrowIfUnknownProtocolForClient()
     {
         clientRepository.installerFor( TestProtocols.RAFT_3 );
     }

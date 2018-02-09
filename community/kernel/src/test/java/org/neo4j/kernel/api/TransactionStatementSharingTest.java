@@ -32,7 +32,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 public class TransactionStatementSharingTest
 {
     @Test
-    public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement() throws Exception
+    public void shouldShareStatementStateForConcurrentReadStatementAndReadStatement()
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.read() );
@@ -130,7 +130,7 @@ public class TransactionStatementSharingTest
     }
 
     @Test
-    public void shouldNotShareStateForSequentialReadStatementAndReadStatement() throws Exception
+    public void shouldNotShareStateForSequentialReadStatementAndReadStatement()
     {
         // given
         KernelTransactionFactory.Instances instances =

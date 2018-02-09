@@ -194,7 +194,7 @@ public class Message<MESSAGETYPE extends MessageType>
             return false;
         }
 
-        Message message = (Message) o;
+        Message<?> message = (Message<?>) o;
 
         if ( headers != null ? !headers.equals( message.headers ) : message.headers != null )
         {
@@ -219,6 +219,6 @@ public class Message<MESSAGETYPE extends MessageType>
     @Override
     public String toString()
     {
-        return messageType.name() + headers + (payload != null && payload instanceof String ? ": " + payload : "");
+        return messageType.name() + headers + (payload instanceof String ? ": " + payload : "");
     }
 }

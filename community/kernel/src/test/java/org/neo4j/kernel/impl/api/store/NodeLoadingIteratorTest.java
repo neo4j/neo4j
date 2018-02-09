@@ -43,7 +43,7 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.emptyItera
 public class NodeLoadingIteratorTest
 {
     @Test
-    public void shouldHandleAnEmptyIterator() throws Exception
+    public void shouldHandleAnEmptyIterator()
     {
         // given
         NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), id ->
@@ -56,7 +56,7 @@ public class NodeLoadingIteratorTest
     }
 
     @Test
-    public void shouldHandleANonEmptyIterator() throws Exception
+    public void shouldHandleANonEmptyIterator()
     {
         // given
         Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );
@@ -77,7 +77,7 @@ public class NodeLoadingIteratorTest
     }
 
     @Test
-    public void shouldHandleANonEmptyIteratorWithNotFoundEntities() throws Exception
+    public void shouldHandleANonEmptyIteratorWithNotFoundEntities()
     {
         // given
         Map<Long,Cursor<NodeItem>> map = new HashMap<>( 3 );

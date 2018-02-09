@@ -62,7 +62,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldReportNumberOfRelationshipsInAnEmptyGraph() throws Exception
+    public void shouldReportNumberOfRelationshipsInAnEmptyGraph()
     {
         // when
         long relationshipCount = numberOfRelationships();
@@ -72,7 +72,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldReportTotalNumberOfRelationships() throws Exception
+    public void shouldReportTotalNumberOfRelationships()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -98,7 +98,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldAccountForDeletedRelationships() throws Exception
+    public void shouldAccountForDeletedRelationships()
     {
         // given
         GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -215,7 +215,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldCountRelationshipsByType() throws Exception
+    public void shouldCountRelationshipsByType()
     {
         // given
         final GraphDatabaseService graphDb = db.getGraphDatabaseAPI();
@@ -246,7 +246,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodeWithRelationship() throws Exception
+    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodeWithRelationship()
     {
         // given
         Node foo;
@@ -278,7 +278,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodesWithRelationships() throws Exception
+    public void shouldUpdateRelationshipWithLabelCountsWhenDeletingNodesWithRelationships()
     {
         // given
         int numberOfNodes = 2;
@@ -336,7 +336,7 @@ public class RelationshipCountsTest
     }
 
     @Test
-    public void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship() throws Exception
+    public void shouldUpdateRelationshipWithLabelCountsWhenRemovingLabelAndDeletingRelationship()
     {
         // given
         Node foo;

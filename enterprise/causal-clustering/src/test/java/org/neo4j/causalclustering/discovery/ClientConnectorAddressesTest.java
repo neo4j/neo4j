@@ -33,7 +33,7 @@ import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Sche
 public class ClientConnectorAddressesTest
 {
     @Test
-    public void shouldSerializeToString() throws Exception
+    public void shouldSerializeToString()
     {
         // given
         ClientConnectorAddresses connectorAddresses = new ClientConnectorAddresses( asList(
@@ -61,7 +61,7 @@ public class ClientConnectorAddressesTest
     }
 
     @Test
-    public void shouldSerializeWithNoHttpsAddress() throws Exception
+    public void shouldSerializeWithNoHttpsAddress()
     {
         // given
         ClientConnectorAddresses connectorAddresses = new ClientConnectorAddresses( asList(

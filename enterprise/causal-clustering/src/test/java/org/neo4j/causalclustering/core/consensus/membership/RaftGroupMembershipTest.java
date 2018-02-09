@@ -54,7 +54,7 @@ public class RaftGroupMembershipTest
     private Inbound inbound;
 
     @Test
-    public void shouldNotFormGroupWithoutAnyBootstrapping() throws Exception
+    public void shouldNotFormGroupWithoutAnyBootstrapping()
     {
         // given
         DirectNetworking net = new DirectNetworking();

@@ -59,7 +59,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
     }
 
     @Override
-    public void shouldFailIfMalformedAuthTokenUnknownScheme() throws Throwable
+    public void shouldFailIfMalformedAuthTokenUnknownScheme()
     {
         // Ignore this test in enterprise since custom schemes may be allowed
     }

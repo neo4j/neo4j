@@ -48,7 +48,7 @@ public class CoreSnapshotRequestHandler extends SimpleChannelInboundHandler<Core
         protocol.expect( State.MESSAGE_TYPE );
     }
 
-    private void sendStates( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot ) throws IOException
+    private void sendStates( ChannelHandlerContext ctx, CoreSnapshot coreSnapshot )
     {
         ctx.writeAndFlush( ResponseMessageType.CORE_SNAPSHOT );
         ctx.writeAndFlush( coreSnapshot );

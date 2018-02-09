@@ -32,9 +32,9 @@ import org.neo4j.causalclustering.catchup.CatchUpResponseCallback;
 import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
-import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.core.consensus.schedule.CountingTimerService;
 import org.neo4j.causalclustering.core.consensus.schedule.Timer;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
@@ -189,7 +189,7 @@ public class CatchupPollingProcessTest
     }
 
     @Test
-    public void shouldNotRenewTheTimeoutIfInPanicState() throws Throwable
+    public void shouldNotRenewTheTimeoutIfInPanicState()
     {
         // given
         txPuller.start();

@@ -119,7 +119,7 @@ public class IndexConfigStore extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         // Refresh the read config
         nodeConfig.clear();

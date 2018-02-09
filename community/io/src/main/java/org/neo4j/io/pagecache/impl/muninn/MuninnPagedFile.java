@@ -218,7 +218,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         pageCache.unmap( this );
     }
@@ -504,7 +504,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return success;
     }
 
-    private void syncDevice() throws IOException
+    private void syncDevice()
     {
         pageCache.syncDevice();
     }

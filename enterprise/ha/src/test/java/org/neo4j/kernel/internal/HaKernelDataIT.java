@@ -36,7 +36,7 @@ import static org.junit.Assert.assertSame;
 public class HaKernelDataIT
 {
     @Test
-    public void shouldReturnHaGraphDbFromKernelData() throws Exception
+    public void shouldReturnHaGraphDbFromKernelData()
     {
         // given
         HighlyAvailableGraphDatabase haGraphDb = ha.getResource();
@@ -50,7 +50,7 @@ public class HaKernelDataIT
     public final ManagedResource<HighlyAvailableGraphDatabase> ha = new ManagedResource<HighlyAvailableGraphDatabase>()
     {
         @Override
-        protected HighlyAvailableGraphDatabase createResource( TestDirectory dir ) throws Exception
+        protected HighlyAvailableGraphDatabase createResource( TestDirectory dir )
         {
             int clusterPort = PortAuthority.allocatePort();
 

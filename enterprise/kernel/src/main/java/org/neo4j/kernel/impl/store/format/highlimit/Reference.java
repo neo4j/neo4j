@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -94,7 +92,7 @@ public enum Reference
         return (absoluteReference & valueOverflowMask) == 0;
     }
 
-    private void encode( long absoluteReference, boolean positive, PageCursor source ) throws IOException
+    private void encode( long absoluteReference, boolean positive, PageCursor source )
     {
         // use big-endianness, most significant byte written first, since it contains encoding information
         int shift = (numberOfBytes - 1) << 3;
@@ -116,7 +114,7 @@ public enum Reference
         return Long.SIZE - Long.numberOfLeadingZeros( ~valueOverflowMask );
     }
 
-    public static void encode( long reference, PageCursor target ) throws IOException
+    public static void encode( long reference, PageCursor target )
     {
         // checking with < 0 seems to be the fastest way of telling
         boolean positive = reference >= 0;

@@ -49,7 +49,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
     }
 
     @Test
-    public void testSingleThread() throws Exception
+    public void testSingleThread()
     {
         try
         {

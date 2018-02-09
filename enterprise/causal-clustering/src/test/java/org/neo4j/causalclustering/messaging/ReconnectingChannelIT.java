@@ -52,7 +52,7 @@ public class ReconnectingChannelIT
     private static final ChannelHandler VOID_HANDLER = new ChannelInitializer<SocketChannel>()
     {
         @Override
-        protected void initChannel( SocketChannel ch ) throws Exception
+        protected void initChannel( SocketChannel ch )
         {
         }
     };

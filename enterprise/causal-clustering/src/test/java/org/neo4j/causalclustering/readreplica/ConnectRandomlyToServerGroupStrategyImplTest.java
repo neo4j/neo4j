@@ -49,7 +49,7 @@ import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStr
 public class ConnectRandomlyToServerGroupStrategyImplTest
 {
     @Test
-    public void shouldStayWithinGivenSingleServerGroup() throws Exception
+    public void shouldStayWithinGivenSingleServerGroup()
     {
         // given
         final List<String> myServerGroup = Collections.singletonList( "my_server_group" );
@@ -67,7 +67,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
     }
 
     @Test
-    public void shouldSelectAnyFromMultipleServerGroups() throws Exception
+    public void shouldSelectAnyFromMultipleServerGroups()
     {
         // given
         final List<String> myServerGroups = Arrays.asList( "a", "b", "c" );
@@ -85,7 +85,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
     }
 
     @Test
-    public void shouldReturnEmptyIfNoGroupsInConfig() throws Exception
+    public void shouldReturnEmptyIfNoGroupsInConfig()
     {
         // given
         MemberId[] myGroupMemberIds = memberIDs( 10 );
@@ -101,7 +101,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
     }
 
     @Test
-    public void shouldReturnEmptyIfGroupOnlyContainsSelf() throws Exception
+    public void shouldReturnEmptyIfGroupOnlyContainsSelf()
     {
         // given
         final List<String> myServerGroup = Collections.singletonList( "group" );

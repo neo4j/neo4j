@@ -123,14 +123,14 @@ class Follower implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws IOException
+        public Outcome handle( RaftMessages.LogCompactionInfo logCompactionInfo )
         {
             handleLeaderLogCompaction( ctx, outcome, logCompactionInfo );
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.Vote.Response response ) throws IOException
+        public Outcome handle( RaftMessages.Vote.Response response )
         {
             log.info( "Late vote response: %s", response );
             return outcome;
@@ -156,13 +156,13 @@ class Follower implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( AppendEntries.Response response ) throws IOException
+        public Outcome handle( AppendEntries.Response response )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws IOException
+        public Outcome handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
             return outcome;
         }
@@ -180,13 +180,13 @@ class Follower implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.NewEntry.Request request ) throws IOException
+        public Outcome handle( RaftMessages.NewEntry.Request request )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws IOException
+        public Outcome handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
             return outcome;
         }
@@ -337,7 +337,6 @@ class Follower implements RaftMessageHandler
             }
             return outcome;
         }
-
         private static PreVoteResponseHandler instance = new PreVoteResponseSolicitingHandler();
     }
 

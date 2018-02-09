@@ -56,7 +56,7 @@ public class SchemaIndexWaitingAcceptanceTest
     };
 
     @Test
-    public void shouldTimeoutWatingForIndexToComeOnline() throws Exception
+    public void shouldTimeoutWatingForIndexToComeOnline()
     {
         // given
         GraphDatabaseService db = rule.getGraphDatabaseAPI();
@@ -91,7 +91,7 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
-    public void shouldTimeoutWatingForAllIndexesToComeOnline() throws Exception
+    public void shouldTimeoutWatingForAllIndexesToComeOnline()
     {
         // given
         GraphDatabaseService db = rule.getGraphDatabaseAPI();

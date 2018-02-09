@@ -53,7 +53,7 @@ public class NodeTest
     public ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels() throws Exception
+    public void shouldGiveHelpfulExceptionWhenDeletingNodeWithRels()
     {
         // Given
         Node node;

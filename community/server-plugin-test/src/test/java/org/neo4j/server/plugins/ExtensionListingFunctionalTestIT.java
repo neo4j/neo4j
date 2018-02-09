@@ -44,7 +44,7 @@ public class ExtensionListingFunctionalTestIT extends SharedServerTestBase
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( SharedServerTestBase.server() );
     }

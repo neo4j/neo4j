@@ -34,7 +34,7 @@ import static org.neo4j.graphdb.Label.label;
 public class SchemaIndexRepresentationTest
 {
     @Test
-    public void shouldIncludeLabel() throws Exception
+    public void shouldIncludeLabel()
     {
         // GIVEN
         String labelName = "person";

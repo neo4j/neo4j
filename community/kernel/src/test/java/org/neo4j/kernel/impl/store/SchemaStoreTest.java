@@ -63,7 +63,7 @@ public class SchemaStoreTest
     private StoreFactory storeFactory;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
@@ -76,7 +76,7 @@ public class SchemaStoreTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         neoStores.close();
     }
@@ -137,7 +137,7 @@ public class SchemaStoreTest
     }
 
     @Test
-    public void storeAndLoadAllRules() throws Exception
+    public void storeAndLoadAllRules()
     {
         // GIVEN
         long indexId = store.nextId();

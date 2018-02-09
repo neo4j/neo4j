@@ -39,21 +39,21 @@ public class StartupConstraintSemanticsTest
     public final TestDirectory dir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition() throws Exception
+    public void shouldNotAllowOpeningADatabaseWithPECInCommunityEdition()
     {
         assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT exists(n.required)",
                 StandardConstraintSemantics.ERROR_MESSAGE_EXISTS );
     }
 
     @Test
-    public void shouldNotAllowOpeningADatabaseWithNodeKeyInCommunityEdition() throws Exception
+    public void shouldNotAllowOpeningADatabaseWithNodeKeyInCommunityEdition()
     {
         assertThatCommunityCannotStartOnEnterpriseOnlyConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT (n.required) IS NODE KEY",
                 StandardConstraintSemantics.ERROR_MESSAGE_NODE_KEY );
     }
 
     @Test
-    public void shouldAllowOpeningADatabaseWithUniqueConstraintInCommunityEdition() throws Exception
+    public void shouldAllowOpeningADatabaseWithUniqueConstraintInCommunityEdition()
     {
         assertThatCommunityCanStartOnNormalConstraint( "CREATE CONSTRAINT ON (n:Draconian) ASSERT (n.required) IS UNIQUE" );
     }

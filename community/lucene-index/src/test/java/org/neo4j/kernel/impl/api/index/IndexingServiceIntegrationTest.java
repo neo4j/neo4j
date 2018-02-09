@@ -138,7 +138,7 @@ public class IndexingServiceIntegrationTest
     }
 
     @Test
-    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException, IOException
+    public void testSchemaIndexMatchIndexingService() throws IndexNotFoundKernelException
     {
         try ( Transaction transaction = database.beginTx() )
         {

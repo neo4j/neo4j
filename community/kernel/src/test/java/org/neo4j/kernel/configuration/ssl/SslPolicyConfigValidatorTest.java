@@ -103,7 +103,7 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldIgnoreUnknownNonPolicySettings() throws Exception
+    public void shouldIgnoreUnknownNonPolicySettings()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();

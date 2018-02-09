@@ -42,7 +42,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     private final SchemaIndex luceneIndex;
     private final IndexDescriptor descriptor;
 
-    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor ) throws IOException
+    public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
@@ -164,7 +164,7 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close() throws IOException
         {
             if ( hasChanges && refresh )
             {

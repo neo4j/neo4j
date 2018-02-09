@@ -140,7 +140,7 @@ public class RecoveryRequiredCheckerTest
         }
     }
 
-    private FileSystemAbstraction createAndCrashWithDefaultConfig() throws IOException
+    private FileSystemAbstraction createAndCrashWithDefaultConfig()
     {
         return createSomeDataAndCrash( storeDir, fileSystem, Config.defaults() );
     }

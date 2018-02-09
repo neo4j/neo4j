@@ -179,7 +179,7 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
-    public ServletInputStream getInputStream() throws IOException
+    public ServletInputStream getInputStream()
     {
         return input;
     }
@@ -191,7 +191,7 @@ public class InternalJettyServletRequest extends Request
     }
 
     @Override
-    public BufferedReader getReader() throws IOException
+    public BufferedReader getReader()
     {
         return inputReader;
     }

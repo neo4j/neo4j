@@ -292,7 +292,7 @@ class ClusterInstance
 
         ProtocolServer snapshotProtocolServer = factory.constructSupportingInfrastructureFor( server.getServerId(),
                 input, output, executor, timeoutsSnapshot, stateMachineExecutor,
-                snapshotCtx, snapshotMachines.toArray( new StateMachine[snapshotMachines.size()] ) );
+                snapshotCtx, snapshotMachines.toArray( new StateMachine[0] ) );
 
         return new ClusterInstance( stateMachineExecutor, logging, factory, snapshotProtocolServer, snapshotCtx,
                 snapshotAcceptorInstances, timeoutsSnapshot, input, output, uri );

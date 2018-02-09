@@ -60,19 +60,19 @@ public class SchemaIndexAcceptanceTest
     private final String propertyKey = "key";
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         db = newDb();
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
 
     @Test
-    public void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup() throws Exception
+    public void creatingIndexOnExistingDataBuildsIndexWhichWillBeOnlineNextStartup()
     {
         Node node1;
         Node node2;
@@ -95,7 +95,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexArrays() throws Exception
+    public void shouldIndexArrays()
     {
         long[] arrayPropertyValue = {42, 23, 87};
         createIndex( db, label, propertyKey );
@@ -115,7 +115,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexStringArrays() throws Exception
+    public void shouldIndexStringArrays()
     {
         String[] arrayPropertyValue = {"A, B", "C"};
         createIndex( db, label, propertyKey );
@@ -136,7 +136,7 @@ public class SchemaIndexAcceptanceTest
     }
 
     @Test
-    public void shouldIndexArraysPostPopulation() throws Exception
+    public void shouldIndexArraysPostPopulation()
     {
         long[] arrayPropertyValue = {42, 23, 87};
         Node node1;

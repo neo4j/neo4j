@@ -148,14 +148,12 @@ public class NetworkSender
 
     @Override
     public void init()
-            throws Throwable
     {
         ThreadRenamingRunnable.setThreadNameDeterminer( ThreadNameDeterminer.CURRENT );
     }
 
     @Override
     public void start()
-            throws Throwable
     {
         channels = new DefaultChannelGroup();
 
@@ -207,7 +205,6 @@ public class NetworkSender
 
     @Override
     public void shutdown()
-            throws Throwable
     {
     }
 
@@ -408,7 +405,7 @@ public class NetworkSender
             implements ChannelPipelineFactory
     {
         @Override
-        public ChannelPipeline getPipeline() throws Exception
+        public ChannelPipeline getPipeline()
         {
             ChannelPipeline pipeline = Channels.pipeline();
             pipeline.addLast( "frameEncoder", new ObjectEncoder( 2048 ) );
@@ -431,14 +428,14 @@ public class NetworkSender
         }
 
         @Override
-        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e ) throws Exception
+        public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
         {
             closedChannel( ctx.getChannel() );
             channels.remove( ctx.getChannel() );
         }
 
         @Override
-        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
+        public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
         {
             Throwable cause = e.getCause();
             if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )

@@ -235,7 +235,6 @@ public class NeoStoreFileListingTest
     }
 
     private ResourceIterator<File> scanStoreFilesAre( LabelScanStore labelScanStore, String[] fileNames )
-            throws IOException
     {
         ArrayList<File> files = new ArrayList<>();
         mockFiles( fileNames, files, false );

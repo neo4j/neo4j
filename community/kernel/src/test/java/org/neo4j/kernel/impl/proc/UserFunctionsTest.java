@@ -141,7 +141,7 @@ public class UserFunctionsTest
     }
 
     @Test
-    public void shouldSignalNonExistingFunction() throws Throwable
+    public void shouldSignalNonExistingFunction()
     {
         // When
         assertThat(procs.function( signature.name() ), is( Optional.empty()));
@@ -189,7 +189,7 @@ public class UserFunctionsTest
         return new CallableUserAggregationFunction.BasicUserAggregationFunction( signature )
         {
             @Override
-            public Aggregator create( Context ctx ) throws ProcedureException
+            public Aggregator create( Context ctx )
             {
                 return null;
             }

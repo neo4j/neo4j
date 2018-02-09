@@ -153,7 +153,7 @@ public class ConsistencyReporterTest
         }
 
         @Test
-        public void shouldIncludeStackTraceInUnexpectedCheckException() throws Exception
+        public void shouldIncludeStackTraceInUnexpectedCheckException()
         {
             // GIVEN
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );

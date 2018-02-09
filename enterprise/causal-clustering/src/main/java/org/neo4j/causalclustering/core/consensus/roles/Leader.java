@@ -102,14 +102,14 @@ public class Leader implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws IOException
+        public Outcome handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
             outcome.addHeartbeatResponse( heartbeatResponse.from() );
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.Timeout.Election election ) throws IOException
+        public Outcome handle( RaftMessages.Timeout.Election election )
         {
             if ( !isQuorum( ctx.votingMembers().size(), ctx.heartbeatResponses().size() ) )
             {
@@ -267,14 +267,14 @@ public class Leader implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.PruneRequest pruneRequest ) throws IOException
+        public Outcome handle( RaftMessages.PruneRequest pruneRequest )
         {
             Pruning.handlePruneRequest( outcome, pruneRequest );
             return outcome;
         }
 
         @Override
-        public Outcome handle( RaftMessages.Vote.Response response ) throws IOException
+        public Outcome handle( RaftMessages.Vote.Response response )
         {
             return outcome;
         }
@@ -296,13 +296,13 @@ public class Leader implements RaftMessageHandler
         }
 
         @Override
-        public Outcome handle( RaftMessages.PreVote.Response response ) throws IOException
+        public Outcome handle( RaftMessages.PreVote.Response response )
         {
             return outcome;
         }
 
         @Override
-        public Outcome handle( LogCompactionInfo logCompactionInfo ) throws IOException
+        public Outcome handle( LogCompactionInfo logCompactionInfo )
         {
             return outcome;
         }

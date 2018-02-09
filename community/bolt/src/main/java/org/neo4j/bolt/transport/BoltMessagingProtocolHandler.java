@@ -31,7 +31,7 @@ import java.io.IOException;
 public interface BoltMessagingProtocolHandler
 {
     /** Handle an incoming message, and reply if desired via the {@code ctx} argument */
-    void handle( ChannelHandlerContext ctx, ByteBuf data ) throws IOException;
+    void handle( ChannelHandlerContext ctx, ByteBuf data );
 
     /** Used for version negotiation */
     int version();

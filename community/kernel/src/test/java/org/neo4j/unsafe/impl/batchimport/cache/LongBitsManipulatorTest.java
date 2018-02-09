@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class LongBitsManipulatorTest
 {
     @Test
-    public void shouldManageTwoSlots() throws Exception
+    public void shouldManageTwoSlots()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
@@ -42,7 +42,7 @@ public class LongBitsManipulatorTest
     }
 
     @Test
-    public void shouldInterpretAllOnesAsMinusOne() throws Exception
+    public void shouldInterpretAllOnesAsMinusOne()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 64 - 29, 29 );
@@ -55,7 +55,7 @@ public class LongBitsManipulatorTest
     }
 
     @Test
-    public void shouldHandleMinusOneValues() throws Exception
+    public void shouldHandleMinusOneValues()
     {
         // GIVEN
         LongBitsManipulator manipulator = new LongBitsManipulator( 1, 5, 10, 16, 32 ); // = 64 bits

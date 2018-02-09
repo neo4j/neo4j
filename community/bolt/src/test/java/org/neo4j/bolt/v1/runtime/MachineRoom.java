@@ -90,7 +90,7 @@ public class MachineRoom
         machine.init( USER_AGENT, emptyMap(), nullResponseHandler() );
     }
 
-    private static void runBegin( BoltStateMachine machine ) throws AuthenticationException, BoltConnectionFatality
+    private static void runBegin( BoltStateMachine machine ) throws BoltConnectionFatality
     {
         machine.run( "BEGIN", EMPTY_PARAMS, nullResponseHandler() );
         machine.discardAll( nullResponseHandler() );

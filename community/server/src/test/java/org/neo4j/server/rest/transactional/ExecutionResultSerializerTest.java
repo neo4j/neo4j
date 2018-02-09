@@ -786,7 +786,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         return planDescription;
     }
 
-    private JsonNode assertIsPlanRoot( String result ) throws UnsupportedEncodingException, JsonParseException
+    private JsonNode assertIsPlanRoot( String result ) throws JsonParseException
     {
         JsonNode json = jsonNode( result );
         JsonNode results = json.get( "results" ).get( 0 );
@@ -809,7 +809,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldLogIOErrors() throws Exception
+    public void shouldLogIOErrors()
     {
         // given
         IOException failure = new IOException();
@@ -828,7 +828,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
     }
 
     @Test
-    public void shouldAbbreviateWellKnownIOErrors() throws Exception
+    public void shouldAbbreviateWellKnownIOErrors()
     {
         // given
         OutputStream output = mock( OutputStream.class, new ThrowsException( new IOException( "Broken pipe" ) ) );

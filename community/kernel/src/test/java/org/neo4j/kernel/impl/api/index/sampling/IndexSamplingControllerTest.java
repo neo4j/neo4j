@@ -66,7 +66,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartAJobIfTheIndexIsNotOnline() throws InterruptedException
+    public void shouldNotStartAJobIfTheIndexIsNotOnline()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );

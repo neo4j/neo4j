@@ -38,7 +38,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordWithNoPropertyReference() throws Exception
+    public void shouldNotReportAnythingForRecordWithNoPropertyReference()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();
@@ -51,7 +51,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldNotReportAnythingForRecordWithConsistentReferenceToProperty() throws Exception
+    public void shouldNotReportAnythingForRecordWithConsistentReferenceToProperty()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();
@@ -65,7 +65,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotInUse() throws Exception
+    public void shouldReportPropertyNotInUse()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();
@@ -81,7 +81,7 @@ public class MetaDataStoreCheckTest
     }
 
     @Test
-    public void shouldReportPropertyNotFirstInChain() throws Exception
+    public void shouldReportPropertyNotFirstInChain()
     {
         // given
         NeoStoreRecord record = new NeoStoreRecord();

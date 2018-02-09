@@ -19,12 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.updater;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
@@ -64,14 +62,13 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void close() throws IOException, IndexEntryConflictException
+    public void close()
     {
         // flush updates
         flushUpdates( updates );
     }
 
-    protected abstract void flushUpdates( Iterable<IndexEntryUpdate<?>> updates )
-            throws IOException, IndexEntryConflictException;
+    protected abstract void flushUpdates( Iterable<IndexEntryUpdate<?>> updates );
 
     private DiffSets<Long> propertyValueDiffSet( Object value )
     {

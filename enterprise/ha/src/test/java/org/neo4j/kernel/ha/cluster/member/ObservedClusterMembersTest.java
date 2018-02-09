@@ -68,7 +68,7 @@ public class ObservedClusterMembersTest
     private static final URI haUri1 = create( "ha://server1?serverId=" + clusterId1.toIntegerIndex() );
 
     @Test
-    public void shouldRegisterItselfOnListeners() throws Exception
+    public void shouldRegisterItselfOnListeners()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -85,7 +85,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void shouldContainMemberListAfterEnteringCluster() throws Exception
+    public void shouldContainMemberListAfterEnteringCluster()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -107,7 +107,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void joinedMemberShowsInList() throws Exception
+    public void joinedMemberShowsInList()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -132,7 +132,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void iCanGetToMyself() throws Exception
+    public void iCanGetToMyself()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -156,7 +156,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void leftMemberDisappearsFromList() throws Exception
+    public void leftMemberDisappearsFromList()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -180,7 +180,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void availableMasterShowsProperInformation() throws Exception
+    public void availableMasterShowsProperInformation()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -207,7 +207,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void availableSlaveShowsProperInformation() throws Exception
+    public void availableSlaveShowsProperInformation()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -234,7 +234,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void membersShowsAsUnavailableWhenNewMasterElectedBeforeTheyBecomeAvailable() throws Exception
+    public void membersShowsAsUnavailableWhenNewMasterElectedBeforeTheyBecomeAvailable()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -261,7 +261,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void failedMemberShowsAsSuch() throws Exception
+    public void failedMemberShowsAsSuch()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -288,7 +288,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void failedThenAliveMemberShowsAsAlive() throws Exception
+    public void failedThenAliveMemberShowsAsAlive()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -315,7 +315,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void missingMasterUnavailabilityEventDoesNotClobberState() throws Exception
+    public void missingMasterUnavailabilityEventDoesNotClobberState()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -343,7 +343,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void missingSlaveUnavailabilityEventDoesNotClobberState() throws Exception
+    public void missingSlaveUnavailabilityEventDoesNotClobberState()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -371,7 +371,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void missingMasterUnavailabilityEventForOtherInstanceStillRemovesBackupRole() throws Exception
+    public void missingMasterUnavailabilityEventForOtherInstanceStillRemovesBackupRole()
     {
         // given
         Cluster cluster = mock( Cluster.class );
@@ -409,7 +409,7 @@ public class ObservedClusterMembersTest
     }
 
     @Test
-    public void receivingInstanceFailureEventRemovesAllRolesForIt() throws Exception
+    public void receivingInstanceFailureEventRemovesAllRolesForIt()
     {
         // given
         Cluster cluster = mock( Cluster.class );

@@ -49,13 +49,13 @@ public class TxStateCompositeIndexTest
     private final IndexDescriptor indexOn_2_2_3_4 = IndexDescriptorFactory.forLabel( 2, 2, 3, 4 );
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         state = new TxState();
     }
 
     @Test
-    public void shouldScanOnAnEmptyTxState() throws Exception
+    public void shouldScanOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets = state.indexUpdatesForScan( indexOn_1_1_2 );
@@ -65,7 +65,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekOnAnEmptyTxState() throws Exception
+    public void shouldSeekOnAnEmptyTxState()
     {
         // WHEN
         PrimitiveLongReadableDiffSets diffSets =
@@ -76,7 +76,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldScanWhenThereAreNewNodes() throws Exception
+    public void shouldScanWhenThereAreNewNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -90,7 +90,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreNewStringNodes() throws Exception
+    public void shouldSeekWhenThereAreNewStringNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -105,7 +105,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreNewNumberNodes() throws Exception
+    public void shouldSeekWhenThereAreNewNumberNodes()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringProperties( 42L, 43L );
@@ -120,7 +120,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldHandleMixedAddsAndRemovesEntry() throws Exception
+    public void shouldHandleMixedAddsAndRemovesEntry()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -136,7 +136,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekWhenThereAreManyEntriesWithTheSameValues() throws Exception
+    public void shouldSeekWhenThereAreManyEntriesWithTheSameValues()
     {
         // GIVEN
         modifyIndex( indexOn_1_1_2 ).addDefaultStringEntries( 42L, 43L );
@@ -152,7 +152,7 @@ public class TxStateCompositeIndexTest
     }
 
     @Test
-    public void shouldSeekInComplexMix() throws Exception
+    public void shouldSeekInComplexMix()
     {
         // GIVEN
         ValueTuple[] values2_1 = Iterators.array(

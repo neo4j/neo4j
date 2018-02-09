@@ -48,7 +48,7 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
     @Rule
     public final TestDirectory dir = TestDirectory.testDirectory();
 
-    protected abstract T createRaftLog( FileSystemAbstraction fsa, File dir ) throws Throwable;
+    protected abstract T createRaftLog( FileSystemAbstraction fsa, File dir );
 
     @Test
     public void readAndWrite() throws Throwable
@@ -103,7 +103,7 @@ public abstract class ConcurrentStressIT<T extends RaftLog & Lifecycle>
         }
 
         @Override
-        public Long call() throws Exception
+        public Long call()
         {
             long endTime = System.currentTimeMillis() + runTimeMillis;
             long count = 0;

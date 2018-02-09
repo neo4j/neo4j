@@ -129,7 +129,7 @@ public class InconsistencyReportReader
             int separator = min( getSeparatorIndex( ',', line, bracket ),
                     getSeparatorIndex( ';', line, bracket ),
                     getSeparatorIndex( ']', line, bracket ) );
-            int equally = line.indexOf( "=", bracket );
+            int equally = line.indexOf( '=', bracket );
             int startPosition = (isNotPlainId( bracket, separator, equally ) ? equally : bracket) + 1;
             if ( separator > -1 )
             {

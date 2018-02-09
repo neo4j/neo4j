@@ -167,7 +167,7 @@ public class NettyProtocolHandshakeIT
                     ChannelOption.SO_REUSEADDR, true ).localAddress( 0 ).childHandler( new ChannelInitializer<SocketChannel>()
             {
                 @Override
-                protected void initChannel( SocketChannel ch ) throws Exception
+                protected void initChannel( SocketChannel ch )
                 {
                     ChannelPipeline pipeline = ch.pipeline();
                     pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );
@@ -234,7 +234,7 @@ public class NettyProtocolHandshakeIT
         }
 
         @Override
-        protected void initChannel( SocketChannel channel ) throws Exception
+        protected void initChannel( SocketChannel channel )
         {
             ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast( "frameEncoder", new LengthFieldPrepender( 4 ) );

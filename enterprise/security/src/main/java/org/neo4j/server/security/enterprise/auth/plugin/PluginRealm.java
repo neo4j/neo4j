@@ -286,7 +286,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         if ( authenticationPlugin != null )
         {
@@ -303,7 +303,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         if ( authenticationPlugin != null )
         {
@@ -320,7 +320,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         if ( authenticationPlugin != null )
         {

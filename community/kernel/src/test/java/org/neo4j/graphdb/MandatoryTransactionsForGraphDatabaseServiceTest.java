@@ -27,13 +27,13 @@ public class MandatoryTransactionsForGraphDatabaseServiceTest extends
         AbstractMandatoryTransactionsTest<GraphDatabaseService>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnGraphDatabaseService()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnGraphDatabaseService()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_NON_TRANSACTIONAL_GRAPH_DATABASE_METHODS );
     }

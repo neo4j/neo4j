@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
@@ -1127,7 +1126,7 @@ public class OperationsFacade
 
     @Override
     public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().nodeAddToExplicitIndex( statement, indexName, node, key, value );
@@ -1166,7 +1165,7 @@ public class OperationsFacade
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key, value );
@@ -1174,7 +1173,7 @@ public class OperationsFacade
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key );
@@ -1182,7 +1181,7 @@ public class OperationsFacade
 
     @Override
     public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
         explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship );

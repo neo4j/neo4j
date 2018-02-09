@@ -527,7 +527,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum,
-            final long lastTxLogVersion, final long lastTxLogByteOffset ) throws IOException
+            final long lastTxLogVersion, final long lastTxLogByteOffset )
     {
         return new AdditionalInitialIds()
         {
@@ -614,8 +614,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
 
         final StorePropertyCursor cursor = new StorePropertyCursor( cursors, ignored -> {} );
-        return ( InputEntityVisitor entity, RECORD record ) ->
-        {
+        return ( entity, record ) -> {
             cursor.init( record.getNextProp(), LockService.NO_LOCK, AssertOpen.ALWAYS_OPEN );
             while ( cursor.next() )
             {

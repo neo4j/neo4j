@@ -104,15 +104,14 @@ public abstract class FutureAdapter<V> implements Future<V>
             }
 
             @Override
-            public T get() throws InterruptedException, ExecutionException
+            public T get() throws InterruptedException
             {
                 guardedByLatch.await();
                 return supplier.get();
             }
 
             @Override
-            public T get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException,
-                    TimeoutException
+            public T get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException
             {
                 if ( !guardedByLatch.await( timeout, unit ) )
                 {
@@ -153,8 +152,7 @@ public abstract class FutureAdapter<V> implements Future<V>
             }
 
             @Override
-            public Integer get( long timeout, TimeUnit unit ) throws InterruptedException, ExecutionException,
-                    TimeoutException
+            public Integer get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException
             {
                 long end = System.currentTimeMillis() + unit.toMillis( timeout );
                 while ( System.currentTimeMillis() < end )

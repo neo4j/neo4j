@@ -32,7 +32,7 @@ import static org.neo4j.configuration.ConfigValue.valueToString;
 public class ConfigValueTest
 {
     @Test
-    public void handlesEmptyValue() throws Exception
+    public void handlesEmptyValue()
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.empty(),
                 "description", false, false, false, Optional.empty() );
@@ -45,7 +45,7 @@ public class ConfigValueTest
     }
 
     @Test
-    public void handlesInternal() throws Exception
+    public void handlesInternal()
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.empty(),
                 "description", true, false, false,
@@ -55,7 +55,7 @@ public class ConfigValueTest
     }
 
     @Test
-    public void handlesNonEmptyValue() throws Exception
+    public void handlesNonEmptyValue()
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.of( 1 ),
                 "description", false, false, false, Optional.empty() );
@@ -68,7 +68,7 @@ public class ConfigValueTest
     }
 
     @Test
-    public void handlesDeprecationAndReplacement() throws Exception
+    public void handlesDeprecationAndReplacement()
     {
         ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.empty(), Optional.of( 1 ),
                 "description", false, false, true,
@@ -82,7 +82,7 @@ public class ConfigValueTest
     }
 
     @Test
-    public void handlesValueDescription() throws Exception
+    public void handlesValueDescription()
     {
         ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.empty(), Optional.of( 1 ),
                 "a simple integer", false, false, true,
@@ -97,25 +97,25 @@ public class ConfigValueTest
     }
 
     @Test
-    public void durationValueIsRepresentedWithUnit() throws Exception
+    public void durationValueIsRepresentedWithUnit()
     {
         assertEquals( "120000ms", valueToString( Duration.ofMinutes( 2 ) ) );
     }
 
     @Test
-    public void stringValueIsRepresentedAsString() throws Exception
+    public void stringValueIsRepresentedAsString()
     {
         assertEquals( "bob", valueToString( "bob" ) );
     }
 
     @Test
-    public void intValueIsRepresentedAsInt() throws Exception
+    public void intValueIsRepresentedAsInt()
     {
         assertEquals( "7", valueToString( 7 ) );
     }
 
     @Test
-    public void nullIsHandled() throws Exception
+    public void nullIsHandled()
     {
         assertEquals( "null", valueToString( null ) );
     }

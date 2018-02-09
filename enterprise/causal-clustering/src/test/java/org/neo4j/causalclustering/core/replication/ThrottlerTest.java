@@ -189,7 +189,7 @@ public class ThrottlerTest
         private final AtomicInteger count = new AtomicInteger();
 
         @Override
-        public Integer get() throws Exception
+        public Integer get()
         {
             return count.incrementAndGet();
         }

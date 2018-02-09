@@ -66,7 +66,6 @@ public class DataStatementArgumentVerificationTest
 
     @Test
     public void shouldReturnNoPropertyFromGraphGetPropertyWithoutDelegatingForNoSuchPropertyKeyIdConstant()
-            throws Exception
     {
         // given
         ReadOperations statement = stubStatement();
@@ -79,7 +78,7 @@ public class DataStatementArgumentVerificationTest
     }
 
     @Test
-    public void shouldReturnEmptyIdIteratorFromNodesGetForLabelForNoSuchLabelConstant() throws Exception
+    public void shouldReturnEmptyIdIteratorFromNodesGetForLabelForNoSuchLabelConstant()
     {
         // given
         ReadOperations statement = stubStatement();

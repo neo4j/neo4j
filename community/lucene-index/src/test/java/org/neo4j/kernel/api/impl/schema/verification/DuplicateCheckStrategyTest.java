@@ -61,7 +61,7 @@ public class DuplicateCheckStrategyTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setUp() throws IllegalAccessException, InstantiationException
+    public void setUp()
     {
         checkStrategy = duplicateCheckStrategyFactory.newInstance();
     }

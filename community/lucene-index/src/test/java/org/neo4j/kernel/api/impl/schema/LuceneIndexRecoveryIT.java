@@ -313,7 +313,6 @@ public class LuceneIndexRecoveryIT
         {
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
-                    throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
                         SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
@@ -337,7 +336,6 @@ public class LuceneIndexRecoveryIT
 
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
-                    throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
                         SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )

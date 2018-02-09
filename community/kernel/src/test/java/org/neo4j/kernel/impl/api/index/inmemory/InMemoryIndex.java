@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -117,7 +116,6 @@ class InMemoryIndex
 
         @Override
         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
-                throws IndexEntryConflictException, IOException
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -126,25 +124,25 @@ class InMemoryIndex
         }
 
         @Override
-        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+        public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( accessor );
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor ) throws IOException
+        public IndexUpdater newPopulatingUpdater( PropertyAccessor propertyAccessor )
         {
             return InMemoryIndex.this.newUpdater( IndexUpdateMode.ONLINE, true );
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
             indexData.drop();
         }
 
         @Override
-        public void close( boolean populationCompletedSuccessfully ) throws IOException
+        public void close( boolean populationCompletedSuccessfully )
         {
             if ( populationCompletedSuccessfully )
             {
@@ -178,7 +176,7 @@ class InMemoryIndex
         }
     }
 
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException
     {
     }
 
@@ -231,7 +229,7 @@ class InMemoryIndex
 
         @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-                throws IndexEntryConflictException, IOException
+                throws IndexEntryConflictException
         {
             InMemoryIndex.this.verifyDeferredConstraints( propertyAccessor );
         }
@@ -252,7 +250,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+        public void process( IndexEntryUpdate<?> update )
         {
             switch ( update.updateMode() )
             {
@@ -272,7 +270,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close()
         {
         }
     }

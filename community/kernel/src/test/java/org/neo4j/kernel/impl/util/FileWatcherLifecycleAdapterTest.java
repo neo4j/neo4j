@@ -96,7 +96,7 @@ public class FileWatcherLifecycleAdapterTest
         }
 
         @Override
-        public void startWatching() throws InterruptedException
+        public void startWatching()
         {
             latch.countDown();
         }

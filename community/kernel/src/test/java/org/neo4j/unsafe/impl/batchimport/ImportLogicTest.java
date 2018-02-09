@@ -41,7 +41,7 @@ public class ImportLogicTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldSplitUpRelationshipTypesInBatches() throws Exception
+    public void shouldSplitUpRelationshipTypesInBatches()
     {
         // GIVEN
         int denseNodeThreshold = 5;

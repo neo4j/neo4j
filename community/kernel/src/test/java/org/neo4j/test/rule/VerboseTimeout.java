@@ -69,7 +69,7 @@ public class VerboseTimeout extends Timeout
     }
 
     @Override
-    protected Statement createFailOnTimeoutStatement( Statement statement ) throws Exception
+    protected Statement createFailOnTimeoutStatement( Statement statement )
     {
         return new VerboseFailOnTimeout( statement, timeoutBuilder );
     }
@@ -218,7 +218,7 @@ public class VerboseTimeout extends Timeout
             }
         }
 
-        private Throwable buildTimeoutException( Thread thread ) throws TestTimedOutException
+        private Throwable buildTimeoutException( Thread thread )
         {
             StackTraceElement[] stackTrace = thread.getStackTrace();
             TestTimedOutException timedOutException = new TestTimedOutException( timeout, timeUnit );
@@ -231,7 +231,7 @@ public class VerboseTimeout extends Timeout
             private final CountDownLatch startLatch = new CountDownLatch( 1 );
 
             @Override
-            public Throwable call() throws Exception
+            public Throwable call()
             {
                 try
                 {

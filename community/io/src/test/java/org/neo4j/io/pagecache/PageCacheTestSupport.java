@@ -131,7 +131,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     protected final T getPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer,
-                                    PageCursorTracerSupplier cursorTracerSupplier ) throws IOException
+                                    PageCursorTracerSupplier cursorTracerSupplier )
     {
         if ( pageCache != null )
         {
@@ -141,12 +141,12 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return pageCache;
     }
 
-    protected void configureStandardPageCache() throws IOException
+    protected void configureStandardPageCache()
     {
         getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
-    protected final void tearDownPageCache( T pageCache ) throws IOException
+    protected final void tearDownPageCache( T pageCache )
     {
         fixture.tearDownPageCache( pageCache );
     }
@@ -174,7 +174,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         return file;
     }
 
-    protected void ensureDirectoryExists( File dir ) throws IOException
+    protected void ensureDirectoryExists( File dir )
     {
         fs.mkdir( dir );
     }
@@ -329,7 +329,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
         public abstract T createPageCache( PageSwapperFactory swapperFactory, int maxPages,
                                            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier );
 
-        public abstract void tearDownPageCache( T pageCache ) throws IOException;
+        public abstract void tearDownPageCache( T pageCache );
 
         private Supplier<FileSystemAbstraction> fileSystemAbstractionSupplier = EphemeralFileSystemAbstraction::new;
         private Function<String,File> fileConstructor = File::new;

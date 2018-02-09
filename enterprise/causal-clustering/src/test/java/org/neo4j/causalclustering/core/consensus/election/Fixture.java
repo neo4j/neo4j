@@ -140,7 +140,7 @@ public class Fixture
         }
     }
 
-    private void awaitBootstrapped() throws InterruptedException, TimeoutException
+    private void awaitBootstrapped() throws TimeoutException
     {
         Predicates.await( () ->
         {

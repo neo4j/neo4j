@@ -145,7 +145,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void drop() throws IOException
+    public void drop()
     {
         throw new UnsupportedOperationException( "Can't drop indexes from this populator implementation" );
     }
@@ -244,7 +244,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor accessor ) throws IndexEntryConflictException, IOException
+    public void verifyDeferredConstraints( PropertyAccessor accessor )
     {
         throw new UnsupportedOperationException( "Should not be called directly" );
     }
@@ -268,7 +268,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void markAsFailed( String failure ) throws IOException
+    public void markAsFailed( String failure )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't be marked as failed." );
     }
@@ -547,7 +547,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodeUpdates updates ) throws IndexPopulationFailedKernelException
+        public boolean visit( NodeUpdates updates )
         {
             add( updates );
             populateFromQueueBatched( updates.getNodeId() );

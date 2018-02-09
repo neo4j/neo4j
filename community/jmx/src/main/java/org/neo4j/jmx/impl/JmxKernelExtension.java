@@ -48,7 +48,7 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         support = ManagementSupport.load();
         mbs = support.getMBeanServer();
@@ -92,17 +92,17 @@ public class JmxKernelExtension implements Lifecycle
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         for ( Neo4jMBean bean : beans )
         {

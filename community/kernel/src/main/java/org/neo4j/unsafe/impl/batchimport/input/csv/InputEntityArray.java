@@ -40,7 +40,7 @@ public class InputEntityArray implements InputEntityVisitor
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

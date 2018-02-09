@@ -40,7 +40,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class DatabaseHealthTest
 {
     @Test
-    public void shouldGenerateDatabasePanicEvents() throws Exception
+    public void shouldGenerateDatabasePanicEvents()
     {
         // GIVEN
         DatabasePanicEventGenerator generator = mock( DatabasePanicEventGenerator.class );
@@ -57,7 +57,7 @@ public class DatabaseHealthTest
     }
 
     @Test
-    public void shouldLogDatabasePanicEvent() throws Exception
+    public void shouldLogDatabasePanicEvent()
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();

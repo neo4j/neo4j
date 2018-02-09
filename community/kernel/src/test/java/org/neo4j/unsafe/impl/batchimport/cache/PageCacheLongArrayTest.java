@@ -61,7 +61,7 @@ public class PageCacheLongArrayTest
     }
 
     @Test
-    public void verifyChunkingArrayWithPageCacheLongArray() throws Exception
+    public void verifyChunkingArrayWithPageCacheLongArray()
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File directory = dir.directory();

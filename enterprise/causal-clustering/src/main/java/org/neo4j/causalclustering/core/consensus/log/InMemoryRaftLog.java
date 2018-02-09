@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.core.consensus.log;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +35,7 @@ public class InMemoryRaftLog implements RaftLog
     private long term = -1;
 
     @Override
-    public synchronized long append( RaftLogEntry... entries ) throws IOException
+    public synchronized long append( RaftLogEntry... entries )
     {
         long newAppendIndex = appendIndex;
         for ( RaftLogEntry entry : entries )
@@ -46,7 +45,7 @@ public class InMemoryRaftLog implements RaftLog
         return newAppendIndex;
     }
 
-    private synchronized long appendSingle( RaftLogEntry logEntry ) throws IOException
+    private synchronized long appendSingle( RaftLogEntry logEntry )
     {
         Objects.requireNonNull( logEntry );
         if ( logEntry.term() >= term )
@@ -142,7 +141,7 @@ public class InMemoryRaftLog implements RaftLog
     }
 
     @Override
-    public synchronized RaftLogCursor getEntryCursor( long fromIndex ) throws IOException
+    public synchronized RaftLogCursor getEntryCursor( long fromIndex )
     {
         return new RaftLogCursor()
         {
@@ -150,7 +149,7 @@ public class InMemoryRaftLog implements RaftLog
             RaftLogEntry current;
 
             @Override
-            public boolean next() throws IOException
+            public boolean next()
             {
                 currentIndex++;
                 boolean hasNext;
@@ -175,7 +174,7 @@ public class InMemoryRaftLog implements RaftLog
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
 

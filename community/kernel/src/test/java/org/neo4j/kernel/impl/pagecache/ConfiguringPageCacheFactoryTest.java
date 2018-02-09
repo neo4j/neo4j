@@ -55,7 +55,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void shouldFitAsManyPagesAsItCan() throws Throwable
+    public void shouldFitAsManyPagesAsItCan()
     {
         // Given
         long pageCount = 60;
@@ -77,7 +77,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void shouldWarnWhenCreatedWithConfiguredPageCache() throws Exception
+    public void shouldWarnWhenCreatedWithConfiguredPageCache()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -100,7 +100,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test
-    public void mustUseAndLogConfiguredPageSwapper() throws Exception
+    public void mustUseAndLogConfiguredPageSwapper()
     {
         // Given
         Config config = Config.defaults( stringMap(
@@ -121,7 +121,7 @@ public class ConfiguringPageCacheFactoryTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void mustThrowIfConfiguredPageSwapperCannotBeFound() throws Exception
+    public void mustThrowIfConfiguredPageSwapperCannotBeFound()
     {
         // Given
         Config config = Config.defaults( stringMap(

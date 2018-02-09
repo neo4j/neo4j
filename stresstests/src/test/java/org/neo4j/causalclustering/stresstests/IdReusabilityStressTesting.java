@@ -85,7 +85,7 @@ public class IdReusabilityStressTesting
     private DefaultFileSystemAbstraction fs;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         fs = defaultFileSystemRule.get();
     }

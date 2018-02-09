@@ -52,12 +52,12 @@ public final class NotElectableElectionCredentials implements ElectionCredential
     }
 
     @Override
-    public void writeExternal( ObjectOutput out ) throws IOException
+    public void writeExternal( ObjectOutput out )
     {
     }
 
     @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    public void readExternal( ObjectInput in )
     {
     }
 }

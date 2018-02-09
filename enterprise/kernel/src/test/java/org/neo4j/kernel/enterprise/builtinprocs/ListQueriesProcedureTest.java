@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Node;
@@ -95,7 +94,7 @@ public class ListQueriesProcedureTest
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
 
     @Test
-    public void shouldContainTheQueryItself() throws Exception
+    public void shouldContainTheQueryItself()
     {
         // given
         String query = "CALL dbms.listQueries";
@@ -110,7 +109,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldNotIncludeDeprecatedFields() throws Exception
+    public void shouldNotIncludeDeprecatedFields()
     {
         // when
         Result result = db.execute( "CALL dbms.listQueries" );
@@ -310,7 +309,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldContainSpecificConnectionDetails() throws Exception
+    public void shouldContainSpecificConnectionDetails()
     {
         // when
         Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
@@ -616,7 +615,7 @@ public class ListQueriesProcedureTest
     }
 
     private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String... queries )
-            throws TimeoutException, InterruptedException, ExecutionException
+            throws InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatch = new CountDownLatch( 1 );

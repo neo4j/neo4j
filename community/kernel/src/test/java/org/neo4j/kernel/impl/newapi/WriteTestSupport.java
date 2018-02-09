@@ -37,7 +37,7 @@ class WriteTestSupport implements KernelAPIWriteTestSupport
     private GraphDatabaseService db;
 
     @Override
-    public void setup( File storeDir ) throws IOException
+    public void setup( File storeDir )
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( storeDir ).newGraphDatabase();
     }

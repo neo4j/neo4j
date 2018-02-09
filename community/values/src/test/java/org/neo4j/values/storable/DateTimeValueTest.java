@@ -61,7 +61,7 @@ public class DateTimeValueTest
     public final FrozenClockRule clock = new FrozenClockRule();
 
     @Test
-    public void shouldParseDateTime() throws Exception
+    public void shouldParseDateTime()
     {
         assertEquals(
                 datetime( date( 2017, 12, 17 ), time( 17, 14, 35, 123456789, UTC ) ),
@@ -81,14 +81,14 @@ public class DateTimeValueTest
     }
 
     @Ignore
-    public void shouldSupportLeadSeconds() throws Exception
+    public void shouldSupportLeadSeconds()
     {
         // Leap second according to https://www.timeanddate.com/time/leap-seconds-future.html
         assertEquals( datetime( 2016, 12, 31, 23, 59, 60, 0, UTC ), parse( "2016-12-31T23:59:60Z", orFail ) );
     }
 
     @Test
-    public void shouldRejectInvalidDateTimeString() throws Exception
+    public void shouldRejectInvalidDateTimeString()
     {
         // Wrong year
         assertThrows( DateTimeException.class, () -> parse( "10000-12-17T17:14:35", inUTC ) );
@@ -134,7 +134,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldWriteDateTime() throws Exception
+    public void shouldWriteDateTime()
     {
         // given
         for ( DateTimeValue value : new DateTimeValue[] {
@@ -176,7 +176,7 @@ public class DateTimeValueTest
 
     @Test
     @FrozenClockRule.TimeZone( "Europe/Stockholm" )
-    public void shouldAcquireCurrentDateTime() throws Exception
+    public void shouldAcquireCurrentDateTime()
     {
         assertEqualTemporal(
                 datetime( ZonedDateTime.now( clock ) ),
@@ -193,7 +193,7 @@ public class DateTimeValueTest
 
     @Test
     @FrozenClockRule.TimeZone( {"Europe/Stockholm", "America/Los_Angeles"} )
-    public void shouldCopyDateTime() throws Exception
+    public void shouldCopyDateTime()
     {
         assertEqualTemporal(
                 datetime( ZonedDateTime.now( clock ) ),
@@ -213,7 +213,7 @@ public class DateTimeValueTest
 
     @Test
     @FrozenClockRule.TimeZone( "Europe/Stockholm" )
-    public void shouldConstructDateTimeFromComponents() throws Exception
+    public void shouldConstructDateTimeFromComponents()
     {
         assertEqualTemporal(
                 parse( "2018-01-10T10:35:57", clock::getZone ),
@@ -311,7 +311,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldRejectInvalidFieldCombinations() throws Exception
+    public void shouldRejectInvalidFieldCombinations()
     {
         asserting( fromValues( builder( clock ) ) )
                 .add( "year", 2018 )
@@ -418,7 +418,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldRejectInvalidComponentValues() throws Exception
+    public void shouldRejectInvalidComponentValues()
     {
         asserting( fromValues( builder( clock ) ) ).add( "year", 2018 ).add( "moment", 12 ).assertThrows( IllegalArgumentException.class,
                 "No such field: moment" );
@@ -427,7 +427,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldAddDurationToDateTimes() throws Exception
+    public void shouldAddDurationToDateTimes()
     {
         assertEquals( datetime( date( 2018, 2, 1 ), time( 1, 17, 3, 0, UTC ) ),
                 datetime( date( 2018, 1, 1 ), time( 1, 2, 3, 0, UTC ) ).add( DurationValue.duration( 1, 0, 900, 0 ) ) );
@@ -438,7 +438,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldReuseInstanceInArithmetics() throws Exception
+    public void shouldReuseInstanceInArithmetics()
     {
         final DateTimeValue datetime = datetime( date( 2018, 2, 1 ), time( 1, 17, 3, 0, UTC ) );
         assertSame( datetime,
@@ -446,7 +446,7 @@ public class DateTimeValueTest
     }
 
     @Test
-    public void shouldSubtractDurationFromDateTimes() throws Exception
+    public void shouldSubtractDurationFromDateTimes()
     {
         assertEquals( datetime( date( 2018, 1, 1 ), time( 1, 2, 3, 0, UTC ) ),
                 datetime( date( 2018, 2, 1 ), time( 1, 17, 3, 0, UTC ) ).sub( DurationValue.duration( 1, 0, 900, 0 ) ) );

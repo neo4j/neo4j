@@ -133,7 +133,7 @@ public interface AccessMode
      * procedure annotation.
      *
      * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
-     * @return <tt>true</tt> if this mode allows the execution of a procedure with the given parameter string array
+     * @return {@code true} if this mode allows the execution of a procedure with the given parameter string array
      * encoding permission
      */
     boolean allowsProcedureWith( String[] allowed );

@@ -126,7 +126,7 @@ public class ServerTest
         return ctx;
     }
 
-    private Server<Object,Object> newServer( final TxChecksumVerifier checksumVerifier ) throws Throwable
+    private Server<Object,Object> newServer( final TxChecksumVerifier checksumVerifier )
     {
         Server.Configuration conf = mock( Server.Configuration.class );
         when( conf.getServerAddress() ).thenReturn( new HostnamePort( "aa", -1667 ) );

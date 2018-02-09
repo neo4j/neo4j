@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class RecordSetTest
 {
     @Test
-    public void toStringShouldPlaceEachRecordOnItsOwnLine() throws Exception
+    public void toStringShouldPlaceEachRecordOnItsOwnLine()
     {
         // given
         NodeRecord record1 = new NodeRecord( 1, false, 1, 1 );

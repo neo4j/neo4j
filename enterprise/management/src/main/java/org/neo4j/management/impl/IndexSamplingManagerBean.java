@@ -49,7 +49,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         return new IndexSamplingManagerImpl( management, true );
     }
@@ -123,7 +123,7 @@ public final class IndexSamplingManagerBean extends ManagementBeanProvider
                 labelKeyId = state.storeLayer.labelGetForName( labelKey );
                 propertyKeyId = state.storeLayer.propertyKeyGetForName( propertyKey );
             }
-            if ( labelKeyId == -1 || propertyKeyId == -1 )
+            if ( state == null || labelKeyId == -1 || propertyKeyId == -1 )
             {
                 throw new IllegalArgumentException( "No property or label key was found associated with " +
                         propertyKey + " and " + labelKey );

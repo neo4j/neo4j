@@ -52,7 +52,7 @@ public class DatabaseImporterTest
     public final TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void requiresFromArgument() throws Exception
+    public void requiresFromArgument()
     {
         String[] arguments = {"--mode=database", "--database=bar"};
 
@@ -69,7 +69,7 @@ public class DatabaseImporterTest
     }
 
     @Test
-    public void failIfSourceIsNotAStore() throws Exception
+    public void failIfSourceIsNotAStore()
     {
         File from = testDir.directory( "empty" );
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};

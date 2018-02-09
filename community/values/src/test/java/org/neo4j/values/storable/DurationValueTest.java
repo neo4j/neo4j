@@ -224,7 +224,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldWriteDuration() throws Exception
+    public void shouldWriteDuration()
     {
         // given
         for ( DurationValue duration : new DurationValue[] {
@@ -363,7 +363,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDates() throws Exception
+    public void shouldComputeDurationBetweenDates()
     {
         assertEquals( duration( 22, 23, 0, 0 ), durationBetween( date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
         assertEquals( duration( 0, 693, 0, 0 ), between(DAYS, date( 2016, 1, 27 ), date( 2017, 12, 20 ) ) );
@@ -373,7 +373,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenLocalTimes() throws Exception
+    public void shouldComputeDurationBetweenLocalTimes()
     {
         assertEquals( duration( 0, 0, 10623, 0 ), durationBetween(
                 localTime( 11, 30, 52, 0 ), localTime( 14, 27, 55, 0 ) ) );
@@ -386,7 +386,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenTimes() throws Exception
+    public void shouldComputeDurationBetweenTimes()
     {
         assertEquals( duration( 0, 0, 140223, 0 ), durationBetween(
                 time( 11, 30, 52, 0, ofHours( 18 ) ), time( 14, 27, 55, 0, ofHours( -18 ) ) ) );
@@ -408,7 +408,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDateAndTime() throws Exception
+    public void shouldComputeDurationBetweenDateAndTime()
     {
         assertEquals( parse( "PT14H32M11S" ), durationBetween( date( 2017, 12, 21 ), localTime( 14, 32, 11, 0 ) ) );
         assertEquals( parse( "-PT14H32M11S" ), durationBetween( localTime( 14, 32, 11, 0 ), date( 2017, 12, 21 ) ) );
@@ -421,7 +421,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDateTimeAndTime() throws Exception
+    public void shouldComputeDurationBetweenDateTimeAndTime()
     {
         assertEquals( parse( "PT8H-20M" ), durationBetween(
                 datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ), localTime( 14, 32, 11, 0 ) ) );
@@ -438,7 +438,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldComputeDurationBetweenDateTimeAndDateTime() throws Exception
+    public void shouldComputeDurationBetweenDateTimeAndDateTime()
     {
         assertEquals( parse( "PT1H" ), durationBetween(
                 datetime( date( 2017, 12, 21 ), time( 6, 52, 11, 0, UTC ) ),
@@ -452,7 +452,7 @@ public class DurationValueTest
     }
 
     @Test
-    public void shouldGetSameInstantWhenAddingDurationBetweenToInstant() throws Exception
+    public void shouldGetSameInstantWhenAddingDurationBetweenToInstant()
     {
         // given
         @SuppressWarnings( "unchecked" )

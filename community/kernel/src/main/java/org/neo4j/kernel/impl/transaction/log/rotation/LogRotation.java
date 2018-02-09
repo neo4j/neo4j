@@ -41,13 +41,13 @@ public interface LogRotation
     LogRotation NO_ROTATION = new LogRotation()
     {
         @Override
-        public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent ) throws IOException
+        public boolean rotateLogIfNeeded( LogAppendEvent logAppendEvent )
         {
             return false;
         }
 
         @Override
-        public void rotateLogFile() throws IOException
+        public void rotateLogFile()
         {
         }
     };

@@ -82,7 +82,7 @@ public class DelegateFileSystemAbstractionTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             closed = true;
         }
@@ -142,7 +142,7 @@ public class DelegateFileSystemAbstractionTest
         }
 
         @Override
-        public WatchService newWatchService() throws IOException
+        public WatchService newWatchService()
         {
             return null;
         }

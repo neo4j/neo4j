@@ -138,7 +138,7 @@ public class IndexPopulationJobTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         db.shutdown();
     }
@@ -484,7 +484,7 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate<?> update )
                 {
                     switch ( update.updateMode() )
                     {
@@ -498,7 +498,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                 }
             };
@@ -555,7 +555,7 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate<?> update )
                 {
                     switch ( update.updateMode() )
                     {
@@ -572,7 +572,7 @@ public class IndexPopulationJobTest
                 }
 
                 @Override
-                public void close() throws IOException, IndexEntryConflictException
+                public void close()
                 {
                 }
             };

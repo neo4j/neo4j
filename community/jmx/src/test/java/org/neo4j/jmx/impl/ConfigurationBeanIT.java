@@ -19,12 +19,12 @@
  */
 package org.neo4j.jmx.impl;
 
-import javax.management.Attribute;
-import javax.management.AttributeList;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import javax.management.Attribute;
+import javax.management.AttributeList;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -54,7 +54,7 @@ public class ConfigurationBeanIT
     }
 
     @Test
-    public void durationListedWithUnit() throws Exception
+    public void durationListedWithUnit()
     {
         ConfigurationBean configurationBean =
                 ( (GraphDatabaseAPI) graphdb ).getDependencyResolver().resolveDependency(

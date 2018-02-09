@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 public class NodeLabelsCacheTest
 {
     @Test
-    public void shouldCacheSmallSetOfLabelsPerNode() throws Exception
+    public void shouldCacheSmallSetOfLabelsPerNode()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
@@ -50,7 +50,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldHandleLargeAmountOfLabelsPerNode() throws Exception
+    public void shouldHandleLargeAmountOfLabelsPerNode()
     {
         // GIVEN
         int highLabelId = 1000;
@@ -69,7 +69,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldHandleLabelsForManyNodes() throws Exception
+    public void shouldHandleLabelsForManyNodes()
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
@@ -94,7 +94,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldEndTargetArrayWithMinusOne() throws Exception
+    public void shouldEndTargetArrayWithMinusOne()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 10 );
@@ -114,7 +114,7 @@ public class NodeLabelsCacheTest
     }
 
     @Test
-    public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever() throws Exception
+    public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever()
     {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 0 );

@@ -41,7 +41,7 @@ public class SlaveUpgradeTest
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void haShouldFailToStartWithOldStore() throws Exception
+    public void haShouldFailToStartWithOldStore()
     {
         try
         {

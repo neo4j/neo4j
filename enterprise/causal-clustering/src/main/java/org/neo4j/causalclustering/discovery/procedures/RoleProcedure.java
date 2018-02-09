@@ -43,7 +43,7 @@ abstract class RoleProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input )
     {
         return RawIterator.<Object[],ProcedureException>of( new Object[]{role().name()} );
     }

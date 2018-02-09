@@ -112,19 +112,19 @@ public class NettyPipelineBuilder
         pipeline.addLast( new ChannelDuplexHandler()
         {
             @Override
-            public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+            public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( "Exception in inbound", cause );
             }
 
             @Override
-            public void channelRead( ChannelHandlerContext ctx, Object msg ) throws Exception
+            public void channelRead( ChannelHandlerContext ctx, Object msg )
             {
                 log.error( "Unhandled inbound message: " + msg );
             }
 
             @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
                 if ( !promise.isVoid() )
                 {
@@ -143,13 +143,13 @@ public class NettyPipelineBuilder
         pipeline.addFirst( new ChannelOutboundHandlerAdapter()
         {
             @Override
-            public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+            public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( "Exception in outbound", cause );
             }
 
             @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise ) throws Exception
+            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
                 if ( !(msg instanceof ByteBuf) )
                 {

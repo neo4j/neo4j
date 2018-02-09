@@ -367,12 +367,11 @@ public class StoreUpgraderTest
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, Config config, PageCache pageCache )
-            throws IOException
     {
         return newUpgrader( upgradableDatabase, pageCache, config );
     }
 
-    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache ) throws IOException
+    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache )
     {
         return newUpgrader( upgradableDatabase, pageCache, allowMigrateConfig );
     }

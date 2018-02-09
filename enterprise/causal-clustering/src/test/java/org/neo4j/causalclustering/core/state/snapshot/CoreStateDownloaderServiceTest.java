@@ -87,7 +87,7 @@ public class CoreStateDownloaderServiceTest
     }
 
     @Test
-    public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime() throws Exception
+    public void shouldOnlyScheduleOnePersistentDownloaderTaskAtTheTime()
     {
         AtomicInteger schedules = new AtomicInteger();
         CountingJobScheduler countingJobScheduler = new CountingJobScheduler( schedules, neo4jJobScheduler );

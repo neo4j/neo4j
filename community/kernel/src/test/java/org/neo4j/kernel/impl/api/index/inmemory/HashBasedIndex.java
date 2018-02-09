@@ -150,17 +150,17 @@ class HashBasedIndex extends InMemoryIndexImplementation
 
     private synchronized PrimitiveLongResourceIterator rangeSeekByPrefix( String prefix )
     {
-        return stringSearch( ( String entry ) -> entry.startsWith( prefix ) );
+        return stringSearch( entry -> entry.startsWith( prefix ) );
     }
 
     private synchronized PrimitiveLongResourceIterator containsString( String exactTerm )
     {
-        return stringSearch( ( String entry ) -> entry.contains( exactTerm ) );
+        return stringSearch( entry -> entry.contains( exactTerm ) );
     }
 
     private PrimitiveLongResourceIterator endsWith( String suffix )
     {
-        return stringSearch( ( String entry ) -> entry.endsWith( suffix ) );
+        return stringSearch( entry -> entry.endsWith( suffix ) );
     }
 
     private synchronized PrimitiveLongResourceIterator scan()

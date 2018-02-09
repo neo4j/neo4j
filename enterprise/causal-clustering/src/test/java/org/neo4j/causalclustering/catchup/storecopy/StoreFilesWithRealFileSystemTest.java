@@ -33,7 +33,7 @@ public class StoreFilesWithRealFileSystemTest extends StoreFilesTest
     {
         testDirectory = TestDirectory.testDirectory( StoreFilesWithRealFileSystemTest.class );
         DefaultFileSystemRule defaultFileSystemRule = new DefaultFileSystemRule();
-        fileSystemRule = defaultFileSystemRule::get;
+        fileSystemRule = defaultFileSystemRule;
         hiddenFileSystemRule = new EphemeralFileSystemRule();
         pageCacheRule = new PageCacheRule( );
         rules = RuleChain.outerRule( defaultFileSystemRule )

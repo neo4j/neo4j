@@ -47,7 +47,7 @@ public class CompositeCountsTest
     public final DatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel() throws Exception
+    public void shouldReportNumberOfRelationshipsFromNodesWithGivenLabel()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -80,7 +80,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipCreate() throws Exception
+    public void shouldMaintainCountsOnRelationshipCreate()
     {
         // given
         Node foo;
@@ -109,7 +109,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnRelationshipDelete() throws Exception
+    public void shouldMaintainCountsOnRelationshipDelete()
     {
         // given
         Relationship relationship;
@@ -137,7 +137,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAdd() throws Exception
+    public void shouldMaintainCountsOnLabelAdd()
     {
         // given
         Node foo;
@@ -167,7 +167,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemove() throws Exception
+    public void shouldMaintainCountsOnLabelRemove()
     {
         // given
         Node foo;
@@ -197,7 +197,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipCreate() throws Exception
+    public void shouldMaintainCountsOnLabelAddAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -228,7 +228,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete() throws Exception
+    public void shouldMaintainCountsOnLabelRemoveAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -261,7 +261,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelAddAndRelationshipDelete() throws Exception
+    public void shouldMaintainCountsOnLabelAddAndRelationshipDelete()
     {
         // given
         Node foo;
@@ -294,7 +294,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate() throws Exception
+    public void shouldMaintainCountsOnLabelRemoveAndRelationshipCreate()
     {
         // given
         Node foo;
@@ -325,7 +325,7 @@ public class CompositeCountsTest
     }
 
     @Test
-    public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction() throws Exception
+    public void shouldNotUpdateCountsIfCreatedRelationshipIsDeletedInSameTransaction()
     {
         // given
         Node foo;

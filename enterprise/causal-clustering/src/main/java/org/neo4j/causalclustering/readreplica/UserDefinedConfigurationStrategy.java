@@ -69,7 +69,7 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
     }
 
     @Override
-    public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+    public Optional<MemberId> upstreamDatabase()
     {
         return filters.flatMap( filters ->
         {

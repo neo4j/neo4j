@@ -36,7 +36,7 @@ public class StatementLocksFactorySwitcherTest
     private StatementLocksFactory configuredLockFactory = mock( StatementLocksFactory.class );
 
     @Test
-    public void masterStatementLocks() throws Exception
+    public void masterStatementLocks()
     {
         StatementLocksFactorySwitcher switcher = getLocksSwitcher();
         StatementLocksFactory masterLocks = switcher.getMasterImpl();
@@ -44,7 +44,7 @@ public class StatementLocksFactorySwitcherTest
     }
 
     @Test
-    public void slaveStatementLocks() throws Exception
+    public void slaveStatementLocks()
     {
         StatementLocksFactorySwitcher switcher = getLocksSwitcher();
         StatementLocksFactory slaveLocks = switcher.getSlaveImpl();

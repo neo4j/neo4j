@@ -99,7 +99,7 @@ class TypedId
     public int hashCode()
     {
         int code = 7;
-        code = 31 * code + new Long( this.id ).hashCode();
+        code = 31 * code + Long.valueOf( this.id ).hashCode();
         code = 31 * code + this.type.hashCode();
         return code;
     }

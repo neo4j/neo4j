@@ -42,7 +42,7 @@ public class GetStoreIdRequestHandler extends SimpleChannelInboundHandler<GetSto
     }
 
     @Override
-    protected void channelRead0( ChannelHandlerContext ctx, GetStoreIdRequest msg ) throws Exception
+    protected void channelRead0( ChannelHandlerContext ctx, GetStoreIdRequest msg )
     {
         ctx.writeAndFlush( ResponseMessageType.STORE_ID );
         ctx.writeAndFlush( storeIdSupplier.get() );

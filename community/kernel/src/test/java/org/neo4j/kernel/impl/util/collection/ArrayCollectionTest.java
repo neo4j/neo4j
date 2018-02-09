@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 public class ArrayCollectionTest
 {
     @Test
-    public void shouldAddItems() throws Exception
+    public void shouldAddItems()
     {
         // GIVEN
         Collection<String> collection = new ArrayCollection<>( 5 );
@@ -54,7 +54,7 @@ public class ArrayCollectionTest
     }
 
     @Test
-    public void shouldGrowWithMoreItms() throws Exception
+    public void shouldGrowWithMoreItms()
     {
         // GIVEN
         int initialCapacity = 3;
@@ -78,7 +78,7 @@ public class ArrayCollectionTest
     }
 
     @Test
-    public void shouldClear() throws Exception
+    public void shouldClear()
     {
         // GIVEN
         Collection<String> collection = new ArrayCollection<>( 10 );
@@ -111,7 +111,7 @@ public class ArrayCollectionTest
     }
 
     @Test
-    public void shouldAddAllBeyondCapacity() throws Exception
+    public void shouldAddAllBeyondCapacity()
     {
         // GIVEN
         Collection<Integer> collection = new ArrayCollection<>( 5 );

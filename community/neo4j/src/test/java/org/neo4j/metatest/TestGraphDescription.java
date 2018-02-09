@@ -59,21 +59,20 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     public void havingNoGraphAnnotationCreatesAnEmptyDataCollection()
-            throws Exception
     {
         assertTrue( "collection was not empty", data.get().isEmpty() );
     }
 
     @Test
     @Graph( "I know you" )
-    public void canCreateGraphFromSingleString() throws Exception
+    public void canCreateGraphFromSingleString()
     {
         verifyIKnowYou( "know", "I" );
     }
 
     @Test
     @Graph( { "a TO b", "b TO c", "c TO a" } )
-    public void canCreateGraphFromMultipleStrings() throws Exception
+    public void canCreateGraphFromMultipleStrings()
     {
         Map<String,Node> graph = data.get();
         Set<Node> unique = new HashSet<>();
@@ -90,7 +89,7 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( { "a:Person EATS b:Banana" } )
-    public void ensurePeopleCanEatBananas() throws Exception
+    public void ensurePeopleCanEatBananas()
     {
         Map<String,Node> graph = data.get();
         Node a = graph.get( "a" );
@@ -105,7 +104,7 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( { "a:Person EATS b:Banana", "a EATS b:Apple" } )
-    public void ensurePeopleCanEatBananasAndApples() throws Exception
+    public void ensurePeopleCanEatBananasAndApples()
     {
         Map<String,Node> graph = data.get();
         Node a = graph.get( "a" );
@@ -121,7 +120,7 @@ public class TestGraphDescription implements GraphHolder
 
     @Test
     @Graph( value = {"I know you"}, autoIndexNodes = true )
-    public void canAutoIndexNodes() throws Exception
+    public void canAutoIndexNodes()
     {
         data.get();
 
@@ -137,7 +136,7 @@ public class TestGraphDescription implements GraphHolder
     @Test
     @Graph( nodes = {@NODE( name = "I", setNameProperty = true, properties = {
             @PROP( key = "name", value = "I" )} )}, autoIndexNodes = true )
-    public void canAutoIndexNodesExplicitProps() throws Exception
+    public void canAutoIndexNodesExplicitProps()
     {
         data.get();
 
@@ -160,7 +159,6 @@ public class TestGraphDescription implements GraphHolder
                     @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
             autoIndexRelationships = true )
     public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
-            throws Exception
     {
         data.get();
         verifyIKnowYou( "knows", "me" );

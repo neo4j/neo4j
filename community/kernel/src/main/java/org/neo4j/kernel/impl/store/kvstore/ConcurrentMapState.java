@@ -430,7 +430,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         }
 
         @Override
-        public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
+        public boolean visit( WritableBuffer key, WritableBuffer value )
         {
             if ( i < data.length )
             {
@@ -443,7 +443,7 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     }

@@ -75,7 +75,7 @@ public class ReadReplicaStartupProcessTest
     private File storeDir = new File( "store-dir" );
 
     @Before
-    public void commonMocking() throws StoreIdDownloadFailedException, IOException
+    public void commonMocking() throws IOException
     {
         Map<MemberId,CoreServerInfo> members = new HashMap<>();
         members.put( memberId, mock( CoreServerInfo.class ) );
@@ -196,7 +196,7 @@ public class ReadReplicaStartupProcessTest
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
             CoreTopology coreTopology = topologyService.coreServers();
             return Optional.ofNullable( coreTopology.members().keySet().iterator().next() );

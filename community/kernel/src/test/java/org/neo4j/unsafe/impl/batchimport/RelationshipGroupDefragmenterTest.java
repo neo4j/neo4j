@@ -98,13 +98,13 @@ public class RelationshipGroupDefragmenterTest
     }
 
     @After
-    public void stop() throws IOException
+    public void stop()
     {
         stores.close();
     }
 
     @Test
-    public void shouldDefragmentRelationshipGroupsWhenAllDense() throws Exception
+    public void shouldDefragmentRelationshipGroupsWhenAllDense()
     {
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 100;
@@ -143,7 +143,7 @@ public class RelationshipGroupDefragmenterTest
     }
 
     @Test
-    public void shouldDefragmentRelationshipGroupsWhenSomeDense() throws Exception
+    public void shouldDefragmentRelationshipGroupsWhenSomeDense()
     {
         // GIVEN some nodes which has their groups scattered
         int nodeCount = 100;

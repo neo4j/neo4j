@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 public class HighlyAvailableGraphDatabaseFactoryTest
 {
     @Test
-    public void shouldIncludeCorrectSettingsClasses() throws Throwable
+    public void shouldIncludeCorrectSettingsClasses()
     {
         // When
         GraphDatabaseFactoryState state = new HighlyAvailableGraphDatabaseFactory().getCurrentState();

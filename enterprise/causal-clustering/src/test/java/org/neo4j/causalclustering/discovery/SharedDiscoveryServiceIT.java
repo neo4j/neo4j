@@ -90,7 +90,7 @@ public class SharedDiscoveryServiceIT
     }
 
     private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
-            Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
+            Set<MemberId> expectedTargetSet )
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();

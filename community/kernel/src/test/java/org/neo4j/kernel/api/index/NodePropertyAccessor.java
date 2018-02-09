@@ -48,7 +48,7 @@ public class NodePropertyAccessor implements PropertyAccessor
     }
 
     @Override
-    public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public Value getPropertyValue( long nodeId, int propertyKeyId )
     {
         if ( nodePropertyMap.containsKey( nodeId ) )
         {

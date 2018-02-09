@@ -56,7 +56,7 @@ public class NodeIdReuseStressIT
             .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE.name() );
 
     @Before
-    public void verifyParams() throws Exception
+    public void verifyParams()
     {
         assertThat( CONTESTANTS_COUNT, greaterThan( 0 ) );
         assertThat( CONTESTANTS_COUNT % 2, equalTo( 0 ) );

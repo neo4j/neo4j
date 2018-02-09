@@ -89,7 +89,7 @@ public class ThresholdBasedPruneStrategyTest
     }
 
     @Test
-    public void shouldDeleteJustWhatTheThresholdSays() throws Exception
+    public void shouldDeleteJustWhatTheThresholdSays()
     {
         // Given
         when( threshold.reached( any(), eq( 6L ), any() ) )

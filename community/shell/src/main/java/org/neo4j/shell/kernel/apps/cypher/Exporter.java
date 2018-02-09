@@ -37,7 +37,7 @@ public class Exporter
         exporter = new SubGraphExporter( graph );
     }
 
-    public void export( Output out ) throws RemoteException, ShellException
+    public void export( Output out )
     {
         exporter.export( asWriter(out), "begin", "commit" );
     }

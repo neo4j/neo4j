@@ -36,7 +36,6 @@ public enum AcceptorState
                                              Message<AcceptorMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == AcceptorMessage.join )
                     {
@@ -54,7 +53,6 @@ public enum AcceptorState
                                              Message<AcceptorMessage> message,
                                              MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

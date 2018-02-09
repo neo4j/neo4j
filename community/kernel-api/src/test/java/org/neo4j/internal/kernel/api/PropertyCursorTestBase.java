@@ -161,7 +161,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldNotAccessNonExistentProperties() throws Exception
+    public void shouldNotAccessNonExistentProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -183,7 +183,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldAccessSingleProperty() throws Exception
+    public void shouldAccessSingleProperty()
     {
         assertAccessSingleProperty( byteProp, Values.of( (byte) 13 ) );
         assertAccessSingleProperty( shortProp, Values.of( (short) 13 ) );
@@ -210,7 +210,7 @@ public abstract class PropertyCursorTestBase<G extends KernelAPIReadTestSupport>
     }
 
     @Test
-    public void shouldAccessAllNodeProperties() throws Exception
+    public void shouldAccessAllNodeProperties()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();

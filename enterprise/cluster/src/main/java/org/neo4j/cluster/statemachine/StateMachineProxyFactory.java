@@ -77,7 +77,6 @@ public class StateMachineProxyFactory
     }
 
     Object invoke( StateMachine stateMachine, Method method, Object arg )
-            throws Throwable
     {
         if ( method.getName().equals( "toString" ) )
         {
@@ -93,8 +92,7 @@ public class StateMachineProxyFactory
 
         try
         {
-            Class<? extends MessageType> messageType = stateMachine.getMessageType();
-            MessageType typeAsEnum = (MessageType) Enum.valueOf( (Class<? extends Enum>) messageType, method.getName() );
+            MessageType typeAsEnum = (MessageType) Enum.valueOf( stateMachine.getMessageType(), method.getName() );
             Message<?> message = Message.internal( typeAsEnum, arg );
             if ( me != null )
             {
@@ -125,7 +123,7 @@ public class StateMachineProxyFactory
     }
 
     @Override
-    public boolean process( Message message )
+    public boolean process( Message<?> message )
     {
         if ( !responseFutureMap.isEmpty() )
         {
@@ -170,7 +168,7 @@ public class StateMachineProxyFactory
 
                 try
                 {
-                    Enum.valueOf( (Class<? extends Enum>) stateMachine.getMessageType(), method.getName() );
+                    Enum.valueOf( stateMachine.getMessageType(), method.getName() );
 
                     // Ok!
                     foundMatch = true;

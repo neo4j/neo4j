@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 import org.junit.Test;
 
 import java.io.Flushable;
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -61,7 +60,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustPutDefaultLimitOnIOWhenNoLimitIsConfigured() throws Exception
+    public void mustPutDefaultLimitOnIOWhenNoLimitIsConfigured()
     {
         createIOLimiter( Config.defaults() );
 
@@ -75,13 +74,13 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotPutLimitOnIOWhenConfiguredToBeUnlimited() throws Exception
+    public void mustNotPutLimitOnIOWhenConfiguredToBeUnlimited()
     {
         createIOLimiter( -1 );
         assertUnlimited();
     }
 
-    private void assertUnlimited() throws IOException
+    private void assertUnlimited()
     {
         long pauseTime = pauseNanosCounter.get();
         repeatedlyCallMaybeLimitIO( limiter, IOLimiter.INITIAL_STAMP, 1000000 );
@@ -89,7 +88,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotPutLimitOnIOWhenLimitingIsDisabledAndNoLimitIsConfigured() throws Exception
+    public void mustNotPutLimitOnIOWhenLimitingIsDisabledAndNoLimitIsConfigured()
     {
         createIOLimiter( Config.defaults() );
         limiter.disableLimit();
@@ -113,7 +112,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustRestrictIORateToConfiguredLimit() throws Exception
+    public void mustRestrictIORateToConfiguredLimit()
     {
         createIOLimiter( 100 );
 
@@ -126,7 +125,7 @@ public class ConfigurableIOLimiterTest
         assertThat( pauseNanosCounter.get(), greaterThan( TimeUnit.SECONDS.toNanos( 9 ) ) );
     }
 
-    private long repeatedlyCallMaybeLimitIO( IOLimiter ioLimiter, long stamp, int iosPerIteration ) throws IOException
+    private long repeatedlyCallMaybeLimitIO( IOLimiter ioLimiter, long stamp, int iosPerIteration )
     {
         for ( int i = 0; i < 100; i++ )
         {
@@ -136,7 +135,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void mustNotRestrictIOToConfiguredRateWhenLimitIsDisabled() throws Exception
+    public void mustNotRestrictIOToConfiguredRateWhenLimitIsDisabled()
     {
         createIOLimiter( 100 );
 
@@ -166,7 +165,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void dynamicConfigurationUpdateMustBecomeVisible() throws Exception
+    public void dynamicConfigurationUpdateMustBecomeVisible()
     {
         // Create initially unlimited
         createIOLimiter( 0 );
@@ -189,7 +188,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void dynamicConfigurationUpdateEnablingLimiterMustNotDisableLimiter() throws Exception
+    public void dynamicConfigurationUpdateEnablingLimiterMustNotDisableLimiter()
     {
         // Create initially unlimited
         createIOLimiter( 0 );
@@ -208,7 +207,7 @@ public class ConfigurableIOLimiterTest
     }
 
     @Test
-    public void dynamicConfigurationUpdateDisablingLimiterMustNotDisableLimiter() throws Exception
+    public void dynamicConfigurationUpdateDisablingLimiterMustNotDisableLimiter()
     {
         // Create initially limited
         createIOLimiter( 100 );

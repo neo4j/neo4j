@@ -36,7 +36,7 @@ public class IndexSimpleValueValidatorTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void nullIsNotAllowed() throws Exception
+    public void nullIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Null value" );

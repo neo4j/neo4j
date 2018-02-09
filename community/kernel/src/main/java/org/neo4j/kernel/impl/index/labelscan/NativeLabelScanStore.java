@@ -303,7 +303,7 @@ public class NativeLabelScanStore implements LabelScanStore
      * @throws IOException on file access exceptions.
      */
     @Override
-    public ResourceIterator<File> snapshotStoreFiles() throws IOException
+    public ResourceIterator<File> snapshotStoreFiles()
     {
         return asResourceIterator( iterator( storeFile ) );
     }
@@ -346,7 +346,7 @@ public class NativeLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public boolean hasStore() throws IOException
+    public boolean hasStore()
     {
         return gbpTreeUtil.storeFileExists( storeFile );
     }
@@ -455,7 +455,7 @@ public class NativeLabelScanStore implements LabelScanStore
     }
 
     @Override
-    public void stop() throws IOException
+    public void stop()
     {   // Not needed
     }
 

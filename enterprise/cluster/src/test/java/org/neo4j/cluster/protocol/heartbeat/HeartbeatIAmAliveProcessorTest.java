@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 public class HeartbeatIAmAliveProcessorTest
 {
     @Test
-    public void shouldNotCreateHeartbeatsForNonExistingInstances() throws Exception
+    public void shouldNotCreateHeartbeatsForNonExistingInstances()
     {
         // GIVEN
         MessageHolder outgoing = mock( MessageHolder.class );
@@ -70,7 +70,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldNotProcessMessagesWithEqualFromAndToHeaders() throws Exception
+    public void shouldNotProcessMessagesWithEqualFromAndToHeaders()
     {
         URI to = URI.create( "ha://someAwesomeInstanceInJapan" );
 
@@ -99,7 +99,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldNotGenerateHeartbeatsForSuspicions() throws Exception
+    public void shouldNotGenerateHeartbeatsForSuspicions()
     {
         URI to = URI.create( "ha://1" );
 
@@ -130,7 +130,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldNotGenerateHeartbeatsForHeartbeats() throws Exception
+    public void shouldNotGenerateHeartbeatsForHeartbeats()
     {
         URI to = URI.create( "ha://1" );
 
@@ -161,7 +161,7 @@ public class HeartbeatIAmAliveProcessorTest
     }
 
     @Test
-    public void shouldCorrectlySetTheInstanceIdHeaderInTheGeneratedHeartbeat() throws Exception
+    public void shouldCorrectlySetTheInstanceIdHeaderInTheGeneratedHeartbeat()
     {
         final List<Message> sentOut = new LinkedList<>();
 
@@ -204,7 +204,7 @@ public class HeartbeatIAmAliveProcessorTest
      * header then heartbeats may pause during rolling upgrades and cause timeouts, which we don't want.
      */
     @Test
-    public void shouldRevertToInverseUriLookupIfNoInstanceIdHeader() throws Exception
+    public void shouldRevertToInverseUriLookupIfNoInstanceIdHeader()
     {
         final List<Message> sentOut = new LinkedList<>();
         String instance2UriString = "ha://2";

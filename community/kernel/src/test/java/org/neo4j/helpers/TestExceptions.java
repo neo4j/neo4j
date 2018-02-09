@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 public class TestExceptions
 {
     @Test
-    public void canPeelExceptions() throws Exception
+    public void canPeelExceptions()
     {
         // given
         Throwable expected;
@@ -50,7 +50,7 @@ public class TestExceptions
     }
 
     @Test
-    public void canPeelUsingConveniencePredicate() throws Exception
+    public void canPeelUsingConveniencePredicate()
     {
         // given
         Throwable expected;
@@ -70,7 +70,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldDetectContainsOneOfSome() throws Exception
+    public void shouldDetectContainsOneOfSome()
     {
         // GIVEN
         Throwable cause = new ARuntimeException( new AnotherRuntimeException( new NullPointerException( "Some words" ) ) );
@@ -82,7 +82,7 @@ public class TestExceptions
     }
 
     @Test
-    public void shouldSetMessage() throws Exception
+    public void shouldSetMessage()
     {
         // GIVEN
         String initialMessage = "Initial message";

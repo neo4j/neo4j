@@ -92,18 +92,18 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldComplainIfMissingPrivateKey() throws Exception
+    public void shouldComplainIfMissingPrivateKey()
     {
         shouldComplainIfMissingFile( privateKeyFile );
     }
 
     @Test
-    public void shouldComplainIfMissingPublicCertificate() throws Exception
+    public void shouldComplainIfMissingPublicCertificate()
     {
         shouldComplainIfMissingFile( publicCertificateFile );
     }
 
-    private void shouldComplainIfMissingFile( File file ) throws Exception
+    private void shouldComplainIfMissingFile( File file )
     {
         // given
         FileUtils.deleteFile( file );
@@ -130,7 +130,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldThrowIfPolicyNameDoesNotExist() throws Exception
+    public void shouldThrowIfPolicyNameDoesNotExist()
     {
         // given
         Map<String,String> params = stringMap();
@@ -156,7 +156,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldReturnNullPolicyIfNullRequested() throws Exception
+    public void shouldReturnNullPolicyIfNullRequested()
     {
         // given
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), NullLogProvider.getInstance() );
@@ -169,7 +169,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldNotAllowLegacyPolicyToBeConfigured() throws Exception
+    public void shouldNotAllowLegacyPolicyToBeConfigured()
     {
         // given
         Map<String,String> params = stringMap();

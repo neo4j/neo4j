@@ -53,7 +53,7 @@ public class ClusterContextImplTest
      * has the effect that when it rejoins its elector version will be reset and its results will go through
      */
     @Test
-    public void electorLeavingTheClusterMustBeRemovedAsElector() throws Throwable
+    public void electorLeavingTheClusterMustBeRemovedAsElector()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -87,7 +87,7 @@ public class ClusterContextImplTest
      * elector id and last version
      */
     @Test
-    public void nonElectorLeavingTheClusterMustNotAffectElectorInformation() throws Throwable
+    public void nonElectorLeavingTheClusterMustNotAffectElectorInformation()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -123,7 +123,7 @@ public class ClusterContextImplTest
      * actually perform the same things at different events, one covering for the other.
      */
     @Test
-    public void instanceEnteringTheClusterMustBeRemovedAsElector() throws Exception
+    public void instanceEnteringTheClusterMustBeRemovedAsElector()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -153,7 +153,7 @@ public class ClusterContextImplTest
      * current elector version. This is the complement of the previous test.
      */
     @Test
-    public void instanceEnteringTheClusterMustBeNotAffectElectorStatusIfItWasNotElectorBefore() throws Exception
+    public void instanceEnteringTheClusterMustBeNotAffectElectorStatusIfItWasNotElectorBefore()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -184,7 +184,7 @@ public class ClusterContextImplTest
      * the instance, once it comes back, will still be able to do elections even if it lost state
      */
     @Test
-    public void electorFailingMustCauseElectorVersionToBeReset() throws Exception
+    public void electorFailingMustCauseElectorVersionToBeReset()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -223,7 +223,7 @@ public class ClusterContextImplTest
      * the instance, once it comes back, will still be able to do elections even if it lost state
      */
     @Test
-    public void nonElectorFailingMustNotCauseElectorVersionToBeReset() throws Exception
+    public void nonElectorFailingMustNotCauseElectorVersionToBeReset()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -258,7 +258,7 @@ public class ClusterContextImplTest
     }
 
     @Test
-    public void shouldGracefullyHandleEmptyDiscoveryHeader() throws Exception
+    public void shouldGracefullyHandleEmptyDiscoveryHeader()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -287,7 +287,7 @@ public class ClusterContextImplTest
     }
 
     @Test
-    public void shouldUpdateDiscoveryHeaderWithContactingInstances() throws Exception
+    public void shouldUpdateDiscoveryHeaderWithContactingInstances()
     {
         // Given
         InstanceId me = new InstanceId( 1 );
@@ -322,7 +322,7 @@ public class ClusterContextImplTest
     }
 
     @Test
-    public void shouldKeepTrackOfInstancesWeHaveContacted() throws Exception
+    public void shouldKeepTrackOfInstancesWeHaveContacted()
     {
         // Given
         InstanceId me = new InstanceId( 1 );

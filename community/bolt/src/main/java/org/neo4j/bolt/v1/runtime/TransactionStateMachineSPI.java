@@ -125,7 +125,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     public BoltResultHandle executeQuery( BoltQuerySource querySource,
             LoginContext loginContext,
             String statement,
-            MapValue params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
+            MapValue params, ThrowingAction<KernelException> onFail )
     {
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, loginContext );
         ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,

@@ -160,7 +160,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public RESTSubject login( String username, String password ) throws Exception
+    public RESTSubject login( String username, String password )
     {
         String principalCredentials = challengeResponse( username, password );
         return new RESTSubject( username, password, principalCredentials );
@@ -200,7 +200,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     }
 
     @Override
-    public void assertPasswordChangeRequired( RESTSubject subject ) throws Exception
+    public void assertPasswordChangeRequired( RESTSubject subject )
     {
         HTTP.Response response = authenticate( subject.principalCredentials );
         assertThat( response.status(), equalTo( 403 ) );

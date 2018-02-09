@@ -44,7 +44,7 @@ import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
 public class StorageLayerPropertyTest extends StorageLayerTest
 {
     @Test
-    public void should_get_all_node_properties() throws Exception
+    public void should_get_all_node_properties()
     {
         // GIVEN
         String longString =
@@ -125,7 +125,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_create_property_key_if_not_exists() throws Exception
+    public void should_create_property_key_if_not_exists()
     {
         // WHEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -135,7 +135,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_get_previously_created_property_key() throws Exception
+    public void should_get_previously_created_property_key()
     {
         // GIVEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -148,7 +148,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_be_able_to_get_or_create_previously_created_property_key() throws Exception
+    public void should_be_able_to_get_or_create_previously_created_property_key()
     {
         // GIVEN
         long id = disk.propertyKeyGetOrCreateForName( propertyKey );
@@ -161,7 +161,7 @@ public class StorageLayerPropertyTest extends StorageLayerTest
     }
 
     @Test
-    public void should_fail_if_get_non_existent_property_key() throws Exception
+    public void should_fail_if_get_non_existent_property_key()
     {
         // WHEN
         int propertyKey = disk.propertyKeyGetForName( "non-existent-property-key" );

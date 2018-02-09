@@ -205,7 +205,7 @@ public class CoreReplicationIT
         }
     }
 
-    private void awaitForDataToBeApplied( CoreClusterMember leader ) throws InterruptedException, TimeoutException
+    private void awaitForDataToBeApplied( CoreClusterMember leader ) throws TimeoutException
     {
         await( () -> countNodes(leader) > 0, 10, SECONDS);
     }

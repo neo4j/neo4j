@@ -76,8 +76,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws
-            IOException
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition )
     {
         return ReversedMultiFileTransactionCursor
                 .fromLogFile( logFiles, logFile, backToPosition, failOnCorruptedLogFiles,

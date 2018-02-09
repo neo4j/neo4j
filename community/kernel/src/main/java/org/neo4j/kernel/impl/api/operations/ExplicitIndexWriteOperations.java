@@ -50,7 +50,7 @@ public interface ExplicitIndexWriteOperations
             throws ExplicitIndexNotFoundKernelException;
 
     void nodeAddToExplicitIndex( KernelStatement statement, String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     void nodeRemoveFromExplicitIndex( KernelStatement statement, String indexName, long node, String key, Object value )
             throws ExplicitIndexNotFoundKernelException;
@@ -65,13 +65,13 @@ public interface ExplicitIndexWriteOperations
             Object value ) throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
     void relationshipRemoveFromExplicitIndex( KernelStatement statement, String indexName, long relationship, String key,
-            Object value ) throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            Object value ) throws ExplicitIndexNotFoundKernelException;
 
     void relationshipRemoveFromExplicitIndex( KernelStatement statement, String indexName, long relationship, String key )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     void relationshipRemoveFromExplicitIndex( KernelStatement statement, String indexName, long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
+            throws ExplicitIndexNotFoundKernelException;
 
     void nodeExplicitIndexDrop( KernelStatement statement, String indexName ) throws ExplicitIndexNotFoundKernelException;
 

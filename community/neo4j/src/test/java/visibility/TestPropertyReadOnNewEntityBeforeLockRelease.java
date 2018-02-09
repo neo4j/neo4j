@@ -54,7 +54,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease
     public final RepeatRule repeat = new RepeatRule();
 
     @BeforeClass
-    public static void initializeIndex() throws Exception
+    public static void initializeIndex()
     {
         try ( Transaction tx = db.beginTx() )
         {

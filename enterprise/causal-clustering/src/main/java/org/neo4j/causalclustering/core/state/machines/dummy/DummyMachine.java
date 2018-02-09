@@ -34,7 +34,7 @@ public class DummyMachine implements StateMachine<DummyRequest>
     }
 
     @Override
-    public void flush() throws IOException
+    public void flush()
     {
     }
 

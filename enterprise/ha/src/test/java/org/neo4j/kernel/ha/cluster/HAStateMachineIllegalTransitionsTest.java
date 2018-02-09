@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.URI;
+
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.member.ClusterMemberEvents;
+import org.neo4j.cluster.member.ClusterMemberListener;
+import org.neo4j.cluster.protocol.election.Election;
+import org.neo4j.kernel.impl.store.StoreId;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -26,16 +37,6 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachineTest.mockAddClusterMemberListener;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.SLAVE;
-
-import java.net.URI;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.member.ClusterMemberEvents;
-import org.neo4j.cluster.member.ClusterMemberListener;
-import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.kernel.impl.store.StoreId;
 
 /*
  * These tests reproduce state transitions which are illegal. The general requirement for them is that they
@@ -50,7 +51,7 @@ public class HAStateMachineIllegalTransitionsTest
     private Election election;
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
         HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, false );
 
@@ -69,7 +70,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterAvailableWhenInPending() throws Throwable
+    public void shouldProperlyHandleMasterAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, masterIsAvailable for itself should leave it to PENDING
@@ -88,7 +89,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleSlaveAvailableWhenInPending() throws Throwable
+    public void shouldProperlyHandleSlaveAvailableWhenInPending()
     {
         /*
          * If the instance is in PENDING state, slaveIsAvailable for itself should set it to PENDING
@@ -106,7 +107,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave() throws Throwable
+    public void shouldProperlyHandleNonElectedMasterBecomingAvailableWhenInToSlave()
     {
         /*
          * If the instance is in TO_SLAVE and a masterIsAvailable comes that does not refer to the elected master,
@@ -135,7 +136,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingMasterAvailableMessage() throws Throwable
+    public void shouldProperlyHandleConflictingMasterAvailableMessage()
     {
         /*
          * If the instance is currently in TO_MASTER and a masterIsAvailable comes for another instance, then
@@ -163,7 +164,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster() throws Throwable
+    public void shouldProperlyHandleConflictingSlaveIsAvailableMessageWhenInToMaster()
     {
         /*
          * If the instance is in TO_MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -190,7 +191,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster() throws Throwable
+    public void shouldProperlyHandleConflictingSlaveIsAvailableWhenInMaster()
     {
         /*
          * If the instance is in MASTER state, slaveIsAvailable for itself should set it to PENDING
@@ -224,7 +225,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState() throws Throwable
+    public void shouldProperlyHandleMasterIsAvailableWhenInMasterState()
     {
         /*
          * If the instance is in MASTER state and a masterIsAvailable is received for another instance, then
@@ -260,7 +261,7 @@ public class HAStateMachineIllegalTransitionsTest
     }
 
     @Test
-    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState() throws Throwable
+    public void shouldProperlyHandleMasterIsAvailableWhenInSlaveState()
     {
         /*
          * If the instance is in SLAVE state and receives masterIsAvailable for an instance different than the

@@ -471,7 +471,7 @@ public class ForkedProcessorStepTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
         }
     }

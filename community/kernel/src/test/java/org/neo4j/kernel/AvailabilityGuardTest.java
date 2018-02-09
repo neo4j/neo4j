@@ -55,7 +55,7 @@ public class AvailabilityGuardTest
     private Clock clock = Clocks.systemClock();
 
     @Test
-    public void logOnAvailabilityChange() throws Exception
+    public void logOnAvailabilityChange()
     {
         // Given
         Log log = mock( Log.class );
@@ -98,7 +98,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse()
     {
         // Given
         Log log = mock( Log.class );
@@ -114,7 +114,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout()
     {
         // Given
         Log log = mock( Log.class );
@@ -135,7 +135,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse()
     {
         // Given
         Log log = mock( Log.class );
@@ -158,7 +158,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue() throws Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue()
     {
         // Given
         Log log = mock( Log.class );
@@ -174,8 +174,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse() throws
-            Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse()
     {
         // Given
         Log log = mock( Log.class );
@@ -200,8 +199,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue() throws
-            Exception
+    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue()
     {
         // Given
         Log log = mock( Log.class );
@@ -217,7 +215,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWithConditionWhenGrantThenNotifyListeners() throws Exception
+    public void givenAccessGuardWithConditionWhenGrantThenNotifyListeners()
     {
         // Given
         Log log = mock( Log.class );
@@ -249,7 +247,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners() throws Exception
+    public void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners()
     {
         // Given
         Log log = mock( Log.class );
@@ -282,7 +280,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess() throws Exception
+    public void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess()
     {
         // Given
         Clock clock = Mockito.mock( Clock.class );
@@ -298,8 +296,7 @@ public class AvailabilityGuardTest
     }
 
     @Test
-    public void shouldExplainWhoIsBlockingAccess() throws
-            Exception
+    public void shouldExplainWhoIsBlockingAccess()
     {
         // Given
         Log log = mock( Log.class );

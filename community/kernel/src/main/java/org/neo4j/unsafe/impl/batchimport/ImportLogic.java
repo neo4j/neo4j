@@ -66,7 +66,6 @@ import static java.lang.Long.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
@@ -505,7 +504,7 @@ public class ImportLogic implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // We're done, do some final logging about it
         long totalTimeMillis = currentTimeMillis() - startTime;

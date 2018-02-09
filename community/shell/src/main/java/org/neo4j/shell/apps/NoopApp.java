@@ -34,7 +34,7 @@ import org.neo4j.shell.impl.AbstractApp;
 public class NoopApp extends AbstractApp
 {
     @Override
-    public Continuation execute( AppCommandParser parser, Session session, Output out ) throws Exception
+    public Continuation execute( AppCommandParser parser, Session session, Output out )
     {
         return Continuation.INPUT_COMPLETE;
     }

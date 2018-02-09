@@ -108,7 +108,7 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     }
 
     @Override
-    public void onExternalError( Neo4jError error ) throws IOException
+    public void onExternalError( Neo4jError error )
     {
         //ignore
     }

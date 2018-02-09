@@ -35,7 +35,7 @@ public class TestableTransactionAppender implements TransactionAppender
     }
 
     @Override
-    public long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException
+    public long append( TransactionToApply batch, LogAppendEvent logAppendEvent )
     {
         long txId = TransactionIdStore.BASE_TX_ID;
         while ( batch != null )
@@ -49,7 +49,7 @@ public class TestableTransactionAppender implements TransactionAppender
     }
 
     @Override
-    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    public void checkPoint( LogPosition logPosition, LogCheckPointEvent logCheckPointEvent )
     {
     }
 }

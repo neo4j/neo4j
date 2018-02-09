@@ -544,7 +544,7 @@ public class StateHandlingStatementOperationsTest
     }
 
     @Test
-    public void shouldNotRecordGraphSetPropertyOnSameValue() throws Exception
+    public void shouldNotRecordGraphSetPropertyOnSameValue()
     {
         // GIVEN
         int propertyKeyId = 5;

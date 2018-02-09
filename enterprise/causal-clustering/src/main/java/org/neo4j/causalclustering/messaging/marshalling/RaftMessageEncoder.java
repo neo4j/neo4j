@@ -81,7 +81,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.Vote.Response voteResponse ) throws Exception
+        public Void handle( RaftMessages.Vote.Response voteResponse )
         {
             channel.putLong( voteResponse.term() );
             channel.put( (byte) (voteResponse.voteGranted() ? 1 : 0) );
@@ -101,7 +101,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.PreVote.Response preVoteResponse ) throws Exception
+        public Void handle( RaftMessages.PreVote.Response preVoteResponse )
         {
             channel.putLong( preVoteResponse.term() );
             channel.put( (byte) (preVoteResponse.voteGranted() ? 1 : 0) );
@@ -129,7 +129,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.AppendEntries.Response appendResponse ) throws Exception
+        public Void handle( RaftMessages.AppendEntries.Response appendResponse )
         {
             channel.putLong( appendResponse.term() );
             channel.put( (byte) (appendResponse.success() ? 1 : 0) );
@@ -148,7 +148,7 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.Heartbeat heartbeat )
         {
             channel.putLong( heartbeat.leaderTerm() );
             channel.putLong( heartbeat.commitIndexTerm() );
@@ -158,14 +158,14 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse ) throws Exception
+        public Void handle( RaftMessages.HeartbeatResponse heartbeatResponse )
         {
             // Heartbeat Response does not have any data attached to it.
             return null;
         }
 
         @Override
-        public Void handle( RaftMessages.LogCompactionInfo logCompactionInfo ) throws Exception
+        public Void handle( RaftMessages.LogCompactionInfo logCompactionInfo )
         {
             channel.putLong( logCompactionInfo.leaderTerm() );
             channel.putLong( logCompactionInfo.prevIndex() );
@@ -173,25 +173,25 @@ public class RaftMessageEncoder extends MessageToByteEncoder<RaftMessages.Cluste
         }
 
         @Override
-        public Void handle( RaftMessages.Timeout.Election election ) throws Exception
+        public Void handle( RaftMessages.Timeout.Election election )
         {
             return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat ) throws Exception
+        public Void handle( RaftMessages.Timeout.Heartbeat heartbeat )
         {
             return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest ) throws Exception
+        public Void handle( RaftMessages.NewEntry.BatchRequest batchRequest )
         {
             return null; // Not network
         }
 
         @Override
-        public Void handle( RaftMessages.PruneRequest pruneRequest ) throws Exception
+        public Void handle( RaftMessages.PruneRequest pruneRequest )
         {
             return null; // Not network
         }

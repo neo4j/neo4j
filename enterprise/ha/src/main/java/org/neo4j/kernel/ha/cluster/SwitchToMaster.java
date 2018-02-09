@@ -158,7 +158,7 @@ public class SwitchToMaster implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close()
     {
         userLog = null;
         conversationManagerFactory = null;

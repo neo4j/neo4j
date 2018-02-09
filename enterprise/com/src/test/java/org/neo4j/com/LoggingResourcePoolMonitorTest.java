@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 public class LoggingResourcePoolMonitorTest
 {
     @Test
-    public void testUpdatedCurrentPeakSizeLogsOnlyOnChange() throws Exception
+    public void testUpdatedCurrentPeakSizeLogsOnlyOnChange()
     {
         Log log = mock( Log.class );
         LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );
@@ -47,7 +47,7 @@ public class LoggingResourcePoolMonitorTest
     }
 
     @Test
-    public void testUpdatedTargetSizeOnlyOnChange() throws Exception
+    public void testUpdatedTargetSizeOnlyOnChange()
     {
         Log log = mock( Log.class );
         LoggingResourcePoolMonitor monitor = new LoggingResourcePoolMonitor( log );

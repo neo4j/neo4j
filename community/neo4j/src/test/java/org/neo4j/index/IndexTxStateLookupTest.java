@@ -217,7 +217,7 @@ public class IndexTxStateLookupTest
     }
 
     @Test
-    public void lookupWithinTransaction() throws Exception
+    public void lookupWithinTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -232,7 +232,7 @@ public class IndexTxStateLookupTest
     }
 
     @Test
-    public void lookupWithinTransactionWithCacheEviction() throws Exception
+    public void lookupWithinTransactionWithCacheEviction()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -247,7 +247,7 @@ public class IndexTxStateLookupTest
     }
 
     @Test
-    public void lookupWithoutTransaction() throws Exception
+    public void lookupWithoutTransaction()
     {
         // when
         Node node;
@@ -275,7 +275,7 @@ public class IndexTxStateLookupTest
     }
 
     @Test
-    public void lookupWithoutTransactionWithCacheEviction() throws Exception
+    public void lookupWithoutTransactionWithCacheEviction()
     {
         // when
         Node node;

@@ -56,7 +56,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldBeAbleToReferToIdsBeyondMaxInt() throws Exception
+    public void shouldBeAbleToReferToIdsBeyondMaxInt()
     {
         // GIVEN
         EmbeddedProxySPI actions = mock( EmbeddedProxySPI.class );
@@ -97,7 +97,7 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
     }
 
     @Test
-    public void shouldPrintCypherEsqueRelationshipToString() throws Exception
+    public void shouldPrintCypherEsqueRelationshipToString()
     {
         // GIVEN
         Node start;

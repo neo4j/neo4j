@@ -115,7 +115,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         }
 
         @Override
-        SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess
+        SuspendedTransaction getSuspendedTransaction()
         {
             return this;
         }

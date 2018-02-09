@@ -58,7 +58,7 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
     }
 
     @Test
-    public void checkPointIsNeededIfWeMightHaveLogsToPrune() throws Exception
+    public void checkPointIsNeededIfWeMightHaveLogsToPrune()
     {
         withPolicy( "volumetric" );
         haveLogsToPrune = true;
@@ -70,7 +70,7 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
     }
 
     @Test
-    public void checkPointIsInitiallyNotNeededIfWeHaveNoLogsToPrune() throws Exception
+    public void checkPointIsInitiallyNotNeededIfWeHaveNoLogsToPrune()
     {
         withPolicy( "volumetric" );
         haveLogsToPrune = false;
@@ -82,7 +82,7 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void continuousPolicyMustAlwaysTriggerCheckPoints() throws Exception
+    public void continuousPolicyMustAlwaysTriggerCheckPoints()
     {
         withPolicy( "continuous" );
         CheckPointThreshold threshold = createThreshold();

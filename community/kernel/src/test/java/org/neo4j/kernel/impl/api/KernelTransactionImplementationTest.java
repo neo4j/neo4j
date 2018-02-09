@@ -162,7 +162,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void shouldRollbackAndThrowOnFailedAndSuccess() throws Exception
+    public void shouldRollbackAndThrowOnFailedAndSuccess()
     {
         // GIVEN
         boolean exceptionReceived = false;
@@ -186,7 +186,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void shouldRollbackOnClosingTerminatedTransaction() throws Exception
+    public void shouldRollbackOnClosingTerminatedTransaction()
     {
         // GIVEN
         KernelTransaction transaction = newTransaction( loginContext() );
@@ -230,7 +230,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void shouldRollbackOnClosingTerminatedButSuccessfulTransaction() throws Exception
+    public void shouldRollbackOnClosingTerminatedButSuccessfulTransaction()
     {
         // GIVEN
         KernelTransaction transaction = newTransaction( loginContext() );
@@ -583,14 +583,14 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void initializedTransactionShouldHaveNoTerminationReason() throws Exception
+    public void initializedTransactionShouldHaveNoTerminationReason()
     {
         KernelTransactionImplementation tx = newTransaction( loginContext() );
         assertFalse( tx.getReasonIfTerminated().isPresent() );
     }
 
     @Test
-    public void shouldReportCorrectTerminationReason() throws Exception
+    public void shouldReportCorrectTerminationReason()
     {
         Status status = Status.Transaction.Terminated;
         KernelTransactionImplementation tx = newTransaction( loginContext() );

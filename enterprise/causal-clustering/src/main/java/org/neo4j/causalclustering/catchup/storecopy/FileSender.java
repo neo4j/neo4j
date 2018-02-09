@@ -43,14 +43,14 @@ class FileSender implements ChunkedInput<FileChunk>
     private byte[] nextBytes;
     private State state = PRE_INIT;
 
-    FileSender( StoreResource resource ) throws IOException
+    FileSender( StoreResource resource )
     {
         this.resource = resource;
         this.byteBuffer = ByteBuffer.allocateDirect( MAX_SIZE );
     }
 
     @Override
-    public boolean isEndOfInput() throws Exception
+    public boolean isEndOfInput()
     {
         return state == FINISHED;
     }

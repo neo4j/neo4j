@@ -32,7 +32,7 @@ import static org.neo4j.kernel.api.KernelTransactionFactory.kernelTransaction;
 public class TransactionStatementSequenceTest
 {
     @Test
-    public void shouldAllowReadStatementAfterReadStatement() throws Exception
+    public void shouldAllowReadStatementAfterReadStatement()
     {
         // given
         KernelTransaction tx = kernelTransaction( AnonymousContext.read() );

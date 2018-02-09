@@ -104,19 +104,19 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         life.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         cluster.removeClusterListener( clusterListener );
 

@@ -81,7 +81,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     }
 
     @Test
-    public void terminateSharedLockAcquisition() throws ExecutionException, InterruptedException
+    public void terminateSharedLockAcquisition() throws InterruptedException
     {
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
         Future<Boolean> sharedLockAcquisition = threadB.execute( state ->

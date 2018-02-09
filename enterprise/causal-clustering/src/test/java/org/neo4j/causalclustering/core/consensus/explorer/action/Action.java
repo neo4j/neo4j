@@ -25,5 +25,5 @@ import org.neo4j.causalclustering.core.consensus.explorer.ClusterState;
 
 public interface Action
 {
-    ClusterState advance( ClusterState clusterState ) throws IOException;
+    ClusterState advance( ClusterState clusterState );
 }

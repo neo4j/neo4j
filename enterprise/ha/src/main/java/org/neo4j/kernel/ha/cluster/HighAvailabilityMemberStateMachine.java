@@ -83,7 +83,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         events.addClusterMemberListener( eventsListener = new StateMachineClusterEventListener() );
         // On initial startup, disallow database access
@@ -91,7 +91,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         events.removeClusterMemberListener( eventsListener );
         HighAvailabilityMemberState oldState = state;

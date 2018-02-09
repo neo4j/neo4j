@@ -246,7 +246,7 @@ public class DbStructureInvocationTracingAcceptanceTest
         }
 
         @Override
-        public OutputStream openOutputStream() throws IOException
+        public OutputStream openOutputStream()
         {
             return byteCodeStream;
         }
@@ -267,7 +267,7 @@ public class DbStructureInvocationTracingAcceptanceTest
             return new SecureClassLoader()
             {
                 @Override
-                protected Class<?> findClass( String name ) throws ClassNotFoundException
+                protected Class<?> findClass( String name )
                 {
                     byte[] byteCode = classes.get( name ).getBytes();
                     return super.defineClass( name, byteCode, 0, byteCode.length );

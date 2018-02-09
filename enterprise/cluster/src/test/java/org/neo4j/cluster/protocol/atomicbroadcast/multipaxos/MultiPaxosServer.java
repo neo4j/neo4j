@@ -64,7 +64,7 @@ public class MultiPaxosServer
     private ProtocolServer server;
 
     public static void main( String[] args )
-            throws IOException, InvocationTargetException, IllegalAccessException
+            throws IOException
     {
         new MultiPaxosServer().start();
     }

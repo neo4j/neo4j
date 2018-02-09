@@ -53,7 +53,7 @@ public class ConsecutiveCacheTest
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cache = new ConsecutiveCache<>( capacity );
     }
@@ -110,7 +110,7 @@ public class ConsecutiveCacheTest
     }
 
     @Test
-    public void testCacheClearing() throws Exception
+    public void testCacheClearing()
     {
         // given
         for ( int i = 0; i < capacity; i++ )
@@ -132,7 +132,7 @@ public class ConsecutiveCacheTest
     }
 
     @Test
-    public void testEntryOverride() throws Exception
+    public void testEntryOverride()
     {
         // given
         for ( int i = 0; i < capacity; i++ )
@@ -159,7 +159,7 @@ public class ConsecutiveCacheTest
     }
 
     @Test
-    public void testEntrySkip() throws Exception
+    public void testEntrySkip()
     {
         // given
         for ( int i = 0; i < capacity; i++ )
@@ -181,7 +181,7 @@ public class ConsecutiveCacheTest
     }
 
     @Test
-    public void testPruning() throws Exception
+    public void testPruning()
     {
         // given
         for ( int i = 0; i < capacity; i++ )
@@ -207,7 +207,7 @@ public class ConsecutiveCacheTest
     }
 
     @Test
-    public void testRemoval() throws Exception
+    public void testRemoval()
     {
         // given
         for ( int i = 0; i < capacity; i++ )
@@ -229,7 +229,7 @@ public class ConsecutiveCacheTest
     }
 
     @Test
-    public void testTruncation() throws Exception
+    public void testTruncation()
     {
         // given
         for ( int i = 0; i < capacity; i++ )

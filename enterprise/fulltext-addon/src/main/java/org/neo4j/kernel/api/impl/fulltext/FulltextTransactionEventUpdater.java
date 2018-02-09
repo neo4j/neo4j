@@ -44,7 +44,7 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Fulltex
     }
 
     @Override
-    public FulltextTransactionContext beforeCommit( TransactionData data ) throws Exception
+    public FulltextTransactionContext beforeCommit( TransactionData data )
     {
         PrimitiveLongObjectMap<Map<String,Object>> nodeMap = Primitive.longObjectMap();
         PrimitiveLongObjectMap<Map<String,Object>> relationshipMap = Primitive.longObjectMap();

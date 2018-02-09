@@ -47,7 +47,7 @@ public class VerifyingTransactionEventHandler implements
     }
 
     @Override
-    public Object beforeCommit( TransactionData data ) throws Exception
+    public Object beforeCommit( TransactionData data )
     {
         return verify( data );
     }

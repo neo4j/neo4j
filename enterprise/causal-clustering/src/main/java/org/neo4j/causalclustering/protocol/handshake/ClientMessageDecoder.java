@@ -34,7 +34,7 @@ import org.neo4j.causalclustering.messaging.marshalling.StringMarshal;
 public class ClientMessageDecoder extends ByteToMessageDecoder
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf in, List<Object> out )
     {
         int messageCode = in.readInt();
 

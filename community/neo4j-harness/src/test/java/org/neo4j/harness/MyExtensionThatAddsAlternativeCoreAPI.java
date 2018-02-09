@@ -42,7 +42,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
 
     @Override
     public Lifecycle newInstance( KernelContext context,
-            Dependencies dependencies ) throws Throwable
+            Dependencies dependencies )
     {
         dependencies.procedures().registerComponent( MyCoreAPI.class,
                 ctx -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(), dependencies.txBridge(),

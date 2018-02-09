@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core.state.machines.id;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.replication.Replicator;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -83,7 +82,7 @@ public class ReplicatedIdRangeAcquirer
         {
             return (Boolean) replicator.replicate( idAllocationRequest, true ).get();
         }
-        catch ( InterruptedException | ExecutionException | NoLeaderFoundException e )
+        catch ( InterruptedException | ExecutionException e )
         {
             log.error( format( "Failed to acquire id range for idType %s", idType ), e );
             throw new IdGenerationException( e );

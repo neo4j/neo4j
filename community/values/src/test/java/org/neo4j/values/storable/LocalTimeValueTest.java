@@ -35,7 +35,7 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
 public class LocalTimeValueTest
 {
     @Test
-    public void shouldParseTimeWithOnlyHour() throws Exception
+    public void shouldParseTimeWithOnlyHour()
     {
         assertEquals( localTime( 14, 0, 0, 0 ), parse( "14" ) );
         assertEquals( localTime( 4, 0, 0, 0 ), parse( "4" ) );
@@ -43,7 +43,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourAndMinute() throws Exception
+    public void shouldParseTimeWithHourAndMinute()
     {
         assertEquals( localTime( 14, 5, 0, 0 ), parse( "1405" ) );
         assertEquals( localTime( 14, 5, 0, 0 ), parse( "14:5" ) );
@@ -53,7 +53,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteAndSecond() throws Exception
+    public void shouldParseTimeWithHourMinuteAndSecond()
     {
         assertEquals( localTime( 14, 5, 17, 0 ), parse( "140517" ) );
         assertEquals( localTime( 14, 5, 17, 0 ), parse( "14:5:17" ) );
@@ -63,7 +63,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteSecondAndFractions() throws Exception
+    public void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( localTime( 14, 5, 17, 123000000 ), parse( "140517.123" ) );
         assertEquals( localTime( 14, 5, 17, 1 ), parse( "14:5:17.000000001" ) );
@@ -74,7 +74,7 @@ public class LocalTimeValueTest
 
     @Test
     @SuppressWarnings( "ThrowableNotThrown" )
-    public void shouldFailToParseTimeOutOfRange() throws Exception
+    public void shouldFailToParseTimeOutOfRange()
     {
         assertCannotParse( "24" );
         assertCannotParse( "1760" );
@@ -83,7 +83,7 @@ public class LocalTimeValueTest
     }
 
     @Test
-    public void shouldWriteLocalTime() throws Exception
+    public void shouldWriteLocalTime()
     {
         // given
         for ( LocalTimeValue value : new LocalTimeValue[] {

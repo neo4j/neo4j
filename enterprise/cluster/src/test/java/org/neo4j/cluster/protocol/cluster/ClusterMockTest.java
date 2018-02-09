@@ -33,9 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
@@ -112,7 +110,7 @@ public class ClusterMockTest
 
     protected void testCluster( int nrOfServers, NetworkMock mock,
                                 ClusterTestScript script )
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws URISyntaxException
     {
         int[] serverIds = new int[nrOfServers];
         for ( int i = 1; i <= nrOfServers; i++ )
@@ -124,7 +122,7 @@ public class ClusterMockTest
 
     protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock,
                                 ClusterTestScript script )
-            throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
+            throws URISyntaxException
     {
         this.script = script;
 

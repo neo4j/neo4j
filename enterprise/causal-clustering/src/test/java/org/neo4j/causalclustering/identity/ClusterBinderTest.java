@@ -196,13 +196,13 @@ public class ClusterBinderTest
         }
 
         @Override
-        public ClusterId readState() throws IOException
+        public ClusterId readState()
         {
             return clusterId;
         }
 
         @Override
-        public void writeState( ClusterId state ) throws IOException
+        public void writeState( ClusterId state )
         {
             clusterId = state;
         }

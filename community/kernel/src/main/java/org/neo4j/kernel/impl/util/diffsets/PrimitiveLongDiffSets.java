@@ -24,8 +24,6 @@ import java.util.Objects;
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongDiffSetsVisitor;
 import org.neo4j.storageengine.api.txstate.PrimitiveLongReadableDiffSets;
 
@@ -97,7 +95,6 @@ public class PrimitiveLongDiffSets implements PrimitiveLongReadableDiffSets
     }
 
     public void visit( PrimitiveLongDiffSetsVisitor visitor )
-            throws ConstraintValidationException, CreateConstraintFailureException
     {
         PrimitiveLongIterator addedItems = addedElements.iterator();
         while ( addedItems.hasNext() )

@@ -48,7 +48,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( spi::queryService );
         Neo4jTransactionalContext.Creator contextCreator =
-            ( Supplier<Statement> statementSupplier, InternalTransaction tx, Statement initialStatement, ExecutingQuery executingQuery ) ->
+            ( statementSupplier, tx, initialStatement, executingQuery ) ->
                 new Neo4jTransactionalContext(
                     queryService.get(),
                     statementSupplier,
@@ -72,7 +72,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         ThreadToStatementContextBridge txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
         Guard guard = resolver.resolveDependency( Guard.class );
         Neo4jTransactionalContext.Creator contextCreator =
-            ( Supplier<Statement> statementSupplier, InternalTransaction tx, Statement initialStatement, ExecutingQuery executingQuery ) ->
+            ( statementSupplier, tx, initialStatement, executingQuery ) ->
                 new Neo4jTransactionalContext(
                     queryService,
                     statementSupplier,

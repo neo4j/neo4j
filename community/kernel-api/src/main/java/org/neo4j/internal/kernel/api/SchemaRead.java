@@ -48,7 +48,7 @@ public interface SchemaRead
     /**
      * Checks if a constraint exists
      * @param descriptor The descriptor of the constraint to check.
-     * @return <tt>true</tt> if the constraint exists, otherwise <tt>false</tt>
+     * @return {@code true} if the constraint exists, otherwise {@code false}
      */
     boolean constraintExists( ConstraintDescriptor descriptor );
 

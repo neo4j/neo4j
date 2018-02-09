@@ -55,7 +55,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatNode() throws Exception
+    public void canFormatNode()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
         try ( Transaction transaction = db.beginTx() )
@@ -70,14 +70,14 @@ public class StreamingJsonFormatTest
         assertTrue( stream.toString().contains( "\"self\" : \"http://localhost/node/0\"," ) );
     }
     @Test
-    public void canFormatString() throws Exception
+    public void canFormatString()
     {
         json.assemble( ValueRepresentation.string( "expected value" ) );
         assertEquals( stream.toString(), "\"expected value\"" );
     }
 
     @Test
-    public void canFormatListOfStrings() throws Exception
+    public void canFormatListOfStrings()
     {
         json.assemble( ListRepresentation.strings( "hello", "world" ) );
         String expectedString = JsonHelper.createJsonFrom( Arrays.asList( "hello", "world" ) );
@@ -85,14 +85,14 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatInteger() throws Exception
+    public void canFormatInteger()
     {
         json.assemble( ValueRepresentation.number( 10 ) );
         assertEquals( "10", stream.toString() );
     }
 
     @Test
-    public void canFormatEmptyObject() throws Exception
+    public void canFormatEmptyObject()
     {
         json.assemble( new MappingRepresentation( "empty" )
         {
@@ -105,7 +105,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithStringField() throws Exception
+    public void canFormatObjectWithStringField()
     {
         json.assemble( new MappingRepresentation( "string" )
         {
@@ -119,7 +119,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithUriField() throws Exception
+    public void canFormatObjectWithUriField()
     {
         json.assemble( new MappingRepresentation( "uri" )
         {
@@ -135,7 +135,7 @@ public class StreamingJsonFormatTest
     }
 
     @Test
-    public void canFormatObjectWithNestedObject() throws Exception
+    public void canFormatObjectWithNestedObject()
     {
         json.assemble( new MappingRepresentation( "nesting" )
         {

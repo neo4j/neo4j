@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 public class CatchUpChannelPoolTest
 {
     @Test
-    public void shouldReUseAChannelThatWasReleased() throws Exception
+    public void shouldReUseAChannelThatWasReleased()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );
@@ -45,7 +45,7 @@ public class CatchUpChannelPoolTest
     }
 
     @Test
-    public void shouldCreateANewChannelIfFirstChannelIsDisposed() throws Exception
+    public void shouldCreateANewChannelIfFirstChannelIsDisposed()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );
@@ -60,7 +60,7 @@ public class CatchUpChannelPoolTest
     }
 
     @Test
-    public void shouldCreateANewChannelIfFirstChannelIsStillActive() throws Exception
+    public void shouldCreateANewChannelIfFirstChannelIsStillActive()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );
@@ -74,7 +74,7 @@ public class CatchUpChannelPoolTest
     }
 
     @Test
-    public void shouldCleanUpOnClose() throws Exception
+    public void shouldCleanUpOnClose()
     {
         // given
         CatchUpChannelPool<TestChannel> pool = new CatchUpChannelPool<>( TestChannel::new );

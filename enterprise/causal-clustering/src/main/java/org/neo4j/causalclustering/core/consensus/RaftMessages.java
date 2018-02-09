@@ -1030,7 +1030,7 @@ public interface RaftMessages
             {
                 return false;
             }
-            ClusterIdAwareMessageImpl that = (ClusterIdAwareMessageImpl) o;
+            ClusterIdAwareMessageImpl<?> that = (ClusterIdAwareMessageImpl<?>) o;
             return Objects.equals( clusterId, that.clusterId ) && Objects.equals( message(), that.message() );
         }
 
@@ -1082,7 +1082,7 @@ public interface RaftMessages
             {
                 return false;
             }
-            ReceivedInstantAwareMessageImpl that = (ReceivedInstantAwareMessageImpl) o;
+            ReceivedInstantAwareMessageImpl<?> that = (ReceivedInstantAwareMessageImpl<?>) o;
             return Objects.equals( receivedAt, that.receivedAt ) && Objects.equals( message(), that.message() );
         }
 
@@ -1142,7 +1142,7 @@ public interface RaftMessages
             {
                 return false;
             }
-            ReceivedInstantClusterIdAwareMessageImpl that = (ReceivedInstantClusterIdAwareMessageImpl) o;
+            ReceivedInstantClusterIdAwareMessageImpl<?> that = (ReceivedInstantClusterIdAwareMessageImpl<?>) o;
             return Objects.equals( receivedAt, that.receivedAt ) && Objects.equals( clusterId, that.clusterId ) && Objects.equals( message(), that.message() );
         }
 

@@ -28,7 +28,7 @@ import static org.junit.Assert.assertNotEquals;
 public class VersionIT
 {
     @Test
-    public void canGetKernelRevision() throws Exception
+    public void canGetKernelRevision()
     {
         assertNotEquals( "Kernel revision not specified", "", Version.getKernelVersion() );
     }

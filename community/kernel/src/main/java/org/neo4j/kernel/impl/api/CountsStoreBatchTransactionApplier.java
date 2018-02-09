@@ -39,7 +39,7 @@ public class CountsStoreBatchTransactionApplier extends BatchTransactionApplier.
     }
 
     @Override
-    public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
+    public TransactionApplier startTx( CommandsToApply transaction )
     {
         Optional<CountsAccessor.Updater> result = countsTracker.apply( transaction.transactionId() );
         result.ifPresent( updater -> this.countsUpdater = updater );

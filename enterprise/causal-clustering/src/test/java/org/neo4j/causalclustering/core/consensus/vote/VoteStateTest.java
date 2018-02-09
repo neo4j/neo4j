@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class VoteStateTest
 {
     @Test
-    public void shouldStoreVote() throws Exception
+    public void shouldStoreVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -45,7 +45,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldStartWithNoVote() throws Exception
+    public void shouldStartWithNoVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -55,7 +55,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldUpdateVote() throws Exception
+    public void shouldUpdateVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -71,7 +71,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldClearVote() throws Exception
+    public void shouldClearVote()
     {
         // given
         VoteState voteState = new VoteState();
@@ -87,7 +87,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldNotUpdateVoteForSameTerm() throws Exception
+    public void shouldNotUpdateVoteForSameTerm()
     {
         // given
         VoteState voteState = new VoteState();
@@ -109,7 +109,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldNotClearVoteForSameTerm() throws Exception
+    public void shouldNotClearVoteForSameTerm()
     {
         // given
         VoteState voteState = new VoteState();
@@ -130,7 +130,7 @@ public class VoteStateTest
     }
 
     @Test
-    public void shouldReportNoUpdateWhenVoteStateUnchanged() throws Exception
+    public void shouldReportNoUpdateWhenVoteStateUnchanged()
     {
         // given
         VoteState voteState = new VoteState();

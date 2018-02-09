@@ -86,7 +86,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         isShutdown = true;
     }

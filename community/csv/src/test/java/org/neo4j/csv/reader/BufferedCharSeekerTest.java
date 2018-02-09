@@ -904,7 +904,7 @@ public class BufferedCharSeekerTest
         }
 
         @Override
-        public int read( char[] into, int offset, int length ) throws IOException
+        public int read( char[] into, int offset, int length )
         {
             throw new UnsupportedOperationException();
         }

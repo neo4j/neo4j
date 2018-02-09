@@ -85,7 +85,7 @@ class FusionIndexTestHelp
         return ArrayUtils.addAll( numberValues, otherValues );
     }
 
-    static void verifyCallFail( Exception expectedFailure, Callable failingCall ) throws Exception
+    static void verifyCallFail( Exception expectedFailure, Callable failingCall )
     {
         try
         {

@@ -32,7 +32,7 @@ public class SilentFileWatcher implements FileWatcher
 {
 
     @Override
-    public WatchedResource watch( File file ) throws IOException
+    public WatchedResource watch( File file )
     {
         return WatchedResource.EMPTY;
     }
@@ -53,12 +53,12 @@ public class SilentFileWatcher implements FileWatcher
     }
 
     @Override
-    public void startWatching() throws InterruptedException
+    public void startWatching()
     {
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 }

@@ -172,7 +172,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     public static long extractTxId( HTTP.Response response )
     {
-        int lastSlash = response.location().lastIndexOf( "/" );
+        int lastSlash = response.location().lastIndexOf( '/' );
         String txIdString = response.location().substring( lastSlash + 1 );
         return Long.parseLong( txIdString );
     }

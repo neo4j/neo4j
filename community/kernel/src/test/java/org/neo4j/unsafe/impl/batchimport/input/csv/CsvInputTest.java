@@ -457,7 +457,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnArrayDelimiterBeingSameAsDelimiter() throws Exception
+    public void shouldFailOnArrayDelimiterBeingSameAsDelimiter()
     {
         // WHEN
         try
@@ -474,7 +474,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnQuotationCharacterBeingSameAsDelimiter() throws Exception
+    public void shouldFailOnQuotationCharacterBeingSameAsDelimiter()
     {
         // WHEN
         try
@@ -492,7 +492,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter() throws Exception
+    public void shouldFailOnQuotationCharacterBeingSameAsArrayDelimiter()
     {
         // WHEN
         try
@@ -754,7 +754,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnUnparsableNodeHeader() throws Exception
+    public void shouldFailOnUnparsableNodeHeader()
     {
         // given
         Iterable<DataFactory> data = datas( data( ":SOMETHING,abcde#rtg:123," ) );
@@ -774,7 +774,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnUnparsableRelationshipHeader() throws Exception
+    public void shouldFailOnUnparsableRelationshipHeader()
     {
         // given
         Iterable<DataFactory> data = datas( data( ":SOMETHING,abcde#rtg:123," ) );
@@ -794,7 +794,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnUndefinedGroupInRelationshipHeader() throws Exception
+    public void shouldFailOnUndefinedGroupInRelationshipHeader()
     {
         // given
         Iterable<DataFactory> nodeData = datas( data( ":ID(left)" ), data( ":ID(right)" ) );
@@ -815,7 +815,7 @@ public class CsvInputTest
     }
 
     @Test
-    public void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader() throws Exception
+    public void shouldFailOnGlobalGroupInRelationshipHeaderIfNoGLobalGroupInNodeHeader()
     {
         // given
         Iterable<DataFactory> nodeData = datas( data( ":ID(left)" ), data( ":ID(right)" ) );

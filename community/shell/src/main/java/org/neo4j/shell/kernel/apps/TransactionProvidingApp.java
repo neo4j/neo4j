@@ -136,7 +136,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return getCurrent( getServer(), session );
     }
 
-    public static boolean isCurrent( Session session, NodeOrRelationship thing ) throws ShellException
+    public static boolean isCurrent( Session session, NodeOrRelationship thing )
     {
         String currentThing = session.getCurrent();
         return currentThing != null && currentThing.equals(
@@ -149,7 +149,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static void setCurrent( Session session,
-                                      NodeOrRelationship current ) throws ShellException
+                                      NodeOrRelationship current )
     {
         session.setCurrent( current.getTypedId().toString() );
     }
@@ -176,13 +176,13 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return RelationshipType.withName( name );
     }
 
-    protected static Direction getDirection( String direction ) throws ShellException
+    protected static Direction getDirection( String direction )
     {
         return getDirection( direction, Direction.OUTGOING );
     }
 
     protected static Direction getDirection( String direction,
-        Direction defaultDirection ) throws ShellException
+        Direction defaultDirection )
     {
         return parseEnum( Direction.class, direction, defaultDirection );
     }
@@ -349,7 +349,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         }
     }
 
-    protected void cdTo( Session session, Node node ) throws RemoteException, ShellException
+    protected void cdTo( Session session, Node node )
     {
         List<TypedId> wd = readCurrentWorkingDir( session );
         try
@@ -683,7 +683,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
      * @return the working directory as a list.
      * @throws RemoteException if an RMI error occurs.
      */
-    public static List<TypedId> readCurrentWorkingDir( Session session ) throws RemoteException
+    public static List<TypedId> readCurrentWorkingDir( Session session )
     {
         List<TypedId> list = new ArrayList<>();
         String path = session.getPath();
@@ -697,7 +697,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
         return list;
     }
 
-    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session ) throws RemoteException
+    public static void writeCurrentWorkingDir( List<TypedId> paths, Session session )
     {
         String path = makePath( paths );
         session.setPath( path );
@@ -719,7 +719,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
 
     protected static Map<String, Direction> filterMapToTypes( GraphDatabaseService db,
             Direction defaultDirection, Map<String, Object> filterMap, boolean caseInsensitiveFilters,
-            boolean looseFilters ) throws ShellException
+            boolean looseFilters )
     {
         Map<String, Direction> matches = new TreeMap<>();
         for ( RelationshipType type : db.getAllRelationshipTypes() )
@@ -752,7 +752,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static PathExpander toExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters )
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,
@@ -771,7 +771,7 @@ public abstract class TransactionProvidingApp extends AbstractApp
     }
 
     protected static PathExpander toSortedExpander( GraphDatabaseService db, Direction defaultDirection,
-            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters ) throws ShellException
+            Map<String, Object> relationshipTypes, boolean caseInsensitiveFilters, boolean looseFilters )
     {
         defaultDirection = defaultDirection != null ? defaultDirection : Direction.BOTH;
         Map<String, Direction> matches = filterMapToTypes( db, defaultDirection, relationshipTypes,

@@ -117,14 +117,13 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey, VAL
     }
 
     @Override
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public ResourceIterator<File> snapshotFiles()
     {
         return asResourceIterator( iterator( storeFile ) );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-            throws IndexEntryConflictException, IOException
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 }

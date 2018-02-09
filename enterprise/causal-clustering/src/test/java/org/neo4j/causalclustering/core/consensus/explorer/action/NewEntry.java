@@ -38,7 +38,7 @@ public class NewEntry implements Action
     }
 
     @Override
-    public ClusterState advance( ClusterState previous ) throws IOException
+    public ClusterState advance( ClusterState previous )
     {
         ClusterState newClusterState = new ClusterState( previous );
         Queue<RaftMessages.RaftMessage> newQueue = new LinkedList<>( previous.queues.get( member ) );

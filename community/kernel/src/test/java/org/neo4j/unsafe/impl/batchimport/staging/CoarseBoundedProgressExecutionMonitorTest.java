@@ -46,7 +46,7 @@ public class CoarseBoundedProgressExecutionMonitorTest
     public int batchSize;
 
     @Test
-    public void shouldReportProgressOnSingleExecution() throws Exception
+    public void shouldReportProgressOnSingleExecution()
     {
         // GIVEN
         Configuration config = config();

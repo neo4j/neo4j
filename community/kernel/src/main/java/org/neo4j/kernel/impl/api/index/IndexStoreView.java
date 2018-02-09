@@ -75,7 +75,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
-        public void run() throws Exception
+        public void run()
         {
         }
 
@@ -105,7 +105,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         }
 
         @Override
-        public Value getPropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+        public Value getPropertyValue( long nodeId, int propertyKeyId )
         {
             return Values.NO_VALUE;
         }

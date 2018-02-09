@@ -37,7 +37,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
             new GroupingRecoveryCleanupWorkCollector( jobScheduler );
 
     @Test
-    public void mustNotScheduleAnyJobsBeforeStart() throws Throwable
+    public void mustNotScheduleAnyJobsBeforeStart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -52,7 +52,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustScheduleAllJobs() throws Throwable
+    public void mustScheduleAllJobs()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -68,7 +68,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsAfterRestart() throws Throwable
+    public void mustNotScheduleOldJobsAfterRestart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -85,7 +85,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsOnMultipleStart() throws Throwable
+    public void mustNotScheduleOldJobsOnMultipleStart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();
@@ -102,7 +102,7 @@ public class GroupingRecoveryCleanupWorkCollectorTest
     }
 
     @Test
-    public void mustNotScheduleOldJobsOnStartStopStart() throws Throwable
+    public void mustNotScheduleOldJobsOnStartStopStart()
     {
         // given
         List<CleanupJob> allRuns = new ArrayList<>();

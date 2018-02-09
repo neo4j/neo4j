@@ -36,7 +36,7 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEM
 public class ConfigurationTest
 {
     @Test
-    public void shouldOverrideBigPageCacheMemorySettingContainingUnit() throws Exception
+    public void shouldOverrideBigPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         Config dbConfig = Config.defaults( pagecache_memory, "2g" );
@@ -50,7 +50,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldOverrideSmallPageCacheMemorySettingContainingUnit() throws Exception
+    public void shouldOverrideSmallPageCacheMemorySettingContainingUnit()
     {
         // GIVEN
         long overridden = parseLongWithUnit( "10m" );
@@ -65,7 +65,7 @@ public class ConfigurationTest
     }
 
     @Test
-    public void shouldParseDefaultPageCacheMemorySetting() throws Exception
+    public void shouldParseDefaultPageCacheMemorySetting()
     {
         // GIVEN
         Configuration config = Configuration.DEFAULT;

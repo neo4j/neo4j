@@ -61,7 +61,7 @@ public abstract class Neo4jAlgoTestCase
     }
 
     @BeforeClass
-    public static void setUpGraphDb() throws Exception
+    public static void setUpGraphDb()
     {
         graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
         graph = new SimpleGraphBuilder( graphDb, MyRelTypes.R1 );
@@ -74,7 +74,7 @@ public abstract class Neo4jAlgoTestCase
     }
 
     @AfterClass
-    public static void tearDownGraphDb() throws Exception
+    public static void tearDownGraphDb()
     {
         graphDb.shutdown();
     }

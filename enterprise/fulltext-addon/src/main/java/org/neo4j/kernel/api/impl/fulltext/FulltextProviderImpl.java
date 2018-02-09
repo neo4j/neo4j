@@ -85,7 +85,6 @@ public class FulltextProviderImpl implements FulltextProvider
      */
     public FulltextProviderImpl( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard, JobScheduler scheduler,
             TransactionIdStore transactionIdStore, FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName )
-            throws IOException
     {
         this.db = db;
         this.log = log;
@@ -102,7 +101,7 @@ public class FulltextProviderImpl implements FulltextProvider
     }
 
     @Override
-    public void registerTransactionEventHandler() throws IOException
+    public void registerTransactionEventHandler()
     {
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }

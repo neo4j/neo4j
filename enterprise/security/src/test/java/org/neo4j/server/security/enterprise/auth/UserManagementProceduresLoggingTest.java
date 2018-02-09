@@ -109,7 +109,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogFailureToCreateUser() throws Throwable
+    public void shouldLogFailureToCreateUser()
     {
         catchInvalidArguments( () -> authProcedures.createUser( null, "pw", true ) );
         catchInvalidArguments( () -> authProcedures.createUser( "", "pw", true ) );
@@ -127,7 +127,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedCreatingUser() throws Throwable
+    public void shouldLogUnauthorizedCreatingUser()
     {
         setSubject( matsContext );
         catchAuthorizationViolation( () -> authProcedures.createUser( "andres", "", true ) );
@@ -147,7 +147,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogDeletingNonExistentUser() throws Throwable
+    public void shouldLogDeletingNonExistentUser()
     {
         catchInvalidArguments( () -> authProcedures.deleteUser( "andres" ) );
 
@@ -155,7 +155,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedDeleteUser() throws Throwable
+    public void shouldLogUnauthorizedDeleteUser()
     {
         setSubject( matsContext );
         catchAuthorizationViolation( () -> authProcedures.deleteUser( ADMIN ) );
@@ -186,7 +186,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedAddingRole() throws Throwable
+    public void shouldLogUnauthorizedAddingRole()
     {
         setSubject( matsContext );
         catchAuthorizationViolation( () -> authProcedures.addRoleToUser( ADMIN, "mats" ) );
@@ -229,7 +229,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedRemovingRole() throws Throwable
+    public void shouldLogUnauthorizedRemovingRole()
     {
         setSubject( matsContext );
         catchAuthorizationViolation( () -> authProcedures.removeRoleFromUser( ADMIN, ADMIN ) );
@@ -367,7 +367,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedSuspendUser() throws Throwable
+    public void shouldLogUnauthorizedSuspendUser()
     {
         // Given
         setSubject( matsContext );
@@ -401,7 +401,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogFailureToActivateUser() throws Throwable
+    public void shouldLogFailureToActivateUser()
     {
         // When
         catchInvalidArguments( () -> authProcedures.activateUser( "notMats", false ) );
@@ -415,7 +415,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedActivateUser() throws Throwable
+    public void shouldLogUnauthorizedActivateUser()
     {
         // Given
         setSubject( matsContext );
@@ -463,7 +463,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedCreateRole() throws Exception
+    public void shouldLogUnauthorizedCreateRole()
     {
         // Given
         setSubject( matsContext );
@@ -490,7 +490,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogFailureToDeleteRole() throws Exception
+    public void shouldLogFailureToDeleteRole()
     {
         // When
         catchInvalidArguments( () -> authProcedures.deleteRole( null ) );
@@ -508,7 +508,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedDeletingRole() throws Exception
+    public void shouldLogUnauthorizedDeletingRole()
     {
         // Given
         setSubject( matsContext );
@@ -540,7 +540,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedListUsers() throws Exception
+    public void shouldLogUnauthorizedListUsers()
     {
         // Given
         setSubject( matsContext );
@@ -552,7 +552,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedListRoles() throws Exception
+    public void shouldLogUnauthorizedListRoles()
     {
         // Given
         setSubject( matsContext );
@@ -564,7 +564,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogFailureToListRolesForUser() throws Exception
+    public void shouldLogFailureToListRolesForUser()
     {
         // Given
 
@@ -581,7 +581,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedListRolesForUser() throws Exception
+    public void shouldLogUnauthorizedListRolesForUser()
     {
         // Given
         setSubject( matsContext );
@@ -593,7 +593,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogFailureToListUsersForRole() throws Exception
+    public void shouldLogFailureToListUsersForRole()
     {
         // Given
 
@@ -610,7 +610,7 @@ public class UserManagementProceduresLoggingTest
     }
 
     @Test
-    public void shouldLogUnauthorizedListUsersForRole() throws Exception
+    public void shouldLogUnauthorizedListUsersForRole()
     {
         // Given
         setSubject( matsContext );
@@ -621,12 +621,12 @@ public class UserManagementProceduresLoggingTest
         log.assertExactly( error( "[mats]: tried to list users for role `%s`: %s", "role", PERMISSION_DENIED ) );
     }
 
-    private void catchInvalidArguments( ThrowingAction<Exception> f ) throws Exception
+    private void catchInvalidArguments( ThrowingAction<Exception> f )
     {
         assertException( f, InvalidArgumentsException.class );
     }
 
-    private void catchAuthorizationViolation( ThrowingAction<Exception> f ) throws Exception
+    private void catchAuthorizationViolation( ThrowingAction<Exception> f )
     {
         assertException( f, AuthorizationViolationException.class );
     }
@@ -707,5 +707,4 @@ public class UserManagementProceduresLoggingTest
         {
         }
     }
-
 }

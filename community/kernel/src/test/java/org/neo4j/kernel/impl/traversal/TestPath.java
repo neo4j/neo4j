@@ -81,7 +81,7 @@ public class TestPath extends TraversalTestBase
     }
 
     @Test
-    public void reverseNodes() throws Exception
+    public void reverseNodes()
     {
         Traverser traverse = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
         Path path = getFirstPath( traverse );
@@ -93,7 +93,7 @@ public class TestPath extends TraversalTestBase
     }
 
     @Test
-    public void reverseRelationships() throws Exception
+    public void reverseRelationships()
     {
         Traverser traverser = getGraphDb().traversalDescription().evaluator( atDepth( 0 ) ).traverse( a );
         Path path = getFirstPath( traverser );
@@ -111,7 +111,7 @@ public class TestPath extends TraversalTestBase
     }
 
     @Test
-    public void testBidirectionalPath() throws Exception
+    public void testBidirectionalPath()
     {
         TraversalDescription side = getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_PATH );
         BidirectionalTraversalDescription bidirectional =

@@ -82,13 +82,13 @@ public class DataAndSchemaTransactionSeparationIT
     }
 
     @Test
-    public void shouldNotAllowNodeCreationInSchemaTransaction() throws Exception
+    public void shouldNotAllowNodeCreationInSchemaTransaction()
     {
         db.executeAndRollback( expectFailureAfterSchemaOperation( createNode() ) );
     }
 
     @Test
-    public void shouldNotAllowRelationshipCreationInSchemaTransaction() throws Exception
+    public void shouldNotAllowRelationshipCreationInSchemaTransaction()
     {
         // given
         final Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
@@ -98,7 +98,7 @@ public class DataAndSchemaTransactionSeparationIT
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldNotAllowPropertyWritesInSchemaTransaction() throws Exception
+    public void shouldNotAllowPropertyWritesInSchemaTransaction()
     {
         // given
         Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );
@@ -116,7 +116,7 @@ public class DataAndSchemaTransactionSeparationIT
 
     @Test
     @SuppressWarnings( "unchecked" )
-    public void shouldAllowPropertyReadsInSchemaTransaction() throws Exception
+    public void shouldAllowPropertyReadsInSchemaTransaction()
     {
         // given
         Pair<Node, Node> nodes = db.executeAndCommit( aPairOfNodes() );

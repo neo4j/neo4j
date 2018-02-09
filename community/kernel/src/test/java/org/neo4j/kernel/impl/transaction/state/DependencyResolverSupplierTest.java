@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class DependencyResolverSupplierTest
 {
     @Test
-    public void shouldReturnTheDependencyResolveFromTheRegisteredDatasource() throws Exception
+    public void shouldReturnTheDependencyResolveFromTheRegisteredDatasource()
     {
         // given
         DataSourceManager dataSourceManager = new DataSourceManager();
@@ -50,7 +50,7 @@ public class DependencyResolverSupplierTest
     }
 
     @Test
-    public void shouldReturnNullIfDataSourceHasBeenUnregistered() throws Exception
+    public void shouldReturnNullIfDataSourceHasBeenUnregistered()
     {
         // given
         DataSourceManager dataSourceManager = new DataSourceManager();

@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.store.format.highlimit;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.StubPageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -42,7 +40,7 @@ public class ReferenceTest
     private final StubPageCursor cursor = new StubPageCursor( 0, PAGE_SIZE );
 
     @Test
-    public void shouldEncodeRandomLongs() throws Exception
+    public void shouldEncodeRandomLongs()
     {
         for ( int i = 0; i < 100_000_000; i++ )
         {
@@ -92,7 +90,7 @@ public class ReferenceTest
         return reference;
     }
 
-    private void assertDecodedMatchesEncoded( long reference ) throws IOException
+    private void assertDecodedMatchesEncoded( long reference )
     {
         cursor.setOffset( 0 );
         Reference.encode( reference, cursor );

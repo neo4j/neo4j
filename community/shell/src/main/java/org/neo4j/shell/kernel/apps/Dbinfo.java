@@ -203,7 +203,7 @@ public class Dbinfo extends NonTransactionProvidingApp
         return Continuation.INPUT_COMPLETE;
     }
 
-    private void printAttribute( JSONObject json, Object value ) throws RemoteException, ShellException
+    private void printAttribute( JSONObject json, Object value ) throws ShellException
     {
         try
         {

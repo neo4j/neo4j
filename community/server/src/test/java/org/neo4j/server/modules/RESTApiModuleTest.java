@@ -42,7 +42,7 @@ import static org.mockito.Mockito.verify;
 public class RESTApiModuleTest
 {
     @Test
-    public void shouldRegisterASingleUri() throws Exception
+    public void shouldRegisterASingleUri()
     {
         // Given
         WebServer webServer = mock( WebServer.class );

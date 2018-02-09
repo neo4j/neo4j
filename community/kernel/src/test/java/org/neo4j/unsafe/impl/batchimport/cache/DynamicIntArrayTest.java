@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class DynamicIntArrayTest
 {
     @Test
-    public void shouldWorkOnSingleChunk() throws Exception
+    public void shouldWorkOnSingleChunk()
     {
         // GIVEN
         int defaultValue = 0;
@@ -41,7 +41,7 @@ public class DynamicIntArrayTest
     }
 
     @Test
-    public void shouldChunksAsNeeded() throws Exception
+    public void shouldChunksAsNeeded()
     {
         // GIVEN
         IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0 );

@@ -56,7 +56,7 @@ public class ExplicitIndexIT extends ExclusiveServerTestBase
     }
 
     @Before
-    public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
+    public void startServer() throws IOException
     {
         server = serverOnRandomPorts().withHttpsEnabled()
                 .withProperty( "dbms.shell.enabled", "false" )
@@ -67,7 +67,7 @@ public class ExplicitIndexIT extends ExclusiveServerTestBase
     }
 
     @Theory
-    public void shouldRejectIndexValueLargerThanConfiguredSize( String uniqueness ) throws Exception
+    public void shouldRejectIndexValueLargerThanConfiguredSize( String uniqueness )
     {
         //Given
         server.start();
@@ -90,7 +90,7 @@ public class ExplicitIndexIT extends ExclusiveServerTestBase
     }
 
     @Theory
-    public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize( String uniqueness ) throws Exception
+    public void shouldNotRejectIndexValueThatIsJustSmallerThanConfiguredSize( String uniqueness )
     {
         //Given
         server.start();

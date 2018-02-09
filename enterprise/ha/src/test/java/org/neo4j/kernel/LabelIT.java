@@ -44,13 +44,13 @@ public class LabelIT
     protected ClusterManager.ManagedCluster cluster;
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule.startCluster();
     }
 
     @Test
-    public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell() throws Throwable
+    public void creatingIndexOnMasterShouldHaveSlavesBuildItAsWell()
     {
         // GIVEN
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
@@ -81,7 +81,7 @@ public class LabelIT
         }
     }
 
-    private static void commit( TransactionContinuation txc ) throws Exception
+    private static void commit( TransactionContinuation txc )
     {
         txc.resume();
         txc.commit();
@@ -125,7 +125,7 @@ public class LabelIT
             bridge.unbindTransactionFromCurrentThread();
         }
 
-        public void resume() throws Exception
+        public void resume()
         {
             bridge.bindTransactionToCurrentThread( graphDbTx );
         }

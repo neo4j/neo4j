@@ -59,7 +59,6 @@ import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureExce
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -395,16 +394,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
-                try
-                {
-                    // TODO logically, which statement should this operation be performed on?
-                    constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
-                }
-                catch ( DropIndexFailureException e )
-                {
-                    throw new IllegalStateException( "Constraint index that was created in a transaction should be " +
-                            "possible to drop during rollback of that transaction.", e );
-                }
+                // TODO logically, which statement should this operation be performed on?
+                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
             }
         }
     }
@@ -694,7 +685,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
-                                throws ConstraintValidationException
                         {
                             storeLayer.releaseRelationship( id );
                         }

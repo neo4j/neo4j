@@ -312,7 +312,7 @@ public class DataSourceModule
         }
 
         @Override
-        public void start() throws Throwable
+        public void start()
         {
             availabilityGuard.isAvailable( timeout );
         }

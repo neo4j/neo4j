@@ -75,7 +75,7 @@ public class CoreEdgeMetricsIT
     private Cluster cluster;
 
     @After
-    public void shutdown() throws ExecutionException, InterruptedException
+    public void shutdown()
     {
         if ( cluster != null )
         {

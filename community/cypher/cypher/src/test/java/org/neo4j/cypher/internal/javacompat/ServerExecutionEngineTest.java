@@ -34,7 +34,7 @@ public class ServerExecutionEngineTest
     public EmbeddedDatabaseRule rule = new EmbeddedDatabaseRule();
 
     @Test
-    public void shouldDetectPeriodicCommitQueries() throws Exception
+    public void shouldDetectPeriodicCommitQueries()
     {
         // GIVEN
         QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
@@ -48,7 +48,7 @@ public class ServerExecutionEngineTest
     }
 
     @Test
-    public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries() throws Exception
+    public void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
     {
         // GIVEN
         QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()
@@ -62,7 +62,7 @@ public class ServerExecutionEngineTest
     }
 
     @Test
-    public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries() throws Exception
+    public void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
     {
         // GIVEN
         QueryExecutionEngine engine = rule.getGraphDatabaseAPI().getDependencyResolver()

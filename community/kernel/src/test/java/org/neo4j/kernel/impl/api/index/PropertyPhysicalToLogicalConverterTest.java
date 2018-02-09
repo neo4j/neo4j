@@ -53,7 +53,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private NeoStores neoStores;
 
     @Test
-    public void shouldConvertInlinedAddedProperty() throws Exception
+    public void shouldConvertInlinedAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -68,7 +68,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedChangedProperty() throws Exception
+    public void shouldConvertInlinedChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -86,7 +86,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldIgnoreInlinedUnchangedProperty() throws Exception
+    public void shouldIgnoreInlinedUnchangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -101,7 +101,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedRemovedProperty() throws Exception
+    public void shouldConvertInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -118,7 +118,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicAddedProperty() throws Exception
+    public void shouldConvertDynamicAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -132,7 +132,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicChangedProperty() throws Exception
+    public void shouldConvertDynamicChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -148,7 +148,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicInlinedRemovedProperty() throws Exception
+    public void shouldConvertDynamicInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -164,7 +164,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange() throws Exception
+    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange()
     {
         // GIVEN
         int key = 12;
@@ -221,7 +221,7 @@ public class PropertyPhysicalToLogicalConverterTest
     private final long[] labels = new long[]{11};
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
@@ -233,7 +233,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         neoStores.close();
     }

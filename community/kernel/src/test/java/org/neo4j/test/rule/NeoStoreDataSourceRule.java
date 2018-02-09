@@ -165,7 +165,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
     }
 
     @Override
-    protected void after( boolean successful ) throws Throwable
+    protected void after( boolean successful )
     {
         shutdownAnyRunning();
     }

@@ -134,13 +134,13 @@ public class Kernel extends LifecycleAdapter implements InwardKernel
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         newKernel.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         newKernel.stop();
     }

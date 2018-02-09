@@ -106,7 +106,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments1() throws Throwable
+    public void shouldGetUsageOnWrongArguments1()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD );
         assertNoAuthIniFile();
@@ -127,7 +127,7 @@ public class SetInitialPasswordCommandIT
     }
 
     @Test
-    public void shouldGetUsageOnWrongArguments2() throws Throwable
+    public void shouldGetUsageOnWrongArguments2()
     {
         tool.execute( homeDir.toPath(), confDir.toPath(), SET_PASSWORD, "foo", "bar" );
         assertNoAuthIniFile();

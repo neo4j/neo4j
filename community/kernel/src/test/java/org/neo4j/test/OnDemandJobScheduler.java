@@ -128,7 +128,7 @@ public class OnDemandJobScheduler extends LifecycleAdapter implements JobSchedul
         }
 
         @Override
-        public void waitTermination() throws InterruptedException, ExecutionException
+        public void waitTermination()
         {
             // on demand
         }

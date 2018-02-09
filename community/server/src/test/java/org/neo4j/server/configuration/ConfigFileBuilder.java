@@ -50,7 +50,7 @@ public class ConfigFileBuilder
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
     }
 
-    public File build() throws IOException
+    public File build()
     {
         File file = new File( directory, "config" );
         ServerTestUtils.writeConfigToFile( config, file );

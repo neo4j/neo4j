@@ -58,7 +58,7 @@ public class ExplicitIndexAddDropConcurrentlyTest
                 private final Random rand = ThreadLocalRandom.current();
 
                 @Override
-                public Object call() throws Exception
+                public Object call()
                 {
                     for ( int j = 0; j < 1000; j++ )
                     {

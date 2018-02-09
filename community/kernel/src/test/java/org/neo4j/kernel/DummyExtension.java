@@ -33,7 +33,7 @@ public class DummyExtension implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         if ( status != LifecycleStatus.NONE )
         {
@@ -44,7 +44,7 @@ public class DummyExtension implements Lifecycle
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         if ( status != LifecycleStatus.STOPPED )
         {
@@ -55,7 +55,7 @@ public class DummyExtension implements Lifecycle
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         if ( status != LifecycleStatus.STARTED )
         {
@@ -66,7 +66,7 @@ public class DummyExtension implements Lifecycle
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         if ( status != LifecycleStatus.STOPPED )
         {

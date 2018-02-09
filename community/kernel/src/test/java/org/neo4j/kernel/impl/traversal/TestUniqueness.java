@@ -45,7 +45,7 @@ import static org.neo4j.graphdb.traversal.Uniqueness.RELATIONSHIP_LEVEL;
 public class TestUniqueness extends TraversalTestBase
 {
     @Test
-    public void nodeLevelUniqueness() throws Exception
+    public void nodeLevelUniqueness()
     {
         /*
          *         (b)
@@ -100,7 +100,7 @@ public class TestUniqueness extends TraversalTestBase
     }
 
     @Test
-    public void relationshipLevelAndGlobalUniqueness() throws Exception
+    public void relationshipLevelAndGlobalUniqueness()
     {
         /*
          *    (a)=TO=>(b)=TO=>(c)-TO->(d)

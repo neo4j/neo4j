@@ -59,12 +59,12 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 
     @Override
-    public synchronized boolean next( InputChunk chunk ) throws IOException
+    public synchronized boolean next( InputChunk chunk )
     {
         if ( id >= highId )
         {
@@ -110,7 +110,7 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
             cursor.close();
         }

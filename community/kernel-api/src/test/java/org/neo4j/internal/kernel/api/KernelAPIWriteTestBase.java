@@ -83,7 +83,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     }
 
     @AfterClass
-    public static void tearDown() throws Exception
+    public static void tearDown()
     {
         if ( testSupport != null )
         {

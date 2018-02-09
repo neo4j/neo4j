@@ -104,7 +104,7 @@ public class SlaveUpdatePullerTest
     }
 
     @Test
-    public void initialisationMustBeIdempotent() throws Throwable
+    public void initialisationMustBeIdempotent()
     {
         updatePuller.start();
         updatePuller.start();

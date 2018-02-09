@@ -192,12 +192,12 @@ public class CoreToCoreCopySnapshotIT
         }
     }
 
-    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException, IOException
+    private int getOldestLogIdOn( CoreClusterMember clusterMember ) throws IOException
     {
         return clusterMember.getLogFileNames().firstKey().intValue();
     }
 
-    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws TimeoutException, IOException
+    private int getMostRecentLogIdOn( CoreClusterMember clusterMember ) throws IOException
     {
         return clusterMember.getLogFileNames().lastKey().intValue();
     }

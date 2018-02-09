@@ -44,7 +44,7 @@ public class MonitoredBoltWorkerFactoryTest
     private static final BoltChannel boltChannel = mock( BoltChannel.class );
 
     @Test
-    public void shouldSignalReceivedStartAndComplete() throws Throwable
+    public void shouldSignalReceivedStartAndComplete()
     {
         // given
         FakeClock clock = Clocks.fakeClock();
@@ -125,7 +125,7 @@ public class MonitoredBoltWorkerFactoryTest
     }
 
     @Test
-    public void shouldNotWrapWithMonitoredSessionIfNobodyIsListening() throws Throwable
+    public void shouldNotWrapWithMonitoredSessionIfNobodyIsListening()
     {
         // Given
         // Monitoring adds GC overhead, so we only want to do the work involved

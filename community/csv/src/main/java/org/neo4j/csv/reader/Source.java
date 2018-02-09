@@ -113,12 +113,12 @@ public interface Source extends Closeable
             private boolean returned;
 
             @Override
-            public void close() throws IOException
+            public void close()
             {   // Nothing to close
             }
 
             @Override
-            public Chunk nextChunk( int seekStartPos ) throws IOException
+            public Chunk nextChunk( int seekStartPos )
             {
                 if ( !returned )
                 {

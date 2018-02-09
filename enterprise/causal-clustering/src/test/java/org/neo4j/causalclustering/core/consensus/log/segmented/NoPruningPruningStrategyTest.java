@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class NoPruningPruningStrategyTest
 {
     @Test
-    public void shouldNotExcludeAnySegmentPages() throws Exception
+    public void shouldNotExcludeAnySegmentPages()
     {
          NoPruningPruningStrategy strategy = new NoPruningPruningStrategy();
 

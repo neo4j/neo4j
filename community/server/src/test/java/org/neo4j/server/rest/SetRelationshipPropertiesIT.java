@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +31,6 @@ import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
 import org.neo4j.server.rest.domain.JsonHelper;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.GraphDescription.Graph;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +43,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     private static FunctionalTestHelper functionalTestHelper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
     }
@@ -61,7 +59,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     @Documented( "Update relationship properties." )
     @Test
     @Graph
-    public void shouldReturn204WhenPropertiesAreUpdated() throws JsonParseException
+    public void shouldReturn204WhenPropertiesAreUpdated()
     {
         data.get();
         Map<String, Object> map = new HashMap<>();
@@ -75,7 +73,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn400WhenSendinIncompatibleJsonProperties() throws JsonParseException
+    public void shouldReturn400WhenSendinIncompatibleJsonProperties()
     {
         Map<String, Object> map = new HashMap<>();
         map.put( "jim", new HashMap<String, Object>() );
@@ -93,7 +91,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist() throws JsonParseException
+    public void shouldReturn404WhenPropertiesSentToANodeWhichDoesNotExist()
     {
         Map<String, Object> map = new HashMap<>();
         map.put("jim", "tobias");
@@ -103,18 +101,18 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
         response.close();
     }
 
-    private JaxRsResponse updatePropertiesOnServer( final Map<String,Object> map ) throws JsonParseException
+    private JaxRsResponse updatePropertiesOnServer( final Map<String,Object> map )
     {
         return RestRequest.req().put(propertiesUri.toString(), JsonHelper.createJsonFrom(map));
     }
 
-    private String getPropertyUri( final String key ) throws Exception
+    private String getPropertyUri( final String key )
     {
         return propertiesUri.toString() + "/" + key ;
     }
 
     @Test
-    public void shouldReturn204WhenPropertyIsSet() throws Exception
+    public void shouldReturn204WhenPropertyIsSet()
     {
         JaxRsResponse response = setPropertyOnServer("foo", "bar");
         assertEquals( 204, response.getStatus() );
@@ -122,7 +120,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn400WhenSendinIncompatibleJsonProperty() throws Exception
+    public void shouldReturn400WhenSendinIncompatibleJsonProperty()
     {
         JaxRsResponse response = setPropertyOnServer("jim", new HashMap<String, Object>());
         assertEquals( 400, response.getStatus() );
@@ -130,7 +128,7 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn400WhenSendingCorruptJsonProperty() throws Exception
+    public void shouldReturn400WhenSendingCorruptJsonProperty()
     {
         JaxRsResponse response = RestRequest.req().put(getPropertyUri("foo"), "this:::Is::notJSON}");
         assertEquals(400, response.getStatus());
@@ -138,14 +136,14 @@ public class SetRelationshipPropertiesIT extends AbstractRestFunctionalDocTestBa
     }
 
     @Test
-    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist() throws Exception
+    public void shouldReturn404WhenPropertySentToANodeWhichDoesNotExist()
     {
         JaxRsResponse response = RestRequest.req().put(badUri.toString() + "/foo", JsonHelper.createJsonFrom("bar"));
         assertEquals(404, response.getStatus());
         response.close();
     }
 
-    private JaxRsResponse setPropertyOnServer( final String key, final Object value ) throws Exception
+    private JaxRsResponse setPropertyOnServer( final String key, final Object value )
     {
         return RestRequest.req().put(getPropertyUri(key), JsonHelper.createJsonFrom(value));
     }

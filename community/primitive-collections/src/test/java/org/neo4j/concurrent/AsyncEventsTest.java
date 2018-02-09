@@ -214,14 +214,7 @@ public class AsyncEventsTest
         Future<?> awaitShutdownFuture = executor.submit( () ->
         {
             awaitStartLatch.countDown();
-            try
-            {
-                asyncEvents.awaitTermination();
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
+            asyncEvents.awaitTermination();
             consumer.eventsProcessed.offer( specialShutdownObservedEvent );
         } );
 

@@ -35,7 +35,7 @@ public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabas
     }
 
     @Override
-    public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+    public Optional<MemberId> upstreamDatabase()
     {
         if ( counter.shouldReturnCoreMemberId() )
         {

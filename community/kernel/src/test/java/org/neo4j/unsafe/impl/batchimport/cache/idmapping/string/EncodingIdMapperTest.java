@@ -93,7 +93,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleGreatAmountsOfStuff() throws Exception
+    public void shouldHandleGreatAmountsOfStuff()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -120,7 +120,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReturnExpectedValueForNotFound() throws Exception
+    public void shouldReturnExpectedValueForNotFound()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -134,7 +134,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReportyProgressForSortAndDetect() throws Exception
+    public void shouldReportyProgressForSortAndDetect()
     {
         // GIVEN
         IdMapper idMapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -151,7 +151,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldEncodeShortStrings() throws Exception
+    public void shouldEncodeShortStrings()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -167,7 +167,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldEncodeSmallSetOfRandomData() throws Throwable
+    public void shouldEncodeSmallSetOfRandomData()
     {
         // GIVEN
         int size = random.nextInt( 10_000 ) + 2;
@@ -191,7 +191,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldReportCollisionsForSameInputId() throws Exception
+    public void shouldReportCollisionsForSameInputId()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );
@@ -216,7 +216,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldCopeWithCollisionsBasedOnDifferentInputIds() throws Exception
+    public void shouldCopeWithCollisionsBasedOnDifferentInputIds()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -245,7 +245,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldCopeWithMixedActualAndAccidentalCollisions() throws Exception
+    public void shouldCopeWithMixedActualAndAccidentalCollisions()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -295,7 +295,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups() throws Exception
+    public void shouldBeAbleToHaveDuplicateInputIdButInDifferentGroups()
     {
         // GIVEN
         Monitor monitor = mock( Monitor.class );
@@ -322,7 +322,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldOnlyFindInputIdsInSpecificGroup() throws Exception
+    public void shouldOnlyFindInputIdsInSpecificGroup()
     {
         // GIVEN
         Group firstGroup = groups.getOrCreate( "first" );
@@ -351,7 +351,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleManyGroups() throws Exception
+    public void shouldHandleManyGroups()
     {
         // GIVEN
         int size = 256; // which results in GLOBAL (0) + 1-256 = 257 groups, i.e. requiring two bytes
@@ -377,7 +377,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups() throws Exception
+    public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups()
     {
         // GIVEN
         final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
@@ -434,7 +434,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleHolesInIdSequence() throws Exception
+    public void shouldHandleHolesInIdSequence()
     {
         // GIVEN
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
@@ -464,7 +464,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldHandleLargeAmountsOfDuplicateNodeIds() throws Exception
+    public void shouldHandleLargeAmountsOfDuplicateNodeIds()
     {
         // GIVEN
         IdMapper mapper = mapper( new LongEncoder(), Radix.LONG, NO_MONITOR );
@@ -496,7 +496,7 @@ public class EncodingIdMapperTest
     }
 
     @Test
-    public void shouldDetectLargeAmountsOfCollisions() throws Exception
+    public void shouldDetectLargeAmountsOfCollisions()
     {
         // GIVEN
         IdMapper mapper = mapper( new StringEncoder(), Radix.STRING, NO_MONITOR );

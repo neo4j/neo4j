@@ -63,7 +63,7 @@ public class ConfigAdapterTest
     }
 
     @Test
-    public void shouldContainAllKeysOfPropertiesWithDefaultOrUserDefinedValues() throws Exception
+    public void shouldContainAllKeysOfPropertiesWithDefaultOrUserDefinedValues()
     {
         // GIVEN
 

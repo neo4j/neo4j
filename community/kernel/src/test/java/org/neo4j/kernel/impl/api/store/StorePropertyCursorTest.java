@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -268,7 +267,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnTheCursorToTheCacheOnClose() throws Throwable
+        public void shouldReturnTheCursorToTheCacheOnClose()
         {
             // given
             StorePropertyCursor storePropertyCursor = newStorePropertyCursor( propertyStore, cache );
@@ -294,7 +293,7 @@ public class StorePropertyCursorTest
         protected static PropertyStore propertyStore;
 
         @BeforeClass
-        public static void setUp() throws IOException
+        public static void setUp()
         {
             pageCache = pageCacheRule.getPageCache( fsRule.get() );
             EphemeralFileSystemAbstraction fs = fsRule.get();
@@ -313,14 +312,14 @@ public class StorePropertyCursorTest
         }
 
         @AfterClass
-        public static void tearDown() throws IOException
+        public static void tearDown()
         {
             neoStores.close();
             pageCache.close();
         }
 
         @Test
-        public void ignore() throws Exception
+        public void ignore()
         {
             // JUnit gets confused if this class has no method with the @Test annotation.
             // This is also why this class is not abstract.
@@ -343,7 +342,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnAProperty() throws Throwable
+        public void shouldReturnAProperty()
         {
             // given
             int keyId = 11;
@@ -403,7 +402,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnAPropertyBySkippingOne() throws Throwable
+        public void shouldReturnAPropertyBySkippingOne()
         {
             // given
             int keyId1 = 11;
@@ -435,7 +434,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReturnTwoProperties() throws Throwable
+        public void shouldReturnTwoProperties()
         {
             // given
             int keyId1 = 11;
@@ -485,7 +484,7 @@ public class StorePropertyCursorTest
         }
 
         @Test
-        public void shouldReuseCorrectlyCursor() throws Throwable
+        public void shouldReuseCorrectlyCursor()
         {
             // given
             int keyId = 11;

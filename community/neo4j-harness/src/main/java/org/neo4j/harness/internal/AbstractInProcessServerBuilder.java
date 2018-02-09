@@ -294,7 +294,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         @Override
         public Lifecycle newInstance( KernelContext context,
-                Dependencies dependencies ) throws Throwable
+                Dependencies dependencies )
         {
             return new LifecycleAdapter()
             {

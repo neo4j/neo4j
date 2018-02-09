@@ -150,13 +150,12 @@ public interface IndexPopulator
         }
 
         @Override
-        public void drop() throws IOException
+        public void drop()
         {
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
-                IOException
+        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
         }
 

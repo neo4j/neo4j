@@ -71,7 +71,7 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     }
 
     @Test
-    public void shouldStartPopulationAgainIfNotCompletedFirstTime() throws Exception
+    public void shouldStartPopulationAgainIfNotCompletedFirstTime()
     {
         // given
         // label scan store init but no start

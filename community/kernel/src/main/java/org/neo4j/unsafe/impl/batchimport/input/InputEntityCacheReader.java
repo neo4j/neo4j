@@ -161,7 +161,7 @@ abstract class InputEntityCacheReader implements InputIterator
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
 

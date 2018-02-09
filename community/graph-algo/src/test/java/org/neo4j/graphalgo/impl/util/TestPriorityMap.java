@@ -78,7 +78,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void shouldReplaceIfBetter() throws Exception
+    public void shouldReplaceIfBetter()
     {
         // GIVEN
         PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder();
@@ -96,7 +96,7 @@ public class TestPriorityMap
     }
 
     @Test
-    public void shouldKeepAllPrioritiesIfToldTo() throws Exception
+    public void shouldKeepAllPrioritiesIfToldTo()
     {
         // GIVEN
         int entity = 5;

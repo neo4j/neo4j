@@ -153,7 +153,7 @@ public class TestArrayMap
     }
 
     @Test
-    public void canOverwriteThenRemoveElementAcrossDeflation() throws Exception
+    public void canOverwriteThenRemoveElementAcrossDeflation()
     {
         ArrayMap<String, Integer> map = new ArrayMap<>( (byte) 3, false, true );
 

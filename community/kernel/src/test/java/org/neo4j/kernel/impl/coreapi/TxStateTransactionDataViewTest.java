@@ -88,7 +88,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsCreatedNodes() throws Exception
+    public void showsCreatedNodes()
     {
         // Given
         state.nodeDoCreate( 1 );
@@ -125,7 +125,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void showsAddedRelationships() throws Exception
+    public void showsAddedRelationships()
     {
         // Given
         state.relationshipDoCreate( 1, 1, 1L, 2L );
@@ -162,7 +162,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysNodeIsDeleted() throws Exception
+    public void correctlySaysNodeIsDeleted()
     {
         // Given
         state.nodeDoDelete( 1L );
@@ -177,7 +177,7 @@ public class TxStateTransactionDataViewTest
     }
 
     @Test
-    public void correctlySaysRelIsDeleted() throws Exception
+    public void correctlySaysRelIsDeleted()
     {
         // Given
         state.relationshipDoDelete( 1L, 1, 1L, 2L );

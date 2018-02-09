@@ -86,7 +86,7 @@ public class BloomIT
     private GraphDatabaseBuilder builder;
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -94,7 +94,7 @@ public class BloomIT
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( db != null )
         {

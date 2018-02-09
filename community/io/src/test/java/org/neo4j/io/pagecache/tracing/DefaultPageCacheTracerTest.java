@@ -113,7 +113,7 @@ public class DefaultPageCacheTracerTest
     }
 
     @Test
-    public void shouldCalculateHitRatio() throws Exception
+    public void shouldCalculateHitRatio()
     {
         assertThat( "hitRation", tracer.hitRatio(), closeTo( 0d, 0.0001 ) );
         tracer.hits( 3 );

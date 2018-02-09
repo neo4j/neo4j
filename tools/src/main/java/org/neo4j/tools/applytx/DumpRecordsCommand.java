@@ -79,7 +79,7 @@ public class DumpRecordsCommand implements Command
     }
 
     @Override
-    public void run( String[] args, PrintStream out ) throws Exception
+    public void run( String[] args, PrintStream out )
     {
         cli.parse( args ).run( store.get(), out );
     }

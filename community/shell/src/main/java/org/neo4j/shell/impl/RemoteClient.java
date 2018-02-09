@@ -127,8 +127,8 @@ public class RemoteClient extends AbstractClient
 
         if ( this.server == null )
         {
-            throw new RuntimeException( "Server closed or cannot be reached anymore: " + originException.getMessage(),
-                    originException );
+            throw new RuntimeException( "Server closed or cannot be reached anymore: " +
+                    (originException != null ? originException.getMessage() : ""), originException );
         }
         return this.server;
     }

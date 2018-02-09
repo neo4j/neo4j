@@ -61,7 +61,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     private GraphDatabaseFacade graph;
 
     @Before
-    public void startDatabase() throws IOException
+    public void startDatabase()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
@@ -74,7 +74,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     }
 
     @After
-    public void shutdownDatabase() throws Throwable
+    public void shutdownDatabase()
     {
         this.graph.shutdown();
     }
@@ -94,7 +94,7 @@ public class RestfulGraphDatabasePagedTraversalTest
     }
 
     @Test
-    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200() throws Exception
+    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200()
     {
         Response response = createAPagedTraverser();
 
@@ -197,6 +197,6 @@ public class RestfulGraphDatabasePagedTraversalTest
                 .get( 0 )
                 .toString();
 
-        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
+        return locationUri.substring( locationUri.lastIndexOf( '/' ) + 1 );
     }
 }

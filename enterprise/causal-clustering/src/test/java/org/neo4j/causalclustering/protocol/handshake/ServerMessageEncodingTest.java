@@ -42,7 +42,7 @@ public class ServerMessageEncodingTest
     private final ClientMessageEncoder encoder = new ClientMessageEncoder();
     private final ServerMessageDecoder decoder = new ServerMessageDecoder();
 
-    private List<Object> encodeDecode( ServerMessage message ) throws Exception
+    private List<Object> encodeDecode( ServerMessage message )
     {
         ByteBuf byteBuf = Unpooled.directBuffer();
         List<Object> output = new ArrayList<>();
@@ -70,7 +70,7 @@ public class ServerMessageEncodingTest
     }
 
     @Test
-    public void shouldCompleteEncodingRoundTrip() throws Throwable
+    public void shouldCompleteEncodingRoundTrip()
     {
         //when
         List<Object> output = encodeDecode( message );

@@ -52,7 +52,7 @@ public class RotatableCsvOutputIT
     private GraphDatabaseService database;
 
     @Before
-    public void setup() throws Throwable
+    public void setup()
     {
         outputPath = testDirectory.directory( "metrics" );
         database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
@@ -63,7 +63,7 @@ public class RotatableCsvOutputIT
     }
 
     @After
-    public void tearDown() throws Exception
+    public void tearDown()
     {
         database.shutdown();
     }

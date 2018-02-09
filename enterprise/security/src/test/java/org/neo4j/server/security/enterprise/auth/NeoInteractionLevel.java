@@ -67,7 +67,7 @@ public interface NeoInteractionLevel<S>
 
     void assertAuthenticated( S subject );
 
-    void assertPasswordChangeRequired( S subject ) throws Exception;
+    void assertPasswordChangeRequired( S subject );
 
     void assertInitFailed( S subject );
 

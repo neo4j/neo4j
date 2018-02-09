@@ -75,7 +75,7 @@ public class PopulatingIndexProxy implements IndexProxy
                 return new PopulatingIndexUpdater()
                 {
                     @Override
-                    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+                    public void process( IndexEntryUpdate<?> update )
                     {
                         throw new IllegalArgumentException( "Unsupported update mode: " + mode );
                     }
@@ -144,14 +144,14 @@ public class PopulatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted() throws InterruptedException
     {
         job.awaitCompletion();
         return true;
     }
 
     @Override
-    public void activate() throws IndexActivationFailedKernelException
+    public void activate()
     {
         throw new IllegalStateException( "Cannot activate index while it is still populating: " + job );
     }
@@ -189,7 +189,7 @@ public class PopulatingIndexProxy implements IndexProxy
     private abstract class PopulatingIndexUpdater implements IndexUpdater
     {
         @Override
-        public void close() throws IOException, IndexEntryConflictException
+        public void close()
         {
         }
     }

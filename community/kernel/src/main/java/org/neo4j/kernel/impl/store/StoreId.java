@@ -65,7 +65,7 @@ public final class StoreId implements Externalizable
         this.upgradeId = upgradeId;
     }
 
-    public static StoreId from( ObjectInput in ) throws IOException, ClassNotFoundException
+    public static StoreId from( ObjectInput in ) throws IOException
     {
         StoreId storeId = new StoreId();
         storeId.readExternal( in );
@@ -108,7 +108,7 @@ public final class StoreId implements Externalizable
     }
 
     @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    public void readExternal( ObjectInput in ) throws IOException
     {
         creationTime = in.readLong();
         randomId = in.readLong();

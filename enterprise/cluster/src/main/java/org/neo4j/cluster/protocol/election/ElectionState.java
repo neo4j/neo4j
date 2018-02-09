@@ -45,11 +45,10 @@ public enum ElectionState
     start
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     if ( message.getMessageType() == ElectionMessage.created )
                     {
@@ -68,11 +67,10 @@ public enum ElectionState
     election
             {
                 @Override
-                public State<?, ?> handle( ElectionContext context,
+                public ElectionState handle( ElectionContext context,
                                            Message<ElectionMessage> message,
                                            MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     Log log = context.getLog( ElectionState.class );
                     switch ( message.getMessageType() )

@@ -260,7 +260,7 @@ public class ProceduresTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
             {
                 return null;
             }

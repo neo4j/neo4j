@@ -60,7 +60,7 @@ public class Neo4jJobSchedulerTest
     private final Runnable countInvocationsJob = invocations::incrementAndGet;
 
     @After
-    public void stopScheduler() throws Throwable
+    public void stopScheduler()
     {
         life.shutdown();
     }
@@ -171,7 +171,7 @@ public class Neo4jJobSchedulerTest
     }
 
     @Test
-    public void shouldNotifyCancelListeners() throws Exception
+    public void shouldNotifyCancelListeners()
     {
         // GIVEN
         Neo4jJobScheduler neo4jJobScheduler = new Neo4jJobScheduler();

@@ -82,7 +82,7 @@ public class TransactionEventsIT
     public RuleChain ruleChain = RuleChain.outerRule( random ).around( expectedException ).around( db );
 
     @Test
-    public void shouldSeeExpectedTransactionData() throws Exception
+    public void shouldSeeExpectedTransactionData()
     {
         // GIVEN
         final Graph state = new Graph( db, random );
@@ -632,7 +632,7 @@ public class TransactionEventsIT
     {
 
         @Override
-        public CountingTransactionEventHandler beforeCommit( TransactionData data ) throws Exception
+        public CountingTransactionEventHandler beforeCommit( TransactionData data )
         {
             getAndIncrement();
             return this;

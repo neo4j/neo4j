@@ -73,7 +73,7 @@ public class MultiPaxosContextTest
     }
 
     @Test
-    public void shouldDeepClone() throws Exception
+    public void shouldDeepClone()
     {
         // Given
         ObjectStreamFactory objStream = new ObjectStreamFactory();

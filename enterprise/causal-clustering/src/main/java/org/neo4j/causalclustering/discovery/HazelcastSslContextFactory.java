@@ -53,7 +53,7 @@ class HazelcastSslContextFactory implements SSLContextFactory
     }
 
     @Override
-    public void init( Properties properties ) throws Exception
+    public void init( Properties properties )
     {
     }
 

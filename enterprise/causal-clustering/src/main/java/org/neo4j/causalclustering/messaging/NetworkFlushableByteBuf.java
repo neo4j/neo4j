@@ -36,56 +36,56 @@ public class NetworkFlushableByteBuf implements FlushableChannel
     }
 
     @Override
-    public FlushableChannel put( byte value ) throws IOException
+    public FlushableChannel put( byte value )
     {
         delegate.writeByte( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putShort( short value ) throws IOException
+    public FlushableChannel putShort( short value )
     {
         delegate.writeShort( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putInt( int value ) throws IOException
+    public FlushableChannel putInt( int value )
     {
         delegate.writeInt( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putLong( long value ) throws IOException
+    public FlushableChannel putLong( long value )
     {
         delegate.writeLong( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putFloat( float value ) throws IOException
+    public FlushableChannel putFloat( float value )
     {
         delegate.writeFloat( value );
         return this;
     }
 
     @Override
-    public FlushableChannel putDouble( double value ) throws IOException
+    public FlushableChannel putDouble( double value )
     {
         delegate.writeDouble( value );
         return this;
     }
 
     @Override
-    public FlushableChannel put( byte[] value, int length ) throws IOException
+    public FlushableChannel put( byte[] value, int length )
     {
         delegate.writeBytes( value, 0, length );
         return this;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

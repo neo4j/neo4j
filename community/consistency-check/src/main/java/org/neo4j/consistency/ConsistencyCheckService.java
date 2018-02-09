@@ -25,8 +25,8 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -87,7 +87,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, boolean verbose )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, verbose,
                 new ConsistencyFlags( tuningConfiguration ) );
@@ -95,7 +95,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, boolean verbose, ConsistencyFlags consistencyFlags )
-            throws ConsistencyCheckIncompleteException, IOException
+            throws ConsistencyCheckIncompleteException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
@@ -120,7 +120,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
+            boolean verbose ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, new ConsistencyFlags( tuningConfiguration ) );
@@ -128,7 +128,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
                 verbose, defaultReportDir( config, storeDir ), consistencyFlags );
@@ -137,7 +137,7 @@ public class ConsistencyCheckService
     @Deprecated
     public Result runFullConsistencyCheck( File storeDir, Config tuningConfiguration,
             ProgressMonitorFactory progressFactory, LogProvider logProvider, FileSystemAbstraction fileSystem,
-            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
+            boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
                 verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
@@ -145,7 +145,7 @@ public class ConsistencyCheckService
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(

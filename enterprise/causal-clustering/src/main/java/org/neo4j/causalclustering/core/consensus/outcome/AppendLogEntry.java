@@ -49,7 +49,7 @@ public class AppendLogEntry implements RaftLogCommand
     }
 
     @Override
-    public void applyTo( InFlightCache inFlightCache, Log log ) throws IOException
+    public void applyTo( InFlightCache inFlightCache, Log log )
     {
         inFlightCache.put( index, entry );
     }

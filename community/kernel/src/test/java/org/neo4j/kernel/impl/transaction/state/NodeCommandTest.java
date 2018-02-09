@@ -239,7 +239,7 @@ public class NodeCommandTest
     }
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
@@ -251,7 +251,7 @@ public class NodeCommandTest
     }
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         neoStores.close();
     }

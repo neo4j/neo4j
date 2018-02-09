@@ -73,7 +73,7 @@ public class ServerPoliciesLoadBalancingIT
     private Cluster cluster;
 
     @After
-    public void after() throws Exception
+    public void after()
     {
         if ( cluster != null )
         {

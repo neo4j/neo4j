@@ -71,7 +71,7 @@ public interface LogFile
      * @return {@code true} if a rotation is needed.
      * @throws IOException on I/O error.
      */
-    boolean rotationNeeded() throws IOException;
+    boolean rotationNeeded();
 
     void rotate() throws IOException;
 }

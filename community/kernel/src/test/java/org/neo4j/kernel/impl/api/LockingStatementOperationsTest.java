@@ -233,7 +233,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void acquireReadLockBeforeGettingIndexRules() throws Exception
+    public void acquireReadLockBeforeGettingIndexRules()
     {
         // given
         int labelId = 1;
@@ -282,7 +282,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
     {
         // given
         when( schemaReadOps.constraintsGetForSchema( state, descriptor ) ).thenReturn( emptyIterator() );
@@ -297,7 +297,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
     {
         // given
         int labelId = 123;
@@ -313,7 +313,7 @@ public class LockingStatementOperationsTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints() throws Exception
+    public void shouldAcquireSchemaReadLockBeforeGettingAllConstraints()
     {
         // given
         int labelId = 1;

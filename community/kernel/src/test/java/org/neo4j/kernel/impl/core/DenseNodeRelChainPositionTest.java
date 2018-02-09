@@ -45,7 +45,7 @@ public class DenseNodeRelChainPositionTest
      * would be returned, ever.
      */
     @Test
-    public void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned() throws Exception
+    public void givenDenseNodeWhenAskForWrongDirectionThenIncorrectNrOfRelsReturned()
     {
         // Given
         final int denseNodeThreshold =

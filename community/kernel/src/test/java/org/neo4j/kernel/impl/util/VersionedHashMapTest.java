@@ -31,7 +31,7 @@ public class VersionedHashMapTest
 {
 
     @Test
-    public void shouldGetAndContain() throws Exception
+    public void shouldGetAndContain()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -50,7 +50,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldReplace() throws Exception
+    public void shouldReplace()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -70,7 +70,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldRemove() throws Exception
+    public void shouldRemove()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -90,7 +90,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldNotSeeAdditionsWhileIterating() throws Exception
+    public void shouldNotSeeAdditionsWhileIterating()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -122,7 +122,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldSeeRemovalsWhileIterating() throws Exception
+    public void shouldSeeRemovalsWhileIterating()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -150,7 +150,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldAllowRemovalsWhileIterating() throws Exception
+    public void shouldAllowRemovalsWhileIterating()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>();
@@ -175,7 +175,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldHandleResizing() throws Exception
+    public void shouldHandleResizing()
     {
         // Given
         VersionedHashMap<Object, Object> map = new VersionedHashMap<>( 16, 0.5f );
@@ -199,7 +199,7 @@ public class VersionedHashMapTest
     }
 
     @Test
-    public void shouldAllowRemovalsWhileIteratingEvenInFaceOfResizing() throws Exception
+    public void shouldAllowRemovalsWhileIteratingEvenInFaceOfResizing()
     {
         // Given
         VersionedHashMap<Object,Object> map = new VersionedHashMap<>( 16, 5.0f );

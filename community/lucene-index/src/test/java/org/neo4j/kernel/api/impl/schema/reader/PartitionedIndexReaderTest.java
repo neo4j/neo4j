@@ -212,7 +212,7 @@ public class PartitionedIndexReaderTest
         }
 
         @Override
-        public IndexSample sampleIndex() throws IndexNotFoundKernelException
+        public IndexSample sampleIndex()
         {
             return new IndexSample( sampleValue, sampleValue, sampleValue );
         }

@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 public class FormatTest
 {
     @Test
-    public void shouldDisplayBytes() throws Exception
+    public void shouldDisplayBytes()
     {
         // when
         String format = Format.bytes( 123 );
@@ -37,7 +37,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayKiloBytes() throws Exception
+    public void shouldDisplayKiloBytes()
     {
         // when
         String format = Format.bytes( 1_234 );
@@ -48,7 +48,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayMegaBytes() throws Exception
+    public void shouldDisplayMegaBytes()
     {
         // when
         String format = Format.bytes( 1_234_567 );
@@ -59,7 +59,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayGigaBytes() throws Exception
+    public void shouldDisplayGigaBytes()
     {
         // when
         String format = Format.bytes( 1_234_567_890 );
@@ -70,7 +70,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayPlainCount() throws Exception
+    public void shouldDisplayPlainCount()
     {
         // when
         String format = Format.count( 10 );
@@ -80,7 +80,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayThousandCount() throws Exception
+    public void shouldDisplayThousandCount()
     {
         // when
         String format = Format.count( 2_000 );
@@ -91,7 +91,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayMillionCount() throws Exception
+    public void shouldDisplayMillionCount()
     {
         // when
         String format = Format.count( 2_000_000 );
@@ -102,7 +102,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayBillionCount() throws Exception
+    public void shouldDisplayBillionCount()
     {
         // when
         String format = Format.count( 2_000_000_000 );
@@ -113,7 +113,7 @@ public class FormatTest
     }
 
     @Test
-    public void shouldDisplayTrillionCount() throws Exception
+    public void shouldDisplayTrillionCount()
     {
         // when
         String format = Format.count( 4_000_000_000_000L );

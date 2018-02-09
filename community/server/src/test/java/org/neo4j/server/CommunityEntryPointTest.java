@@ -50,7 +50,7 @@ public class CommunityEntryPointTest
     }
 
     @Test
-    public void mainPrintsVersion() throws Exception
+    public void mainPrintsVersion()
     {
         // when
         CommunityEntryPoint.main( new String[]{ "--version" } );

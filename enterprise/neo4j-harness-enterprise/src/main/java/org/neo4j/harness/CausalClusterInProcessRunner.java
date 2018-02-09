@@ -53,7 +53,7 @@ public class CausalClusterInProcessRunner
     {
     }
 
-    public static void main( String[] args ) throws IOException, ExecutionException, InterruptedException
+    public static void main( String[] args )
     {
         try
         {
@@ -164,7 +164,7 @@ public class CausalClusterInProcessRunner
             this.portPickingStrategy = portPickingStrategy;
         }
 
-        void boot() throws IOException, InterruptedException
+        void boot() throws InterruptedException
         {
             List<String> initialMembers = new ArrayList<>( nCores );
 

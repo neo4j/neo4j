@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class TaskCoordinatorTest
 {
     @Test
-    public void shouldCancelAllTasksWithOneCall() throws Exception
+    public void shouldCancelAllTasksWithOneCall()
     {
         // given
         TaskCoordinator coordinator = new TaskCoordinator( 1, TimeUnit.MILLISECONDS );

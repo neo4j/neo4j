@@ -89,7 +89,7 @@ public class LegacyGetServersProcedure implements CallableProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input )
     {
         List<Endpoint> routeEndpoints = routeEndpoints();
         List<Endpoint> writeEndpoints = writeEndpoints();

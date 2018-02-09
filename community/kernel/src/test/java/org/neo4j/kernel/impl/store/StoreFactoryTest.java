@@ -61,7 +61,7 @@ public class StoreFactoryTest
     private PageCache pageCache;
 
     @Before
-    public void setUp() throws IOException
+    public void setUp()
     {
         FileSystemAbstraction fs = fsRule.get();
         pageCache = pageCacheRule.getPageCache( fs );
@@ -94,7 +94,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
+    public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
     {
         // When
         neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
@@ -105,7 +105,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
+    public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
         neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
@@ -137,7 +137,7 @@ public class StoreFactoryTest
     }
 
     @Test
-    public void shouldDelegateDeletionOptionToStores() throws Exception
+    public void shouldDelegateDeletionOptionToStores()
     {
         // GIVEN
         StoreFactory storeFactory = storeFactory( Config.defaults(), DELETE_ON_CLOSE );

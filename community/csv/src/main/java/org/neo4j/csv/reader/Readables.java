@@ -62,13 +62,13 @@ public class Readables
     public static final CharReadable EMPTY = new CharReadable.Adapter()
     {
         @Override
-        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from ) throws IOException
+        public SectionedCharBuffer read( SectionedCharBuffer buffer, int from )
         {
             return buffer;
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {   // Nothing to close
         }
 
@@ -79,7 +79,7 @@ public class Readables
         }
 
         @Override
-        public int read( char[] into, int offset, int length ) throws IOException
+        public int read( char[] into, int offset, int length )
         {
             return -1;
         }

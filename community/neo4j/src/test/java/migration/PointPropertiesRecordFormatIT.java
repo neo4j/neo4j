@@ -54,7 +54,7 @@ public class PointPropertiesRecordFormatIT
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
-    public void failToCreatePointOnOldDatabase() throws Exception
+    public void failToCreatePointOnOldDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );
@@ -82,7 +82,7 @@ public class PointPropertiesRecordFormatIT
     }
 
     @Test
-    public void failToCreatePointArrayOnOldDatabase() throws Exception
+    public void failToCreatePointArrayOnOldDatabase()
     {
         File storeDir = testDirectory.graphDbDir();
         GraphDatabaseService nonUpgradedStore = startNonUpgradableDatabaseWithFormat( storeDir, StandardV3_2.NAME );

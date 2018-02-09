@@ -28,13 +28,13 @@ import static org.neo4j.graphdb.IndexManagerFacadeMethods.ALL_INDEX_MANAGER_FACA
 public class MandatoryTransactionsForIndexManagerFacadeTest extends AbstractMandatoryTransactionsTest<IndexManager>
 {
     @Test
-    public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade() throws Exception
+    public void shouldRequireTransactionsWhenCallingMethodsOnIndexManagerFacade()
     {
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_INDEX_MANAGER_FACADE_METHODS );
     }
 
     @Test
-    public void shouldTerminateWhenCallingMethodsOnIndexManagerFacade() throws Exception
+    public void shouldTerminateWhenCallingMethodsOnIndexManagerFacade()
     {
         assertFacadeMethodsThrowAfterTerminate( ALL_INDEX_MANAGER_FACADE_METHODS );
     }

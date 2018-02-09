@@ -66,7 +66,7 @@ public class DeleteNodeStressIT
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Test
-    public void shouldBeAbleToReturnNodesWhileDeletingNode() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToReturnNodesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) return n" );
@@ -80,7 +80,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToCheckPropertiesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) RETURN exists(n.prop)" );
@@ -92,7 +92,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToRemovePropertiesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) REMOVE n.prop" );
@@ -104,7 +104,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToSetPropertiesWhileDeletingNode() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToSetPropertiesWhileDeletingNode() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n MATCH (n) SET n.foo = 'bar'" );
@@ -116,7 +116,7 @@ public class DeleteNodeStressIT
     }
 
     @Test
-    public void shouldBeAbleToCheckLabelsWhileDeleting() throws IOException, ExecutionException, InterruptedException
+    public void shouldBeAbleToCheckLabelsWhileDeleting() throws InterruptedException
     {
         // Given
         executeInThread( "MATCH (n:L {prop:42}) OPTIONAL MATCH (m:L {prop:1337}) WITH n RETURN labels(n)" );

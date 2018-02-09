@@ -75,30 +75,29 @@ public interface EnterpriseUserManager extends UserManager
     EnterpriseUserManager NOOP = new EnterpriseUserManager()
     {
         @Override
-        public void suspendUser( String username ) throws IOException, InvalidArgumentsException
+        public void suspendUser( String username )
         {
         }
 
         @Override
         public void activateUser( String username, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
         }
 
         @Override
-        public RoleRecord newRole( String roleName, String... usernames ) throws IOException, InvalidArgumentsException
+        public RoleRecord newRole( String roleName, String... usernames )
         {
             return null;
         }
 
         @Override
-        public boolean deleteRole( String roleName ) throws IOException, InvalidArgumentsException
+        public boolean deleteRole( String roleName )
         {
             return false;
         }
 
         @Override
-        public RoleRecord getRole( String roleName ) throws InvalidArgumentsException
+        public RoleRecord getRole( String roleName )
         {
             return null;
         }
@@ -110,12 +109,12 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public void addRoleToUser( String roleName, String username ) throws IOException, InvalidArgumentsException
+        public void addRoleToUser( String roleName, String username )
         {
         }
 
         @Override
-        public void removeRoleFromUser( String roleName, String username ) throws IOException, InvalidArgumentsException
+        public void removeRoleFromUser( String roleName, String username )
         {
         }
 
@@ -126,7 +125,7 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public Set<String> getRoleNamesForUser( String username ) throws InvalidArgumentsException
+        public Set<String> getRoleNamesForUser( String username )
         {
             return emptySet();
         }
@@ -138,7 +137,7 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public Set<String> getUsernamesForRole( String roleName ) throws InvalidArgumentsException
+        public Set<String> getUsernamesForRole( String roleName )
         {
             return emptySet();
         }
@@ -151,19 +150,18 @@ public interface EnterpriseUserManager extends UserManager
 
         @Override
         public User newUser( String username, String initialPassword, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
             return null;
         }
 
         @Override
-        public boolean deleteUser( String username ) throws IOException, InvalidArgumentsException
+        public boolean deleteUser( String username )
         {
             return false;
         }
 
         @Override
-        public User getUser( String username ) throws InvalidArgumentsException
+        public User getUser( String username )
         {
             return null;
         }
@@ -176,7 +174,6 @@ public interface EnterpriseUserManager extends UserManager
 
         @Override
         public void setUserPassword( String username, String password, boolean requirePasswordChange )
-                throws IOException, InvalidArgumentsException
         {
         }
 

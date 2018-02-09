@@ -181,7 +181,7 @@ public class ReadReplicaToReadReplicaCatchupIT
         }
 
         @Override
-        public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+        public Optional<MemberId> upstreamDatabase()
         {
             ReadReplica current = upstreamFactory.current();
             if ( current == null )

@@ -37,7 +37,7 @@ public class RelationshipGroupCacheTest
     public final RandomRule random = new RandomRule();
 
     @Test
-    public void shouldPutGroupsOnlyWithinPreparedRange() throws Exception
+    public void shouldPutGroupsOnlyWithinPreparedRange()
     {
         // GIVEN
         int nodeCount = 1000;
@@ -85,7 +85,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldNotFindSpaceToPutMoreGroupsThanSpecifiedForANode() throws Exception
+    public void shouldNotFindSpaceToPutMoreGroupsThanSpecifiedForANode()
     {
         // GIVEN
         int nodeCount = 10;
@@ -109,7 +109,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldSortOutOfOrderTypes() throws Exception
+    public void shouldSortOutOfOrderTypes()
     {
         // GIVEN
         int nodeCount = 100;
@@ -165,7 +165,7 @@ public class RelationshipGroupCacheTest
     }
 
     @Test
-    public void shouldHandleGroupCountBeyondSignedShortRange() throws Exception
+    public void shouldHandleGroupCountBeyondSignedShortRange()
     {
         // GIVEN
         long nodeId = 0;

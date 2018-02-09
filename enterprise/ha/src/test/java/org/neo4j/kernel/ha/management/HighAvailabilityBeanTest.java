@@ -285,7 +285,7 @@ public class HighAvailabilityBeanTest
                 MapUtil.genericMap( role, uri ), DEFAULT, alive );
     }
 
-    private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
+    private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster )
     {
         ClusterMemberInfo master = member( instancesInCluster, 1 );
         assertEquals( 1137,

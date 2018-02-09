@@ -36,7 +36,7 @@ public class FirstStartupIT
     public TestDirectory testDir = TestDirectory.testDirectory();
 
     @Test
-    public void shouldBeEmptyWhenFirstStarted() throws Exception
+    public void shouldBeEmptyWhenFirstStarted()
     {
         // When
         File storeDir = testDir.absolutePath();

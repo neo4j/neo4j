@@ -100,7 +100,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean next() throws IOException
+    public boolean next()
     {
         currentPageId = nextPageId;
         nextPageId++;
@@ -112,7 +112,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public boolean next( long pageId ) throws IOException
+    public boolean next( long pageId )
     {
         currentPageId = pageId;
         assertPages();
@@ -379,7 +379,7 @@ class PageAwareByteArrayCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId ) throws IOException
+    public PageCursor openLinkedCursor( long pageId )
     {
         PageCursor toReturn = new PageAwareByteArrayCursor( pages, pageSize, pageId );
         if ( linkedCursor != null )

@@ -92,7 +92,7 @@ public class StoreStreamingProcessTest
     }
 
     @Test
-    public void shouldSignalFailure() throws Exception
+    public void shouldSignalFailure()
     {
         // given
         StoreStreamingProcess process = new StoreStreamingProcess( protocol, checkPointerSupplier, mutex, resourceStream );

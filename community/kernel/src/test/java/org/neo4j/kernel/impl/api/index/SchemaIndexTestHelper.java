@@ -70,7 +70,7 @@ public class SchemaIndexTestHelper
 
         @Override
         public Lifecycle newInstance( KernelContext context,
-                SingleInstanceSchemaIndexProviderFactoryDependencies dependencies ) throws Throwable
+                SingleInstanceSchemaIndexProviderFactoryDependencies dependencies )
         {
             return provider;
         }

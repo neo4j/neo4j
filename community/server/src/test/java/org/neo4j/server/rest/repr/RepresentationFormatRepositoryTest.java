@@ -48,13 +48,13 @@ public class RepresentationFormatRepositoryTest
     private final RepresentationFormatRepository repository = new RepresentationFormatRepository( null );
 
     @Test
-    public void canProvideJsonFormat() throws Exception
+    public void canProvideJsonFormat()
     {
         assertNotNull( repository.inputFormat( MediaType.valueOf( "application/json" ) ) );
     }
 
     @Test
-    public void canProvideUTF8EncodedJsonFormat() throws Exception
+    public void canProvideUTF8EncodedJsonFormat()
     {
         assertNotNull( repository.inputFormat( MediaType.valueOf( "application/json;charset=UTF-8" ) ) );
     }
@@ -68,7 +68,7 @@ public class RepresentationFormatRepositoryTest
     }
 
     @Test
-    public void canProvideJsonOutputFormat() throws Exception
+    public void canProvideJsonOutputFormat()
     {
         OutputFormat format = repository.outputFormat( asList( MediaType.APPLICATION_JSON_TYPE ), null, null );
         assertNotNull( format );

@@ -149,7 +149,7 @@ public class CoreBootstrapper
         MetaDataStore.setRecord( pageCache, neoStoreFile, LAST_TRANSACTION_ID, dummyTransactionId );
     }
 
-    private IdAllocationState deriveIdAllocationState( File dbDir ) throws IOException
+    private IdAllocationState deriveIdAllocationState( File dbDir )
     {
         DefaultIdGeneratorFactory factory = new DefaultIdGeneratorFactory( fs );
 

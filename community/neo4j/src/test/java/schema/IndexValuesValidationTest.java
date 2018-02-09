@@ -67,7 +67,7 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateIndexedNodeProperties() throws Exception
+    public void validateIndexedNodeProperties()
     {
         Label label = Label.label( "indexedNodePropertiesTestLabel" );
         String propertyName = "indexedNodePropertyName";

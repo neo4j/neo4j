@@ -40,7 +40,7 @@ public class LatchMapTest
     LatchMap latches = new LatchMap();
 
     @Test
-    public void takeOrAwaitLatchMustReturnLatchIfAvailable() throws Exception
+    public void takeOrAwaitLatchMustReturnLatchIfAvailable()
     {
         BinaryLatch latch = latches.takeOrAwaitLatch( 0 );
         assertThat( latch, is( notNullValue() ) );
@@ -82,7 +82,7 @@ public class LatchMapTest
     }
 
     @Test
-    public void latchMustBeAvailableAfterRelease() throws Exception
+    public void latchMustBeAvailableAfterRelease()
     {
         latches.takeOrAwaitLatch( 42 ).release();
         latches.takeOrAwaitLatch( 42 ).release();

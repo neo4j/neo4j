@@ -85,7 +85,7 @@ public final class PagedReadableByteChannel implements ReadableByteChannel
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         open = false;
         cursor.close();

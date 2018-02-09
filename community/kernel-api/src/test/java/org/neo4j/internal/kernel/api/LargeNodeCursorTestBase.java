@@ -72,7 +72,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     }
 
     @Test
-    public void shouldScanNodes() throws Exception
+    public void shouldScanNodes()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -91,7 +91,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     }
 
     @Test
-    public void shouldAccessNodesByReference() throws Exception
+    public void shouldAccessNodesByReference()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )

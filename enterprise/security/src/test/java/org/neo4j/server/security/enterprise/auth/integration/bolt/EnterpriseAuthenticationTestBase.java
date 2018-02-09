@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.parboiled.common.StringUtils;
 
-import java.io.IOException;
 import java.net.SocketException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -74,7 +73,6 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     protected static String createdUserPassword = "nativePassword";
 
     protected void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
-            throws IOException
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( overrideSettingsFunction ) );

@@ -101,7 +101,7 @@ public class MultiRealmAuthManagerRule implements TestRule
         return new Statement()
         {
             @Override
-            public void evaluate() throws Throwable
+            public void evaluate()
             {
                 try
                 {

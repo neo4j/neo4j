@@ -20,7 +20,6 @@
 package org.neo4j.consistency.store;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -38,7 +37,7 @@ public class StoreAssertions
     {
     }
 
-    public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
+    public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException
     {
         Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
         AssertableLogProvider logger = new AssertableLogProvider();

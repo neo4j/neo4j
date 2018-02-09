@@ -101,7 +101,7 @@ class TestServer
         }
 
         @Override
-        protected void initChannel( SocketChannel ch ) throws Exception
+        protected void initChannel( SocketChannel ch )
         {
             channels.add( ch );
             ch.closeFuture().addListener( future -> channels.remove( ch ) );

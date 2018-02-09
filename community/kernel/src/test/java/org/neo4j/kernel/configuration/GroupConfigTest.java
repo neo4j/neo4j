@@ -33,7 +33,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class GroupConfigTest
 {
     @Test
-    public void shouldProvideNiceSetMechanism() throws Throwable
+    public void shouldProvideNiceSetMechanism()
     {
         assertThat( connector(0).enabled.name(), equalTo( "dbms.connector.0.enabled" ) );
     }

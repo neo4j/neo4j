@@ -61,7 +61,7 @@ public class PagingTraversalTest
     private GraphDatabaseFacade graph;
 
     @Before
-    public void startDatabase() throws IOException
+    public void startDatabase()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
@@ -75,7 +75,7 @@ public class PagingTraversalTest
     }
 
     @After
-    public void shutdownDatabase() throws Throwable
+    public void shutdownDatabase()
     {
         this.graph.shutdown();
     }
@@ -95,7 +95,7 @@ public class PagingTraversalTest
     }
 
     @Test
-    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200() throws Exception
+    public void givenAPageTraversalHasBeenCreatedShouldYieldNextPageAndRespondWith200()
     {
         Response response = createAPagedTraverser();
 
@@ -239,6 +239,6 @@ public class PagingTraversalTest
                 .get( 0 )
                 .toString();
 
-        return locationUri.substring( locationUri.lastIndexOf( "/" ) + 1 );
+        return locationUri.substring( locationUri.lastIndexOf( '/' ) + 1 );
     }
 }

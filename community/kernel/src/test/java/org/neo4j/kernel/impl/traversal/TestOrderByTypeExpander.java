@@ -85,7 +85,7 @@ public class TestOrderByTypeExpander extends TraversalTestBase
     }
 
     @Test
-    public void evenDifferentDirectionsKeepsOrder() throws Exception
+    public void evenDifferentDirectionsKeepsOrder()
     {
         PathExpander expander = new OrderedByTypeExpander()
                 .add( next, INCOMING )

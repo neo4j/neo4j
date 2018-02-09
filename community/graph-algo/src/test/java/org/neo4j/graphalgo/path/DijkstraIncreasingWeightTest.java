@@ -249,7 +249,7 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     }
 
     @Test
-    public void withState() throws Exception
+    public void withState()
     {
         /* Graph
          *

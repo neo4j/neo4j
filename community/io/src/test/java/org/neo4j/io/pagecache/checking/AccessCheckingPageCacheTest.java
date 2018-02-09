@@ -141,7 +141,7 @@ public class AccessCheckingPageCacheTest
     }
 
     @Test
-    public void shouldFail_read_close() throws Exception
+    public void shouldFail_read_close()
     {
         // GIVEN
         cursor.getByte();

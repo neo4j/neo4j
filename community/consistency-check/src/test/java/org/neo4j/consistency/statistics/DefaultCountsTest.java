@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class DefaultCountsTest
 {
     @Test
-    public void shouldCountPerThread() throws Exception
+    public void shouldCountPerThread()
     {
         // GIVEN
         Counts counts = new DefaultCounts( 3 );
@@ -45,7 +45,7 @@ public class DefaultCountsTest
     }
 
     @Test
-    public void shouldResetCounts() throws Exception
+    public void shouldResetCounts()
     {
         // GIVEN
         Counts counts = new DefaultCounts( 2 );

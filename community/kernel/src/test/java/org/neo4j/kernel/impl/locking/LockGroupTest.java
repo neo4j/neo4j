@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 public class LockGroupTest
 {
     @Test
-    public void shouldReleaseAllLocksWhenExitingTheLockGroupRegion() throws Exception
+    public void shouldReleaseAllLocksWhenExitingTheLockGroupRegion()
     {
         // given
         Lock lock1 = mock( Lock.class );

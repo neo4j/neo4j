@@ -72,7 +72,7 @@ public class BlockLogReader implements ReadableByteChannel
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // This is to make sure that reader index in the ChannelBuffer is left
         // in the right place even if this reader wasn't completely read through.
@@ -80,7 +80,7 @@ public class BlockLogReader implements ReadableByteChannel
     }
 
     @Override
-    public int read( ByteBuffer dst ) throws IOException
+    public int read( ByteBuffer dst )
     {
         /*
          * Fill up dst with what comes from the channel, until dst is full.

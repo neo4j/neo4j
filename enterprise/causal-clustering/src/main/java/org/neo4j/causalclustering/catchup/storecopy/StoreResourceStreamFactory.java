@@ -78,7 +78,7 @@ public class StoreResourceStreamFactory
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
                 files.close();
             }

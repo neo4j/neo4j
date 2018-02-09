@@ -74,7 +74,7 @@ public class CountsTrackerTest
     public final ThreadingRule threading = new ThreadingRule();
 
     @Test
-    public void shouldBeAbleToStartAndStopTheStore() throws Exception
+    public void shouldBeAbleToStartAndStopTheStore()
     {
         // given
         resourceManager.managed( newTracker() );
@@ -252,7 +252,7 @@ public class CountsTrackerTest
     }
 
     @Test
-    public void shouldOrderStoreByTxIdInHeaderThenMinorVersion() throws Exception
+    public void shouldOrderStoreByTxIdInHeaderThenMinorVersion()
     {
         // given
         FileVersion version = new FileVersion( 16, 5 );

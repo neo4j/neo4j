@@ -71,7 +71,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void bothSidesMustHaveSameUniqueness() throws Exception
+    public void bothSidesMustHaveSameUniqueness()
     {
         createGraph( "A TO B" );
 
@@ -86,7 +86,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void pathsForOneDirection() throws Exception
+    public void pathsForOneDirection()
     {
         /*
          * (a)-->(b)==>(c)-->(d)
@@ -106,7 +106,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void collisionEvaluator() throws Exception
+    public void collisionEvaluator()
     {
         /*
          *           (d)-->(e)--
@@ -131,7 +131,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void multipleCollisionEvaluators() throws Exception
+    public void multipleCollisionEvaluators()
     {
         /*
          *           (g)
@@ -153,7 +153,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void multipleStartAndEndNodes() throws Exception
+    public void multipleStartAndEndNodes()
     {
         /*
          * (a)--\         -->(f)
@@ -173,7 +173,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void ensureCorrectPathEntitiesInShortPath() throws Exception
+    public void ensureCorrectPathEntitiesInShortPath()
     {
         /*
          * (a)-->(b)
@@ -199,7 +199,7 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     }
 
     @Test
-    public void mirroredTraversalReversesInitialState() throws Exception
+    public void mirroredTraversalReversesInitialState()
     {
         /*
          * (a)-->(b)-->(c)-->(d)

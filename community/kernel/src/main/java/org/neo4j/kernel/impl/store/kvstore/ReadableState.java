@@ -109,13 +109,13 @@ abstract class ReadableState<Key> implements Closeable
             }
 
             @Override
-            protected boolean lookup( Key key, ValueSink sink ) throws IOException
+            protected boolean lookup( Key key, ValueSink sink )
             {
                 return false;
             }
 
             @Override
-            protected DataProvider dataProvider() throws IOException
+            protected DataProvider dataProvider()
             {
                 return EMPTY_DATA_PROVIDER;
             }
@@ -127,7 +127,7 @@ abstract class ReadableState<Key> implements Closeable
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
         };

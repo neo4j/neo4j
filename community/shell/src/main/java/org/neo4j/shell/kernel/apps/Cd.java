@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.kernel.apps;
 
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -138,7 +137,7 @@ public class Cd extends TransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException, RemoteException
+        Output out ) throws ShellException
     {
         List<TypedId> paths = readCurrentWorkingDir( session );
 
@@ -265,7 +264,7 @@ public class Cd extends TransactionProvidingApp
 
     private Object[] splitNodeTitleAndId( String string )
     {
-        int index = string.lastIndexOf( "," );
+        int index = string.lastIndexOf( ',' );
         String title = null;
         Long id = null;
         try

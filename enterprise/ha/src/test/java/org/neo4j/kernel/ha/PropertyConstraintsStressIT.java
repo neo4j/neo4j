@@ -109,7 +109,7 @@ public class PropertyConstraintsStressIT
     }
 
     @Before
-    public void setup() throws Exception
+    public void setup()
     {
         cluster = clusterRule
                 .withSharedSetting( HaSettings.pull_interval, "0" )
@@ -117,7 +117,7 @@ public class PropertyConstraintsStressIT
         clearData();
     }
 
-    private void clearData() throws InterruptedException
+    private void clearData()
     {
         HighlyAvailableGraphDatabase db = cluster.getMaster();
         GraphDatabaseServiceCleaner.cleanDatabaseContent( db );

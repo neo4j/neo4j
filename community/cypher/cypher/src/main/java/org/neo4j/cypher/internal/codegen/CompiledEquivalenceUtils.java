@@ -45,7 +45,7 @@ public final class CompiledEquivalenceUtils
      * Checks if two objects are equal according to Cypher semantics
      * @param lhs the left-hand side to check
      * @param rhs the right-hand sid to check
-     * @return <tt>true</tt> if the two objects are equal otherwise <tt>false</tt>
+     * @return {@code true} if the two objects are equal otherwise {@code false}
      */
     @SuppressWarnings( "unchecked" )
     public static boolean equals( Object lhs, Object rhs )

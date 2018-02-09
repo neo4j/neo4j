@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,6 +27,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -73,7 +73,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    private void performTest( String neostoreFileName ) throws Exception
+    private void performTest( String neostoreFileName )
     {
         File idFile = new File( storeDir, neostoreFileName + ".id" );
         // emulate the need for rebuilding id generators by deleting it
@@ -252,61 +252,61 @@ public class IdGeneratorRebuildFailureEmulationTest
     }
 
     @Test
-    public void neostore() throws Exception
+    public void neostore()
     {
         performTest( MetaDataStore.DEFAULT_NAME );
     }
 
     @Test
-    public void neostore_nodestore_db() throws Exception
+    public void neostore_nodestore_db()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME );
     }
 
     @Test
-    public void neostore_propertystore_db_arrays() throws Exception
+    public void neostore_propertystore_db_arrays()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_ARRAYS_STORE_NAME );
     }
 
     @Test
-    public void neostore_propertystore_db() throws Exception
+    public void neostore_propertystore_db()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME );
     }
 
     @Test
-    public void neostore_propertystore_db_index() throws Exception
+    public void neostore_propertystore_db_index()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME );
     }
 
     @Test
-    public void neostore_propertystore_db_index_keys() throws Exception
+    public void neostore_propertystore_db_index_keys()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME );
     }
 
     @Test
-    public void neostore_propertystore_db_strings() throws Exception
+    public void neostore_propertystore_db_strings()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.PROPERTY_STRINGS_STORE_NAME );
     }
 
     @Test
-    public void neostore_relationshipstore_db() throws Exception
+    public void neostore_relationshipstore_db()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_STORE_NAME );
     }
 
     @Test
-    public void neostore_relationshiptypestore_db() throws Exception
+    public void neostore_relationshiptypestore_db()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_STORE_NAME );
     }
 
     @Test
-    public void neostore_relationshiptypestore_db_names() throws Exception
+    public void neostore_relationshiptypestore_db_names()
     {
         performTest( MetaDataStore.DEFAULT_NAME + StoreFactory.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME );
     }

@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 public class RawIteratorTest
 {
     @Test
-    public void shouldCreateSimpleRawIterator() throws Throwable
+    public void shouldCreateSimpleRawIterator()
     {
         assertEquals( Collections.emptyList(), list( RawIterator.of() ) );
         assertEquals( Collections.singletonList( 1 ), list( RawIterator.of(1) ) );

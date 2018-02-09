@@ -33,13 +33,13 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -55,10 +55,8 @@ import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodeKeyConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
-        .NodePropertyExistenceConstraintValidationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT
-        .RelationshipPropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.NodePropertyExistenceConstraintValidationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyConstraintValidationIT.RelationshipPropertyExistenceConstraintValidationIT;
 
 @RunWith( Suite.class )
 @SuiteClasses( {
@@ -84,7 +82,7 @@ public class PropertyConstraintValidationIT
         }
 
         @Test
-        public void requirePropertyFromMultipleNodeKeys() throws Exception
+        public void requirePropertyFromMultipleNodeKeys()
         {
             Label label = Label.label( "multiNodeKeyLabel" );
             SchemaHelper.createNodeKeyConstraint( db, label,  "property1", "property2" );

@@ -82,7 +82,7 @@ public class PluginRealmTest
     private class LoggingAuthPlugin extends TestAuthPlugin
     {
         @Override
-        public void initialize( AuthProviderOperations api ) throws Throwable
+        public void initialize( AuthProviderOperations api )
         {
             logLines( api );
         }
@@ -91,7 +91,7 @@ public class PluginRealmTest
     private class LoggingAuthenticationPlugin extends TestAuthenticationPlugin
     {
         @Override
-        public void initialize( AuthProviderOperations api ) throws Throwable
+        public void initialize( AuthProviderOperations api )
         {
             logLines( api );
         }
@@ -100,13 +100,13 @@ public class PluginRealmTest
     private class LoggingAuthorizationPlugin extends TestAuthorizationPlugin
     {
         @Override
-        public void initialize( AuthProviderOperations api ) throws Throwable
+        public void initialize( AuthProviderOperations api )
         {
             logLines( api );
         }
     }
 
-    private static void logLines( AuthProviderOperations api ) throws Throwable
+    private static void logLines( AuthProviderOperations api )
     {
         AuthProviderOperations.Log log = api.log();
         if ( log.isDebugEnabled() )

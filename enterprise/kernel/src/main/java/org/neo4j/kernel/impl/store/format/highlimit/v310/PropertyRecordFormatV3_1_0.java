@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.format.highlimit.v310;
 
-import java.io.IOException;
-
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.format.BaseOneByteHeaderRecordFormat;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormat;
@@ -29,11 +27,11 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
+import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
+import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 import static org.neo4j.kernel.impl.store.format.highlimit.v310.BaseHighLimitRecordFormatV3_1_0.HEADER_BIT_FIXED_REFERENCE;
 import static org.neo4j.kernel.impl.store.format.highlimit.v310.BaseHighLimitRecordFormatV3_1_0.HEADER_BYTE;
 import static org.neo4j.kernel.impl.store.format.highlimit.v310.BaseHighLimitRecordFormatV3_1_0.NULL;
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toAbsolute;
-import static org.neo4j.kernel.impl.store.format.highlimit.Reference.toRelative;
 
 /**
  * <pre>
@@ -92,7 +90,6 @@ class PropertyRecordFormatV3_1_0 extends BaseOneByteHeaderRecordFormat<PropertyR
 
     @Override
     public void read( PropertyRecord record, PageCursor cursor, RecordLoad mode, int recordSize )
-            throws IOException
     {
         int offset = cursor.getOffset();
         byte headerByte = cursor.getByte();
@@ -129,11 +126,10 @@ class PropertyRecordFormatV3_1_0 extends BaseOneByteHeaderRecordFormat<PropertyR
 
     @Override
     public void write( PropertyRecord record, PageCursor cursor, int recordSize )
-            throws IOException
     {
         if ( record.inUse() )
         {
-            byte headerByte = (byte) ((record.inUse() ? IN_USE_BIT : 0) | numberOfBlocks( record ) << 4);
+            byte headerByte = (byte) (IN_USE_BIT | numberOfBlocks( record ) << 4);
             boolean canUseFixedReferences = canUseFixedReferences( record, recordSize );
             record.setUseFixedReferences( canUseFixedReferences );
             headerByte = set( headerByte, HEADER_BIT_FIXED_REFERENCE, canUseFixedReferences );

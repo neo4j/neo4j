@@ -39,5 +39,5 @@ public interface RaftLogCommand
 
     void applyTo( RaftLog raftLog, Log log ) throws IOException;
 
-    void applyTo( InFlightCache inFlightCache, Log log ) throws IOException;
+    void applyTo( InFlightCache inFlightCache, Log log );
 }

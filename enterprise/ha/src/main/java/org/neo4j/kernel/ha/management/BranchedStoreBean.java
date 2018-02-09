@@ -51,7 +51,6 @@ public final class BranchedStoreBean extends ManagementBeanProvider
 
     @Override
     protected Neo4jMBean createMXBean( ManagementData management )
-            throws NotCompliantMBeanException
     {
         if ( !isHA( management ) )
         {

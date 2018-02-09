@@ -32,7 +32,7 @@ import org.neo4j.shell.kernel.ReadOnlyGraphDatabaseProxy;
 public class ReadOnlyServerIT extends AbstractShellIT
 {
     @Override
-    protected ShellServer newServer( GraphDatabaseAPI db ) throws ShellException, RemoteException
+    protected ShellServer newServer( GraphDatabaseAPI db ) throws RemoteException
     {
         return new GraphDatabaseShellServer( new ReadOnlyGraphDatabaseProxy( db ) );
     }

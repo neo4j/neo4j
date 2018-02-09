@@ -72,14 +72,14 @@ public class AdminCommandSectionTest
     }
 
     @Test
-    public void equalsUsingReflection() throws Exception
+    public void equalsUsingReflection()
     {
         assertTrue( AdminCommandSection.general().equals( new TestGeneralSection() ) );
         assertFalse( AdminCommandSection.general().equals( new TestAnotherGeneralSection() ) );
     }
 
     @Test
-    public void hashCodeUsingReflection() throws Exception
+    public void hashCodeUsingReflection()
     {
         TestGeneralSection testGeneralSection = new TestGeneralSection();
         TestAnotherGeneralSection testAnotherGeneralSection = new TestAnotherGeneralSection();

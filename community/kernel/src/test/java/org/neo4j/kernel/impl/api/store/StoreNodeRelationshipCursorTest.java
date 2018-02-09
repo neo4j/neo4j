@@ -121,7 +121,7 @@ public class StoreNodeRelationshipCursorTest
     }
 
     @Test
-    public void retrieveNodeRelationships() throws Exception
+    public void retrieveNodeRelationships()
     {
         createNodeRelationships();
 
@@ -173,7 +173,7 @@ public class StoreNodeRelationshipCursorTest
     }
 
     @Test
-    public void shouldHandleDenseNodeWithNoRelationships() throws Exception
+    public void shouldHandleDenseNodeWithNoRelationships()
     {
         // This can actually happen, since we upgrade sparse node --> dense node when creating relationships,
         // but we don't downgrade dense --> sparse when we delete relationships. So if we have a dense node

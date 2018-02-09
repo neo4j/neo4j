@@ -50,7 +50,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     private static GraphDbHelper helper;
 
     @BeforeClass
-    public static void setupServer() throws IOException
+    public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
         helper = functionalTestHelper.getGraphDbHelper();
@@ -122,7 +122,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldBeValidJSONOnResponse() throws JsonParseException
+    public void shouldBeValidJSONOnResponse()
     {
         JaxRsResponse response = RestRequest.req().get( getPropertyUri( "foo" ) );
         assertThat( response.getType().toString(), containsString( MediaType.APPLICATION_JSON ) );
@@ -131,7 +131,7 @@ public class GetRelationshipPropertiesIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void shouldReturnEmptyMapForEmptyProperties() throws Exception
+    public void shouldReturnEmptyMapForEmptyProperties()
     {
         // Given
         String node = HTTP.POST( server().baseUri().resolve( "db/data/node" ).toString() ).location();

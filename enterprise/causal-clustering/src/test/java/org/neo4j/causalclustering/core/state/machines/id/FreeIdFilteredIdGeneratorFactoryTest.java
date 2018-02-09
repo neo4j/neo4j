@@ -41,7 +41,7 @@ public class FreeIdFilteredIdGeneratorFactoryTest
     private File file = mock( File.class );
 
     @Test
-    public void openFilteredGenerator() throws Exception
+    public void openFilteredGenerator()
     {
         FreeIdFilteredIdGeneratorFactory filteredGenerator = createFilteredFactory();
         IdType idType = IdType.NODE;
@@ -55,7 +55,7 @@ public class FreeIdFilteredIdGeneratorFactoryTest
     }
 
     @Test
-    public void openFilteredGeneratorWithGrabSize() throws Exception
+    public void openFilteredGeneratorWithGrabSize()
     {
         FreeIdFilteredIdGeneratorFactory filteredGenerator = createFilteredFactory();
         IdType idType = IdType.NODE;

@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -56,11 +57,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -570,13 +567,13 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void indexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void indexDrop( KernelStatement state, IndexDescriptor descriptor )
     {
         state.txState().indexDoDrop( descriptor );
     }
 
     @Override
-    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor ) throws DropIndexFailureException
+    public void uniqueIndexDrop( KernelStatement state, IndexDescriptor descriptor )
     {
         state.txState().indexDoDrop( descriptor );
     }
@@ -617,12 +614,8 @@ public class StateHandlingStatementOperations implements
                     state.txState().constraintDoAdd( constraint, indexId );
                 }
             }
-            return;
         }
-        catch ( UniquePropertyValueValidationException |
-                DropIndexFailureException |
-                TransactionFailureException |
-                AlreadyConstrainedException e )
+        catch ( UniquePropertyValueValidationException | TransactionFailureException | AlreadyConstrainedException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }
@@ -651,7 +644,7 @@ public class StateHandlingStatementOperations implements
     public NodeExistenceConstraintDescriptor nodePropertyExistenceConstraintCreate(
             KernelStatement state,
             LabelSchemaDescriptor descriptor
-    ) throws CreateConstraintFailureException
+    )
     {
         NodeExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         state.txState().constraintDoAdd( constraint );
@@ -662,7 +655,7 @@ public class StateHandlingStatementOperations implements
     public RelExistenceConstraintDescriptor relationshipPropertyExistenceConstraintCreate(
             KernelStatement state,
             RelationTypeSchemaDescriptor descriptor
-    ) throws AlreadyConstrainedException, CreateConstraintFailureException
+    )
     {
         RelExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForSchema( descriptor );
         state.txState().constraintDoAdd( constraint );
@@ -835,7 +828,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public long nodeGetFromUniqueIndexSeek(
             KernelStatement state, IndexDescriptor index, IndexQuery.ExactPredicate... query )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
     {
         IndexReader reader = state.getStoreStatement().getFreshIndexReader( index );
 
@@ -936,7 +929,7 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Value value )
-            throws IndexNotFoundKernelException, IndexBrokenKernelException
+            throws IndexNotFoundKernelException
     {
         IndexReader reader = statement.getStoreStatement().getIndexReader( index );
         return reader.countIndexedNodes( nodeId, value );
@@ -1388,28 +1381,26 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public int labelGetOrCreateForName( Statement state, String labelName ) throws IllegalTokenNameException,
-            TooManyLabelsException
+    public int labelGetOrCreateForName( Statement state, String labelName ) throws TooManyLabelsException
     {
         return storeLayer.labelGetOrCreateForName( labelName );
     }
 
     @Override
-    public int propertyKeyGetOrCreateForName( Statement state, String propertyKeyName ) throws IllegalTokenNameException
+    public int propertyKeyGetOrCreateForName( Statement state, String propertyKeyName )
     {
         return storeLayer.propertyKeyGetOrCreateForName( propertyKeyName );
     }
 
     @Override
     public int relationshipTypeGetOrCreateForName( Statement state, String relationshipTypeName )
-            throws IllegalTokenNameException
     {
         return storeLayer.relationshipTypeGetOrCreateForName( relationshipTypeName );
     }
 
     @Override
     public void labelCreateForName( KernelStatement state, String labelName,
-            int id ) throws IllegalTokenNameException, TooManyLabelsException
+            int id )
     {
         state.txState().labelDoCreateForName( labelName, id );
     }
@@ -1417,7 +1408,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void propertyKeyCreateForName( KernelStatement state,
             String propertyKeyName,
-            int id ) throws IllegalTokenNameException
+            int id )
     {
         state.txState().propertyKeyDoCreateForName( propertyKeyName, id );
 
@@ -1426,7 +1417,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public void relationshipTypeCreateForName( KernelStatement state,
             String relationshipTypeName,
-            int id ) throws IllegalTokenNameException
+            int id )
     {
         state.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
     }
@@ -1606,7 +1597,7 @@ public class StateHandlingStatementOperations implements
             final String indexName,
             long relationship,
             final String key,
-            final Object value ) throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            final Object value ) throws ExplicitIndexNotFoundKernelException
     {
         try
         {
@@ -1623,7 +1614,7 @@ public class StateHandlingStatementOperations implements
     public void relationshipRemoveFromExplicitIndex( final KernelStatement statement,
             final String indexName,
             long relationship,
-            final String key ) throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
+            final String key ) throws ExplicitIndexNotFoundKernelException
     {
         try
         {
@@ -1640,7 +1631,7 @@ public class StateHandlingStatementOperations implements
     public void relationshipRemoveFromExplicitIndex( final KernelStatement statement,
             final String indexName,
             long relationship )
-            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
+            throws ExplicitIndexNotFoundKernelException
     {
         try
         {

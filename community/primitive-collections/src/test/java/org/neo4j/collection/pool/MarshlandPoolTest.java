@@ -52,7 +52,7 @@ public class MarshlandPoolTest
     }
 
     @Test
-    public void shouldReturnToDelegatePoolIfLocalPoolIsFull() throws Exception
+    public void shouldReturnToDelegatePoolIfLocalPoolIsFull()
     {
         // Given
         Pool<Object> delegatePool = mock( Pool.class );
@@ -76,7 +76,7 @@ public class MarshlandPoolTest
     }
 
     @Test
-    public void shouldReleaseAllSlotsOnClose() throws Exception
+    public void shouldReleaseAllSlotsOnClose()
     {
         // Given
         Pool<Object> delegatePool = mock( Pool.class );
@@ -96,7 +96,7 @@ public class MarshlandPoolTest
         verifyNoMoreInteractions( delegatePool );
     }
 
-    private void assertPoolEventuallyReturns( Pool<Object> pool, int expected ) throws InterruptedException
+    private void assertPoolEventuallyReturns( Pool<Object> pool, int expected )
     {
         long maxTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 10 );
         while ( System.currentTimeMillis() < maxTime )

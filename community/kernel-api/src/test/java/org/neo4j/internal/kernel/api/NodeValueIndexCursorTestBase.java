@@ -536,7 +536,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldGetNoIndex() throws Exception
+    public void shouldGetNoIndex()
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );

@@ -72,7 +72,7 @@ public class ServerTestUtils
         return folder.toPath().resolve( setting.getDefaultValue() ).toString();
     }
 
-    public static Map<String,String> getDefaultRelativeProperties() throws IOException
+    public static Map<String,String> getDefaultRelativeProperties()
     {
         File testFolder = getSharedTestTemporaryFolder();
         Map<String,String> settings = new HashMap<>();
@@ -171,7 +171,7 @@ public class ServerTestUtils
         }
     }
 
-    public static File createTempConfigFile( File parentDir ) throws IOException
+    public static File createTempConfigFile( File parentDir )
     {
         File file = new File( parentDir, "test-" + new Random().nextInt() + ".properties" );
         file.deleteOnExit();

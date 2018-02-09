@@ -48,7 +48,7 @@ import static org.junit.Assert.fail;
 public class PrimitiveLongIntMapRIT
 {
     @Test
-    public void thoroughlyTestIt() throws Exception
+    public void thoroughlyTestIt()
     {
         long endTime = currentTimeMillis() + SECONDS.toMillis( 5 );
         while ( currentTimeMillis() < endTime )

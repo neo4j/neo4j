@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.PriorityQueue;
 
 /**
@@ -121,6 +122,10 @@ public class DefaultComparatorTopTable<T> implements Iterable<T> // implements S
             @SuppressWarnings( "unchecked" )
             public T next()
             {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
                 return (T) array[--cursor];
             }
         };

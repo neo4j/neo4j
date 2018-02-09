@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class AbstractCheckPointThresholdTest
 {
     @Test
-    public void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue() throws Throwable
+    public void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
     {
         // Given
         String description = "description";
@@ -43,7 +43,7 @@ public class AbstractCheckPointThresholdTest
     }
 
     @Test
-    public void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse() throws Throwable
+    public void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
     {
         // Given
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );

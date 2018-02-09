@@ -87,7 +87,7 @@ class DumpSegmentedRaftLog
         return logsFound[0];
     }
 
-    public static void main( String[] args ) throws IOException, DisposedException, DamagedLogStorageException
+    public static void main( String[] args )
     {
         Args arguments = Args.withFlags( TO_FILE ).parse( args );
         try ( Printer printer = getPrinter( arguments ) )
@@ -100,6 +100,10 @@ class DumpSegmentedRaftLog
                 {
                     new DumpSegmentedRaftLog( fileSystem, new CoreReplicatedContentMarshal() )
                             .dump( fileAsString, printer.getFor( fileAsString ) );
+                }
+                catch ( IOException | DisposedException | DamagedLogStorageException e )
+                {
+                    e.printStackTrace();
                 }
             }
         }

@@ -181,7 +181,7 @@ public class HeartbeatStateTest
     }
 
     @Test
-    public void shouldLogFirstHeartbeatAfterTimeout() throws Throwable
+    public void shouldLogFirstHeartbeatAfterTimeout()
     {
         // given
         InstanceId instanceId = new InstanceId( 1 );

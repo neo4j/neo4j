@@ -31,7 +31,7 @@ import static org.junit.Assert.assertThat;
 public class NeoServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTestBase
 {
     @Test
-    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig() throws Exception
+    public void shouldDefaultToSensiblePortIfNoneSpecifiedInConfig()
     {
         FunctionalTestHelper functionalTestHelper = new FunctionalTestHelper( server() );
 
@@ -41,7 +41,7 @@ public class NeoServerDefaultPortAndHostnameIT extends AbstractRestFunctionalTes
     }
 
     @Test
-    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig() throws Exception
+    public void shouldDefaultToLocalhostOfNoneSpecifiedInConfig()
     {
         assertThat( server().baseUri().getHost(), is( "localhost" ) );
     }

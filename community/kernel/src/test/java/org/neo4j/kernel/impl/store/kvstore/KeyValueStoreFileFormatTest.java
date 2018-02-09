@@ -300,7 +300,7 @@ public class KeyValueStoreFileFormatTest
             DataProvider data = new DataProvider()
             {
                 @Override
-                public void close() throws IOException
+                public void close()
                 {
                 }
 
@@ -602,7 +602,7 @@ public class KeyValueStoreFileFormatTest
         }
 
         @Override
-        public void close() throws IOException
+        public void close()
         {
         }
     }
@@ -626,7 +626,7 @@ public class KeyValueStoreFileFormatTest
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
         };

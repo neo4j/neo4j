@@ -157,7 +157,7 @@ public interface IndexAccessor extends Closeable
                 }
 
                 @Override
-                public void close() throws IOException
+                public void close()
                 {
                 }
 
@@ -177,7 +177,6 @@ public interface IndexAccessor extends Closeable
 
         @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
-                throws IndexEntryConflictException, IOException
         {
         }
     }

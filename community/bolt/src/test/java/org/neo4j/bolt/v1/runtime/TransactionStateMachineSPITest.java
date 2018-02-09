@@ -54,7 +54,7 @@ public class TransactionStateMachineSPITest
     public final OtherThreadRule<Void> otherThread = new OtherThreadRule<>();
 
     @Test
-    public void throwsWhenTxAwaitDurationExpires() throws Exception
+    public void throwsWhenTxAwaitDurationExpires()
     {
         long lastClosedTransactionId = 100;
         Supplier<TransactionIdStore> txIdStore = () -> fixedTxIdStore( lastClosedTransactionId );

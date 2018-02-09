@@ -44,7 +44,7 @@ public final class ShellServerExtensionFactory extends KernelExtensionFactory<Sh
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
+    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new ShellServerKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI() );
     }

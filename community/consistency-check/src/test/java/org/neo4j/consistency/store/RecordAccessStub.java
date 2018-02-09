@@ -146,7 +146,7 @@ public class RecordAccessStub implements RecordAccess
         }
 
         @Override
-        public Void answer( InvocationOnMock invocation ) throws Throwable
+        public Void answer( InvocationOnMock invocation )
         {
             Object[] arguments = invocation.getArguments();
             AbstractBaseRecord oldReference = null;

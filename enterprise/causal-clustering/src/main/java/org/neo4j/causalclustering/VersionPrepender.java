@@ -28,7 +28,7 @@ import org.neo4j.causalclustering.messaging.Message;
 public class VersionPrepender extends MessageToByteEncoder<ByteBuf>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out )
     {
         out.writeByte( Message.CURRENT_VERSION );
         out.writeBytes( msg, msg.readerIndex(), msg.readableBytes() );

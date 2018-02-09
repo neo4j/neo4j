@@ -122,14 +122,14 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         keepAliveJob = scheduler.scheduleRecurring( "KeepAlive", timeToLive / 3, this::keepReadReplicaAlive );
         refreshTopologyJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, this::refreshTopology );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         keepAliveJob.cancel( true );
         refreshTopologyJob.cancel( true );

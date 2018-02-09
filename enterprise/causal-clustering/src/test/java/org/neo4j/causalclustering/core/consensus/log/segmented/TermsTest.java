@@ -32,7 +32,7 @@ public class TermsTest
     private Terms terms;
 
     @Test
-    public void shouldHaveCorrectInitialValues() throws Exception
+    public void shouldHaveCorrectInitialValues()
     {
         // given
         long prevIndex = 5;
@@ -46,7 +46,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldReturnAppendedTerms() throws Exception
+    public void shouldReturnAppendedTerms()
     {
         // given
         terms = new Terms( -1, -1 );
@@ -62,7 +62,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldReturnAppendedTermsLongerRanges() throws Exception
+    public void shouldReturnAppendedTermsLongerRanges()
     {
         terms = new Terms( -1, -1 );
         int count = 10;
@@ -81,7 +81,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldOnlyAcceptInOrderIndexes() throws Exception
+    public void shouldOnlyAcceptInOrderIndexes()
     {
         // given
         long prevIndex = 3;
@@ -120,7 +120,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldOnlyAcceptMonotonicTerms() throws Exception
+    public void shouldOnlyAcceptMonotonicTerms()
     {
         // given
         long term = 5;
@@ -147,7 +147,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldNotTruncateNegativeIndexes() throws Exception
+    public void shouldNotTruncateNegativeIndexes()
     {
         // given
         terms = new Terms( -1, -1 );
@@ -166,7 +166,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldNotTruncateLessThanLowestIndex() throws Exception
+    public void shouldNotTruncateLessThanLowestIndex()
     {
         // given
         terms = new Terms( 5, 1 );
@@ -184,7 +184,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateInCurrentRange() throws Exception
+    public void shouldTruncateInCurrentRange()
     {
         // given
         long term = 5;
@@ -204,7 +204,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateAtExactBoundary() throws Exception
+    public void shouldTruncateAtExactBoundary()
     {
         // given
         long term = 5;
@@ -224,7 +224,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateCompleteCurrentRange() throws Exception
+    public void shouldTruncateCompleteCurrentRange()
     {
         // given
         long term = 5;
@@ -246,7 +246,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldTruncateSeveralCompleteRanges() throws Exception
+    public void shouldTruncateSeveralCompleteRanges()
     {
         // given
         long term = 5;
@@ -267,7 +267,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldAppendAfterTruncate() throws Exception
+    public void shouldAppendAfterTruncate()
     {
         // given
         long term = 5;
@@ -288,7 +288,7 @@ public class TermsTest
     }
 
     @Test
-    public void shouldAppendAfterSkip() throws Exception
+    public void shouldAppendAfterSkip()
     {
         // given
         long term = 5;

@@ -48,7 +48,7 @@ public class EnterpriseNeo4jRuleTest
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void shouldExtensionWork() throws Exception
+    public void shouldExtensionWork()
     {
         // Given running enterprise server
         String doSomethingUri = neo4j.httpURI().resolve( "test/myExtension/doSomething" ).toString();
@@ -61,7 +61,7 @@ public class EnterpriseNeo4jRuleTest
     }
 
     @Test
-    public void testPropertyExistenceConstraintCanBeCreated() throws Exception
+    public void testPropertyExistenceConstraintCanBeCreated()
     {
         // Given running enterprise server
         String createConstraintUri = neo4j.httpURI().resolve( "test/myExtension/createConstraint" ).toString();

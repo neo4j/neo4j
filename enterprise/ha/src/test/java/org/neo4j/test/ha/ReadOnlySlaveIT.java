@@ -49,7 +49,7 @@ public class ReadOnlySlaveIT
             .withInstanceSetting( read_only, oneBasedServerId -> oneBasedServerId == 2 ? Settings.TRUE : null );
 
     @Test
-    public void givenClusterWithReadOnlySlaveWhenWriteTxOnSlaveThenCommitFails() throws Throwable
+    public void givenClusterWithReadOnlySlaveWhenWriteTxOnSlaveThenCommitFails()
     {
         // When
         ManagedCluster cluster = clusterRule.startCluster();
@@ -68,7 +68,7 @@ public class ReadOnlySlaveIT
     }
 
     @Test
-    public void givenClusterWithReadOnlySlaveWhenChangePropertyOnSlaveThenThrowException() throws Throwable
+    public void givenClusterWithReadOnlySlaveWhenChangePropertyOnSlaveThenThrowException()
     {
         // Given
         ManagedCluster cluster = clusterRule.startCluster();
@@ -99,7 +99,7 @@ public class ReadOnlySlaveIT
     }
 
     @Test
-    public void givenClusterWithReadOnlySlaveWhenAddNewLabelOnSlaveThenThrowException() throws Throwable
+    public void givenClusterWithReadOnlySlaveWhenAddNewLabelOnSlaveThenThrowException()
     {
         // Given
         ManagedCluster cluster = clusterRule.startCluster();
@@ -130,7 +130,7 @@ public class ReadOnlySlaveIT
     }
 
     @Test
-    public void givenClusterWithReadOnlySlaveWhenAddNewRelTypeOnSlaveThenThrowException() throws Throwable
+    public void givenClusterWithReadOnlySlaveWhenAddNewRelTypeOnSlaveThenThrowException()
     {
         // Given
         ManagedCluster cluster = clusterRule.startCluster();
@@ -164,7 +164,7 @@ public class ReadOnlySlaveIT
     }
 
     @Test
-    public void givenClusterWithReadOnlySlaveWhenCreatingNodeOnMasterThenSlaveShouldBeAbleToPullUpdates() throws Exception
+    public void givenClusterWithReadOnlySlaveWhenCreatingNodeOnMasterThenSlaveShouldBeAbleToPullUpdates()
     {
         ManagedCluster cluster = clusterRule.startCluster();
         HighlyAvailableGraphDatabase master = cluster.getMaster();

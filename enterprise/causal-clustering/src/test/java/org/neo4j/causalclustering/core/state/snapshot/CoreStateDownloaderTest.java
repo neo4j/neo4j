@@ -75,7 +75,7 @@ public class CoreStateDownloaderTest
                     snaptshotService, topologyService );
 
     @Before
-    public void commonMocking() throws IOException
+    public void commonMocking()
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );

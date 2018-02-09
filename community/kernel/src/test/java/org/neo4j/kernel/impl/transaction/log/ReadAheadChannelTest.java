@@ -149,7 +149,7 @@ public class ReadAheadChannelTest
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<StoreChannel>( storeChannel1 )
         {
             @Override
-            protected StoreChannel next( StoreChannel channel ) throws IOException
+            protected StoreChannel next( StoreChannel channel )
             {
                 return storeChannel2Copy;
             }

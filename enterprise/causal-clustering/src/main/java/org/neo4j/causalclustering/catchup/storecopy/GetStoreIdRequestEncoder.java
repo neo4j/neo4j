@@ -26,7 +26,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class GetStoreIdRequestEncoder extends MessageToByteEncoder<GetStoreIdRequest>
 {
     @Override
-    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, ByteBuf out ) throws Exception
+    protected void encode( ChannelHandlerContext ctx, GetStoreIdRequest msg, ByteBuf out )
     {
         out.writeByte( 0 );
     }

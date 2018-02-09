@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 public class FileNamesTest
 {
     @Test
-    public void shouldProperlyFormatFilenameForVersion() throws Exception
+    public void shouldProperlyFormatFilenameForVersion()
     {
         // Given
         File base = new File( "base" );
@@ -57,7 +57,7 @@ public class FileNamesTest
     }
 
     @Test
-    public void shouldWorkCorrectlyOnReasonableDirectoryContents() throws Exception
+    public void shouldWorkCorrectlyOnReasonableDirectoryContents()
     {
         // Given
         // a raft log directory with just the expected files, without gaps
@@ -92,7 +92,7 @@ public class FileNamesTest
     }
 
     @Test
-    public void shouldIgnoreUnexpectedLogDirectoryContents() throws Exception
+    public void shouldIgnoreUnexpectedLogDirectoryContents()
     {
         // Given
         // a raft log directory with just the expected files, without gaps

@@ -32,16 +32,16 @@ import org.neo4j.logging.LogProvider;
  * Incoming messages must be of the particular type that the state understands.
  * A state machine can only handle one message at a time, so the handle message is synchronized.
  */
-public class StateMachine
+public class StateMachine<CONTEXT, MESSAGETYPE extends MessageType>
 {
-    private Object context;
-    private Class<? extends MessageType> messageEnumType;
-    private State<?, ?> state;
+    private CONTEXT context;
+    private Class<MESSAGETYPE> messageEnumType;
+    private State<CONTEXT, MESSAGETYPE> state;
     private LogProvider logProvider;
 
     private List<StateTransitionListener> listeners = new ArrayList<>();
 
-    public StateMachine( Object context, Class<? extends MessageType> messageEnumType, State<?, ?> state,
+    public StateMachine( CONTEXT context, Class<MESSAGETYPE> messageEnumType, State<CONTEXT, MESSAGETYPE> state,
                          LogProvider logProvider )
     {
         this.context = context;
@@ -50,12 +50,12 @@ public class StateMachine
         this.logProvider = logProvider;
     }
 
-    public Class<? extends MessageType> getMessageType()
+    public Class<MESSAGETYPE> getMessageType()
     {
         return messageEnumType;
     }
 
-    public State<?, ?> getState()
+    public State<CONTEXT, MESSAGETYPE> getState()
     {
         return state;
     }
@@ -74,18 +74,18 @@ public class StateMachine
 
     public void removeStateTransitionListener( StateTransitionListener listener )
     {
-        List<StateTransitionListener> newlisteners = new ArrayList<>( listeners );
-        newlisteners.remove( listener );
-        listeners = newlisteners;
+        List<StateTransitionListener> newListeners = new ArrayList<>( listeners );
+        newListeners.remove( listener );
+        listeners = newListeners;
     }
 
-    public synchronized void handle( Message<? extends MessageType> message, MessageHolder outgoing )
+    public synchronized void handle( Message<MESSAGETYPE> message, MessageHolder outgoing )
     {
         try
         {
             // Let the old state handle the incoming message and tell us what the new state should be
-            State<Object, MessageType> oldState = (State<Object, MessageType>) state;
-            State<?, ?> newState = oldState.handle( context, (Message<MessageType>) message, outgoing );
+            State<CONTEXT, MESSAGETYPE> oldState = state;
+            State<CONTEXT, MESSAGETYPE> newState = oldState.handle( context, message, outgoing );
             state = newState;
 
             // Notify any listeners of the new state

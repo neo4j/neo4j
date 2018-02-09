@@ -36,7 +36,7 @@ public interface KernelAPIWriteTestSupport
      * @param storeDir The directory to hold the database
      * @throws IOException Thrown on IO failure during database creation
      */
-    void setup( File storeDir ) throws IOException;
+    void setup( File storeDir );
 
     /**
      * Clear the graph. Executed before each test.

@@ -61,7 +61,7 @@ public class BoltInitChangePasswordTest
     }
 
     @Test
-    public void shouldLogFailedInitPasswordChange() throws Throwable
+    public void shouldLogFailedInitPasswordChange()
     {
         assertException( () -> authentication.authenticate( authToken( "neo4j", "123", "123" ) ),
                 AuthenticationException.class, "Old password and new password cannot be the same." );

@@ -240,10 +240,6 @@ public class ReadReplicaReplicationIT
             Path relativePath = dbStoreDirectory.relativize( files.next().toPath().toAbsolutePath() );
             labelScanStoreFiles.add( relativePath );
         }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     @Test

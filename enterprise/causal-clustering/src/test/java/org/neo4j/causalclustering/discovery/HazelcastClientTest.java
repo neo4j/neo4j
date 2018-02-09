@@ -50,7 +50,6 @@ import com.hazelcast.monitor.LocalMultiMapStats;
 import com.hazelcast.query.Predicate;
 import org.junit.Test;
 
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,12 +60,10 @@ import java.util.Set;
 import java.util.Spliterator;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -114,7 +111,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnTopologyUsingHazelcastMembers() throws Throwable
+    public void shouldReturnTopologyUsingHazelcastMembers()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -147,7 +144,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldNotReconnectWhileHazelcastRemainsAvailable() throws Throwable
+    public void shouldNotReconnectWhileHazelcastRemainsAvailable()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -186,7 +183,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast() throws Throwable
+    public void shouldReturnEmptyTopologyIfUnableToConnectToHazelcast()
     {
         // given
         HazelcastConnector connector = mock( HazelcastConnector.class );
@@ -219,7 +216,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRegisterReadReplicaInTopology() throws Throwable
+    public void shouldRegisterReadReplicaInTopology()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -264,7 +261,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldRemoveReadReplicasOnGracefulShutdown() throws Throwable
+    public void shouldRemoveReadReplicasOnGracefulShutdown()
     {
         // given
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
@@ -311,7 +308,7 @@ public class HazelcastClientTest
     }
 
     @Test
-    public void shouldSwallowNPEFromHazelcast() throws Throwable
+    public void shouldSwallowNPEFromHazelcast()
     {
         // given
         Endpoint endpoint = mock( Endpoint.class );
@@ -341,7 +338,7 @@ public class HazelcastClientTest
         // then no NPE has been thrown
     }
 
-    private Member makeMember( int id ) throws UnknownHostException
+    private Member makeMember( int id )
     {
         Member member = mock( Member.class );
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
@@ -682,14 +679,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit )
         {
             return false;
         }
 
         @Override
         public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
-                throws InterruptedException
         {
             return false;
         }
@@ -1085,14 +1081,13 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean tryLock( Object key, long time, TimeUnit timeunit ) throws InterruptedException
+        public boolean tryLock( Object key, long time, TimeUnit timeunit )
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public boolean tryLock( Object key, long time, TimeUnit timeunit, long leaseTime, TimeUnit leaseTimeunit )
-                throws InterruptedException
         {
             throw new UnsupportedOperationException();
         }
@@ -1488,7 +1483,7 @@ public class HazelcastClientTest
         }
 
         @Override
-        public boolean awaitTermination( long timeout, TimeUnit unit ) throws InterruptedException
+        public boolean awaitTermination( long timeout, TimeUnit unit )
         {
             return false;
         }
@@ -1512,28 +1507,25 @@ public class HazelcastClientTest
         }
 
         @Override
-        public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks ) throws InterruptedException
+        public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks )
         {
             return null;
         }
 
         @Override
         public <T> List<Future<T>> invokeAll( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
-                throws InterruptedException
         {
             return null;
         }
 
         @Override
-        public <T> T invokeAny( Collection<? extends Callable<T>> tasks ) throws InterruptedException,
-                ExecutionException
+        public <T> T invokeAny( Collection<? extends Callable<T>> tasks )
         {
             return null;
         }
 
         @Override
-        public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit ) throws
-                InterruptedException, ExecutionException, TimeoutException
+        public <T> T invokeAny( Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit )
         {
             return null;
         }

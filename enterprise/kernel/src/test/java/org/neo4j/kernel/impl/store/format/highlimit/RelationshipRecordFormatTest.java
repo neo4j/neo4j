@@ -53,7 +53,7 @@ public class RelationshipRecordFormatTest
     private final FixedLinkedStubPageCursor cursor = new FixedLinkedStubPageCursor( 0, (int) ByteUnit.kibiBytes( 4 ) )
     {
         @Override
-        public boolean next( long pageId ) throws IOException
+        public boolean next( long pageId )
         {
             // We're going to use this cursor in an environment where in all genericness this cursor
             // is one that can be moved around to other pages. That's not possible with this stub cursor,

@@ -337,7 +337,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // Here as a safety mechanism when e.g. panicking.
         if ( flusher != null )

@@ -30,7 +30,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class TraversalDescriptionBuilderTest
 {
     @Test( expected = IllegalArgumentException.class )
-    public void throwsIllegalArgumentOnUnknownExpanderType() throws Exception
+    public void throwsIllegalArgumentOnUnknownExpanderType()
     {
         // Given
         TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );
@@ -44,7 +44,7 @@ public class TraversalDescriptionBuilderTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void throwsIllegalArgumentOnNonStringExpanderType() throws Exception
+    public void throwsIllegalArgumentOnNonStringExpanderType()
     {
         // Given
         TraversalDescriptionBuilder builder = new TraversalDescriptionBuilder( true );

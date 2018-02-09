@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 public class LocalDatabaseTest
 {
     @Test
-    public void availabilityGuardRaisedOnCreation() throws Throwable
+    public void availabilityGuardRaisedOnCreation()
     {
         AvailabilityGuard guard = newAvailabilityGuard();
         assertTrue( guard.isAvailable() );

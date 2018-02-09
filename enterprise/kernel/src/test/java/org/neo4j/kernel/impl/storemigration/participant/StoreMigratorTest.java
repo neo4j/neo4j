@@ -99,7 +99,7 @@ public class StoreMigratorTest
     }
 
     @Test
-    public void detectObsoleteCountStoresToRebuildDuringMigration() throws IOException
+    public void detectObsoleteCountStoresToRebuildDuringMigration()
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         PageCache pageCache = mock( PageCache.class );

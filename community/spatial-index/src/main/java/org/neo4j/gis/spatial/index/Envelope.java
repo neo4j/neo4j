@@ -264,7 +264,7 @@ public class Envelope
     private boolean isValid()
     {
         boolean valid = min != null && max != null && min.length == max.length;
-        for ( int i = 0; i < min.length && valid; i++ )
+        for ( int i = 0; valid && i < min.length; i++ )
         {
             valid = min[i] <= max[i];
         }

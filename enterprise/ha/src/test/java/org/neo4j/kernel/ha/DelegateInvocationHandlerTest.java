@@ -32,7 +32,7 @@ import static org.junit.Assert.fail;
 public class DelegateInvocationHandlerTest
 {
     @Test
-    public void shouldNotBeAbleToUseValueBeforeHardened() throws Exception
+    public void shouldNotBeAbleToUseValueBeforeHardened()
     {
         // GIVEN
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
@@ -68,7 +68,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void shouldBeAbleToUseCementedValueOnceDelegateSet() throws Exception
+    public void shouldBeAbleToUseCementedValueOnceDelegateSet()
     {
         // GIVEN
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
@@ -82,7 +82,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void shouldBeAbleToUseCementedValueOnceHardened() throws Exception
+    public void shouldBeAbleToUseCementedValueOnceHardened()
     {
         // GIVEN
         DelegateInvocationHandler<Value> handler = newDelegateInvocationHandler();
@@ -96,7 +96,7 @@ public class DelegateInvocationHandlerTest
     }
 
     @Test
-    public void setDelegateShouldBeAbleToOverridePreviousHarden() throws Exception
+    public void setDelegateShouldBeAbleToOverridePreviousHarden()
     {
         /* This test case stems from a race condition where a thread switching role to slave and
          * HaKernelPanicHandler thread were competing to harden the master delegate handler.

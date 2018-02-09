@@ -192,13 +192,13 @@ public class DocValuesCollector extends SimpleCollector
     }
 
     @Override
-    public void setScorer( Scorer scorer ) throws IOException
+    public void setScorer( Scorer scorer )
     {
         this.scorer = scorer;
     }
 
     @Override
-    public void doSetNextReader( LeafReaderContext context ) throws IOException
+    public void doSetNextReader( LeafReaderContext context )
     {
         if ( docs != null && segmentHits > 0 )
         {
@@ -543,7 +543,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public float score() throws IOException
+        public float score()
         {
             if ( index < scores.length )
             {
@@ -553,7 +553,7 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         @Override
-        public int freq() throws IOException
+        public int freq()
         {
             throw new UnsupportedOperationException();
         }

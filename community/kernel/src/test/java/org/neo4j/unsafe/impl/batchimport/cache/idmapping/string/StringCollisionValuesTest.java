@@ -62,7 +62,7 @@ public class StringCollisionValuesTest
     public NumberArrayFactory factory;
 
     @Test
-    public void shouldStoreAndLoadStrings() throws Exception
+    public void shouldStoreAndLoadStrings()
     {
         // given
         try ( StringCollisionValues values = new StringCollisionValues( factory, 10_000 ) )

@@ -29,7 +29,7 @@ public class DeadEndStep extends ProcessorStep<Object>
     }
 
     @Override
-    protected void process( Object batch, BatchSender sender ) throws Throwable
+    protected void process( Object batch, BatchSender sender )
     {
     }
 }

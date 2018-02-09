@@ -33,7 +33,7 @@ public class TestScriptExecutorFactoryRepository
 {
 
     @Test( expected = NoSuchScriptLanguageException.class )
-    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages() throws Exception
+    public void shouldThrowNoSuchScriptLanguageExceptionForUnkownLanguages()
     {
         // Given
         ScriptExecutorFactoryRepository repo = new ScriptExecutorFactoryRepository( new HashMap<>() );
@@ -43,7 +43,7 @@ public class TestScriptExecutorFactoryRepository
     }
 
     @Test
-    public void shouldReturnRegisteredFactory() throws Exception
+    public void shouldReturnRegisteredFactory()
     {
         // Given
         Map<String, ScriptExecutor.Factory> languages = new HashMap<>();

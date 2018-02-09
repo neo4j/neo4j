@@ -70,12 +70,12 @@ class RaftServerModule
         this.logProvider = platformModule.logging.getInternalLogProvider();
         this.pipelineBuilderFactory = pipelineBuilderFactory;
 
-        LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain = createMessageHandlerChain( coreServerModule );
+        LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
 
         createRaftServer( coreServerModule, messageHandlerChain );
     }
 
-    private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> messageHandlerChain )
+    private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain )
     {
         ProtocolRepository protocolRepository = new ProtocolRepository( Protocol.Protocols.values() );
 
@@ -89,8 +89,8 @@ class RaftServerModule
         RaftServer raftServer = new RaftServer( handshakeServerInitializer, platformModule.config,
                 logProvider, platformModule.logging.getUserLogProvider() );
 
-        LoggingInbound<ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( nettyHandler,
-                messageLogger, identityModule.myself() );
+        LoggingInbound<ReceivedInstantClusterIdAwareMessage<?>> loggingRaftInbound =
+                new LoggingInbound<>( nettyHandler, messageLogger, identityModule.myself() );
         loggingRaftInbound.registerHandler( messageHandlerChain );
 
         platformModule.life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
@@ -99,7 +99,7 @@ class RaftServerModule
         platformModule.life.add( coreServerModule.downloadService() );
     }
 
-    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage> createMessageHandlerChain( CoreServerModule coreServerModule )
+    private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
     {
         RaftMessageApplier messageApplier = new RaftMessageApplier( localDatabase, logProvider,
                 consensusModule.raftMachine(), coreServerModule.downloadService(), coreServerModule.commandApplicationProcess() );
@@ -108,7 +108,7 @@ class RaftServerModule
 
         int queueSize = platformModule.config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = platformModule.config.get( CausalClusteringSettings.raft_in_queue_max_batch );
-        Function<Runnable, ContinuousJob> jobFactory = ( Runnable runnable ) ->
+        Function<Runnable, ContinuousJob> jobFactory = runnable ->
                 new ContinuousJob( platformModule.jobScheduler.threadFactory( new JobScheduler.Group( "raft-batch-handler" ) ), runnable, logProvider );
         ComposableMessageHandler batchingMessageHandler = BatchingMessageHandler.composable( queueSize, maxBatch, jobFactory, logProvider );
 

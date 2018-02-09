@@ -99,7 +99,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotChangeOwnPasswordIfNewPasswordInvalid() throws Exception
+    public void shouldNotChangeOwnPasswordIfNewPasswordInvalid()
     {
         assertFail( admin, "CALL dbms.changePassword( '' )", "A password cannot be empty." );
         assertFail( admin, "CALL dbms.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
@@ -130,7 +130,7 @@ public class AuthProceduresIT
     //---------- create user -----------
 
     @Test
-    public void shouldCreateUser() throws Exception
+    public void shouldCreateUser()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', true)" );
         try
@@ -144,7 +144,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldCreateUserWithNoPasswordChange() throws Exception
+    public void shouldCreateUserWithNoPasswordChange()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123', false)" );
         try
@@ -158,7 +158,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldCreateUserWithDefault() throws Exception
+    public void shouldCreateUserWithDefault()
     {
         assertEmpty( admin, "CALL dbms.security.createUser('andres', '123')" );
         try
@@ -172,7 +172,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotCreateUserIfInvalidUsername() throws Exception
+    public void shouldNotCreateUserIfInvalidUsername()
     {
         assertFail( admin, "CALL dbms.security.createUser('', '1234', true)", "The provided username is empty." );
         assertFail( admin, "CALL dbms.security.createUser(',!', '1234', true)",
@@ -182,13 +182,13 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotCreateUserIfInvalidPassword() throws Exception
+    public void shouldNotCreateUserIfInvalidPassword()
     {
         assertFail( admin, "CALL dbms.security.createUser('andres', '', true)", "A password cannot be empty." );
     }
 
     @Test
-    public void shouldNotCreateExistingUser() throws Exception
+    public void shouldNotCreateExistingUser()
     {
         assertFail( admin, "CALL dbms.security.createUser('neo4j', '1234', true)",
                 "The specified user 'neo4j' already exists" );
@@ -218,7 +218,7 @@ public class AuthProceduresIT
     }
 
     @Test
-    public void shouldNotDeleteNonExistentUser() throws Exception
+    public void shouldNotDeleteNonExistentUser()
     {
         assertFail( admin, "CALL dbms.security.deleteUser('nonExistentUser')", "User 'nonExistentUser' does not exist" );
     }

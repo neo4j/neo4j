@@ -51,7 +51,7 @@ public class ExecutionResultTest
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
-    public void shouldCloseTransactionsWhenIteratingResults() throws Exception
+    public void shouldCloseTransactionsWhenIteratingResults()
     {
         // Given an execution result that has been started but not exhausted
         createNode();
@@ -69,7 +69,7 @@ public class ExecutionResultTest
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test
-    public void shouldCloseTransactionsWhenIteratingOverSingleColumn() throws Exception
+    public void shouldCloseTransactionsWhenIteratingOverSingleColumn()
     {
         // Given an execution result that has been started but not exhausted
         createNode();
@@ -87,7 +87,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldThrowAppropriateException() throws Exception
+    public void shouldThrowAppropriateException()
     {
         try
         {
@@ -101,7 +101,7 @@ public class ExecutionResultTest
     }
 
     @Test( expected = ArithmeticException.class )
-    public void shouldThrowAppropriateExceptionAlsoWhenVisiting() throws Exception
+    public void shouldThrowAppropriateExceptionAlsoWhenVisiting()
     {
         db.execute( "RETURN rand()/0" ).accept( row -> true );
     }

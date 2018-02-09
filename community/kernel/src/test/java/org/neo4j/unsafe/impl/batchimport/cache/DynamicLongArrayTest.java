@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 public class DynamicLongArrayTest
 {
     @Test
-    public void shouldWorkOnSingleChunk() throws Exception
+    public void shouldWorkOnSingleChunk()
     {
         // GIVEN
         long defaultValue = 0;
@@ -41,7 +41,7 @@ public class DynamicLongArrayTest
     }
 
     @Test
-    public void shouldChunksAsNeeded() throws Exception
+    public void shouldChunksAsNeeded()
     {
         // GIVEN
         LongArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 10, 0 );

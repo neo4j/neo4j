@@ -105,7 +105,7 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void skipMigrationIfFormatSpecifiedInConfig() throws Exception
+    public void skipMigrationIfFormatSpecifiedInConfig()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )
@@ -123,7 +123,7 @@ public class RecordFormatMigrationIT
     }
 
     @Test
-    public void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime() throws Exception
+    public void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
         try ( Transaction transaction = database.beginTx() )

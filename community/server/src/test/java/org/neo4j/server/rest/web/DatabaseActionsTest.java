@@ -99,7 +99,7 @@ public class DatabaseActionsTest
     public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
-    public static void createDb() throws IOException
+    public static void createDb()
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
@@ -110,7 +110,7 @@ public class DatabaseActionsTest
     }
 
     @AfterClass
-    public static void shutdownDatabase() throws Throwable
+    public static void shutdownDatabase()
     {
         graph.shutdown();
     }
@@ -1020,7 +1020,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetShortestPaths() throws Exception
+    public void shouldBeAbleToGetShortestPaths()
     {
         long[] nodes = createMoreComplexGraph();
 
@@ -1052,7 +1052,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsUsingDijkstra() throws Exception
+    public void shouldBeAbleToGetPathsUsingDijkstra()
     {
         long[] nodes = createDijkstraGraph( true );
 
@@ -1077,7 +1077,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldBeAbleToGetPathsUsingDijkstraWithDefaults() throws Exception
+    public void shouldBeAbleToGetPathsUsingDijkstraWithDefaults()
     {
         long[] nodes = createDijkstraGraph( false );
 
@@ -1172,7 +1172,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void getNodesWithLabel() throws Exception
+    public void getNodesWithLabel()
     {
         // GIVEN
         String label1 = "first";
@@ -1197,7 +1197,7 @@ public class DatabaseActionsTest
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void getNodesWithLabelAndSeveralPropertiesShouldFail() throws Exception
+    public void getNodesWithLabelAndSeveralPropertiesShouldFail()
     {
         // WHEN
         actions.getNodesWithLabel( "Person", map( "name", "bob", "age", 12 ) );
@@ -1221,7 +1221,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreateSchemaIndex() throws Exception
+    public void shouldCreateSchemaIndex()
     {
         // GIVEN
         String labelName = "person";
@@ -1240,7 +1240,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldDropSchemaIndex() throws Exception
+    public void shouldDropSchemaIndex()
     {
         // GIVEN
         String labelName = "user";
@@ -1259,7 +1259,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetSchemaIndexes() throws Exception
+    public void shouldGetSchemaIndexes()
     {
         // GIVEN
         String labelName = "mylabel";
@@ -1281,7 +1281,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldCreatePropertyUniquenessConstraint() throws Exception
+    public void shouldCreatePropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "person";
@@ -1300,7 +1300,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldDropPropertyUniquenessConstraint() throws Exception
+    public void shouldDropPropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "user";
@@ -1317,7 +1317,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void dropNonExistentConstraint() throws Exception
+    public void dropNonExistentConstraint()
     {
         // GIVEN
         String labelName = "user";
@@ -1337,7 +1337,7 @@ public class DatabaseActionsTest
     }
 
     @Test
-    public void shouldGetPropertyUniquenessConstraint() throws Exception
+    public void shouldGetPropertyUniquenessConstraint()
     {
         // GIVEN
         String labelName = "mylabel";

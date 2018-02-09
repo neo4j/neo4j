@@ -49,7 +49,7 @@ public class HighlyAvailableEditionModuleIT
     public ClusterRule clusterRule = new ClusterRule();
 
     @Test
-    public void createBufferedIdComponentsByDefault() throws Exception
+    public void createBufferedIdComponentsByDefault()
     {
         ClusterManager.ManagedCluster managedCluster = clusterRule.startCluster();
         DependencyResolver dependencyResolver = managedCluster.getMaster().getDependencyResolver();

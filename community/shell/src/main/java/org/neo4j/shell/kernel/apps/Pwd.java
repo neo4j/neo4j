@@ -45,7 +45,7 @@ public class Pwd extends TransactionProvidingApp
 
     @Override
     protected Continuation exec( AppCommandParser parser, Session session,
-        Output out ) throws ShellException, RemoteException
+        Output out ) throws RemoteException
     {
         String current = null;
         try
@@ -67,7 +67,6 @@ public class Pwd extends TransactionProvidingApp
     }
 
     private String stringifyPath( List<TypedId> pathIds, Session session )
-        throws ShellException
     {
         if ( pathIds.isEmpty() )
         {

@@ -68,7 +68,7 @@ public class NotificationAcceptanceTest
     public final ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule();
 
     @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIsTheDefault() throws Exception
+    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIsTheDefault()
     {
         // when
         Result result = db().execute( "CYPHER planner=rule RETURN 1" );
@@ -83,7 +83,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery() throws Exception
+    public void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotifyInStream( version, "EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN count(*)", InputPosition.empty,
@@ -91,14 +91,14 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery() throws Exception
+    public void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery()
     {
         Stream.of( "CYPHER 3.4" ).forEach(
                 version -> shouldNotifyInStream( version, "explain cypher runtime=slotted merge (a)-[:X]->(b)", InputPosition.empty, RUNTIME_UNSUPPORTED ) );
     }
 
     @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault() throws Exception
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault()
     {
         // when
         Result result = db().execute( "MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
@@ -113,7 +113,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_4() throws Exception
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_4()
     {
         // when
         Result result = db().execute( "CYPHER 3.4 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
@@ -128,7 +128,7 @@ public class NotificationAcceptanceTest
 
     //TODO unignore when supporting 3.3
     @Ignore
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3() throws Exception
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3()
     {
         // when
         Result result = db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
@@ -142,7 +142,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnWhenUsingLengthOnNonPath() throws Exception
+    public void shouldWarnWhenUsingLengthOnNonPath()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -159,35 +159,35 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyWhenUsingLengthOnPath() throws Exception
+    public void shouldNotNotifyWhenUsingLengthOnPath()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " explain match p=(a)-[*]->(b) return length(p)" ) );
     }
 
     @Test
-    public void shouldNotNotifyWhenUsingSizeOnCollection() throws Exception
+    public void shouldNotNotifyWhenUsingSizeOnCollection()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, "explain return size([1, 2, 3])" ) );
     }
 
     @Test
-    public void shouldNotNotifyWhenUsingSizeOnString() throws Exception
+    public void shouldNotNotifyWhenUsingSizeOnString()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " explain return size('a string')" ) );
     }
 
     @Test
-    public void shouldNotNotifyForCostUnsupportedUpdateQueryIfPlannerNotExplicitlyRequested() throws Exception
+    public void shouldNotNotifyForCostUnsupportedUpdateQueryIfPlannerNotExplicitlyRequested()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN MATCH (n:Movie) SET n.title = 'The Movie'" ) );
     }
 
     @Test
-    public void shouldNotNotifyForCostSupportedUpdateQuery() throws Exception
+    public void shouldNotNotifyForCostSupportedUpdateQuery()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -198,7 +198,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyUsingJoinHintWithCost() throws Exception
+    public void shouldNotNotifyUsingJoinHintWithCost()
     {
         List<String> queries = Arrays.asList( "CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b",
                 "CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b" );
@@ -213,7 +213,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnPotentiallyCachedQueries() throws Exception
+    public void shouldWarnOnPotentiallyCachedQueries()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -225,7 +225,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled() throws Exception
+    public void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotifyInStreamWithDetail( version, " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n",
@@ -233,7 +233,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnEachUnfulfillableIndexHint() throws Exception
+    public void shouldWarnOnEachUnfulfillableIndexHint()
     {
         String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal) " + "USING INDEX n:Person(name) " + "USING INDEX m:Party(city) " +
                 "USING INDEX k:Animal(species) " + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' " + "RETURN n";
@@ -247,14 +247,14 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnLiteralMaps() throws Exception
+    public void shouldNotNotifyOnLiteralMaps()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " explain return { id: 42 } " ) );
     }
 
     @Test
-    public void shouldNotNotifyOnNonExistingLabelUsingLoadCSV() throws Exception
+    public void shouldNotNotifyOnNonExistingLabelUsingLoadCSV()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -270,7 +270,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnNonExistingRelTypeUsingLoadCSV() throws Exception
+    public void shouldNotNotifyOnNonExistingRelTypeUsingLoadCSV()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -283,7 +283,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnNonExistingPropKeyIdUsingLoadCSV() throws Exception
+    public void shouldNotNotifyOnNonExistingPropKeyIdUsingLoadCSV()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -296,14 +296,14 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnEagerBeforeLoadCSVDelete() throws Exception
+    public void shouldNotNotifyOnEagerBeforeLoadCSVDelete()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version -> shouldNotNotifyInStream( version,
                 "EXPLAIN MATCH (n) DELETE n WITH * LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE () RETURN line" ) );
     }
 
     @Test
-    public void shouldNotNotifyOnEagerBeforeLoadCSVCreate() throws Exception
+    public void shouldNotNotifyOnEagerBeforeLoadCSVCreate()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
                 assertNotifications( version + "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
@@ -311,7 +311,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnEagerAfterLoadCSV() throws Exception
+    public void shouldWarnOnEagerAfterLoadCSV()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version -> shouldNotifyInStream( version,
                 "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", InputPosition.empty,
@@ -319,21 +319,21 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnLoadCSVWithoutEager() throws Exception
+    public void shouldNotNotifyOnLoadCSVWithoutEager()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (:A) CREATE (:B) RETURN line" ) );
     }
 
     @Test
-    public void shouldNotNotifyOnEagerWithoutLoadCSV() throws Exception
+    public void shouldNotNotifyOnEagerWithoutLoadCSV()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> assertNotifications( version + "EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", containsNoItem( eagerOperatorWarning ) ) );
     }
 
     @Test
-    public void shouldWarnOnLargeLabelScansWithLoadCVSMatch() throws Exception
+    public void shouldWarnOnLargeLabelScansWithLoadCVSMatch()
     {
         for ( int i = 0; i < 11; i++ )
         {
@@ -349,7 +349,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnLargeLabelScansWithLoadCVSMerge() throws Exception
+    public void shouldWarnOnLargeLabelScansWithLoadCVSMerge()
     {
         for ( int i = 0; i < 11; i++ )
         {
@@ -365,7 +365,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotWarnOnSmallLabelScansWithLoadCVS() throws Exception
+    public void shouldNotWarnOnSmallLabelScansWithLoadCVS()
     {
         try ( Transaction tx = db().beginTx() )
         {
@@ -380,28 +380,28 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnDeprecatedToInt() throws Exception
+    public void shouldWarnOnDeprecatedToInt()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
                 assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one", containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
-    public void shouldWarnOnDeprecatedUpper() throws Exception
+    public void shouldWarnOnDeprecatedUpper()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
                 assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one", containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
-    public void shouldWarnOnDeprecatedLower() throws Exception
+    public void shouldWarnOnDeprecatedLower()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
                 assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one", containsItem( deprecatedFeatureWarning ) ) );
     }
 
     @Test
-    public void shouldWarnOnDeprecatedRels() throws Exception
+    public void shouldWarnOnDeprecatedRels()
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
                 assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r", containsItem( deprecatedFeatureWarning ) ) );
@@ -430,7 +430,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnUnboundedShortestPath() throws Exception
+    public void shouldWarnOnUnboundedShortestPath()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotifyInStream( version, "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m", new InputPosition( 44, 1, 45 ),
@@ -438,7 +438,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnDynamicPropertyLookupWithNoLabels() throws Exception
+    public void shouldNotNotifyOnDynamicPropertyLookupWithNoLabels()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -449,7 +449,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnDynamicPropertyLookupWithBothStaticAndDynamicProperties() throws Exception
+    public void shouldWarnOnDynamicPropertyLookupWithBothStaticAndDynamicProperties()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -461,7 +461,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnDynamicPropertyLookupWithLabelHavingNoIndex() throws Exception
+    public void shouldNotNotifyOnDynamicPropertyLookupWithLabelHavingNoIndex()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -478,7 +478,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicProperty() throws Exception
+    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicProperty()
     {
         List<String> queries = new ArrayList<>();
 
@@ -518,7 +518,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnDynamicPropertyLookupWithSingleLabelAndNegativePredicate() throws Exception
+    public void shouldNotNotifyOnDynamicPropertyLookupWithSingleLabelAndNegativePredicate()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -529,7 +529,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels() throws Exception
+    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels()
     {
         Stream.of( "CYPHER 3.4" ).forEach( version ->
         {
@@ -542,7 +542,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleIndexedLabels() throws Exception
+    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleIndexedLabels()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
         {
@@ -557,7 +557,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnFutureAmbiguousRelTypeSeparator() throws Exception
+    public void shouldWarnOnFutureAmbiguousRelTypeSeparator()
     {
         List<String> deprecatedQueries = Arrays.asList( "explain MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b", "explain MATCH (a)-[x:A|:B|:C]-() RETURN a",
                 "explain MATCH (a)-[:A|:B|:C*]-() RETURN a" );
@@ -578,7 +578,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnBindingVariableLengthRelationship() throws Exception
+    public void shouldWarnOnBindingVariableLengthRelationship()
     {
         assertNotifications( "CYPHER 3.4 explain MATCH ()-[rs*]-() RETURN rs", containsItem( depracatedBindingWarning
         ) );
@@ -588,7 +588,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnCartesianProduct() throws Exception
+    public void shouldWarnOnCartesianProduct()
     {
 
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach( version ->
@@ -602,20 +602,20 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnCartesianProductWithoutExplain() throws Exception
+    public void shouldNotNotifyOnCartesianProductWithoutExplain()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " match (a)-->(b), (c)-->(d) return *" ) );
     }
 
     @Test
-    public void shouldWarnOnMissingLabel() throws Exception
+    public void shouldWarnOnMissingLabel()
     {
         assertNotifications( "EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem( unknownLabelWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMisspelledLabel() throws Exception
+    public void shouldWarnOnMisspelledLabel()
     {
         try ( Transaction tx = db().beginTx() )
         {
@@ -631,7 +631,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMissingLabelWithCommentInBeginningWithOlderCypherVersions() throws Exception
+    public void shouldWarnOnMissingLabelWithCommentInBeginningWithOlderCypherVersions()
     {
         assertNotifications( "CYPHER 2.3 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( unknownLabelWarning ) );
 
@@ -639,44 +639,44 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMissingLabelWithCommentInBeginning() throws Exception
+    public void shouldWarnOnMissingLabelWithCommentInBeginning()
     {
         assertNotifications( "EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( unknownLabelWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines() throws Exception
+    public void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines()
     {
         assertNotifications( "//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1", containsItem( unknownLabelWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine() throws Exception
+    public void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine()
     {
         assertNotifications( "explain /* Testing */ MATCH (n:X) RETURN n", containsItem( unknownLabelWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMissingLabelWithCommentInMiddel() throws Exception
+    public void shouldWarnOnMissingLabelWithCommentInMiddel()
     {
         assertNotifications( "EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1", containsItem( unknownLabelWarning ) );
     }
 
     @Test
-    public void shouldNotNotifyForMissingLabelOnUpdate() throws Exception
+    public void shouldNotNotifyForMissingLabelOnUpdate()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN CREATE (n:Person)" ) );
     }
 
     @Test
-    public void shouldWarnOnMissingRelationshipType() throws Exception
+    public void shouldWarnOnMissingRelationshipType()
     {
         assertNotifications( "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( unknownRelationshipWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMisspelledRelationship() throws Exception
+    public void shouldWarnOnMisspelledRelationship()
     {
         try ( Transaction tx = db().beginTx() )
         {
@@ -693,19 +693,19 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMissingRelationshipTypeWithComment() throws Exception
+    public void shouldWarnOnMissingRelationshipTypeWithComment()
     {
         assertNotifications( "EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( unknownRelationshipWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMissingProperty() throws Exception
+    public void shouldWarnOnMissingProperty()
     {
         assertNotifications( "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( unknownPropertyKeyWarning ) );
     }
 
     @Test
-    public void shouldWarnOnMisspelledProperty() throws Exception
+    public void shouldWarnOnMisspelledProperty()
     {
         db().execute("CREATE (n {prop : 42})");
 
@@ -718,13 +718,13 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMissingPropertyWithComment() throws Exception
+    public void shouldWarnOnMissingPropertyWithComment()
     {
         assertNotifications( "EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( unknownPropertyKeyWarning ) );
     }
 
     @Test
-    public void shouldNotNotifyForMissingPropertiesOnUpdate() throws Exception
+    public void shouldNotNotifyForMissingPropertiesOnUpdate()
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.4" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN CREATE (n {prop: 42})" ) );
@@ -807,7 +807,7 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void version2_3ShouldWarnAboutBareNodes() throws Exception
+    public void version2_3ShouldWarnAboutBareNodes()
     {
         Result res = db().execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n");
         assert res.getNotifications().iterator().hasNext();

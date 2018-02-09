@@ -81,7 +81,7 @@ public class BasicHaOperationsIT
     }
 
     @Test
-    public void testBasicPropagationFromSlaveToMaster() throws Throwable
+    public void testBasicPropagationFromSlaveToMaster()
     {
         // given
         ManagedCluster cluster = clusterRule.startCluster();
@@ -118,7 +118,7 @@ public class BasicHaOperationsIT
     }
 
     @Test
-    public void testBasicPropagationFromMasterToSlave() throws Throwable
+    public void testBasicPropagationFromMasterToSlave()
     {
         // given
         ManagedCluster cluster = clusterRule.startCluster();

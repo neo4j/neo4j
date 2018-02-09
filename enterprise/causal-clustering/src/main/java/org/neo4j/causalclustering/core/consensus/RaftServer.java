@@ -62,13 +62,13 @@ public class RaftServer extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void start() throws Throwable
+    public synchronized void start()
     {
         startNettyServer();
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop()
     {
         log.info( "RaftServer stopping and unbinding from " + listenAddress );
         try

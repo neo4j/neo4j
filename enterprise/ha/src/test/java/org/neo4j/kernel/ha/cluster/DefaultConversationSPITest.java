@@ -46,7 +46,7 @@ public class DefaultConversationSPITest
     private DefaultConversationSPI conversationSpi;
 
     @Test
-    public void testAcquireClient() throws Exception
+    public void testAcquireClient()
     {
         conversationSpi.acquireClient();
 
@@ -54,7 +54,7 @@ public class DefaultConversationSPITest
     }
 
     @Test
-    public void testScheduleRecurringJob() throws Exception
+    public void testScheduleRecurringJob()
     {
         Runnable job = mock( Runnable.class );
         JobScheduler.Group group = mock( JobScheduler.Group.class );

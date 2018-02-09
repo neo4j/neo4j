@@ -30,7 +30,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class IdentityFilterTest
 {
     @Test
-    public void shouldNotFilter() throws Exception
+    public void shouldNotFilter()
     {
         // given
         IdentityFilter<Object> identityFilter = IdentityFilter.as();

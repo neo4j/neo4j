@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 public class PrimitiveIntCollectionsTest
 {
     @Test
-    public void arrayOfItemsAsIterator() throws Exception
+    public void arrayOfItemsAsIterator()
     {
         // GIVEN
         int[] items = new int[] { 2, 5, 234 };
@@ -64,7 +64,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void arrayOfReversedItemsAsIterator() throws Exception
+    public void arrayOfReversedItemsAsIterator()
     {
         // GIVEN
         int[] items = new int[] { 2, 5, 234 };
@@ -77,7 +77,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void concatenateTwoIterators() throws Exception
+    public void concatenateTwoIterators()
     {
         // GIVEN
         PrimitiveIntIterator firstItems = PrimitiveIntCollections.iterator( 10, 3, 203, 32 );
@@ -91,7 +91,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void prependItem() throws Exception
+    public void prependItem()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 10, 23 );
@@ -105,7 +105,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void appendItem() throws Exception
+    public void appendItem()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2 );
@@ -119,7 +119,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void filter() throws Exception
+    public void filter()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -132,7 +132,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void deduplicate() throws Exception
+    public void deduplicate()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 1, 2, 3, 2 );
@@ -145,7 +145,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void limit() throws Exception
+    public void limit()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -158,7 +158,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void skip() throws Exception
+    public void skip()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3, 4 );
@@ -173,7 +173,7 @@ public class PrimitiveIntCollectionsTest
     // TODO paging iterator
 
     @Test
-    public void range() throws Exception
+    public void range()
     {
         // WHEN
         PrimitiveIntIterator range = PrimitiveIntCollections.range( 5, 15, 3 );
@@ -183,7 +183,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void singleton() throws Exception
+    public void singleton()
     {
         // GIVEN
         int item = 15;
@@ -196,7 +196,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void reversed() throws Exception
+    public void reversed()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -209,7 +209,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void first() throws Exception
+    public void first()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2 );
@@ -230,7 +230,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void firstWithDefault() throws Exception
+    public void firstWithDefault()
     {
         // GIVEN
         int defaultValue = 5;
@@ -245,7 +245,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void last() throws Exception
+    public void last()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2 );
@@ -266,7 +266,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void lastWithDefault() throws Exception
+    public void lastWithDefault()
     {
         // GIVEN
         int defaultValue = 5;
@@ -281,7 +281,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void single() throws Exception
+    public void single()
     {
         try
         {
@@ -307,7 +307,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void singleWithDefault() throws Exception
+    public void singleWithDefault()
     {
         assertEquals( 5, PrimitiveIntCollections.single( PrimitiveIntCollections.emptyIterator(), 5 ) );
         assertEquals( 3, PrimitiveIntCollections.single( PrimitiveIntCollections.iterator( 3 ) ) );
@@ -334,7 +334,7 @@ public class PrimitiveIntCollectionsTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             closeCounter.incrementAndGet();
         }
@@ -400,7 +400,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void itemAt() throws Exception
+    public void itemAt()
     {
         // GIVEN
         PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
@@ -433,7 +433,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void itemAtWithDefault() throws Exception
+    public void itemAtWithDefault()
     {
         // GIVEN
         PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
@@ -451,7 +451,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void indexOf() throws Exception
+    public void indexOf()
     {
         // GIVEN
         PrimitiveIntIterable items = () -> PrimitiveIntCollections.iterator( 10, 20, 30 );
@@ -464,7 +464,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void iteratorsEqual() throws Exception
+    public void iteratorsEqual()
     {
         // GIVEN
         PrimitiveIntIterable items1 = () -> PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -479,7 +479,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void iteratorAsSet() throws Exception
+    public void iteratorAsSet()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -503,7 +503,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void iteratorAsSetAllowDuplicates() throws Exception
+    public void iteratorAsSetAllowDuplicates()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 1 );
@@ -518,7 +518,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void count() throws Exception
+    public void count()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -531,7 +531,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void asArray() throws Exception
+    public void asArray()
     {
         // GIVEN
         PrimitiveIntIterator items = PrimitiveIntCollections.iterator( 1, 2, 3 );
@@ -544,7 +544,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
+    public void shouldNotContinueToCallNextOnHasNextFalse()
     {
         // GIVEN
         AtomicInteger count = new AtomicInteger( 2 );
@@ -570,7 +570,7 @@ public class PrimitiveIntCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate() throws Exception
+    public void shouldDeduplicate()
     {
         // GIVEN
         int[] array = new int[] {1, 6, 2, 5, 6, 1, 6};

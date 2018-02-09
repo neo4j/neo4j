@@ -58,7 +58,7 @@ public class ThreadingRule extends ExternalResource
     };
 
     @Override
-    protected void before() throws Throwable
+    protected void before()
     {
         executor = Executors.newCachedThreadPool();
     }
@@ -136,7 +136,7 @@ public class ThreadingRule extends ExternalResource
 
     public <FROM, TO, EX extends Exception> Future<TO> executeAndAwait(
             ThrowingFunction<FROM,TO,EX> function, FROM parameter, Predicate<Thread> threadCondition,
-            long timeout, TimeUnit unit ) throws TimeoutException, InterruptedException, ExecutionException
+            long timeout, TimeUnit unit ) throws ExecutionException
     {
         FailableConcurrentTransfer<Thread> transfer = new FailableConcurrentTransfer<>();
         Future<TO> future = executor.submit( task( function, function.toString(), parameter, transfer ) );

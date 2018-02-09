@@ -36,7 +36,7 @@ public class VoidPipelineWrapperFactory implements DuplexPipelineWrapperFactory
     public static final PipelineWrapper VOID_WRAPPER = new PipelineWrapper()
     {
         @Override
-        public List<ChannelHandler> handlersFor( Channel channel ) throws Exception
+        public List<ChannelHandler> handlersFor( Channel channel )
         {
             return emptyList();
         }

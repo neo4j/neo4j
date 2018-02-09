@@ -39,7 +39,7 @@ public class BookmarkResult extends BoltResult
     }
 
     @Override
-    public void accept( Visitor visitor ) throws Exception
+    public void accept( Visitor visitor )
     {
         visitor.addMetadata( "bookmark", stringValue( bookmark.toString() ) );
     }

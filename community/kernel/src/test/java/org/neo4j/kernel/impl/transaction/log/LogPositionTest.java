@@ -56,7 +56,7 @@ public class LogPositionTest
 
     @SuppressWarnings( {"EqualsWithItself", "SelfComparison"} )
     @Test
-    public void logPositionComparison() throws Exception
+    public void logPositionComparison()
     {
         assertEquals( 1, logPositionA.compareTo( logPositionB ) );
         assertEquals( -1, logPositionB.compareTo( logPositionA ) );

@@ -369,7 +369,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void shouldNotLeaveAnyStateBehindAfterFailingToCreateConstraint() throws Exception
+    public void shouldNotLeaveAnyStateBehindAfterFailingToCreateConstraint()
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -438,7 +438,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Test
-    public void changedConstraintsShouldResultInTransientFailure() throws InterruptedException
+    public void changedConstraintsShouldResultInTransientFailure()
     {
         // Given
         Runnable constraintCreation = () ->

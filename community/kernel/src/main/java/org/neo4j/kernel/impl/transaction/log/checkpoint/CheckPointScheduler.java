@@ -129,13 +129,13 @@ public class CheckPointScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         handle = scheduler.schedule( checkPoint, job, recurringPeriodMillis, MILLISECONDS );
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         stopped = true;
         if ( handle != null )

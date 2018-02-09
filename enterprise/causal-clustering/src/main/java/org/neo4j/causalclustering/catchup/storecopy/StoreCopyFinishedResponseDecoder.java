@@ -30,7 +30,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFinishedResponse.St
 public class StoreCopyFinishedResponseDecoder extends ByteToMessageDecoder
 {
     @Override
-    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out ) throws Exception
+    protected void decode( ChannelHandlerContext ctx, ByteBuf msg, List<Object> out )
     {
         int statusOrdinal = msg.readInt();
         long lastCommittedTxBeforeStoreCopy = msg.readLong();

@@ -49,7 +49,7 @@ public class FulltextUpdateApplierTest
     private Log log;
 
     @Before
-    public void setUp() throws Throwable
+    public void setUp()
     {
         life = new LifeSupport();
         log = NullLog.getInstance();

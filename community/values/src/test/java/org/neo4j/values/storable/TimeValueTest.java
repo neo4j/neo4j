@@ -49,7 +49,7 @@ public class TimeValueTest
     };
 
     @Test
-    public void shouldParseTimeWithOnlyHour() throws Exception
+    public void shouldParseTimeWithOnlyHour()
     {
         assertEquals( time( 14, 0, 0, 0, UTC ), parse( "14", inUTC ) );
         assertEquals( time( 4, 0, 0, 0, UTC ), parse( "4", inUTC ) );
@@ -57,7 +57,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourAndMinute() throws Exception
+    public void shouldParseTimeWithHourAndMinute()
     {
         assertEquals( time( 14, 5, 0, 0, UTC ), parse( "1405", inUTC ) );
         assertEquals( time( 14, 5, 0, 0, UTC ), parse( "14:5", inUTC ) );
@@ -67,7 +67,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteAndSecond() throws Exception
+    public void shouldParseTimeWithHourMinuteAndSecond()
     {
         assertEquals( time( 14, 5, 17, 0, UTC ), parse( "140517", inUTC ) );
         assertEquals( time( 14, 5, 17, 0, UTC ), parse( "14:5:17", inUTC ) );
@@ -77,7 +77,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldParseTimeWithHourMinuteSecondAndFractions() throws Exception
+    public void shouldParseTimeWithHourMinuteSecondAndFractions()
     {
         assertEquals( time( 14, 5, 17, 123000000, UTC ), parse( "140517.123", inUTC ) );
         assertEquals( time( 14, 5, 17, 1, UTC ), parse( "14:5:17.000000001", inUTC ) );
@@ -88,7 +88,7 @@ public class TimeValueTest
 
     @Test
     @SuppressWarnings( "ThrowableNotThrown" )
-    public void shouldFailToParseTimeOutOfRange() throws Exception
+    public void shouldFailToParseTimeOutOfRange()
     {
         assertCannotParse( "24" );
         assertCannotParse( "1760" );
@@ -97,7 +97,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldWriteTime() throws Exception
+    public void shouldWriteTime()
     {
         // given
         for ( TimeValue time : new TimeValue[] {
@@ -130,7 +130,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldAddDurationToTimes() throws Exception
+    public void shouldAddDurationToTimes()
     {
         assertEquals( time(12, 15, 0, 0, UTC),
                 time(12, 0, 0, 0, UTC).add( DurationValue.duration( 1, 1, 900, 0 ) ) );
@@ -141,7 +141,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldReuseInstanceInArithmetics() throws Exception
+    public void shouldReuseInstanceInArithmetics()
     {
         final TimeValue noon = time( 12, 0, 0, 0, UTC );
         assertSame( noon,
@@ -153,7 +153,7 @@ public class TimeValueTest
     }
 
     @Test
-    public void shouldSubtractDurationFromTimes() throws Exception
+    public void shouldSubtractDurationFromTimes()
     {
         assertEquals( time(12, 0, 0, 0, UTC),
                 time(12, 15, 0, 0, UTC).sub( DurationValue.duration( 1, 1, 900, 0 ) ) );

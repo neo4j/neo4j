@@ -41,14 +41,13 @@ public final class Assert
     {
     }
 
-    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException ) throws
-            Exception
+    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException )
     {
         assertException( f, typeOfException, null );
     }
 
-    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class typeOfException,
-            String partOfErrorMessage ) throws Exception
+    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException,
+            String partOfErrorMessage )
     {
         try
         {

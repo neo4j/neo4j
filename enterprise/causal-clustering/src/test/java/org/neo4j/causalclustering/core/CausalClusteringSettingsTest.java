@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class CausalClusteringSettingsTest
 {
     @Test
-    public void shouldValidatePrefixBasedKeys() throws Exception
+    public void shouldValidatePrefixBasedKeys()
     {
         // given
         BaseSetting<String> setting = CausalClusteringSettings.prefixSetting( "foo", Settings.STRING, "" );
@@ -51,7 +51,7 @@ public class CausalClusteringSettingsTest
     }
 
     @Test
-    public void shouldValidateMultiplePrefixBasedKeys() throws Exception
+    public void shouldValidateMultiplePrefixBasedKeys()
     {
         // given
         BaseSetting<String> setting = CausalClusteringSettings.prefixSetting( "foo", Settings.STRING, "" );
@@ -71,7 +71,7 @@ public class CausalClusteringSettingsTest
     }
 
     @Test
-    public void shouldValidateLoadBalancingServerPolicies() throws Exception
+    public void shouldValidateLoadBalancingServerPolicies()
     {
         // given
         Map<String, String> rawConfig = new HashMap<>();
@@ -88,7 +88,7 @@ public class CausalClusteringSettingsTest
     }
 
     @Test
-    public void shouldBeInvalidIfPrefixDoesNotMatch() throws Exception
+    public void shouldBeInvalidIfPrefixDoesNotMatch()
     {
         // given
         BaseSetting<String> setting = CausalClusteringSettings.prefixSetting( "bar", Settings.STRING, "" );

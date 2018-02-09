@@ -85,7 +85,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         this.writer = logFile.getWriter();
         this.indexCommandDetector = new IndexCommandDetector();

@@ -37,14 +37,13 @@ public class StubRead implements Read
 {
     @Override
     public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder,
-            IndexQuery... query ) throws KernelException
+            IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder )
-            throws KernelException
     {
         throw new UnsupportedOperationException();
     }

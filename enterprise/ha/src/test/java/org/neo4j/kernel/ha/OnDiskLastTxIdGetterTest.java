@@ -45,7 +45,7 @@ public class OnDiskLastTxIdGetterTest
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Test
-    public void testGetLastTxIdNoFilePresent() throws Exception
+    public void testGetLastTxIdNoFilePresent()
     {
         // This is a sign that we have some bad coupling on our hands.
         // We currently have to do this because of our lifecycle and construction ordering.

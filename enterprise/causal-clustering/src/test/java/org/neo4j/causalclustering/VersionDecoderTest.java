@@ -34,7 +34,7 @@ public class VersionDecoderTest
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldDiscardMessageWithUnknownVersionAndLogAnError() throws Exception
+    public void shouldDiscardMessageWithUnknownVersionAndLogAnError()
     {
         // given
         byte currentVersion = (byte) 1;
@@ -54,7 +54,7 @@ public class VersionDecoderTest
     }
 
     @Test
-    public void shouldHandleMessageWithCorrectVersion() throws Exception
+    public void shouldHandleMessageWithCorrectVersion()
     {
         // given
         byte currentVersion = (byte) 1;

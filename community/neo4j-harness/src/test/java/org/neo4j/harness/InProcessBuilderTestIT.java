@@ -79,7 +79,7 @@ public class InProcessBuilderTestIT
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
-    public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
+    public void shouldLaunchAServerInSpecifiedDirectory()
     {
         // Given
         File workDir = testDir.directory( "specific" );
@@ -130,7 +130,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldMountUnmanagedExtensionsByClass() throws Exception
+    public void shouldMountUnmanagedExtensionsByClass()
     {
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
@@ -144,7 +144,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldMountUnmanagedExtensionsByPackage() throws Exception
+    public void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
         try ( ServerControls server = getTestServerBuilder( testDir.directory() )
@@ -158,7 +158,7 @@ public class InProcessBuilderTestIT
     }
 
     @Test
-    public void shouldFindFreePort() throws Exception
+    public void shouldFindFreePort()
     {
         // Given one server is running
         try ( ServerControls firstServer = getTestServerBuilder( testDir.directory() ).newServer() )
@@ -305,13 +305,11 @@ public class InProcessBuilderTestIT
         {
             @Override
             public void checkClientTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
             {
             }
 
             @Override
             public void checkServerTrusted( X509Certificate[] arg0, String arg1 )
-                    throws CertificateException
             {
             }
 

@@ -213,7 +213,7 @@ public class RestfulGraphDatabase
     {
         try
         {
-            return Long.parseLong( uri.substring( uri.lastIndexOf( "/" ) + 1 ) );
+            return Long.parseLong( uri.substring( uri.lastIndexOf( '/' ) + 1 ) );
         }
         catch ( NumberFormatException | NullPointerException ex )
         {

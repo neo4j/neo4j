@@ -40,7 +40,7 @@ public class IndexQueryTest
     // EXISTS
 
     @Test
-    public void testExists() throws Exception
+    public void testExists()
     {
         ExistsPredicate p = IndexQuery.exists( propId );
 
@@ -56,7 +56,7 @@ public class IndexQueryTest
     // EXACT
 
     @Test
-    public void testExact() throws Exception
+    public void testExact()
     {
         assertExactPredicate( "string" );
         assertExactPredicate( 1 );

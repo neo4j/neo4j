@@ -38,7 +38,7 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     }
 
     @Test
-    public void shouldNotBeAbleToHandOutClientsIfClosed() throws Throwable
+    public void shouldNotBeAbleToHandOutClientsIfClosed()
     {
         // GIVEN a lock manager and working clients
         try ( Client client = locks.newClient() )

@@ -97,7 +97,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldInitializeAgainAfterInvalidated() throws Exception
+    public void shouldInitializeAgainAfterInvalidated()
     {
         // GIVEN
         final AtomicInteger initCalls = new AtomicInteger();
@@ -120,7 +120,7 @@ public class LazySingleReferenceTest
     }
 
     @Test
-    public void shouldRespondToIsInitialized() throws Exception
+    public void shouldRespondToIsInitialized()
     {
         // GIVEN
         LazySingleReference<Integer> ref = new LazySingleReference<Integer>()

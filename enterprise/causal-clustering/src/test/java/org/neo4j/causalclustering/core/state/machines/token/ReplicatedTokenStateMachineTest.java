@@ -54,7 +54,7 @@ public class ReplicatedTokenStateMachineTest
     private final int UNEXPECTED_TOKEN_ID = 1024;
 
     @Test
-    public void shouldCreateTokenId() throws Exception
+    public void shouldCreateTokenId()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -71,7 +71,7 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldAllocateTokenIdToFirstReplicateRequest() throws Exception
+    public void shouldAllocateTokenIdToFirstReplicateRequest()
     {
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
@@ -94,7 +94,7 @@ public class ReplicatedTokenStateMachineTest
     }
 
     @Test
-    public void shouldStoreRaftLogIndexInTransactionHeader() throws Exception
+    public void shouldStoreRaftLogIndexInTransactionHeader()
     {
         // given
         int logIndex = 1;

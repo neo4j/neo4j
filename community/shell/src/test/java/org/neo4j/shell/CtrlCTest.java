@@ -46,7 +46,7 @@ public class CtrlCTest
     }
 
     @Test
-    public void shouldInstallProvidedHandlerAfterReadingUserInput() throws Exception
+    public void shouldInstallProvidedHandlerAfterReadingUserInput()
     {
         final StubCtrlCHandler handler = new StubCtrlCHandler();
         AbstractClient client = new AbstractClient( new HashMap<>(), handler )

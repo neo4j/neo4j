@@ -48,7 +48,7 @@ public class CypherLoggingTest
     }
 
     @Test
-    public void shouldNotLogQueries() throws Exception
+    public void shouldNotLogQueries()
     {
         // when
         database.execute( "CREATE (n:Reference) CREATE (foo {test:'me'}) RETURN n" );

@@ -1212,7 +1212,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint( RelationshipType type, String propertyKey )
-                throws CreateConstraintFailureException, AlreadyConstrainedException
         {
             int relationshipTypeId = getOrCreateRelationshipTypeId( type.name() );
             int propertyKeyId = getOrCreatePropertyKeyId( propertyKey );

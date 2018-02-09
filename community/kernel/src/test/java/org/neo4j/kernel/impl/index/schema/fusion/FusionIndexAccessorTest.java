@@ -180,7 +180,7 @@ public class FusionIndexAccessorTest
     // newAllEntriesReader
 
     @Test
-    public void allEntriesReaderMustCombineResultFromNativeAndLucene() throws Exception
+    public void allEntriesReaderMustCombineResultFromNativeAndLucene()
     {
         // given
         long[] nativeEntries = {0, 1, 2, 5, 6};
@@ -196,7 +196,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromNativeAndLuceneWithEmptyNative() throws Exception
+    public void allEntriesReaderMustCombineResultFromNativeAndLuceneWithEmptyNative()
     {
         // given
         long[] nativeEntries = new long[0];
@@ -212,7 +212,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromNativeAndLuceneWithEmptyLucene() throws Exception
+    public void allEntriesReaderMustCombineResultFromNativeAndLuceneWithEmptyLucene()
     {
         // given
         long[] nativeEntries = {0, 1, 2, 5, 6};
@@ -228,7 +228,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromNativeAndLuceneBothEmpty() throws Exception
+    public void allEntriesReaderMustCombineResultFromNativeAndLuceneBothEmpty()
     {
         // given
         long[] nativeEntries = new long[0];
@@ -309,7 +309,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfNativeReportUnknownMaxCount() throws Exception
+    public void allEntriesReaderMustReportUnknownMaxCountIfNativeReportUnknownMaxCount()
     {
         // given
         mockSingleAllEntriesReaderWithUnknownMaxCount( nativeAccessor, new long[0] );
@@ -321,7 +321,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportUnknownMaxCountIfLuceneReportUnknownMaxCount() throws Exception
+    public void allEntriesReaderMustReportUnknownMaxCountIfLuceneReportUnknownMaxCount()
     {
         // given
         mockSingleAllEntriesReaderWithUnknownMaxCount( luceneAccessor, new long[0] );
@@ -333,7 +333,7 @@ public class FusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportFusionMaxCountOfNativeAndLucene() throws Exception
+    public void allEntriesReaderMustReportFusionMaxCountOfNativeAndLucene()
     {
         mockSingleAllEntriesReader( nativeAccessor, new long[]{1, 2} );
         mockSingleAllEntriesReader( luceneAccessor, new long[]{3, 4} );

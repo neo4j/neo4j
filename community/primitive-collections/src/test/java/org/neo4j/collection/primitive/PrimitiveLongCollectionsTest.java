@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 public class PrimitiveLongCollectionsTest
 {
     @Test
-    public void arrayOfItemsAsIterator() throws Exception
+    public void arrayOfItemsAsIterator()
     {
         // GIVEN
         long[] items = new long[] { 2, 5, 234 };
@@ -57,7 +57,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void arrayOfReversedItemsAsIterator() throws Exception
+    public void arrayOfReversedItemsAsIterator()
     {
         // GIVEN
         long[] items = new long[] { 2, 5, 234 };
@@ -70,7 +70,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void concatenateTwoIterators() throws Exception
+    public void concatenateTwoIterators()
     {
         // GIVEN
         PrimitiveLongIterator firstItems = PrimitiveLongCollections.iterator( 10, 3, 203, 32 );
@@ -84,7 +84,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void prependItem() throws Exception
+    public void prependItem()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 10, 23 );
@@ -98,7 +98,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void appendItem() throws Exception
+    public void appendItem()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2 );
@@ -112,7 +112,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void filter() throws Exception
+    public void filter()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -125,7 +125,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void deduplicate() throws Exception
+    public void deduplicate()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 1, 2, 3, 2 );
@@ -138,7 +138,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void limit() throws Exception
+    public void limit()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -151,7 +151,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void skip() throws Exception
+    public void skip()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3, 4 );
@@ -166,7 +166,7 @@ public class PrimitiveLongCollectionsTest
     // TODO paging iterator
 
     @Test
-    public void range() throws Exception
+    public void range()
     {
         // WHEN
         PrimitiveLongIterator range = PrimitiveLongCollections.range( 5, 15, 3 );
@@ -176,7 +176,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void singleton() throws Exception
+    public void singleton()
     {
         // GIVEN
         long item = 15;
@@ -189,7 +189,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void reversed() throws Exception
+    public void reversed()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -202,7 +202,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void first() throws Exception
+    public void first()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2 );
@@ -223,7 +223,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void firstWithDefault() throws Exception
+    public void firstWithDefault()
     {
         // GIVEN
         long defaultValue = 5;
@@ -238,7 +238,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void last() throws Exception
+    public void last()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2 );
@@ -259,7 +259,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void lastWithDefault() throws Exception
+    public void lastWithDefault()
     {
         // GIVEN
         long defaultValue = 5;
@@ -274,7 +274,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void single() throws Exception
+    public void single()
     {
         try
         {
@@ -300,7 +300,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void singleWithDefault() throws Exception
+    public void singleWithDefault()
     {
         assertEquals( 5, PrimitiveLongCollections.single( PrimitiveLongCollections.emptyIterator(), 5 ) );
         assertEquals( 3, PrimitiveLongCollections.single( PrimitiveLongCollections.iterator( 3 ) ) );
@@ -327,7 +327,7 @@ public class PrimitiveLongCollectionsTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
             closeCounter.incrementAndGet();
         }
@@ -393,7 +393,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void itemAt() throws Exception
+    public void itemAt()
     {
         // GIVEN
         PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
@@ -426,7 +426,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void itemAtWithDefault() throws Exception
+    public void itemAtWithDefault()
     {
         // GIVEN
         PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
@@ -444,7 +444,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void indexOf() throws Exception
+    public void indexOf()
     {
         // GIVEN
         PrimitiveLongIterable items = () -> PrimitiveLongCollections.iterator( 10, 20, 30 );
@@ -457,7 +457,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void iteratorsEqual() throws Exception
+    public void iteratorsEqual()
     {
         // GIVEN
         PrimitiveLongIterable items1 = () -> PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -472,7 +472,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void iteratorAsSet() throws Exception
+    public void iteratorAsSet()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -488,7 +488,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void count() throws Exception
+    public void count()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -501,7 +501,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void asArray() throws Exception
+    public void asArray()
     {
         // GIVEN
         PrimitiveLongIterator items = PrimitiveLongCollections.iterator( 1, 2, 3 );
@@ -514,7 +514,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void shouldDeduplicate() throws Exception
+    public void shouldDeduplicate()
     {
         // GIVEN
         long[] array = new long[] {1L, 1L, 2L, 5L, 6L, 6L};
@@ -527,7 +527,7 @@ public class PrimitiveLongCollectionsTest
     }
 
     @Test
-    public void shouldNotContinueToCallNextOnHasNextFalse() throws Exception
+    public void shouldNotContinueToCallNextOnHasNextFalse()
     {
         // GIVEN
         AtomicLong count = new AtomicLong( 2 );

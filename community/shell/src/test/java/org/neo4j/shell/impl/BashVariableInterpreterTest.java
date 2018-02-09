@@ -57,7 +57,7 @@ public class BashVariableInterpreterTest
     }
 
     @Test
-    public void customInterpreter() throws Exception
+    public void customInterpreter()
     {
         // GIVEN
         interpreter.addReplacer( "test", ( server, session ) -> "Hello" );

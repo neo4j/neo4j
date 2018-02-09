@@ -66,7 +66,7 @@ public class BackupToolIT
     private BackupTool backupTool;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         backupDir = testDirectory.directory( "backups/graph.db" ).toPath();
         fs = new DefaultFileSystemAbstraction();

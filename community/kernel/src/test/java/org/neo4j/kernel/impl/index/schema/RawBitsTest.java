@@ -109,7 +109,7 @@ public class RawBitsTest
     );
 
     @Test
-    public void mustSortInSameOrderAsValueComparator() throws Exception
+    public void mustSortInSameOrderAsValueComparator()
     {
         // given
         List<Value> values = asValueObjects( objects );
@@ -127,7 +127,7 @@ public class RawBitsTest
     }
 
     @Test
-    public void shouldCompareAllValuesToAllOtherValuesLikeValueComparator() throws Exception
+    public void shouldCompareAllValuesToAllOtherValuesLikeValueComparator()
     {
         // given
         List<Value> values = asValueObjects( objects );
@@ -154,7 +154,7 @@ public class RawBitsTest
     }
 
     @Test
-    public void shouldHaveSameCompareResultsAsValueCompare() throws Exception
+    public void shouldHaveSameCompareResultsAsValueCompare()
     {
         // given
         List<Value> values = asValueObjects( objects );

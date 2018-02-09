@@ -1903,22 +1903,15 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         // a root catchup that records usage
         Supplier<Root> rootCatchup = () ->
         {
-            try
-            {
-                triggered.setTrue();
+            triggered.setTrue();
 
-                // and set child generation to match pointer
-                cursor.next( leftChild );
-                cursor.zapPage();
-                node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            // and set child generation to match pointer
+            cursor.next( leftChild );
+            cursor.zapPage();
+            node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
 
-                cursor.next( rootId );
-                return new Root( rootId, generation );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            cursor.next( rootId );
+            return new Root( rootId, generation );
         };
 
         // when
@@ -1950,17 +1943,10 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
 
         Supplier<Root> rootCatchup = () ->
         {
-            try
-            {
-                // Use right child as new start over root to terminate test
-                cursor.next( rightChild );
-                triggered.setTrue();
-                return new Root( cursor.getCurrentPageId(), TreeNode.generation( cursor ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            // Use right child as new start over root to terminate test
+            cursor.next( rightChild );
+            triggered.setTrue();
+            return new Root( cursor.getCurrentPageId(), TreeNode.generation( cursor ) );
         };
 
         // a left leaf
@@ -2132,7 +2118,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         unstableGeneration++;
     }
 
-    private void newRootFromSplit( StructurePropagation<KEY> split ) throws IOException
+    private void newRootFromSplit( StructurePropagation<KEY> split )
     {
         assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
@@ -2177,7 +2163,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
         handleAfterChange();
     }
 
-    private void handleAfterChange() throws IOException
+    private void handleAfterChange()
     {
         if ( structurePropagation.hasRightKeyInsert )
         {

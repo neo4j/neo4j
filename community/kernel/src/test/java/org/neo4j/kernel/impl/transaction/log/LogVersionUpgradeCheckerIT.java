@@ -61,7 +61,7 @@ public class LogVersionUpgradeCheckerIT
     public ExpectedException expect = ExpectedException.none();
 
     @Test
-    public void startAsNormalWhenUpgradeIsNotAllowed() throws Exception
+    public void startAsNormalWhenUpgradeIsNotAllowed()
     {
         createGraphDbAndKillIt();
 
@@ -104,7 +104,7 @@ public class LogVersionUpgradeCheckerIT
         db.shutdown();
     }
 
-    private void createGraphDbAndKillIt() throws Exception
+    private void createGraphDbAndKillIt()
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs )

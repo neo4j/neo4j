@@ -38,7 +38,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldProvideNoOpDelegate() throws Exception
+    public void shouldProvideNoOpDelegate()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -52,7 +52,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldRegister() throws Exception
+    public void shouldRegister()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -72,7 +72,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldUnregister() throws Exception
+    public void shouldUnregister()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -93,7 +93,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldRespectTags() throws Exception
+    public void shouldRespectTags()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -114,7 +114,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldTellIfMonitorHasListeners() throws Throwable
+    public void shouldTellIfMonitorHasListeners()
     {
         // Given
         Monitors monitors = new Monitors();

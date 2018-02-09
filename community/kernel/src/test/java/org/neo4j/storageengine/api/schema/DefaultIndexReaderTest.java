@@ -66,7 +66,7 @@ public class DefaultIndexReaderTest
             }
 
             @Override
-            public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
+            public PrimitiveLongResourceIterator query( IndexQuery... predicates )
             {
                 return null;
             }

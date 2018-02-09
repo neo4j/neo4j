@@ -131,7 +131,6 @@ public class EnterpriseBuiltInDbmsProcedures
      */
     //@Procedure( name = "dbms.terminateTransactionsForUser", mode = DBMS )
     public Stream<TransactionTerminationResult> terminateTransactionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException, IOException
     {
         assertAdminOrSelf( username );
 
@@ -155,7 +154,6 @@ public class EnterpriseBuiltInDbmsProcedures
 
     //@Procedure( name = "dbms.terminateConnectionsForUser", mode = DBMS )
     public Stream<ConnectionResult> terminateConnectionsForUser( @Name( "username" ) String username )
-            throws InvalidArgumentsException
     {
         assertAdminOrSelf( username );
 
@@ -283,7 +281,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "List all queries currently executing at this instance that are visible to the user." )
     @Procedure( name = "dbms.listQueries", mode = DBMS )
-    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException, IOException
+    public Stream<QueryStatusResult> listQueries() throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
 
@@ -363,7 +361,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try
@@ -387,7 +385,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException
     {
         securityContext.assertCredentialsNotExpired();
         try

@@ -49,7 +49,7 @@ class EagerCsvInputChunk implements CsvInputChunk, Source.Chunk
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
     }
 

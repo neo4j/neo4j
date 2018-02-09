@@ -177,8 +177,7 @@ public class PkiUtils
 
     public PrivateKey loadPrivateKey( File privateKeyFile )
             throws IOException, NoSuchAlgorithmException,
-            InvalidKeySpecException, NoSuchPaddingException,
-            InvalidKeyException, InvalidAlgorithmParameterException
+            InvalidKeySpecException
     {
         try ( PemReader r = new PemReader( new FileReader( privateKeyFile ) ) )
         {

@@ -22,6 +22,7 @@ package org.neo4j.server.rest.domain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanderBuilder;
@@ -201,7 +202,7 @@ public class TraversalDescriptionBuilder
         String orderDescription = (String) description.get( "order" );
         if ( orderDescription != null )
         {
-            Order order = stringToEnum( enumifyName( orderDescription ), Order.class, true );
+            Order order = Objects.requireNonNull( stringToEnum( enumifyName( orderDescription ), Order.class, true ) );
             switch ( order )
             {
             case BREADTH_FIRST:

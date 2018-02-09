@@ -41,7 +41,7 @@ import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 public class GetServersProcedureV2Test
 {
     @Test
-    public void shouldHaveCorrectSignature() throws Exception
+    public void shouldHaveCorrectSignature()
     {
         // given
         GetServersProcedureForMultiDC proc = new GetServersProcedureForMultiDC( null );

@@ -57,14 +57,14 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
+    public boolean visitIndexAddNodeCommand( AddNodeCommand command )
     {
         IdData entityId = new IdData( command.getEntityId() );
         return visitIndexAddCommand( command, entityId );
     }
 
     @Override
-    public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
+    public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
     {
         RelationshipData entityId = new RelationshipData( command.getEntityId(), command.getStartNode(),
                 command.getEndNode() );
@@ -99,7 +99,7 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
+    public boolean visitIndexRemoveCommand( RemoveCommand command )
     {
         try
         {
@@ -138,13 +138,13 @@ public class LuceneCommandApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
+    public boolean visitIndexCreateCommand( CreateCommand createCommand )
     {
         return false;
     }
 
     @Override
-    public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
+    public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand )
     {
         definitions = indexDefineCommand;
         return false;

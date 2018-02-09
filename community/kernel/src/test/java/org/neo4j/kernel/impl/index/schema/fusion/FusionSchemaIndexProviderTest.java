@@ -67,7 +67,7 @@ public class FusionSchemaIndexProviderTest
     public RandomRule random = new RandomRule();
 
     @Test
-    public void mustSelectCorrectTargetForAllGivenValueCombinations() throws Exception
+    public void mustSelectCorrectTargetForAllGivenValueCombinations()
     {
         // given
         Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
@@ -110,7 +110,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void mustCombineSamples() throws Exception
+    public void mustCombineSamples()
     {
         // given
         int nativeIndexSize = random.nextInt( 0, 1_000_000 );
@@ -133,7 +133,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustThrowIfNoFailure() throws Exception
+    public void getPopulationFailureMustThrowIfNoFailure()
     {
         // given
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
@@ -156,7 +156,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustReportFailureWhenNativeFailure() throws Exception
+    public void getPopulationFailureMustReportFailureWhenNativeFailure()
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -171,7 +171,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustReportFailureWhenLuceneFailure() throws Exception
+    public void getPopulationFailureMustReportFailureWhenLuceneFailure()
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -186,7 +186,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void getPopulationFailureMustReportFailureWhenBothFailure() throws Exception
+    public void getPopulationFailureMustReportFailureWhenBothFailure()
     {
         FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
@@ -203,7 +203,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void shouldReportFailedIfAnyIsFailed() throws Exception
+    public void shouldReportFailedIfAnyIsFailed()
     {
         // given
         SchemaIndexProvider provider = fusionProvider();
@@ -227,7 +227,7 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void shouldReportPopulatingIfAnyIsPopulating() throws Exception
+    public void shouldReportPopulatingIfAnyIsPopulating()
     {
         // given
         SchemaIndexProvider provider = fusionProvider();

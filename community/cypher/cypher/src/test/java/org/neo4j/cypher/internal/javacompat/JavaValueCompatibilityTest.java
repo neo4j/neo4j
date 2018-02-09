@@ -39,7 +39,7 @@ public class JavaValueCompatibilityTest
     private GraphDatabaseService  db;
 
     @Before
-    public void setUp() throws IOException
+    public void setUp()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase();
     }
@@ -51,7 +51,7 @@ public class JavaValueCompatibilityTest
     }
 
     @Test
-    public void collections_in_collections_look_aiight() throws Exception
+    public void collections_in_collections_look_aiight()
     {
         Result result = db.execute( "CREATE (n:TheNode) RETURN [[ [1,2],[3,4] ],[[5,6]]] as x" );
         Map<String, Object> next = result.next();

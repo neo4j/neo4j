@@ -62,7 +62,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.aNodeWithLabel" )
     @Description( "org.neo4j.aNodeWithLabel" )
-    public Stream<NodeResult> aNodeWithLabel( @Name( "label" ) String label ) throws Exception
+    public Stream<NodeResult> aNodeWithLabel( @Name( "label" ) String label )
     {
         Result result = db.execute( "MATCH (n:" + label + ") RETURN n LIMIT 1" );
         return result.stream().map( row -> new NodeResult( (Node)row.get( "n" ) ) );
@@ -70,14 +70,14 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.stream123" )
     @Description( "org.neo4j.stream123" )
-    public Stream<CountResult> stream123() throws Exception
+    public Stream<CountResult> stream123()
     {
         return IntStream.of( 1, 2, 3 ).mapToObj( i -> new CountResult( i, "count" + i ) );
     }
 
     @Procedure( "org.neo4j.recurseN" )
     @Description( "org.neo4j.recurseN" )
-    public Stream<NodeResult> recurseN( @Name( "n" ) Long n ) throws Exception
+    public Stream<NodeResult> recurseN( @Name( "n" ) Long n )
     {
         Result result;
         if ( n == 0 )
@@ -93,7 +93,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.findNodesWithLabel" )
     @Description( "org.neo4j.findNodesWithLabel" )
-    public Stream<NodeResult> findNodesWithLabel( @Name( "label" ) String label ) throws Exception
+    public Stream<NodeResult> findNodesWithLabel( @Name( "label" ) String label )
     {
         ResourceIterator<Node> nodes = db.findNodes( Label.label( label ) );
         return nodes.stream().map( NodeResult::new );
@@ -101,7 +101,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.expandNode" )
     @Description( "org.neo4j.expandNode" )
-    public Stream<NodeResult> expandNode( @Name( "nodeId" ) Long nodeId ) throws Exception
+    public Stream<NodeResult> expandNode( @Name( "nodeId" ) Long nodeId )
     {
         Node node = db.getNodeById( nodeId );
         List<Node> result = new ArrayList<>();
@@ -116,7 +116,7 @@ public class TestProcedure
     @Procedure( name = "org.neo4j.createNodeWithLoop", mode = WRITE )
     @Description( "org.neo4j.createNodeWithLoop" )
     public Stream<NodeResult> createNodeWithLoop(
-            @Name( "nodeLabel" ) String label, @Name( "relType" ) String relType ) throws Exception
+            @Name( "nodeLabel" ) String label, @Name( "relType" ) String relType )
     {
         Node node = db.createNode( Label.label( label ) );
         node.createRelationshipTo( node, RelationshipType.withName( relType ) );
@@ -129,7 +129,7 @@ public class TestProcedure
             @Name( "startNode" ) Node start,
             @Name( "endNode" ) Node end,
             @Name( "relType" ) String relType,
-            @Name( "weightProperty" ) String weightProperty ) throws Exception
+            @Name( "weightProperty" ) String weightProperty )
     {
         PathFinder<WeightedPath> pathFinder =
                 GraphAlgoFactory.dijkstra(
@@ -165,7 +165,7 @@ public class TestProcedure
 
     @Procedure( "org.neo4j.movieTraversal" )
     @Description( "org.neo4j.movieTraversal" )
-    public Stream<PathResult> movieTraversal( @Name( "start" ) Node start ) throws Exception
+    public Stream<PathResult> movieTraversal( @Name( "start" ) Node start )
     {
         TraversalDescription td =
                 db.traversalDescription()

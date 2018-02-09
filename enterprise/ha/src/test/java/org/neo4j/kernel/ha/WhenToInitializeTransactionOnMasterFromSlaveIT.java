@@ -54,7 +54,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
     private MasterImpl.Monitor masterMonitor = mock(MasterImpl.Monitor.class);
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         cluster = clusterRule.startCluster();
         slave = cluster.getAnySlave();
@@ -74,7 +74,7 @@ public class WhenToInitializeTransactionOnMasterFromSlaveIT
     }
 
     @Test
-    public void shouldNotInitializeTxOnReadOnlyOpsOnNeoXaDS() throws Exception
+    public void shouldNotInitializeTxOnReadOnlyOpsOnNeoXaDS()
     {
         long nodeId = 0L;
 

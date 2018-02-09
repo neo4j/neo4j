@@ -40,7 +40,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
     private MemberId myself = new MemberId( UUID.randomUUID() );
 
     @Test
-    public void shouldReturnConfiguredClassesOnly() throws Exception
+    public void shouldReturnConfiguredClassesOnly()
     {
         // given
         Config config = Config.defaults( upstream_selection_strategy, "dummy" );
@@ -59,7 +59,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
     }
 
     @Test
-    public void shouldReturnTheFirstStrategyThatWorksFromThoseConfigured() throws Exception
+    public void shouldReturnTheFirstStrategyThatWorksFromThoseConfigured()
     {
         // given
         Config config = Config.defaults( upstream_selection_strategy, "yet-another-dummy,dummy,another-dummy" );

@@ -420,7 +420,7 @@ public class MuninnPageCache implements PageCache
         return Optional.empty();
     }
 
-    private MuninnPagedFile tryGetMappingOrNull( File file ) throws IOException
+    private MuninnPagedFile tryGetMappingOrNull( File file )
     {
         FileMapping current = mappedFiles;
 
@@ -589,7 +589,7 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    void syncDevice() throws IOException
+    void syncDevice()
     {
         swapperFactory.syncDevice();
     }

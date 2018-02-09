@@ -127,7 +127,7 @@ public class ManyPropertyKeysIT
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsoluteFile() );
     }
 
-    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
+    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
     {
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );

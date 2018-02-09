@@ -203,7 +203,6 @@ public class TransactionCommittingResponseUnpackerTest
 
         @Override
         public long commit( TransactionToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode )
-                throws TransactionFailureException
         {
             int batchSize = count( batch );
             batchSizes.offer( batchSize );

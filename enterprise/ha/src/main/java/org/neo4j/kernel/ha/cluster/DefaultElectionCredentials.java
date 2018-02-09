@@ -97,7 +97,7 @@ public final class DefaultElectionCredentials implements ElectionCredentials, Ex
     }
 
     @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    public void readExternal( ObjectInput in ) throws IOException
     {
         serverId =  in.readInt();
         latestTxId = in.readLong();

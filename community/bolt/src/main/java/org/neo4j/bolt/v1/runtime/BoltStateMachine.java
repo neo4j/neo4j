@@ -414,7 +414,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     }
 
                     @Override
-                    public State interrupt( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State interrupt( BoltStateMachine machine )
                     {
                         return INTERRUPTED;
                     }
@@ -434,7 +434,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         STREAMING
                 {
                     @Override
-                    public State interrupt( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State interrupt( BoltStateMachine machine )
                     {
                         return INTERRUPTED;
                     }
@@ -496,7 +496,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         FAILED
                 {
                     @Override
-                    public State interrupt( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State interrupt( BoltStateMachine machine )
                     {
                         return INTERRUPTED;
                     }
@@ -508,7 +508,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     }
 
                     @Override
-                    public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State ackFailure( BoltStateMachine machine )
                     {
                         return READY;
                     }
@@ -545,7 +545,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         INTERRUPTED
                 {
                     @Override
-                    public State interrupt( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State interrupt( BoltStateMachine machine )
                     {
                         return INTERRUPTED;
                     }
@@ -562,28 +562,28 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     }
 
                     @Override
-                    public State ackFailure( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State ackFailure( BoltStateMachine machine )
                     {
                         machine.ctx.markIgnored();
                         return INTERRUPTED;
                     }
 
                     @Override
-                    public State run( BoltStateMachine machine, String statement, MapValue params ) throws BoltConnectionFatality
+                    public State run( BoltStateMachine machine, String statement, MapValue params )
                     {
                         machine.ctx.markIgnored();
                         return INTERRUPTED;
                     }
 
                     @Override
-                    public State pullAll( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State pullAll( BoltStateMachine machine )
                     {
                         machine.ctx.markIgnored();
                         return INTERRUPTED;
                     }
 
                     @Override
-                    public State discardAll( BoltStateMachine machine ) throws BoltConnectionFatality
+                    public State discardAll( BoltStateMachine machine )
                     {
                         machine.ctx.markIgnored();
                         return INTERRUPTED;
@@ -831,19 +831,19 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     private static class NullStatementProcessor implements StatementProcessor
     {
         @Override
-        public StatementMetadata run( String statement, MapValue params ) throws KernelException
+        public StatementMetadata run( String statement, MapValue params )
         {
             throw new UnsupportedOperationException( "Unable to run any statements." );
         }
 
         @Override
-        public void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
+        public void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer )
         {
             throw new UnsupportedOperationException( "Unable to stream any results." );
         }
 
         @Override
-        public void reset() throws TransactionFailureException
+        public void reset()
         {
             // nothing to reset
         }
@@ -855,7 +855,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         @Override
-        public void validateTransaction() throws KernelException
+        public void validateTransaction()
         {
             // nothing to validate
         }

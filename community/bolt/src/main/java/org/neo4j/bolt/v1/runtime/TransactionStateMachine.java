@@ -254,9 +254,7 @@ public class TransactionStateMachine implements StatementProcessor
                      * In AUTO_COMMIT we must make sure to fail, close and set the current
                      * transaction to null.
                      */
-                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
-                            String statement, MapValue params )
-                            throws TransactionFailureException, QueryExecutionKernelException
+                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
                     {
                         return executeQuery( ctx, spi, statement, params, () -> closeTransaction( ctx, false ) );
                     }
@@ -322,9 +320,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                     }
 
-                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
-                            String statement, MapValue params )
-                            throws QueryExecutionKernelException
+                    private BoltResultHandle execute( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
                     {
                         return executeQuery( ctx, spi, statement, params,
                                 () ->
@@ -405,7 +401,6 @@ public class TransactionStateMachine implements StatementProcessor
 
     private static BoltResultHandle executeQuery( MutableTransactionState ctx, SPI spi, String statement,
                                                   MapValue params, ThrowingAction<KernelException> onFail )
-            throws QueryExecutionKernelException
     {
         return spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params, onFail );
     }
@@ -477,6 +472,6 @@ public class TransactionStateMachine implements StatementProcessor
                 LoginContext loginContext,
                 String statement,
                 MapValue params,
-                ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException;
+                ThrowingAction<KernelException> onFail );
     }
 }

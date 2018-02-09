@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
 {
     @Test
-    public void indexToKeepTest() throws Exception
+    public void indexToKeepTest()
     {
         // given
         files = createSegmentFiles( 10 );
@@ -43,7 +43,7 @@ public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
     }
 
     @Test
-    public void pruneStrategyExceedsNumberOfEntriesTest() throws Exception
+    public void pruneStrategyExceedsNumberOfEntriesTest()
     {
         //given
         files = createSegmentFiles( 10 ).subList( 5, 10 );
@@ -57,7 +57,7 @@ public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
     }
 
     @Test
-    public void onlyFirstActiveLogFileTest() throws Exception
+    public void onlyFirstActiveLogFileTest()
     {
         //given
         files = createSegmentFiles( 1 );
@@ -71,7 +71,7 @@ public class EntryBasedLogPruningStrategyTest extends PruningStrategyTest
     }
 
     @Test
-    public void onlyOneActiveLogFileTest() throws Exception
+    public void onlyOneActiveLogFileTest()
     {
         //given
         files = createSegmentFiles( 6 ).subList( 4, 6 );

@@ -55,7 +55,7 @@ public class TransactionTemplateTest
     private CountingMonitor monitor;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp()
     {
         monitor = new CountingMonitor();
         template = new TransactionTemplate()
@@ -66,7 +66,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void shouldForceUserToCallWith() throws Exception
+    public void shouldForceUserToCallWith()
     {
         expected.expectCause( allOf(
                 instanceOf( IllegalArgumentException.class ),
@@ -76,14 +76,14 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void validateGraphDatabaseService() throws Exception
+    public void validateGraphDatabaseService()
     {
         expected.expect( NullPointerException.class );
         template.with( null );
     }
 
     @Test
-    public void validateRetires() throws Exception
+    public void validateRetires()
     {
         expected.expect( IllegalArgumentException.class );
         expected.expectMessage( "Number of retries must be greater than or equal to 0" );
@@ -91,7 +91,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void validateBackoff() throws Exception
+    public void validateBackoff()
     {
         expected.expect( IllegalArgumentException.class );
         expected.expectMessage( "Backoff time must be a positive number" );
@@ -99,21 +99,21 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void validateMonitor() throws Exception
+    public void validateMonitor()
     {
         expected.expect( NullPointerException.class );
         template.monitor( null );
     }
 
     @Test
-    public void validateRetryOn() throws Exception
+    public void validateRetryOn()
     {
         expected.expect( NullPointerException.class );
         template.retryOn( null );
     }
 
     @Test
-    public void shouldRetryOnError() throws Exception
+    public void shouldRetryOnError()
     {
         IllegalArgumentException ex = new IllegalArgumentException();
         template.execute( new FailingRetryConsumer( 3, ex ) );
@@ -124,7 +124,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void shouldFailIfAllRetiresFail() throws Exception
+    public void shouldFailIfAllRetiresFail()
     {
         IllegalArgumentException ex = new IllegalArgumentException();
         try
@@ -141,7 +141,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void defaultExceptionsForExit() throws Exception
+    public void defaultExceptionsForExit()
     {
         Error error = new Error();
         TransactionTerminatedException terminatedException = new TransactionTerminatedException( Status.Transaction.Terminated );
@@ -175,7 +175,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void overrideRetryExceptions() throws Exception
+    public void overrideRetryExceptions()
     {
         template = template.retryOn( e -> !IllegalArgumentException.class.isInstance( e ) );
         IllegalArgumentException e = new IllegalArgumentException();
@@ -196,7 +196,7 @@ public class TransactionTemplateTest
     }
 
     @Test
-    public void overrideRetryShouldOverrideDefaults() throws Exception
+    public void overrideRetryShouldOverrideDefaults()
     {
         template = template.retryOn( e -> !IllegalArgumentException.class.isInstance( e ) );
 

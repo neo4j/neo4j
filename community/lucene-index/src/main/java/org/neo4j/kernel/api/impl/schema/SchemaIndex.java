@@ -36,7 +36,7 @@ import org.neo4j.values.storable.Value;
  */
 public interface SchemaIndex extends DatabaseIndex
 {
-    LuceneIndexWriter getIndexWriter() throws IOException;
+    LuceneIndexWriter getIndexWriter();
 
     IndexReader getIndexReader() throws IOException;
 

@@ -113,7 +113,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return Objects.hash( identifier, type );
     }
 
-    PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex ) throws IOException
+    PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex )
     {
         ensureOpen();
         return new PartitionedIndexWriter( writableIndex );

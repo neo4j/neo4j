@@ -460,7 +460,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     @Test
-    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans() throws Exception
+    public void deletingNodeWithLabelsShouldHaveRemovalReflectedInLabelScans()
     {
         // GIVEN
         Transaction tx = db.beginTx();

@@ -46,7 +46,6 @@ public enum HeartbeatState
                                               Message<HeartbeatMessage> message,
                                               MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {
@@ -93,7 +92,6 @@ public enum HeartbeatState
                                               Message<HeartbeatMessage> message,
                                               MessageHolder outgoing
                 )
-                        throws Throwable
                 {
                     switch ( message.getMessageType() )
                     {

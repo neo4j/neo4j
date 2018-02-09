@@ -34,6 +34,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
@@ -454,11 +455,9 @@ public final class Values
         {
             return of;
         }
-        else
-        {
-            throw new IllegalArgumentException(
-                    format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
-        }
+        Objects.requireNonNull( value );
+        throw new IllegalArgumentException(
+                format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
     }
 
     public static Value unsafeOf( Object value, boolean allowNull )

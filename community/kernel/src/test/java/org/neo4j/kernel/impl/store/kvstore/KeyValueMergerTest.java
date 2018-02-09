@@ -136,7 +136,7 @@ public class KeyValueMergerTest
             int i;
 
             @Override
-            public boolean visit( WritableBuffer key, WritableBuffer value ) throws IOException
+            public boolean visit( WritableBuffer key, WritableBuffer value )
             {
                 if ( i < data.length )
                 {
@@ -147,7 +147,7 @@ public class KeyValueMergerTest
             }
 
             @Override
-            public void close() throws IOException
+            public void close()
             {
             }
         };

@@ -46,7 +46,7 @@ public class DropBrokenUniquenessConstraintIT
     public final DatabaseRule db = new EmbeddedDatabaseRule();
 
     @Test
-    public void shouldDropUniquenessConstraintWithBrokenBackingIndex() throws Exception
+    public void shouldDropUniquenessConstraintWithBrokenBackingIndex()
     {
         // given
         try ( Transaction tx = db.beginTx() )

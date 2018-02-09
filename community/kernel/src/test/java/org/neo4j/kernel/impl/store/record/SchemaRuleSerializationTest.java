@@ -82,7 +82,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     // INDEX RULES
 
     @Test
-    public void rulesCreatedWithoutNameMustHaveComputedName() throws Exception
+    public void rulesCreatedWithoutNameMustHaveComputedName()
     {
         assertThat( indexRegular.getName(), is( "index_1" ) );
         assertThat( indexUnique.getName(), is( "index_2" ) );
@@ -201,7 +201,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void indexRuleNameMustNotContainNullCharacter() throws Exception
+    public void indexRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
         IndexRule.indexRule( RULE_ID,
@@ -209,7 +209,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void indexRuleNameMustNotBeTheEmptyString() throws Exception
+    public void indexRuleNameMustNotBeTheEmptyString()
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
@@ -218,7 +218,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void constraintIndexRuleNameMustNotContainNullCharacter() throws Exception
+    public void constraintIndexRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
         IndexRule.constraintIndexRule( RULE_ID,
@@ -226,7 +226,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void constraintIndexRuleNameMustNotBeTheEmptyString() throws Exception
+    public void constraintIndexRuleNameMustNotBeTheEmptyString()
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
@@ -235,7 +235,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void constraintRuleNameMustNotContainNullCharacter() throws Exception
+    public void constraintRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
         ConstraintRule.constraintRule( RULE_ID,
@@ -243,7 +243,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void constraintRuleNameMustNotBeTheEmptyString() throws Exception
+    public void constraintRuleNameMustNotBeTheEmptyString()
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
@@ -252,7 +252,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void uniquenessConstraintRuleNameMustNotContainNullCharacter() throws Exception
+    public void uniquenessConstraintRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
         ConstraintRule.constraintRule( RULE_ID,
@@ -260,7 +260,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void uniquenessConstraintRuleNameMustNotBeTheEmptyString() throws Exception
+    public void uniquenessConstraintRuleNameMustNotBeTheEmptyString()
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
@@ -269,7 +269,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void nodeKeyConstraintRuleNameMustNotContainNullCharacter() throws Exception
+    public void nodeKeyConstraintRuleNameMustNotContainNullCharacter()
     {
         String name = "a\0b";
         ConstraintRule.constraintRule( RULE_ID,
@@ -277,7 +277,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void nodeKeyConstraintRuleNameMustNotBeTheEmptyString() throws Exception
+    public void nodeKeyConstraintRuleNameMustNotBeTheEmptyString()
     {
         //noinspection RedundantStringConstructorCall
         String name = new String( "" );
@@ -324,7 +324,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldReturnCorrectLengthForIndexRules() throws MalformedSchemaRuleException
+    public void shouldReturnCorrectLengthForIndexRules()
     {
         assertCorrectLength( indexRegular );
         assertCorrectLength( indexUnique );
@@ -334,7 +334,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     }
 
     @Test
-    public void shouldReturnCorrectLengthForConstraintRules() throws MalformedSchemaRuleException
+    public void shouldReturnCorrectLengthForConstraintRules()
     {
         assertCorrectLength( constraintExistsLabel );
     }
@@ -637,7 +637,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         return (ConstraintRule)schemaRule;
     }
 
-    private void assertCorrectLength( IndexRule indexRule ) throws MalformedSchemaRuleException
+    private void assertCorrectLength( IndexRule indexRule )
     {
         // GIVEN
         ByteBuffer buffer = ByteBuffer.wrap( indexRule.serialize() );
@@ -646,7 +646,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( SchemaRuleSerialization.lengthOf( indexRule ), equalTo( buffer.capacity() ) );
     }
 
-    private void assertCorrectLength( ConstraintRule constraintRule ) throws MalformedSchemaRuleException
+    private void assertCorrectLength( ConstraintRule constraintRule )
     {
         // GIVEN
         ByteBuffer buffer = ByteBuffer.wrap( constraintRule.serialize() );

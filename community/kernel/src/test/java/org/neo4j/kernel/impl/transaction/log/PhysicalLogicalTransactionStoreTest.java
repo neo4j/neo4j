@@ -200,13 +200,12 @@ public class PhysicalLogicalTransactionStoreTest
 
             @Override
             public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
-                    throws Exception
             {
                 return mode == TransactionApplicationMode.REVERSE_RECOVERY ? mock( RecoveryApplier.class ) : visitor;
             }
 
             @Override
-            public RecoveryStartInformation getRecoveryStartInformation() throws IOException
+            public RecoveryStartInformation getRecoveryStartInformation()
             {
                 return new RecoveryStartInformation( LogPosition.start( 0 ), 1 );
             }
@@ -440,7 +439,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
+        public boolean visit( CommittedTransactionRepresentation tx )
         {
             TransactionRepresentation transaction = tx.getTransactionRepresentation();
             assertArrayEquals( additionalHeader, transaction.additionalHeader() );
@@ -459,7 +458,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public void close() throws Exception
+        public void close()
         {
         }
     }

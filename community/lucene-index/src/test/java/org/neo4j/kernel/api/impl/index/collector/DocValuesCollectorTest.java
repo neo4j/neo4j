@@ -45,7 +45,7 @@ import static org.junit.Assert.assertSame;
 public final class DocValuesCollectorTest
 {
     @Test
-    public void shouldStartWithEmptyMatchingDocs() throws Exception
+    public void shouldStartWithEmptyMatchingDocs()
     {
         //given
         DocValuesCollector collector = new DocValuesCollector();
@@ -345,7 +345,7 @@ public final class DocValuesCollectorTest
     }
 
     @Test
-    public void shouldReturnEmptyIteratorWhenNoDocValues() throws Exception
+    public void shouldReturnEmptyIteratorWhenNoDocValues()
     {
         // given
         DocValuesCollector collector = new DocValuesCollector( false );

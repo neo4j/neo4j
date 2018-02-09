@@ -96,7 +96,7 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testSmallestPossibleInit() throws Exception
+    public void testSmallestPossibleInit()
     {
         Traverser traversal = getGraphDb().traversalDescription().traverse( node( "1" ) );
         int count = 0;
@@ -118,13 +118,13 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testAllNodesAreReturnedOnceDepthFirst() throws Exception
+    public void testAllNodesAreReturnedOnceDepthFirst()
     {
         testAllNodesAreReturnedOnce( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
-    public void testAllNodesAreReturnedOnceBreadthFirst() throws Exception
+    public void testAllNodesAreReturnedOnceBreadthFirst()
     {
         testAllNodesAreReturnedOnce( getGraphDb().traversalDescription().breadthFirst() );
     }
@@ -139,7 +139,6 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testNodesAreReturnedOnceWhenSufficientRecentlyUniqueDepthFirst()
-            throws Exception
     {
         testNodesAreReturnedOnceWhenSufficientRecentlyUnique(
                 getGraphDb().traversalDescription().depthFirst() );
@@ -147,7 +146,6 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testNodesAreReturnedOnceWhenSufficientRecentlyUniqueBreadthFirst()
-            throws Exception
     {
         testNodesAreReturnedOnceWhenSufficientRecentlyUnique(
                 getGraphDb().traversalDescription().breadthFirst() );
@@ -164,20 +162,18 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testAllRelationshipsAreReturnedOnceDepthFirst()
-            throws Exception
     {
         testAllRelationshipsAreReturnedOnce( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
     public void testAllRelationshipsAreReturnedOnceBreadthFirst()
-            throws Exception
     {
         testAllRelationshipsAreReturnedOnce( getGraphDb().traversalDescription().breadthFirst() );
     }
 
     private void testAllRelationshipsAreReturnedOnce(
-            TraversalDescription description ) throws Exception
+            TraversalDescription description )
     {
         Traverser traverser = getGraphDb().traversalDescription().uniqueness(
                 Uniqueness.RELATIONSHIP_GLOBAL ).traverse( node( "1" ) );
@@ -187,7 +183,6 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUniqueDepthFirst()
-            throws Exception
     {
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
                 getGraphDb().traversalDescription().depthFirst() );
@@ -195,14 +190,13 @@ public class DepthPitfallGraphTest extends TraversalTestBase
 
     @Test
     public void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUniqueBreadthFirst()
-            throws Exception
     {
         testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
                 getGraphDb().traversalDescription().breadthFirst() );
     }
 
     private void testRelationshipsAreReturnedOnceWhenSufficientRecentlyUnique(
-            TraversalDescription description ) throws Exception
+            TraversalDescription description )
     {
         Traverser traverser = description.uniqueness(
                 Uniqueness.RELATIONSHIP_RECENT, THE_WORLD_AS_WE_KNOW_IT.length ).traverse(
@@ -212,19 +206,18 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testAllUniqueNodePathsAreReturnedDepthFirst() throws Exception
+    public void testAllUniqueNodePathsAreReturnedDepthFirst()
     {
         testAllUniqueNodePathsAreReturned( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
-    public void testAllUniqueNodePathsAreReturnedBreadthFirst() throws Exception
+    public void testAllUniqueNodePathsAreReturnedBreadthFirst()
     {
         testAllUniqueNodePathsAreReturned( getGraphDb().traversalDescription().breadthFirst() );
     }
 
     private void testAllUniqueNodePathsAreReturned( TraversalDescription description )
-            throws Exception
     {
         Traverser traverser = description.uniqueness(
                 Uniqueness.NODE_PATH ).traverse( node( "1" ) );
@@ -233,19 +226,18 @@ public class DepthPitfallGraphTest extends TraversalTestBase
     }
 
     @Test
-    public void testAllUniqueRelationshipPathsAreReturnedDepthFirst() throws Exception
+    public void testAllUniqueRelationshipPathsAreReturnedDepthFirst()
     {
         testAllUniqueRelationshipPathsAreReturned( getGraphDb().traversalDescription().depthFirst() );
     }
 
     @Test
-    public void testAllUniqueRelationshipPathsAreReturnedBreadthFirst() throws Exception
+    public void testAllUniqueRelationshipPathsAreReturnedBreadthFirst()
     {
         testAllUniqueRelationshipPathsAreReturned( getGraphDb().traversalDescription().breadthFirst() );
     }
 
     private void testAllUniqueRelationshipPathsAreReturned( TraversalDescription description )
-            throws Exception
     {
         Set<String> expected = new HashSet<>( Arrays.asList( NODE_UNIQUE_PATHS ) );
         expected.addAll( Arrays.asList( RELATIONSHIP_UNIQUE_EXTRA_PATHS ) );

@@ -40,7 +40,7 @@ public final class HighAvailabilityBean extends ManagementBeanProvider
     }
 
     @Override
-    protected Neo4jMBean createMXBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMXBean( ManagementData management )
     {
         if ( !isHA( management ) )
         {

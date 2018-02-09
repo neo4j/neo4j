@@ -28,7 +28,7 @@ public class ExplicitIndexValueValidatorTest extends IndexSimpleValueValidatorTe
 {
 
     @Test
-    public void nullToStringIsNotAllowed() throws Exception
+    public void nullToStringIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "has null toString" );

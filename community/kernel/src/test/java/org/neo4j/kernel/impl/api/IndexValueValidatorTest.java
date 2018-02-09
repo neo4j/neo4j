@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values;
 public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
 {
     @Test
-    public void tooLongArrayIsNotAllowed() throws Exception
+    public void tooLongArrayIsNotAllowed()
     {
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "is longer than 32766, " +
@@ -37,7 +37,7 @@ public class IndexValueValidatorTest extends IndexSimpleValueValidatorTest
     }
 
     @Test
-    public void shortArrayIsAllowed() throws Exception
+    public void shortArrayIsAllowed()
     {
         getValidator().validate( RandomUtils.nextBytes( 3 ) );
         getValidator().validate( RandomUtils.nextBytes( 30 ) );

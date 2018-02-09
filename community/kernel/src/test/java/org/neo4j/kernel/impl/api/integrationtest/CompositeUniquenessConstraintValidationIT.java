@@ -63,7 +63,7 @@ public class CompositeUniquenessConstraintValidationIT
     private final Object[] bValues;
 
     @Parameterized.Parameters( name = "{index}: {0}" )
-    public static Iterable<TestParams> parameterValues() throws IOException
+    public static Iterable<TestParams> parameterValues()
     {
         return Arrays.asList(
                 param( values( 10 ), values( 10d ) ),

@@ -44,7 +44,7 @@ class ConnectRandomlyToServerGroupImpl
         this.myself = myself;
     }
 
-    public Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException
+    public Optional<MemberId> upstreamDatabase()
     {
         Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas().members();
 

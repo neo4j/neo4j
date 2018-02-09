@@ -59,7 +59,7 @@ class CatchUpClientChannelPipeline
     }
 
     static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider,
-                             Monitors monitors, PipelineWrapper pipelineWrapper ) throws Exception
+                             Monitors monitors, PipelineWrapper pipelineWrapper )
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
 

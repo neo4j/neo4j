@@ -62,7 +62,7 @@ import static org.neo4j.test.mockito.answer.Neo4jMockitoAnswers.answerAsPrimitiv
 public class LabelTransactionStateTest
 {
     @Before
-    public void before() throws Exception
+    public void before()
     {
         store = mock( StoreReadLayer.class );
         when( store.indexesGetForLabel( anyInt() ) ).then( answerAsIteratorFrom( Collections.emptyList() ) );
@@ -333,7 +333,7 @@ public class LabelTransactionStateTest
         return new Labels( nodeId, labelIds );
     }
 
-    private void commitLabels( Labels... labels ) throws Exception
+    private void commitLabels( Labels... labels )
     {
         Map<Integer,Collection<Long>> allLabels = new HashMap<>();
         for ( Labels nodeLabels : labels )
@@ -357,12 +357,12 @@ public class LabelTransactionStateTest
         }
     }
 
-    private void commitNoLabels() throws Exception
+    private void commitNoLabels()
     {
         commitLabels( new int[0] );
     }
 
-    private void commitLabels( int... labels ) throws Exception
+    private void commitLabels( int... labels )
     {
         commitLabels( labels( nodeId, labels ) );
     }

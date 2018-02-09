@@ -66,7 +66,7 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustDeleteLogFilesThatCanBePruned() throws Exception
+    public void mustDeleteLogFilesThatCanBePruned()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
                 .thenReturn( upTo -> LongStream.range( 3, upTo ) );
@@ -80,7 +80,7 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustHaveLogFilesToPruneIfStrategyFindsFiles() throws Exception
+    public void mustHaveLogFilesToPruneIfStrategyFindsFiles()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
                 .thenReturn(  upTo -> LongStream.range( 3, upTo ) );
@@ -90,7 +90,7 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles() throws Exception
+    public void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
     {
         when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
                 .thenReturn(  x -> LongStream.empty() );

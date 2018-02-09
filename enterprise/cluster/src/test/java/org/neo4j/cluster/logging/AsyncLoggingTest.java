@@ -30,7 +30,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class AsyncLoggingTest
 {
     @Test
-    public void shouldLogMessages() throws Exception
+    public void shouldLogMessages()
     {
         // given
         AssertableLogProvider logs = new AssertableLogProvider();
@@ -51,7 +51,7 @@ public class AsyncLoggingTest
     }
 
     @Test
-    public void shouldLogWhenLoggingThreadStarts() throws Exception
+    public void shouldLogWhenLoggingThreadStarts()
     {
         // given
         AssertableLogProvider logs = new AssertableLogProvider();

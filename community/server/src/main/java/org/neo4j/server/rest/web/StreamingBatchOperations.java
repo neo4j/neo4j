@@ -63,7 +63,7 @@ public class StreamingBatchOperations extends BatchOperations
 
     @Override
     protected void invoke( String method, String path, String body, Integer id, URI targetUri,
-            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException, ServletException
+            InternalJettyServletRequest req, InternalJettyServletResponse res ) throws IOException
     {
         results.startOperation( path, id );
         try
@@ -109,13 +109,13 @@ public class StreamingBatchOperations extends BatchOperations
         }
 
         @Override
-        public ServletOutputStream getOutputStream() throws IOException
+        public ServletOutputStream getOutputStream()
         {
             return output;
         }
 
         @Override
-        public PrintWriter getWriter() throws IOException
+        public PrintWriter getWriter()
         {
             return new PrintWriter( new OutputStreamWriter( output, StandardCharsets.UTF_8 ) );
         }

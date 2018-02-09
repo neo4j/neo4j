@@ -109,7 +109,7 @@ public class ExplicitIndexMigratorTest
     }
 
     @Test
-    public void logErrorWithIndexNameOnIndexMigrationException() throws IOException
+    public void logErrorWithIndexNameOnIndexMigrationException()
     {
         Log log = mock( Log.class );
         when( logProvider.getLog( TestExplicitIndexMigrator.class ) ).thenReturn( log );

@@ -324,7 +324,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbLabels() throws Throwable
+    public void shouldCloseStatementIfExceptionIsThrownDbLabels()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
@@ -347,7 +347,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys() throws Throwable
+    public void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
@@ -370,7 +370,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes() throws Throwable
+    public void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();

@@ -136,7 +136,7 @@ public class NettyServer extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         bossGroup.shutdownGracefully();
         selectorGroup.shutdownGracefully();

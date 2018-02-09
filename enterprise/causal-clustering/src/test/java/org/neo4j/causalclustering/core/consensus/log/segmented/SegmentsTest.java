@@ -164,7 +164,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldCloseTheSegments() throws Exception
+    public void shouldCloseTheSegments()
     {
         // Given
         Segments segments = new Segments( fsa, fileNames, readerPool, segmentFiles, contentMarshal, logProvider, -1 );
@@ -180,7 +180,7 @@ public class SegmentsTest
     }
 
     @Test
-    public void shouldNotSwallowExceptionOnClose() throws Exception
+    public void shouldNotSwallowExceptionOnClose()
     {
         // Given
         doThrow( new RuntimeException() ).when( fileA ).close();

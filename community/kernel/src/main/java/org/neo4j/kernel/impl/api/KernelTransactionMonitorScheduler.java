@@ -42,7 +42,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
         if ( checkIntervalMillis > 0 )
         {
@@ -52,7 +52,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         if ( monitorJobHandle != null )
         {

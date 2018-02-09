@@ -31,7 +31,7 @@ import static org.neo4j.values.utils.AnyValueTestUtil.assertThrows;
 public class DurationBuilderTest
 {
     @Test
-    public void shouldBuildDuration() throws Exception
+    public void shouldBuildDuration()
     {
         assertEquals( parse( "P17Y" ), build( entry( "years", of( 17 ) ).create() ) );
         assertEquals( parse( "P3M" ), build( entry( "months", of( 3 ) ).create() ) );
@@ -64,14 +64,14 @@ public class DurationBuilderTest
     }
 
     @Test
-    public void shouldRejectUnknownKeys() throws Exception
+    public void shouldRejectUnknownKeys()
     {
         assertEquals( "Unknown field: millenia",
                 assertThrows( IllegalStateException.class, () -> build( entry( "millenia", of( 2 ) ).create() ) ).getMessage() );
     }
 
     @Test
-    public void shouldAcceptOverlapping() throws Exception
+    public void shouldAcceptOverlapping()
     {
         assertEquals( parse( "PT1H90M" ), build( entry( "hours", of( 1 ) ).entry( "minutes", of( 90 ) ).create() ) );
         assertEquals( parse( "P1DT30H" ), build( entry( "days", of( 1 ) ).entry( "hours", of( 30 ) ).create() ) );

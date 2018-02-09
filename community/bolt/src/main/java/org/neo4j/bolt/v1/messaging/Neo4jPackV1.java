@@ -104,7 +104,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeNodeReference( long nodeId ) throws IOException
+        public void writeNodeReference( long nodeId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw node reference" );
         }
@@ -123,7 +123,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void writeRelationshipReference( long relationshipId ) throws IOException
+        public void writeRelationshipReference( long relationshipId )
         {
             throw new UnsupportedOperationException( "Cannot write a raw relationship reference" );
         }
@@ -147,7 +147,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void endMap() throws IOException
+        public void endMap()
         {
             //do nothing
         }
@@ -159,7 +159,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void endList() throws IOException
+        public void endList()
         {
             //do nothing
         }
@@ -430,7 +430,7 @@ public class Neo4jPackV1 implements Neo4jPack
         }
 
         @Override
-        public void endArray() throws IOException
+        public void endArray()
         {
             //Do nothing
         }
@@ -444,7 +444,6 @@ public class Neo4jPackV1 implements Neo4jPack
 
     private static class Unpacker extends PackStream.Unpacker implements Neo4jPack.Unpacker
     {
-
         private List<Neo4jError> errors = new ArrayList<>( 2 );
 
         Unpacker( PackInput input )
@@ -542,7 +541,7 @@ public class Neo4jPackV1 implements Neo4jPack
                         list.add( unpack() );
                     }
                 }
-                return VirtualValues.list( list.toArray( new AnyValue[list.size()] ) );
+                return VirtualValues.list( list.toArray( new AnyValue[0] ) );
             }
             else
             {

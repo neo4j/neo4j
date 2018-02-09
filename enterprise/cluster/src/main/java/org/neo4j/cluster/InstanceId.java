@@ -91,7 +91,7 @@ public class InstanceId implements Externalizable, Comparable<InstanceId>
     }
 
     @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException
+    public void readExternal( ObjectInput in ) throws IOException
     {
         serverId = in.readInt();
     }

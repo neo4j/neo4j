@@ -70,7 +70,7 @@ public class BackupStrategyWrapperTest
     private Log log = mock( Log.class );
 
     @Before
-    public void setup() throws IOException
+    public void setup()
     {
         when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( desiredBackupLocation );
@@ -334,7 +334,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted() throws IOException
+    public void successfulFullBackupsAreRecoveredEvenIfNoBackupExisted()
     {
         // given a backup exists
         when( backupCopyService.backupExists( desiredBackupLocation ) ).thenReturn( false );

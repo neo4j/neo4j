@@ -94,14 +94,14 @@ public class NetworkReadableClosableChannelNetty4 implements ReadableClosablePos
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
+    public LogPositionMarker getCurrentPosition( LogPositionMarker positionMarker )
     {
         positionMarker.unspecified();
         return positionMarker;
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         // no op
     }
