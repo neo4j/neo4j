@@ -44,6 +44,8 @@ class LabelScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int, label: L
       case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
         nodeCursor = it.asInstanceOf[NodeLabelIndexCursor]
         iterationState = is
+      case _ => throw new IllegalStateException()
+
     }
 
     val longs: Array[Long] = data.longs

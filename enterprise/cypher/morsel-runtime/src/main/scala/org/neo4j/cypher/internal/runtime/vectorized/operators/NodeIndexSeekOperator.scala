@@ -59,6 +59,8 @@ class NodeIndexSeekOperator(longsPerRow: Int, refsPerRow: Int, offset: Int,
       case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
         nodeCursor = it.asInstanceOf[NodeValueIndexCursor]
         iterationState = is
+      case _ => throw new IllegalStateException()
+
     }
 
     val longs: Array[Long] = data.longs

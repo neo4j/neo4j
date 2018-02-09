@@ -41,6 +41,7 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
       case ContinueLoopWith(ContinueWithSource(it, is, _)) =>
         nodeCursor = it.asInstanceOf[NodeCursor]
         iterationState = is
+      case _ => throw new IllegalStateException()
     }
 
     val longs: Array[Long] = data.longs
@@ -56,7 +57,7 @@ class AllNodeScanOperator(longsPerRow: Int, refsPerRow: Int, offset: Int) extend
     }
 
     data.validRows = processedRows
-    
+
     if (hasMore)
       ContinueWithSource(nodeCursor, iterationState, needsSameThread = true)
     else {
