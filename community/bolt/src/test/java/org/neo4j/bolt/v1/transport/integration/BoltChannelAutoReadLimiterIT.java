@@ -29,8 +29,10 @@ import org.junit.rules.RuleChain;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -58,7 +60,7 @@ import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
-public class BoltChannelAutoReadLimiterIT extends AbstractBoltTransportsTest
+public class BoltChannelAutoReadLimiterIT
 {
     private AssertableLogProvider logProvider;
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
@@ -68,6 +70,8 @@ public class BoltChannelAutoReadLimiterIT extends AbstractBoltTransportsTest
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
     private HostnamePort address;
+    private TransportConnection connection;
+    private TransportTestUtil util;
 
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
@@ -92,6 +96,8 @@ public class BoltChannelAutoReadLimiterIT extends AbstractBoltTransportsTest
         installSleepProcedure( server.graphDatabaseService() );
 
         address = server.lookupDefaultConnector();
+        connection = new SocketConnection();
+        util = new TransportTestUtil( new Neo4jPackV1() );
     }
 
     @Test
