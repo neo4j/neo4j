@@ -25,7 +25,7 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH date({year:1984, month:10, day:11}) as d
-      RETURN toString(d)
+      RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
       | d            |
@@ -36,7 +36,7 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH localtime({hour:12, minute:31, second:14, nanosecond: 645876123}) as d
-      RETURN toString(d)
+      RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
       | d            |
@@ -47,7 +47,7 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH time({hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}) as d
-      RETURN toString(d)
+      RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
       | d            |
@@ -58,7 +58,7 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH localdatetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123}) as d
-      RETURN toString(d)
+      RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
       | d            |
@@ -69,7 +69,7 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH datetime({year:1984, month:10, day:11, hour:12, minute:31, second:14, nanosecond: 645876123, timezone: '+01:00'}) as d
-      RETURN toString(d)
+      RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
       | d            |
@@ -80,7 +80,7 @@ Feature: TemporalToStringAcceptance
     When executing query:
       """
       WITH duration({years: 12, months:5, days: 14, hours:16, minutes: 12, seconds: 70, nanoseconds: 1}) as d
-      RETURN toString(d)
+      RETURN toString(d) as ts, date(toString(d)) = d as b
       """
     Then the result should be, in order:
       | d            |

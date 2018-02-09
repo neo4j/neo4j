@@ -405,6 +405,19 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       Seq("date({year:1984, month: 2, day:11})"))
   }
 
+  // Arithmetic
+
+  test("subtracting temporal instants should give meaningful error message") {
+    for (func <- Seq("date", "localtime", "time", "localdatetime", "datetime")) {
+      val query = s"RETURN $func() - $func()"
+      val exception = intercept[IllegalArgumentException] {
+        println(graph.execute(query).next())
+      }
+      exception.getMessage should be ("You cannot subtract temporal instant from one another. " +
+        " To obtain the duration, use 'duration.between(temporal1, temporal2) instead.")
+    }
+  }
+
   private def shouldNotTruncate(receivers: Seq[String], truncationUnit: String, args: Seq[String]): Unit = {
     for (receiver <- receivers; arg <- args) {
       val query = s"RETURN $receiver.truncate('$truncationUnit', $arg)"
