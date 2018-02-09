@@ -192,12 +192,11 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         if ( !connectors.isEmpty() && !config.get( GraphDatabaseSettings.disconnected ) )
         {
-            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
+            NettyServer server = new NettyServer( scheduler.threadFactory( boltNetworkIO ),
+                                                  connectors, connectionRegister,
+                                                  logService.getUserLog( WorkerFactory.class ) );
+            life.add( server );
             log.info( "Bolt Server extension loaded." );
-            for ( ProtocolInitializer connector : connectors.values() )
-            {
-                logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
-            }
         }
 
         return life;

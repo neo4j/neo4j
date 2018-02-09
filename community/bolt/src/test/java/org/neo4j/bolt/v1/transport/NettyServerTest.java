@@ -35,6 +35,7 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.PortBindException;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.logging.NullLog;
 
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
@@ -59,7 +60,7 @@ public class NettyServerTest
             Map<BoltConnector,NettyServer.ProtocolInitializer> initializersMap =
                     genericMap( new BoltConnector( "test" ), protocolOnAddress( address ) );
             new NettyServer( new NamedThreadFactory( "mythreads" ), initializersMap,
-                    new ConnectorPortRegister() ).start();
+                             new ConnectorPortRegister(), NullLog.getInstance() ).start();
 
         }
     }
