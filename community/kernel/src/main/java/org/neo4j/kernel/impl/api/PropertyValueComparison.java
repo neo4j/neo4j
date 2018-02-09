@@ -26,7 +26,7 @@ import static java.lang.String.format;
 
 public class PropertyValueComparison
 {
-    public static final Object LOWEST_OBJECT = new Object()
+    static final Object LOWEST_OBJECT = new Object()
     {
         @Override
         public String toString()
@@ -50,26 +50,22 @@ public class PropertyValueComparison
 
     public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
-    public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
+    static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
     public enum SuperType
     {
-        OTHER( 0, Limit.inclusive( LOWEST_OBJECT ), Limit.exclusive( "" ) ),
-        STRING( 1, Limit.inclusive( "" ), Limit.exclusive( false ) ),
-        BOOLEAN( 2, Limit.inclusive( false ), Limit.inclusive( true ) ),
+        OTHER( 0 ),
+        STRING( 1 ),
+        BOOLEAN( 2 ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3, Limit.inclusive( Double.NEGATIVE_INFINITY ), Limit.inclusive( Double.NaN ) );
+        NUMBER( 3 );
 
         public final int typeId;
-        public final Limit<Object> lowLimit;
-        public final Limit<Object> highLimit;
 
-        SuperType( int typeId, Limit<Object> lowLimit, Limit<Object> highLimit )
+        SuperType( int typeId )
         {
             this.typeId = typeId;
-            this.lowLimit = lowLimit;
-            this.highLimit = highLimit;
         }
 
         public boolean isSuperTypeOf( Object value )
@@ -103,33 +99,6 @@ public class PropertyValueComparison
             }
 
             return OTHER;
-        }
-    }
-
-    public static final class Limit<T>
-    {
-        public final T value;
-        public final boolean isInclusive;
-
-        private Limit( T value, boolean isInclusive )
-        {
-            this.value = value;
-            this.isInclusive = isInclusive;
-        }
-
-        public <X extends T> X castValue( Class<X> clazz )
-        {
-            return clazz.cast( value );
-        }
-
-        public static <T> Limit<T> inclusive( T value )
-        {
-            return new Limit<>( value, true );
-        }
-
-        public static <T> Limit<T> exclusive( T value )
-        {
-            return new Limit<>( value, false );
         }
     }
 
