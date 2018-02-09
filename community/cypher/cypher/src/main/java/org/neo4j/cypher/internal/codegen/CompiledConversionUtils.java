@@ -765,7 +765,8 @@ public abstract class CompiledConversionUtils
             {
                 throw new NoSuchElementException();
             }
-            return Array.get( array, position++ );
+            int offset = position++;
+            return Array.get( array, offset );
         }
     }
 }

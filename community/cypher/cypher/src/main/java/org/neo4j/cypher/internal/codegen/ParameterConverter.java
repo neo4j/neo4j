@@ -83,58 +83,57 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNodeReference( long nodeId ) throws RuntimeException
+    public void writeNodeReference( long nodeId )
     {
         writeValue( new NodeIdWrapperImpl( nodeId ) );
     }
 
     @Override
-    public void writeNode( long nodeId, TextArray ignore, MapValue properties ) throws RuntimeException
+    public void writeNode( long nodeId, TextArray ignore, MapValue properties )
     {
         writeValue( new NodeIdWrapperImpl( nodeId ) );
     }
 
     @Override
-    public void writeRelationshipReference( long relId ) throws RuntimeException
+    public void writeRelationshipReference( long relId )
     {
         writeValue( new RelationshipIdWrapperImpl( relId ) );
     }
 
     @Override
     public void writeRelationship( long relId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
-            throws RuntimeException
     {
         writeValue( new RelationshipIdWrapperImpl( relId ) );
     }
 
     @Override
-    public void beginMap( int size ) throws RuntimeException
+    public void beginMap( int size )
     {
         stack.push( new MapWriter( size ) );
     }
 
     @Override
-    public void endMap() throws RuntimeException
+    public void endMap()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void beginList( int size ) throws RuntimeException
+    public void beginList( int size )
     {
         stack.push( new ListWriter( size ) );
     }
 
     @Override
-    public void endList() throws RuntimeException
+    public void endList()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships ) throws RuntimeException
+    public void writePath( NodeValue[] nodes, RelationshipValue[] relationships )
     {
         assert nodes != null;
         assert nodes.length > 0;
@@ -274,128 +273,128 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNull() throws RuntimeException
+    public void writeNull()
     {
         writeValue( null );
     }
 
     @Override
-    public void writeBoolean( boolean value ) throws RuntimeException
+    public void writeBoolean( boolean value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeInteger( byte value ) throws RuntimeException
+    public void writeInteger( byte value )
     {
         writeValue( (long) value );
     }
 
     @Override
-    public void writeInteger( short value ) throws RuntimeException
+    public void writeInteger( short value )
     {
         writeValue( (long) value );
     }
 
     @Override
-    public void writeInteger( int value ) throws RuntimeException
+    public void writeInteger( int value )
     {
         writeValue( (long) value );
     }
 
     @Override
-    public void writeInteger( long value ) throws RuntimeException
+    public void writeInteger( long value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeFloatingPoint( float value ) throws RuntimeException
+    public void writeFloatingPoint( float value )
     {
         writeValue( (double) value );
     }
 
     @Override
-    public void writeFloatingPoint( double value ) throws RuntimeException
+    public void writeFloatingPoint( double value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeString( String value ) throws RuntimeException
+    public void writeString( String value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writeString( char value ) throws RuntimeException
+    public void writeString( char value )
     {
         writeValue( value );
     }
 
     @Override
-    public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
+    public void beginArray( int size, ArrayType arrayType )
     {
         stack.push( new ArrayWriter( size, arrayType ) );
     }
 
     @Override
-    public void endArray() throws RuntimeException
+    public void endArray()
     {
         assert !stack.isEmpty();
         writeValue( stack.pop().value() );
     }
 
     @Override
-    public void writeByteArray( byte[] value ) throws RuntimeException
+    public void writeByteArray( byte[] value )
     {
         writeValue( value );
     }
 
     @Override
-    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws RuntimeException
+    public void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         writeValue( Values.pointValue( crs, coordinate ) );
     }
 
     @Override
-    public void writeDuration( long months, long days, long seconds, int nanos ) throws RuntimeException
+    public void writeDuration( long months, long days, long seconds, int nanos )
     {
         writeValue( DurationValue.duration( months, days, seconds, nanos ) );
     }
 
     @Override
-    public void writeDate( long epochDay ) throws RuntimeException
+    public void writeDate( long epochDay )
     {
         writeValue( LocalDate.ofEpochDay( epochDay ) );
     }
 
     @Override
-    public void writeLocalTime( long nanoOfDay ) throws RuntimeException
+    public void writeLocalTime( long nanoOfDay )
     {
         writeValue( LocalTime.ofNanoOfDay( nanoOfDay ) );
     }
 
     @Override
-    public void writeTime( long nanosOfDayUTC, int offsetSeconds ) throws RuntimeException
+    public void writeTime( long nanosOfDayUTC, int offsetSeconds )
     {
         writeValue( OffsetTime.of( LocalTime.ofNanoOfDay( nanosOfDayUTC ), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
-    public void writeLocalDateTime( long epochSecond, int nano ) throws RuntimeException
+    public void writeLocalDateTime( long epochSecond, int nano )
     {
         writeValue( LocalDateTime.ofInstant( Instant.ofEpochSecond(epochSecond, nano), UTC ) );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds ) throws RuntimeException
+    public void writeDateTime( long epochSecondUTC, int nano, int offsetSeconds )
     {
         writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneOffset.ofTotalSeconds( offsetSeconds ) ) );
     }
 
     @Override
-    public void writeDateTime( long epochSecondUTC, int nano, String zoneId ) throws RuntimeException
+    public void writeDateTime( long epochSecondUTC, int nano, String zoneId )
     {
         writeValue( ZonedDateTime.ofInstant( Instant.ofEpochSecond(epochSecondUTC, nano), ZoneId.of( zoneId ) ) );
     }
@@ -501,7 +500,8 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
         @Override
         public void write( Object value )
         {
-            Array.set( array, index++, value );
+            Array.set( array, index, value );
+            index++;
         }
 
         @Override
