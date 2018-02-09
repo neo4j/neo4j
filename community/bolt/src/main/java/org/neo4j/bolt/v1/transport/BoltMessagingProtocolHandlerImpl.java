@@ -26,12 +26,11 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
@@ -42,15 +41,14 @@ import org.neo4j.logging.Log;
  * <p/>
  * Versions of the framing protocol are lock-step with the messaging protocol versioning.
  */
-public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHandler
+public class BoltMessagingProtocolHandlerImpl implements BoltMessagingProtocolHandler
 {
-    public static final int VERSION_NUMBER = 1;
-
     private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 8192;
 
     private final ChunkedOutput chunkedOutput;
     private final BoltResponseMessageWriter packer;
     private final BoltV1Dechunker dechunker;
+    private final Neo4jPack neo4jPack;
 
     private final BoltWorker worker;
 
@@ -58,15 +56,10 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
 
     private final Log internalLog;
 
-    public BoltMessagingProtocolV1Handler( BoltChannel boltChannel, BoltWorker worker,
+    public BoltMessagingProtocolHandlerImpl( BoltChannel boltChannel, BoltWorker worker, Neo4jPack neo4jPack,
             TransportThrottleGroup throttleGroup, LogService logging )
     {
-        this( boltChannel, worker, new Neo4jPackV1(), throttleGroup, logging );
-    }
-
-    protected BoltMessagingProtocolV1Handler( BoltChannel boltChannel, BoltWorker worker, Neo4jPack neo4jPack,
-            TransportThrottleGroup throttleGroup, LogService logging )
-    {
+        this.neo4jPack = neo4jPack;
         this.chunkedOutput = new ChunkedOutput( boltChannel.rawChannel(), DEFAULT_OUTPUT_BUFFER_SIZE, throttleGroup );
         this.packer = new BoltResponseMessageWriter(
                 neo4jPack.newPacker( chunkedOutput ), chunkedOutput, boltChannel.log() );
@@ -105,7 +98,7 @@ public class BoltMessagingProtocolV1Handler implements BoltMessagingProtocolHand
     @Override
     public int version()
     {
-        return VERSION_NUMBER;
+        return neo4jPack.version();
     }
 
     @Override

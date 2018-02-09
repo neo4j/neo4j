@@ -114,6 +114,6 @@ public abstract class AbstractBoltTransportsTest
 
     private static String newName( Class<? extends TransportConnection> connectionClass, Neo4jPack neo4jPack )
     {
-        return connectionClass.getSimpleName() + " & " + neo4jPack.getClass().getSimpleName();
+        return connectionClass.getSimpleName() + " & " + neo4jPack;
     }
 }

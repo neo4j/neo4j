@@ -53,6 +53,8 @@ import static org.neo4j.values.storable.Values.byteArray;
  */
 public class Neo4jPackV1 implements Neo4jPack
 {
+    public static final int VERSION = 1;
+
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
     public static final byte UNBOUND_RELATIONSHIP = 'r';
@@ -68,6 +70,18 @@ public class Neo4jPackV1 implements Neo4jPack
     public Neo4jPack.Unpacker newUnpacker( PackInput input )
     {
         return new UnpackerV1( input );
+    }
+
+    @Override
+    public int version()
+    {
+        return VERSION;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName();
     }
 
     protected static class PackerV1 extends PackStream.Packer implements AnyValueWriter<IOException>, Neo4jPack.Packer

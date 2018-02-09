@@ -34,7 +34,6 @@ import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
 public class BoltConfigIT extends AbstractBoltTransportsTest
@@ -69,7 +68,7 @@ public class BoltConfigIT extends AbstractBoltTransportsTest
     private void assertConnectionRejected( HostnamePort address, TransportConnection client ) throws Exception
     {
         client.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) );
+                .send( util.defaultAcceptedVersions() );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -77,8 +76,8 @@ public class BoltConfigIT extends AbstractBoltTransportsTest
     private void assertConnectionAccepted( HostnamePort address, TransportConnection client ) throws Exception
     {
         client.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk( InitMessage.init( "TestClient/1.1", emptyMap() ) ) );
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
     }
 }

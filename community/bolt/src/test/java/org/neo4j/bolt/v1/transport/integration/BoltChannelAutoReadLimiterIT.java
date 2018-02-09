@@ -56,7 +56,6 @@ import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class BoltChannelAutoReadLimiterIT extends AbstractBoltTransportsTest
@@ -102,11 +101,11 @@ public class BoltChannelAutoReadLimiterIT extends AbstractBoltTransportsTest
         String largeString = StringUtils.repeat( " ", 8 * 1024 );
 
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ) ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // when

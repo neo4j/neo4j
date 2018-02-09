@@ -59,7 +59,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class AuthenticationIT extends AbstractBoltTransportsTest
@@ -95,13 +94,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         verifyConnectionOpen();
@@ -118,13 +117,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
@@ -136,36 +135,36 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When change password
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
                                 "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // When login again with the new password
         reconnect();
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // When login again with the wrong password
         reconnect();
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "wrong", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
@@ -177,14 +176,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme",
                                         "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, the value associated with the key `principal` " +
                 "must be a String but was: ArrayList" ) ) );
@@ -197,14 +196,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme",
                                         "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `credentials`" ) ) );
 
@@ -216,13 +215,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, missing key `scheme`" ) ) );
 
@@ -234,14 +233,14 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j",
                                         "scheme", "unknown" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, scheme 'unknown' is not supported." ) ) );
 
@@ -260,13 +259,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         {
             // Done in a loop because we're racing with the clock to get enough failed requests in 5 seconds
             connection.connect( address )
-                    .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                    .send( util.defaultAcceptedVersions() )
                     .send( util.chunk(
                             InitMessage.init( "TestClient/1.1",
                                     map( "principal", "neo4j", "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN",
                                             "scheme", "basic" ) ) ) );
 
-            assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+            assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
             assertThat( connection, util.eventuallyReceives( failureMatcher ) );
 
             assertThat( connection, eventuallyDisconnects() );
@@ -284,34 +283,34 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
                                 "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // If I reconnect I cannot use the old password
         reconnect();
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
         // But the new password works fine
         reconnect();
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
@@ -320,13 +319,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1", map( "principal", "neo4j",
                                 "credentials", "neo4j", "new_credentials", "secret", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         // When
@@ -343,13 +342,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
@@ -363,22 +362,22 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
         // If I reconnect I cannot use the old password
         reconnect();
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "The client is unauthorized due to authentication failure." ) ) );
 
         // But the new password works fine
         reconnect();
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "secret", "scheme", "basic" ) ) ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
     }
 
@@ -387,13 +386,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
@@ -418,13 +417,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
@@ -449,13 +448,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
@@ -480,13 +479,13 @@ public class AuthenticationIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         InitMessage.init( "TestClient/1.1",
                                 map( "principal", "neo4j", "credentials", "neo4j", "scheme", "basic" ) ) ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When

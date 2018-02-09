@@ -47,7 +47,6 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 /**
  * Multiple concurrent users should be able to connect simultaneously. We test this with multiple users running
@@ -112,8 +111,8 @@ public class ConcurrentAccessIT extends AbstractBoltTransportsTest
             {
                 // Connect
                 TransportConnection client = newConnection();
-                client.connect( server.lookupDefaultConnector() ).send( util.acceptedVersions( 1, 0, 0, 0 ) );
-                assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+                client.connect( server.lookupDefaultConnector() ).send( util.defaultAcceptedVersions() );
+                assertThat( client, util.eventuallyReceivesSelectedProtocolVersion() );
 
                 init( client );
 

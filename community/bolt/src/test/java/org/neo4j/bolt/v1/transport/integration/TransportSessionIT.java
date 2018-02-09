@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.util.HashMap;
 
 import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -43,6 +44,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -78,10 +80,10 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) );
+                .send( util.defaultAcceptedVersions() );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
     }
 
     @Test
@@ -100,14 +102,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ),
@@ -124,14 +126,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ),
                         discardAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(
@@ -146,13 +148,13 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // Given
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "QINVALID" ),
                         pullAll() ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
@@ -176,13 +178,13 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // Given
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n:Test {age: 2}) RETURN n.age AS age" ),
                         pullAll() ) );
 
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
@@ -209,14 +211,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n:Test) DELETE n RETURN n" ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "n" ) ) ),
@@ -240,14 +242,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE ()-[r:T {prop: 42}]->() DELETE r RETURN r" ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "r" ) ) ),
@@ -273,12 +275,12 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // Given
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "CREATE (n)" ),
                         pullAll() ) );
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
@@ -303,14 +305,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)" ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
@@ -326,18 +328,21 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     }
 
     @Test
-    public void shouldFailNicelyOnPoints() throws Throwable
+    public void shouldFailNicelyOnPointsWhenProtocolDoesNotSupportThem() throws Throwable
     {
+        // only V1 protocol does not support points
+        assumeThat( neo4jPack.version(), equalTo( Neo4jPackV1.VERSION ) );
+
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "RETURN point({x:13, y:37, crs:'cartesian'}) as p" ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgSuccess( CoreMatchers.allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
@@ -368,14 +373,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
 
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "RETURN {p}", ValueUtils.asMapValue( params ) ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Request.Invalid,
@@ -397,14 +402,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
     {
         // When
         connection.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
+                .send( util.defaultAcceptedVersions() )
                 .send( util.chunk(
                         init( "TestClient/1.1", emptyMap() ),
                         run( "DROP INDEX on :Movie12345(id)" ),
                         pullAll() ) );
 
         // Then
-        assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection, util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,

@@ -24,6 +24,11 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
@@ -31,9 +36,12 @@ import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
+import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -41,17 +49,28 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
+@RunWith( Parameterized.class )
 public class SocketTransportHandlerTest
 {
     private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final BoltMessageLogging BOLT_LOGGING = BoltMessageLogging.none();
+
+    @Parameter
+    public Neo4jPack neo4jPack;
+
+    @Parameters( name = "{0}" )
+    public static List<Neo4jPack> parameters()
+    {
+        return Arrays.asList( new Neo4jPackV1(), new Neo4jPackV2() );
+    }
 
     @Test
     public void shouldCloseProtocolOnChannelInactive() throws Throwable
@@ -202,9 +221,22 @@ public class SocketTransportHandlerTest
     {
         BoltProtocolHandlerFactory handlerFactory = ( version, channel ) ->
         {
-            assertEquals( 1, version );
-            return new BoltMessagingProtocolV1Handler( channel, new SynchronousBoltWorker( machine ),
-                    TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
+            Neo4jPack neo4jPack;
+            if ( version == Neo4jPackV1.VERSION )
+            {
+                neo4jPack = new Neo4jPackV1();
+            }
+            else if ( version == Neo4jPackV2.VERSION )
+            {
+                neo4jPack = new Neo4jPackV2();
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown version: " + version );
+            }
+
+            return new BoltMessagingProtocolHandlerImpl( channel, new SynchronousBoltWorker( machine ),
+                    neo4jPack, TransportThrottleGroup.NO_THROTTLE, NullLogService.getInstance() );
         };
 
         return new BoltHandshakeProtocolHandler( handlerFactory, false, true );
@@ -214,7 +246,7 @@ public class SocketTransportHandlerTest
     {
         ByteBuf buf = UnpooledByteBufAllocator.DEFAULT.buffer();
         buf.writeInt( 0x6060B017 );
-        buf.writeInt( 1 );
+        buf.writeInt( neo4jPack.version() );
         buf.writeInt( 0 );
         buf.writeInt( 0 );
         buf.writeInt( 0 );

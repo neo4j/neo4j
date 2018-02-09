@@ -112,6 +112,11 @@ public class TransportTestUtil
         return arrayOutput;
     }
 
+    public byte[] defaultAcceptedVersions()
+    {
+        return acceptedVersions( neo4jPack.version(), 0, 0, 0 );
+    }
+
     public byte[] acceptedVersions( long option1, long option2, long option3, long option4 )
     {
         ByteBuffer bb = ByteBuffer.allocate( 5 * Integer.BYTES ).order( BIG_ENDIAN );
@@ -178,6 +183,11 @@ public class TransportTestUtil
     {
         byte[] raw = conn.recv( 2 );
         return ((raw[0] & 0xff) << 8 | (raw[1] & 0xff)) & 0xffff;
+    }
+
+    public Matcher<TransportConnection> eventuallyReceivesSelectedProtocolVersion()
+    {
+        return eventuallyReceives( new byte[]{0, 0, 0, (byte) neo4jPack.version()} );
     }
 
     public static Matcher<TransportConnection> eventuallyReceives( final byte[] expected )
