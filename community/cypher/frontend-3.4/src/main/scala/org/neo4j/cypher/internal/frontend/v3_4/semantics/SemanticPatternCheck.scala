@@ -99,23 +99,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               }(...) requires a pattern containing a single relationship", x.position, x.element.position)
           }
 
-        def checkKnownEnds: SemanticCheck =
-          x.element match {
-            case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
-              if (l.variable.isEmpty)
-                SemanticError(s"${
-                  x.name
-                }(...) requires named nodes", x.position, l.position)
-              else if (r.variable.isEmpty)
-                SemanticError(s"${
-                  x.name
-                }(...) requires named nodes", x.position, r.position)
-              else
-                None
-            case _ =>
-              None
-          }
-
         def checkLength: SemanticCheck =
           (state: SemanticState) =>
             x.element match {
@@ -155,7 +138,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
         checkContext chain
           checkContainsSingle chain
-          checkKnownEnds chain
           checkLength chain
           checkRelVariablesUnknown chain
           check(ctx, x.element)
