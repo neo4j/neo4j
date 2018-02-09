@@ -99,7 +99,7 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
         WritableFulltext fulltextIndex = new WritableFulltext(factory.createFulltextIndex( descriptor ));
         fulltextIndex.open();
 
-        FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex );
+        FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, descriptor );
         accessors.put( descriptor, fulltextIndexAccessor );
         return fulltextIndexAccessor;
     }

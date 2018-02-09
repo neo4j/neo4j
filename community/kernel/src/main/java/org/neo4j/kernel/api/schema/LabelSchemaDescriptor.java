@@ -42,6 +42,12 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     }
 
     @Override
+    public boolean isAffected( long[] entityIds )
+    {
+        return Arrays.binarySearch( entityIds, labelId ) >= 0;
+    }
+
+    @Override
     public <R> R computeWith( SchemaComputer<R> processor )
     {
         return processor.computeSpecific( this );

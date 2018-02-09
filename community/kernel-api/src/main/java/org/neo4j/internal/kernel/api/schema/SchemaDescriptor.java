@@ -37,6 +37,8 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public interface SchemaDescriptor extends SchemaDescriptorSupplier
 {
+    boolean isAffected( long[] entityIds );
+
     enum PropertySchemaType{
         SCHEMA_ALL,
         NON_SCHEMA_ANY

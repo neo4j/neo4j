@@ -26,12 +26,12 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.apache.lucene.document.Field.Store.NO;
 
@@ -57,9 +57,21 @@ public class LuceneFulltextDocumentStructure
         return document.document;
     }
 
+    public static Document documentRepresentingProperties( long id, Collection<String> propertyNames, Value[] values )
+    {
+        DocWithId document = reuseDocument( id );
+        document.setValues( propertyNames, values );
+        return document.document;
+    }
+
     static Field encodeValueField( String propertyKey, Value value )
     {
         return LuceneFulltextFieldEncoding.encodeField( propertyKey, value );
+    }
+
+    public static Term newTermForChangeOrRemove( long id )
+    {
+        return new Term( FulltextProvider.FIELD_ENTITY_ID, "" + id );
     }
 
     private static class DocWithId
@@ -94,6 +106,20 @@ public class LuceneFulltextDocumentStructure
             }
         }
 
+        private void setValues( Collection<String> names, Value[] values )
+        {
+            int i = 0;
+            for ( String name : names )
+            {
+                Value value = values[i++];
+                if ( value != null )
+                {
+                    Field field = encodeValueField( name, value );
+                    document.add( field );
+                }
+            }
+        }
+
         private void removeAllValueFields()
         {
             Iterator<IndexableField> it = document.getFields().iterator();
@@ -108,10 +134,5 @@ public class LuceneFulltextDocumentStructure
             }
         }
 
-    }
-
-    static Term newTermForChangeOrRemove( long id )
-    {
-        return new Term( FulltextProvider.FIELD_ENTITY_ID, "" + id );
     }
 }

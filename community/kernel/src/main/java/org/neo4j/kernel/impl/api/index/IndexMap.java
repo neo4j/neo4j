@@ -49,6 +49,7 @@ public final class IndexMap implements Cloneable
     private final Map<SchemaDescriptor,Long> indexIdsByDescriptor;
     private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByLabel;
     private final PrimitiveIntObjectMap<Set<SchemaDescriptor>> descriptorsByProperty;
+    private final Set<SchemaDescriptor> descriptorsForAllLabels;
 
     public IndexMap()
     {
@@ -70,6 +71,7 @@ public final class IndexMap implements Cloneable
         this.indexIdsByDescriptor = indexIdsByDescriptor;
         this.descriptorsByLabel = Primitive.intObjectMap();
         this.descriptorsByProperty = Primitive.intObjectMap();
+        this.descriptorsForAllLabels = new HashSet<>();
         for ( SchemaDescriptor schema : indexesByDescriptor.keySet() )
         {
             addDescriptorToLookups( schema );
@@ -110,6 +112,10 @@ public final class IndexMap implements Cloneable
 
         SchemaDescriptor schema = removedProxy.getDescriptor().schema();
         indexesByDescriptor.remove( schema );
+        if ( schema.getEntityTokenIds().length == 0 )
+        {
+            descriptorsForAllLabels.remove( schema );
+        }
         for ( int entityTokenId : schema.getEntityTokenIds() )
         {
             removeFromLookup( entityTokenId, schema, descriptorsByLabel );
@@ -204,6 +210,10 @@ public final class IndexMap implements Cloneable
 
     private void addDescriptorToLookups( SchemaDescriptor schema )
     {
+        if ( schema.getEntityTokenIds().length == 0 )
+        {
+            descriptorsForAllLabels.add( schema );
+        }
         for ( int entityTokenId : schema.getEntityTokenIds() )
         {
             addToLookup( entityTokenId, schema, descriptorsByLabel );
@@ -303,6 +313,7 @@ public final class IndexMap implements Cloneable
                 set.addAll( forLabel );
             }
         }
+        set.addAll( descriptorsForAllLabels );
         return set;
     }
 

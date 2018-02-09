@@ -245,12 +245,12 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean relevantBefore( SchemaDescriptor schema )
     {
-        return hasLabel( schema.getEntityTokenIds(), labelsBefore ) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
+        return schema.isAffected(labelsBefore) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
     private boolean relevantAfter( SchemaDescriptor schema )
     {
-        return hasLabel( schema.getEntityTokenIds(), labelsAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
+        return schema.isAffected(labelsAfter) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
     private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
@@ -279,12 +279,12 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean atLeastOneRelevantChange( SchemaDescriptorSupplier indexKey )
     {
-        int[] entityTokenIds = indexKey.schema().getEntityTokenIds();
-        boolean labelBefore = hasLabel( entityTokenIds, labelsBefore );
-        boolean labelAfter = hasLabel( entityTokenIds, labelsAfter );
+        SchemaDescriptor schema = indexKey.schema();
+        boolean labelBefore = schema.isAffected( labelsBefore );
+        boolean labelAfter = schema.isAffected( labelsAfter );
         if ( labelBefore && labelAfter )
         {
-            for ( int propertyId : indexKey.schema().getPropertyIds() )
+            for ( int propertyId : schema.getPropertyIds() )
             {
                 if ( knownProperties.get( propertyId ) != null )
                 {
@@ -294,11 +294,6 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             return false;
         }
         return labelBefore || labelAfter;
-    }
-
-    private boolean hasLabel( int[] entityTokenIds, long[] labels )
-    {
-        return Arrays.stream( entityTokenIds ).anyMatch( id ->binarySearch( labels, id ) >= 0);
     }
 
     private boolean hasPropsBefore( int[] propertyIds, SchemaDescriptor.PropertySchemaType propertySchemaType )
@@ -335,7 +330,7 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
                     return false;
                 }
             }
-            else if ( propertySchemaType == NON_SCHEMA_ANY )
+            else
             {
                 found = true;
             }

@@ -42,6 +42,12 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     }
 
     @Override
+    public boolean isAffected( long[] entityIds )
+    {
+        return Arrays.binarySearch( entityIds, relTypeId ) >= 0;
+    }
+
+    @Override
     public <R> R computeWith( SchemaComputer<R> processor )
     {
         return processor.computeSpecific( this );
