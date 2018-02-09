@@ -108,7 +108,7 @@ public class CatchUpClient extends LifecycleAdapter
             Bootstrap bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
             {
                 @Override
-                protected void initChannel( SocketChannel ch )
+                protected void initChannel( SocketChannel ch ) throws Exception
                 {
                     CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, pipelineWrapper );
                 }

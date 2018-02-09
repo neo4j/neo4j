@@ -97,11 +97,13 @@ public class SslPolicy
         }
     }
 
+    @SuppressWarnings( "unused" )
     public SslHandler nettyServerHandler( Channel channel ) throws SSLException
     {
         return makeNettyHandler( channel, nettyServerContext() );
     }
 
+    @SuppressWarnings( "unused" )
     public SslHandler nettyClientHandler( Channel channel ) throws SSLException
     {
         return makeNettyHandler( channel, nettyClientContext() );
@@ -112,7 +114,7 @@ public class SslPolicy
         SSLEngine sslEngine = sslContext.newEngine( channel.alloc() );
         if ( tlsVersions != null )
         {
-            sslEngine.setEnabledProtocols( tlsVersions.toArray( new String[tlsVersions.size()] ) );
+            sslEngine.setEnabledProtocols( tlsVersions.toArray( new String[0] ) );
         }
         return new SslHandler( sslEngine );
     }

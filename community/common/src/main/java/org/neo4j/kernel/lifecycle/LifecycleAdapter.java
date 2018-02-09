@@ -25,26 +25,22 @@ package org.neo4j.kernel.lifecycle;
 public class LifecycleAdapter implements Lifecycle
 {
     @Override
-    public void init()
-        throws Throwable
+    public void init() throws Throwable
     {
     }
 
     @Override
-    public void start()
-        throws Throwable
+    public void start() throws Throwable
     {
     }
 
     @Override
-    public void stop()
-        throws Throwable
+    public void stop() throws Throwable
     {
     }
 
     @Override
-    public void shutdown()
-        throws Throwable
+    public void shutdown() throws Throwable
     {
     }
 }

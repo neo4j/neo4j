@@ -148,7 +148,7 @@ public class CatchupServer extends LifecycleAdapter
                 .localAddress( listenAddress.socketAddress() ).childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
-                    protected void initChannel( SocketChannel ch )
+                    protected void initChannel( SocketChannel ch ) throws Exception
                     {
                         CatchupServerProtocol protocol = new CatchupServerProtocol();
 

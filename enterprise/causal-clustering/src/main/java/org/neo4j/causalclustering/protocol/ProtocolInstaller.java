@@ -30,7 +30,7 @@ public abstract class ProtocolInstaller<O extends ProtocolInstaller.Orientation>
         this.protocol = protocol;
     }
 
-    public abstract void install( Channel channel );
+    public abstract void install( Channel channel ) throws Exception;
 
     public final Protocol protocol()
     {

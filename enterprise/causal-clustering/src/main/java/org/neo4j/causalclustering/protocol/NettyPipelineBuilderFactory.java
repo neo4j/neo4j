@@ -35,7 +35,7 @@ public class NettyPipelineBuilderFactory
         this.wrapper = wrapper;
     }
 
-    public NettyPipelineBuilder create( Channel channel, Log log )
+    public NettyPipelineBuilder create( Channel channel, Log log ) throws Exception
     {
         ChannelPipeline pipeline = channel.pipeline();
         NettyPipelineBuilder builder = NettyPipelineBuilder.with( pipeline, log );

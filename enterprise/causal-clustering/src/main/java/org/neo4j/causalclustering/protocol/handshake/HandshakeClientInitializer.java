@@ -64,7 +64,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         this.timeoutStrategy = new ExponentialBackoffStrategy( 1, 2000, MILLISECONDS );
     }
 
-    private void installHandlers( Channel channel, HandshakeClient handshakeClient )
+    private void installHandlers( Channel channel, HandshakeClient handshakeClient ) throws Exception
     {
         pipelineBuilderFactory.create( channel, log )
                 .addFraming()
@@ -75,7 +75,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     }
 
     @Override
-    protected void initChannel( SocketChannel channel )
+    protected void initChannel( SocketChannel channel ) throws Exception
     {
         log.info( "Initiating channel: " + channel );
         HandshakeClient handshakeClient = new HandshakeClient();

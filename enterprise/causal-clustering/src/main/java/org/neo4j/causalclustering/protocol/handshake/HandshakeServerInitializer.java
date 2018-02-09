@@ -50,7 +50,7 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
     }
 
     @Override
-    public void initChannel( SocketChannel ch )
+    public void initChannel( SocketChannel ch ) throws Exception
     {
         pipelineBuilderFactory.create( ch, log )
                 .addFraming()

@@ -32,7 +32,8 @@ import static java.util.Collections.emptyList;
  */
 public interface PipelineWrapper
 {
-    default List<ChannelHandler> handlersFor( Channel channel )
+    @SuppressWarnings( "RedundantThrows" )
+    default List<ChannelHandler> handlersFor( Channel channel ) throws Exception
     {
         return emptyList();
     }
