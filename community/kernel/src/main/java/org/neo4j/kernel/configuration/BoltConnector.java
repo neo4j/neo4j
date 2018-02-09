@@ -69,9 +69,12 @@ public class BoltConnector extends Connector
     public final Setting<Integer> thread_pool_queue_size;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 
 >>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
+=======
+>>>>>>> e12c341fa93... Resolve conflicts on rebase
     // Used by config doc generator
     public BoltConnector()
     {

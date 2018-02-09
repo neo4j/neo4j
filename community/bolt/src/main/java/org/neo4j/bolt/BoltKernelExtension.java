@@ -241,9 +241,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 =======
                     logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", listenAddress );
 
+<<<<<<< HEAD
                     return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption,
                             logService.getInternalLogProvider(), boltLogging, throttleGroup, handlerFactory );
 >>>>>>> 1ba1d2f8c3f... Make `BoltScheduler` configurable per bolt connector
+=======
+                    return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
+                            throttleGroup, handlerFactory );
+>>>>>>> e12c341fa93... Resolve conflicts on rebase
                 } ) );
 
         return connectors;

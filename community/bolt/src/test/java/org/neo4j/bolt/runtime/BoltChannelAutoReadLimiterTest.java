@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
