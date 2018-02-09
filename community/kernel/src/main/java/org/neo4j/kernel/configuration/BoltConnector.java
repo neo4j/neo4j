@@ -68,7 +68,6 @@ public class BoltConnector extends Connector
     @Description( "The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)" )
     public final Setting<Integer> thread_pool_queue_size;
 
-
     // Used by config doc generator
     public BoltConnector()
     {

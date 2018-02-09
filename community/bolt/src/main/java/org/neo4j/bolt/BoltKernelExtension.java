@@ -190,8 +190,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,
             BoltMessageLogging boltLogging, TransportThrottleGroup throttleGroup, BoltProtocolHandlerFactory handlerFactory )
     {
-        Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
-                .collect( Collectors.toMap( Function.identity(), connConfig ->
+        Map<BoltConnector,ProtocolInitializer> connectors =
+                config.enabledBoltConnectors().stream().collect( Collectors.toMap( Function.identity(), connConfig ->
                 {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
                     SslContext sslCtx;
@@ -227,10 +227,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
                     logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", listenAddress );
 
-                    return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption,
-                            logService.getInternalLogProvider(), boltLogging, throttleGroup, handlerFactory );
+                    return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
+                            throttleGroup, handlerFactory );
                 } ) );
-
 
         return connectors;
     }

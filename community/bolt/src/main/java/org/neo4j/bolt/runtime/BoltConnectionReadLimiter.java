@@ -27,9 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
-
-import static java.util.Objects.requireNonNull;
+import org.neo4j.util.FeatureToggles;
 
 public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
 {
