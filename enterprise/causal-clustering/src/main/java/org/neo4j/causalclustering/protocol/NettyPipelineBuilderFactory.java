@@ -39,9 +39,11 @@ public class NettyPipelineBuilderFactory
     {
         ChannelPipeline pipeline = channel.pipeline();
         NettyPipelineBuilder builder = NettyPipelineBuilder.with( pipeline, log );
+        int i = 0;
         for ( ChannelHandler handler : wrapper.handlersFor( channel ) )
         {
-            builder.add( handler );
+            builder.add( String.format( "%s_%d", wrapper.name(), i ), handler );
+            i++;
         }
         return builder;
     }

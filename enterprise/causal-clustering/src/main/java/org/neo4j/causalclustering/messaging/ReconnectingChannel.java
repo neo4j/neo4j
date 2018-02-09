@@ -22,13 +22,14 @@ package org.neo4j.causalclustering.messaging;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOutboundInvoker;
-import io.netty.util.concurrent.Future;
+import io.netty.channel.EventLoop;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.Promise;
 
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
@@ -40,10 +41,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ReconnectingChannel implements Channel
 {
+    public static final AttributeKey<ProtocolStack> PROTOCOL_STACK_KEY = AttributeKey.valueOf( "PROTOCOL_STACK" );
+
     private final Log log;
     private final Bootstrap bootstrap;
+    private final EventLoop eventLoop;
     private final SocketAddress destination;
-    private final Function<io.netty.channel.Channel,ChannelInterceptor> channelInterceptorFactory;
     private final TimeoutStrategy connectionBackoffStrategy;
 
     private volatile io.netty.channel.Channel channel;
@@ -52,21 +55,19 @@ public class ReconnectingChannel implements Channel
     private volatile boolean disposed;
 
     private TimeoutStrategy.Timeout connectionBackoff;
-    private ChannelInterceptor channelInterceptor;
 
-    ReconnectingChannel( Bootstrap bootstrap, final SocketAddress destination, final Log log,
-            Function<io.netty.channel.Channel,ChannelInterceptor> channelInterceptorFactory )
+    ReconnectingChannel( Bootstrap bootstrap, EventLoop eventLoop, SocketAddress destination, final Log log )
     {
-        this( bootstrap, destination, log, channelInterceptorFactory, new ExponentialBackoffStrategy( 100, 1600, MILLISECONDS ) );
+        this( bootstrap, eventLoop, destination, log, new ExponentialBackoffStrategy( 100, 1600, MILLISECONDS ) );
     }
 
-    private ReconnectingChannel( Bootstrap bootstrap, final SocketAddress destination, final Log log,
-            Function<io.netty.channel.Channel,ChannelInterceptor> channelInterceptorFactory, TimeoutStrategy connectionBackoffStrategy )
+    private ReconnectingChannel( Bootstrap bootstrap, EventLoop eventLoop, SocketAddress destination, final Log log,
+            TimeoutStrategy connectionBackoffStrategy )
     {
         this.bootstrap = bootstrap;
+        this.eventLoop = eventLoop;
         this.destination = destination;
         this.log = log;
-        this.channelInterceptorFactory = channelInterceptorFactory;
         this.connectionBackoffStrategy = connectionBackoffStrategy;
         this.connectionBackoff = connectionBackoffStrategy.newTimeout();
     }
@@ -89,7 +90,6 @@ public class ReconnectingChannel implements Channel
 
         fChannel = bootstrap.connect( destination.socketAddress() );
         channel = fChannel.channel();
-        channelInterceptor = channelInterceptorFactory.apply( channel );
 
         fChannel.addListener( ( ChannelFuture f ) ->
         {
@@ -131,18 +131,18 @@ public class ReconnectingChannel implements Channel
     }
 
     @Override
-    public CompletableFuture<Void> write( Object msg )
+    public Future<Void> write( Object msg )
     {
-        return doWrite( msg, ChannelOutboundInvoker::write );
+        return write( msg, false );
     }
 
     @Override
-    public CompletableFuture<Void> writeAndFlush( Object msg )
+    public Future<Void> writeAndFlush( Object msg )
     {
-        return doWrite( msg, ChannelOutboundInvoker::writeAndFlush );
+        return write( msg, true );
     }
 
-    private CompletableFuture<Void> doWrite( Object msg, BiFunction<io.netty.channel.Channel, Object, Future<Void>> writer )
+    private Future<Void> write( Object msg, boolean flush )
     {
         if ( disposed )
         {
@@ -151,16 +151,51 @@ public class ReconnectingChannel implements Channel
 
         if ( channel.isActive() )
         {
-            CompletableFuture<Void> promise = new CompletableFuture<>();
-            channelInterceptor.write( writer, channel, msg, promise );
-            return promise;
+            if ( flush )
+            {
+                return channel.writeAndFlush( msg );
+            }
+            else
+            {
+                return channel.write( msg );
+            }
         }
         else
         {
-            CompletableFuture<Void> promise = new CompletableFuture<>();
+            Promise<Void> promise = eventLoop.newPromise();
+            BiConsumer<io.netty.channel.Channel,Object> writer;
+
+            if ( flush )
+            {
+                writer = ( channel, message ) -> chain( channel.writeAndFlush( msg ), promise );
+            }
+            else
+            {
+                writer = ( channel, mmessage ) -> chain( channel.write( msg ), promise );
+            }
+
             deferredWrite( msg, fChannel, promise, true, writer );
             return promise;
         }
+    }
+
+    /**
+     * Chains a channel future to a promise. Used when the returned promise
+     * was not allocated through the channel and cannot be used as the
+     * first-hand promise for the I/O operation.
+     */
+    private static void chain( ChannelFuture when, Promise<Void> then )
+    {
+        when.addListener( f -> {
+            if ( f.isSuccess() )
+            {
+                then.setSuccess( when.get() );
+            }
+            else
+            {
+                then.setFailure( when.cause() );
+            }
+        } );
     }
 
     /**
@@ -169,14 +204,14 @@ public class ReconnectingChannel implements Channel
      * is sent right after the non-blocking channel was setup and before the server is ready
      * to accept a connection. This happens frequently in tests.
      */
-    private void deferredWrite( Object msg, ChannelFuture channelFuture, CompletableFuture<Void> promise, boolean firstAttempt,
-            BiFunction<io.netty.channel.Channel, Object, Future<Void>> writer )
+    private void deferredWrite( Object msg, ChannelFuture channelFuture, Promise<Void> promise, boolean firstAttempt,
+            BiConsumer<io.netty.channel.Channel,Object> writer )
     {
         channelFuture.addListener( (ChannelFutureListener) f ->
         {
             if ( f.isSuccess() )
             {
-                channelInterceptor.write( writer, f.channel(), msg, promise );
+                writer.accept( f.channel(), msg );
             }
             else if ( firstAttempt )
             {
@@ -185,14 +220,14 @@ public class ReconnectingChannel implements Channel
             }
             else
             {
-                promise.completeExceptionally( f.cause() );
+                promise.setFailure( f.cause() );
             }
         } );
     }
 
     public Optional<ProtocolStack> installedProtocolStack()
     {
-        return channelInterceptor.installedProtocolStack();
+        return Optional.ofNullable( channel.attr( PROTOCOL_STACK_KEY ).get() );
     }
 
     @Override

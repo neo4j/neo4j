@@ -56,9 +56,9 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
     {
         pipelineBuilderFactory.create( ch, log )
                 .addFraming()
-                .add( new ServerMessageEncoder() )
-                .add( new ServerMessageDecoder() )
-                .add( createHandshakeServer( ch ) )
+                .add( "handshake_server_encoder", new ServerMessageEncoder() )
+                .add( "handshake_server_decoder", new ServerMessageDecoder() )
+                .add( "handshake_server", createHandshakeServer( ch ) )
                 .install();
     }
 

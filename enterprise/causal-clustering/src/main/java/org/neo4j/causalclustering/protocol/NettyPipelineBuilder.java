@@ -27,28 +27,37 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
-import org.neo4j.causalclustering.messaging.HandshakeGate;
+import org.neo4j.causalclustering.messaging.MessageGate;
 import org.neo4j.logging.Log;
 
 import static java.util.Arrays.asList;
 
 /**
  * Builder and installer of pipelines.
- *
+ * <p>
  * Makes sures to install sane last-resort error handling and
  * handles the construction of common patterns, like framing.
+ * <p>
+ * Do not modify the names of handlers you install.
  */
 public class NettyPipelineBuilder
 {
+    static final String MESSAGE_GATE_NAME = "message_gate";
+
     private final ChannelPipeline pipeline;
     private final Log log;
-    private final List<ChannelHandler> handlers = new ArrayList<>();
+    private final List<HandlerInfo> handlerInfos = new ArrayList<>();
+
+    private Predicate<Object> gatePredicate;
 
     private NettyPipelineBuilder( ChannelPipeline pipeline, Log log )
     {
@@ -56,27 +65,62 @@ public class NettyPipelineBuilder
         this.log = log;
     }
 
+    /**
+     * Entry point for the builder.
+     *
+     * @param pipeline The pipeline to build for.
+     * @param log The log used for last-resort errors occurring in the pipeline.
+     * @return The builder.
+     */
     public static NettyPipelineBuilder with( ChannelPipeline pipeline, Log log )
     {
         return new NettyPipelineBuilder( pipeline, log );
     }
 
+    /**
+     * Adds buffer framing to the pipeline. Useful for pipelines marshalling
+     * complete POJOs as an example using {@link MessageToByteEncoder} and
+     * {@link ByteToMessageDecoder}.
+     */
     public NettyPipelineBuilder addFraming()
     {
-        add( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
-        add( new LengthFieldPrepender( 4 ) );
+        add( "framing_decoder", new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
+        add( "framing_encoder", new LengthFieldPrepender( 4 ) );
         return this;
     }
 
-    public NettyPipelineBuilder add( List<ChannelHandler> newHandlers )
+    /**
+     * Adds handlers to the pipeline.
+     * <p>
+     * The pipeline builder controls the internal names of the handlers in the
+     * pipeline and external actors are forbidden from manipulating them.
+     *
+     * @param name The name of the handler, which must be unique.
+     * @param newHandlers The new handlers.
+     * @return The builder.
+     */
+    public NettyPipelineBuilder add( String name, List<ChannelHandler> newHandlers )
     {
-        handlers.addAll( newHandlers );
+        newHandlers.stream().map( handler -> new HandlerInfo( name, handler ) ).forEachOrdered( handlerInfos::add );
         return this;
     }
 
-    public NettyPipelineBuilder add( ChannelHandler... newHandlers )
+    /**
+     * @see #add(String, List)
+     */
+    public NettyPipelineBuilder add( String name, ChannelHandler... newHandlers )
     {
-        return add( asList( newHandlers ) );
+        return add( name, asList( newHandlers ) );
+    }
+
+    public NettyPipelineBuilder addGate( Predicate<Object> gatePredicate )
+    {
+        if ( this.gatePredicate != null )
+        {
+            throw new IllegalStateException( "Cannot have more than one gate." );
+        }
+        this.gatePredicate = gatePredicate;
+        return this;
     }
 
     /**
@@ -84,32 +128,56 @@ public class NettyPipelineBuilder
      */
     public void install()
     {
+        ChannelHandler oldGateHandler = removeOldGate();
         clear();
-        handlers.forEach( pipeline::addLast );
-//         installErrorHandling(); -- temporarily disabled for debugging purposes
+        for ( HandlerInfo info : handlerInfos )
+        {
+            pipeline.addLast( info.name, info.handler );
+        }
+        installGate( oldGateHandler );
+        installErrorHandling();
+    }
+
+    private ChannelHandler removeOldGate()
+    {
+        if ( pipeline.get( MESSAGE_GATE_NAME ) != null )
+        {
+            return pipeline.remove( MESSAGE_GATE_NAME );
+        }
+        return null;
+    }
+
+    private void installGate( ChannelHandler oldGateHandler )
+    {
+        if ( oldGateHandler != null && gatePredicate != null )
+        {
+            throw new IllegalStateException( "Cannot have more than one gate." );
+        }
+        else if ( gatePredicate != null )
+        {
+            pipeline.addLast( MESSAGE_GATE_NAME, new MessageGate( gatePredicate ) );
+        }
+        else if ( oldGateHandler != null )
+        {
+            pipeline.addLast( MESSAGE_GATE_NAME, oldGateHandler );
+        }
     }
 
     private void clear()
     {
-        pipeline.names().stream()
-                .filter( this::isNotDefault )
-                .filter( this::isNotUserEvent )
-                .forEach( pipeline::remove );
-    }
-
-    private boolean isNotUserEvent( String name )
-    {
-        return !HandshakeGate.HANDSHAKE_GATE.equals( name );
+        pipeline.names().stream().filter( this::isNotDefault ).forEach( pipeline::remove );
     }
 
     private boolean isNotDefault( String name )
     {
+        // these are netty internal handlers for head and tail
         return pipeline.get( name ) != null;
     }
 
     private void installErrorHandling()
     {
-        pipeline.addLast( new ChannelDuplexHandler()
+        // inbound goes in the direction from first->last
+        pipeline.addLast( "error_handler_tail", new ChannelDuplexHandler()
         {
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
@@ -123,13 +191,16 @@ public class NettyPipelineBuilder
                 log.error( "Unhandled inbound message: " + msg );
             }
 
+            // this is the first handler for an outbound message, and attaches a listener to its promise if possible
             @Override
             public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
+                // if the promise is a void-promise, then exceptions will instead propagate to the
+                // exceptionCaught handler on the outbound handler further below
+
                 if ( !promise.isVoid() )
                 {
-                    promise.addListener( (ChannelFutureListener) future ->
-                    {
+                    promise.addListener( (ChannelFutureListener) future -> {
                         if ( !future.isSuccess() )
                         {
                             log.error( "Exception in outbound", future.cause() );
@@ -140,14 +211,17 @@ public class NettyPipelineBuilder
             }
         } );
 
-        pipeline.addFirst( new ChannelOutboundHandlerAdapter()
+        pipeline.addFirst( "error_handler_head", new ChannelOutboundHandlerAdapter()
         {
+            // exceptions which did not get fulfilled on the promise of a write, etc.
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
                 log.error( "Exception in outbound", cause );
             }
 
+            // netty can only handle bytes in the form of ByteBuf, so if you reach this then you are
+            // perhaps trying to send a POJO without having a suitable encoder
             @Override
             public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
             {
@@ -161,5 +235,17 @@ public class NettyPipelineBuilder
                 }
             }
         } );
+    }
+
+    private static class HandlerInfo
+    {
+        private final String name;
+        private final ChannelHandler handler;
+
+        HandlerInfo( String name, ChannelHandler handler )
+        {
+            this.name = name;
+            this.handler = handler;
+        }
     }
 }

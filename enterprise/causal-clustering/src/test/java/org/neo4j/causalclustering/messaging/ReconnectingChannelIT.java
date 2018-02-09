@@ -32,8 +32,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.SocketAddress;
@@ -70,7 +70,7 @@ public class ReconnectingChannelIT
     {
         elg = new NioEventLoopGroup( 0 );
         Bootstrap bootstrap = new Bootstrap().channel( NioSocketChannel.class ).group( elg ).handler( VOID_HANDLER );
-        channel = new ReconnectingChannel( bootstrap, serverAddress, log, SimpleChannelInterceptor.getInstance() );
+        channel = new ReconnectingChannel( bootstrap, elg.next(), serverAddress, log );
     }
 
     @After
@@ -90,7 +90,7 @@ public class ReconnectingChannelIT
         channel.start();
 
         // when
-        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+        Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will be successfully completed
         fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
@@ -107,7 +107,7 @@ public class ReconnectingChannelIT
         // this is benign in the sense that the test will pass in the condition where it was already connected as well
 
         // when
-        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+        Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will be successfully completed
         fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
@@ -120,7 +120,7 @@ public class ReconnectingChannelIT
         channel.start();
 
         // when
-        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+        Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will throw
         fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
@@ -134,7 +134,7 @@ public class ReconnectingChannelIT
         channel.start();
 
         // when
-        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+        Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
 
         // then will not throw
         fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
@@ -170,7 +170,7 @@ public class ReconnectingChannelIT
         channel.start();
 
         // ensure we are connected
-        CompletableFuture<Void> fSend = channel.writeAndFlush( emptyBuffer() );
+        Future<Void> fSend = channel.writeAndFlush( emptyBuffer() );
         fSend.get( DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
         assertEventually( "", server::childCount, equalTo( 1 ), DEFAULT_TIMEOUT_MS, MILLISECONDS );
 

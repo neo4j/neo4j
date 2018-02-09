@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
+import org.neo4j.causalclustering.messaging.ReconnectingChannel;
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
@@ -68,16 +69,16 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
     {
         pipelineBuilderFactory.create( channel, log )
                 .addFraming()
-                .add( new ClientMessageEncoder() )
-                .add( new ClientMessageDecoder() )
-                .add( new NettyHandshakeClient( handshakeClient ) )
+                .add( "handshake_client_encoder", new ClientMessageEncoder() )
+                .add( "handshake_client_decoder", new ClientMessageDecoder() )
+                .add( "handshake_client", new NettyHandshakeClient( handshakeClient ) )
+                .addGate( msg -> !(msg instanceof ServerMessage) )
                 .install();
     }
 
     @Override
     protected void initChannel( SocketChannel channel ) throws Exception
     {
-        log.info( "Initiating channel: " + channel );
         HandshakeClient handshakeClient = new HandshakeClient();
         installHandlers( channel, handshakeClient );
 
@@ -90,7 +91,6 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
      */
     private void scheduleHandshake( SocketChannel ch, HandshakeClient handshakeClient, TimeoutStrategy.Timeout timeout )
     {
-        log.info( String.format( "Scheduling handshake after: %d ms", timeout.getMillis() ) );
         ch.eventLoop().schedule( () ->
         {
             if ( ch.isActive() )
@@ -104,7 +104,6 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
             }
             else
             {
-                log.warn( "Channel closed" );
                 handshakeClient.failIfNotDone( "Channel closed" );
             }
         }, timeout.getMillis(), MILLISECONDS );
@@ -122,7 +121,6 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     private void initiateHandshake( Channel channel, HandshakeClient handshakeClient )
     {
-        log.info( "Initiating handshake" );
         SimpleNettyChannel channelWrapper = new SimpleNettyChannel( channel, log );
         CompletableFuture<ProtocolStack> handshake = handshakeClient.initiate( channelWrapper, protocolRepository, protocolName );
 
@@ -131,11 +129,11 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
 
     private void onHandshakeComplete( ProtocolStack protocolStack, Channel channel, Throwable failure )
     {
-        log.info( "Handshake completed" );
         if ( failure != null )
         {
             log.error( "Error when negotiating protocol stack", failure );
-            channel.pipeline().fireUserEventTriggered( ClientHandshakeFinishedEvent.Failure.instance() );
+            channel.pipeline().fireUserEventTriggered( GateEvent.getFailure() );
+            channel.close();
         }
         else
         {
@@ -143,8 +141,10 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
             {
                 log.info( "Installing: " + protocolStack );
                 protocolInstaller.installerFor( protocolStack.applicationProtocol() ).install( channel );
-                log.info( "Firing handshake success event to handshake gate" );
-                channel.pipeline().fireUserEventTriggered( new ClientHandshakeFinishedEvent.Success( protocolStack ) );
+                channel.attr( ReconnectingChannel.PROTOCOL_STACK_KEY ).set( protocolStack );
+
+                channel.pipeline().fireUserEventTriggered( GateEvent.getSuccess() );
+                channel.flush();
             }
             catch ( Exception e )
             {

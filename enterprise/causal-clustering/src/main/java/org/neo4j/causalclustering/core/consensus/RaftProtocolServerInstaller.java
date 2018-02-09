@@ -51,8 +51,8 @@ public class RaftProtocolServerInstaller extends ProtocolInstaller<ProtocolInsta
     {
         pipelineBuilderFactory.create( channel, log )
                 .addFraming()
-                .add( new RaftMessageDecoder( new CoreReplicatedContentMarshal(), Clock.systemUTC() ) )
-                .add( raftMessageHandler )
+                .add( "raft_decoder", new RaftMessageDecoder( new CoreReplicatedContentMarshal(), Clock.systemUTC() ) )
+                .add( "raft_handler", raftMessageHandler )
                 .install();
     }
 }

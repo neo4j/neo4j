@@ -19,10 +19,48 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-/**
- * Messages to the server, generally requests.
- */
-public interface ServerMessage
+import java.util.Objects;
+
+public class GateEvent
 {
-    void dispatch( ServerMessageHandler handler );
+    private final boolean isSuccess;
+
+    private GateEvent( boolean isSuccess )
+    {
+        this.isSuccess = isSuccess;
+    }
+
+    private static GateEvent success = new GateEvent( true );
+    private static GateEvent failure = new GateEvent( false );
+
+    public static GateEvent getSuccess()
+    {
+        return success;
+    }
+
+    public static GateEvent getFailure()
+    {
+        return failure;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        GateEvent that = (GateEvent) o;
+        return isSuccess == that.isSuccess;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( isSuccess );
+    }
 }

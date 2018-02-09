@@ -22,7 +22,7 @@ package org.neo4j.causalclustering.messaging;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import org.neo4j.logging.NullLog;
 
@@ -43,7 +43,7 @@ public class SimpleNettyChannelTest
 
         // when
         Object msg = new Object();
-        CompletableFuture<Void> writeComplete = channel.write( msg );
+        Future<Void> writeComplete = channel.write( msg );
 
         // then
         assertNull( nettyChannel.readOutbound() );
@@ -65,7 +65,7 @@ public class SimpleNettyChannelTest
 
         // when
         Object msg = new Object();
-        CompletableFuture<Void> writeComplete = channel.writeAndFlush( msg );
+        Future<Void> writeComplete = channel.writeAndFlush( msg );
 
         // then
         assertTrue( writeComplete.isDone() );
