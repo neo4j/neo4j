@@ -27,14 +27,17 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.primitive.PrimitiveLongResourceCollections;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskCoordinator;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -73,6 +76,31 @@ public class PartitionedIndexReader extends AbstractIndexReader
         try
         {
             return partitionedOperation( reader -> innerQuery( reader, predicates ) );
+        }
+        catch ( InnerException e )
+        {
+            throw e.getCause();
+        }
+    }
+
+    @Override
+    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, IndexQuery... query ) throws IndexNotApplicableKernelException
+    {
+        try
+        {
+            BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
+            indexReaders.parallelStream().forEach( reader ->
+            {
+                try
+                {
+                    reader.query( bridgingIndexProgressor, indexOrder, query );
+                }
+                catch ( IndexNotApplicableKernelException e )
+                {
+                    throw new InnerException( e );
+                }
+            } );
+            client.initialize( descriptor, bridgingIndexProgressor, query );
         }
         catch ( InnerException e )
         {
