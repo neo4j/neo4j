@@ -84,8 +84,10 @@ public interface BoltConnection
 
     /**
      * Executes a batch of queued jobs, which is executed in an another thread (which is part of a thread pool)
+     *
+     * @return false when no more processing should take place (i.e. connection is closed)
      */
-    void processNextBatch();
+    boolean processNextBatch();
 
     /**
      * Interrupt and (possibly) stop the current running job, but continue processing next jobs

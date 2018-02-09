@@ -19,32 +19,11 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import org.neo4j.bolt.v1.runtime.Job;
-
-public class BoltConnectionQueueMonitorAggregate implements BoltConnectionQueueMonitor
+public interface BoltConnectionLifetimeListener
 {
-    private final List<BoltConnectionQueueMonitor> monitors;
 
-    public BoltConnectionQueueMonitorAggregate( BoltConnectionQueueMonitor... monitors )
-    {
-        this.monitors = new ArrayList<>( Arrays.asList( monitors ) );
-    }
+    void created( BoltConnection connection );
 
-    @Override
-    public void enqueued( BoltConnection to, Job job )
-    {
-        monitors.forEach( m -> m.enqueued( to, job ) );
-    }
+    void closed( BoltConnection connection );
 
-    @Override
-    public void drained( BoltConnection from, Collection<Job> batch )
-    {
-        monitors.forEach( m -> m.drained( from, batch ) );
-    }
 }

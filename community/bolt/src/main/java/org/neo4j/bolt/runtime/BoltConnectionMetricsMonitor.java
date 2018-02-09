@@ -19,11 +19,23 @@
  */
 package org.neo4j.bolt.runtime;
 
-public interface BoltConnectionListener
+public interface BoltConnectionMetricsMonitor
 {
 
-    void created( BoltConnection connection );
+    void connectionOpened();
 
-    void destroyed( BoltConnection connection );
+    void connectionActivated();
+
+    void connectionWaiting();
+
+    void messageReceived();
+
+    void messageProcessingStarted( long queueTime );
+
+    void messageProcessingCompleted( long processingTime );
+
+    void messageProcessingFailed();
+
+    void connectionClosed();
 
 }

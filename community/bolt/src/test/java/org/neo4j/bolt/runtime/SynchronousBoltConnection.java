@@ -96,9 +96,9 @@ public class SynchronousBoltConnection implements BoltConnection
     }
 
     @Override
-    public void processNextBatch()
+    public boolean processNextBatch()
     {
-
+        return true;
     }
 
     @Override

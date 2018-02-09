@@ -182,26 +182,26 @@ public class CachedThreadPoolExecutorFactoryTest
         assertNotNull( executorService );
         assertEquals( 0, threadCounter.get() );
 
-        for ( int i = 0; i < 5; i++ )
-        {
-            executorService.submit( newInfiniteWaitingRunnable( exitCondition ) );
-            assertEquals( i + 1, threadCounter.get() );
-        }
-
         try
         {
-            executorService.submit( newInfiniteWaitingRunnable( exitCondition ) );
+            for ( int i = 0; i < 6; i++ )
+            {
+                executorService.submit( newInfiniteWaitingRunnable( exitCondition ) );
+            }
+
             fail( "should throw exception" );
         }
         catch ( RejectedExecutionException ex )
         {
             // expected
         }
+
+        assertEquals( 5, threadCounter.get() );
     }
 
     private static Runnable newInfiniteWaitingRunnable( AtomicBoolean exitCondition )
     {
-        return () -> Predicates.awaitForever( () -> !Thread.currentThread().isInterrupted() || exitCondition.get(), 500, MILLISECONDS );
+        return () -> Predicates.awaitForever( () -> Thread.currentThread().isInterrupted() || exitCondition.get(), 500, MILLISECONDS );
     }
 
     private static ThreadFactory newThreadFactory()

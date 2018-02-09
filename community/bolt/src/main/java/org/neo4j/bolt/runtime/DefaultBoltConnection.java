@@ -45,7 +45,7 @@ public class DefaultBoltConnection implements BoltConnection
 
     private final BoltChannel channel;
     private final BoltStateMachine machine;
-    private final BoltConnectionListener listener;
+    private final BoltConnectionLifetimeListener listener;
     private final BoltConnectionQueueMonitor queueMonitor;
 
     private final Log log;
@@ -58,13 +58,13 @@ public class DefaultBoltConnection implements BoltConnection
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionListener listener,
+    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor )
     {
         this( channel, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
     }
 
-    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionListener listener,
+    public DefaultBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
             BoltConnectionQueueMonitor queueMonitor, int maxBatchSize )
     {
         this.id = channel.id();
@@ -128,7 +128,7 @@ public class DefaultBoltConnection implements BoltConnection
     }
 
     @Override
-    public void processNextBatch()
+    public boolean processNextBatch()
     {
         try
         {
@@ -169,6 +169,8 @@ public class DefaultBoltConnection implements BoltConnection
                 close();
             }
         }
+
+        return !closed.get();
     }
 
     @Override
@@ -225,7 +227,7 @@ public class DefaultBoltConnection implements BoltConnection
     {
         if ( listener != null )
         {
-            listener.destroyed( this );
+            listener.closed( this );
         }
     }
 

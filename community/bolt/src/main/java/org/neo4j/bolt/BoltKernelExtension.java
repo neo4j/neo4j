@@ -30,12 +30,11 @@ import java.util.stream.Collectors;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
-import org.neo4j.bolt.runtime.BoltScheduler;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
-import org.neo4j.bolt.runtime.ExecutorBoltScheduler;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
+import org.neo4j.bolt.runtime.MetricsReportingBoltConnectionFactory;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
@@ -183,8 +182,9 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
             Dependencies dependencies, LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
-                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ) );
+        return new MetricsReportingBoltConnectionFactory( dependencies.monitors(),
+                new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
+                        new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ) ), clock );
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,

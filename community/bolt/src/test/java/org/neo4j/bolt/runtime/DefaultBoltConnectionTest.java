@@ -61,7 +61,7 @@ public class DefaultBoltConnectionTest
     private final String connector = "default";
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private final LogService logService = new SimpleLogService( logProvider );
-    private final BoltConnectionListener connectionListener = mock( BoltConnectionListener.class );
+    private final BoltConnectionLifetimeListener connectionListener = mock( BoltConnectionLifetimeListener.class );
     private final BoltConnectionQueueMonitor queueMonitor = mock( BoltConnectionQueueMonitor.class );
     private final EmbeddedChannel channel = new EmbeddedChannel();
     private final BoltMessageLogger messageLogger = BoltMessageLogging.none().newLogger( channel );
@@ -149,7 +149,7 @@ public class DefaultBoltConnectionTest
         connection.stop();
         connection.processNextBatch();
 
-        verify( connectionListener ).destroyed( connection );
+        verify( connectionListener ).closed( connection );
     }
 
     @Test

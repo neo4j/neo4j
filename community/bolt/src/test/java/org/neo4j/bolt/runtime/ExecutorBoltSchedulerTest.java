@@ -116,7 +116,7 @@ public class ExecutorBoltSchedulerTest
 
         boltScheduler.start();
         boltScheduler.created( connection );
-        boltScheduler.destroyed( connection );
+        boltScheduler.closed( connection );
 
         assertFalse( boltScheduler.isRegistered( connection ) );
     }
@@ -165,7 +165,11 @@ public class ExecutorBoltSchedulerTest
     {
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        doThrow( new RuntimeException( "some unexpected error" ) ).when( connection ).processNextBatch();
+        //when( connection.processNextBatch() ).thenThrow( new RuntimeException( "some unexpected error" ) );
+        doAnswer( inv ->
+        {
+            throw new RuntimeException( "some unexpected error" );
+        } ).when( connection ).processNextBatch();
 
         boltScheduler.start();
         boltScheduler.created( connection );
@@ -187,7 +191,11 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         AtomicInteger counter = new AtomicInteger( 0 );
-        doAnswer( inv -> counter.incrementAndGet() ).when( connection ).processNextBatch();
+        doAnswer( inv ->
+        {
+            counter.incrementAndGet();
+            return true;
+        } ).when( connection ).processNextBatch();
         when( connection.hasPendingJobs() ).thenReturn( true ).thenReturn( false );
 
         boltScheduler.start();
@@ -214,7 +222,7 @@ public class ExecutorBoltSchedulerTest
 
         Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
 
-        boltScheduler.destroyed( connection );
+        boltScheduler.closed( connection );
 
         Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
 
@@ -234,10 +242,10 @@ public class ExecutorBoltSchedulerTest
 
     }
 
-    private static Object awaitExit( AtomicBoolean exitCondition )
+    private static boolean awaitExit( AtomicBoolean exitCondition )
     {
         Predicates.awaitForever( () -> Thread.currentThread().isInterrupted() || exitCondition.get(), 500, MILLISECONDS );
-        return null;
+        return true;
     }
 
 }

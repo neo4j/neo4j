@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.runtime;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -30,13 +32,13 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionListener, BoltConnectionQueueMonitor
+public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifetimeListener, BoltConnectionQueueMonitor
 {
     private final ExecutorFactory executorFactory;
     private final JobScheduler scheduler;
     private final Log log;
     private final ConcurrentHashMap<String, BoltConnection> activeConnections = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, CompletableFuture<Void>> activeWorkItems = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<Boolean>> activeWorkItems = new ConcurrentHashMap<>();
     private final int corePoolSize;
     private final int maxPoolSize;
     private final Duration keepAlive;
@@ -58,18 +60,12 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionListe
 
     boolean isRegistered( BoltConnection connection )
     {
-        synchronized ( connection )
-        {
-            return activeConnections.containsKey( connection.id() );
-        }
+        return activeConnections.containsKey( connection.id() );
     }
 
     boolean isActive( BoltConnection connection )
     {
-        synchronized ( connection )
-        {
-            return activeWorkItems.containsKey( connection.id() );
-        }
+        return activeWorkItems.containsKey( connection.id() );
     }
 
     public void start()
@@ -89,7 +85,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionListe
     }
 
     @Override
-    public void destroyed( BoltConnection connection )
+    public void closed( BoltConnection connection )
     {
         String id = connection.id();
 
@@ -121,38 +117,24 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionListe
 
     private void handleSubmission( BoltConnection connection )
     {
-        String id = connection.id();
-
-        if ( !activeWorkItems.containsKey( id ) )
-        {
-            synchronized ( connection )
-            {
-                if ( !activeWorkItems.containsKey( id ) )
-                {
-                    activeWorkItems.put( id, CompletableFuture.runAsync( () -> connection.processNextBatch(), threadPool ).whenCompleteAsync(
-                            ( result, error ) -> handleCompletion( connection, result, error ), threadPool ) );
-                }
-            }
-        }
+        activeWorkItems.computeIfAbsent( connection.id(), key -> CompletableFuture.supplyAsync( connection::processNextBatch, threadPool ).whenCompleteAsync(
+                ( result, error ) -> handleCompletion( connection, result, error ), threadPool ) );
     }
 
-    private void handleCompletion( BoltConnection connection, Object result, Throwable error )
+    private void handleCompletion( BoltConnection connection, Object shouldContinueScheduling, Throwable error )
     {
-        synchronized ( connection )
-        {
-            CompletableFuture<Void> previousFuture = activeWorkItems.remove( connection.id() );
+        CompletableFuture<Boolean> previousFuture = activeWorkItems.remove( connection.id() );
 
-            if ( error != null )
+        if ( error != null )
+        {
+            log.error( String.format( "Unexpected error during job scheduling for session '%s'.", connection.id() ), error );
+            connection.stop();
+        }
+        else
+        {
+            if ( (Boolean)shouldContinueScheduling && connection.hasPendingJobs() )
             {
-                log.error( String.format( "Unexpected error during job scheduling for session '%s'.", connection.id() ), error );
-                connection.stop();
-            }
-            else
-            {
-                if ( connection.hasPendingJobs() )
-                {
-                    previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), threadPool );
-                }
+                previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), threadPool );
             }
         }
     }
