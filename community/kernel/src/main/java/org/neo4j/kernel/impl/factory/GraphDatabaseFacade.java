@@ -587,9 +587,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
             Node node = iterator.next();
             if ( iterator.hasNext() )
             {
-                throw new MultipleFoundException(
-                        format( "Found multiple nodes with label: '%s', property name: '%s' and property " +
-                                "value: '%s' while only one was expected.", myLabel, key, value ) );
+                throw new MultipleFoundException();
             }
             return node;
         }

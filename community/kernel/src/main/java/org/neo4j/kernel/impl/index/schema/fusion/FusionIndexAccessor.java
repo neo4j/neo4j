@@ -84,13 +84,6 @@ class FusionIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void refresh() throws IOException
-    {
-        nativeAccessor.refresh();
-        luceneAccessor.refresh();
-    }
-
-    @Override
     public void close() throws IOException
     {
         try

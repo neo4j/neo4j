@@ -23,7 +23,6 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{ASTRewriter, IfNoParameter}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
@@ -38,7 +37,7 @@ class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPla
                         plannerName: Option[CostBasedPlannerName],
                         updateStrategy: Option[UpdateStrategy],
                         contextCreator: ContextCreator[C]): CypherCompiler[C] = {
-    val rewriter = new ASTRewriter(rewriterSequencer, IfNoParameter, getDegreeRewriting = true)
+    val rewriter = new ASTRewriter(rewriterSequencer, IfNoParameter)
     val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
     CypherCompiler( rewriter, monitors, rewriterSequencer,

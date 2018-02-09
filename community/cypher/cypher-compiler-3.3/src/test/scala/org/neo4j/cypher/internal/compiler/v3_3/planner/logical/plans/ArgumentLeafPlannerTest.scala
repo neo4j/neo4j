@@ -21,14 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.argumentLeafPlanner
-import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternExpression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 import org.neo4j.cypher.internal.v3_3.logical.plans.Argument
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("should return an empty candidate list argument ids is empty") {
     implicit val context = newMockedLogicalPlanningContext(newMockedPlanContext)

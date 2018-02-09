@@ -27,7 +27,7 @@ import scala.collection.{TraversableLike, immutable, mutable}
 //
 // The replacement is called org.neo4j.internal.helpers.Eagerly
 //
-@deprecated
+@deprecated("Materialized is deprecated", "from 3.x")
 object Materialized {
 
   def mapValues[A, B, C](m: collection.Map[A, B], f: B => C): Map[A, C] = {

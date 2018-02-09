@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, Cost, PlannerQuery}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
+import scala.language.{implicitConversions}
+
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val GIVEN_FIXED_COST = new given {

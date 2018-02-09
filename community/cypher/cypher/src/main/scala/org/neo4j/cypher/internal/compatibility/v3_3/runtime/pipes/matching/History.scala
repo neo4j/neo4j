@@ -90,8 +90,8 @@ class AddedHistory(val parent: History, val pair: MatchingPair) extends History 
           case Some((key, rels)) => Seq(pe.key -> entity.path, (key, rels))
           case None => Seq(pe.key -> entity.path)
         }
-
       }
+      case pair => throw new IllegalStateException(s"uknown pair: $pair")
     }
   }
 

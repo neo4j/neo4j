@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class UnwindCollection(left: LogicalPlan, variable: String, expression: Expression)
+case class UnwindCollection(left: LogicalPlan, variable: IdName, expression: Expression)
                            (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalPlan with LazyLogicalPlan {
   val lhs = Some(left)
   def rhs = None
 
-  val availableSymbols: Set[String] = left.availableSymbols + variable
+  def availableSymbols: Set[IdName] = left.availableSymbols + variable
 }

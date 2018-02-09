@@ -329,6 +329,7 @@ public class KernelTransactionTerminationTest
     {
         final CommitTrackingMonitor monitor;
 
+        @SuppressWarnings( "unchecked" )
         TestKernelTransaction( CommitTrackingMonitor monitor )
         {
             super( mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),

@@ -61,8 +61,9 @@ abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
     java.util.Arrays.binarySearch(array.asInstanceOf[Array[SortDataWithContext]], key, comparator)
   }
 
-  def arrayEntry(ctx: ExecutionContext, state: QueryState): SortDataWithContext =
+  def arrayEntry(ctx: ExecutionContext, state: QueryState): SortDataWithContext = {
     (sortItems.map(column => ctx(column.id)), ctx)
+  }
 }
 
 case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpression: Expression)
@@ -168,7 +169,7 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[ColumnOrder])
 
       val first = input.next()
       var best = arrayEntry(first, state)
-      var matchingRows = init(best)
+      val matchingRows = init(best)
 
       input.foreach {
         ctx =>

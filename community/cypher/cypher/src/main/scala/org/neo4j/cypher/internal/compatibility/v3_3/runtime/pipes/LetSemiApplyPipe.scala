@@ -35,5 +35,5 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
     }
   }
 
-  private def name = if (negated) "LetAntiSemiApply" else "LetSemiApply"
+//  private def name = if (negated) "LetAntiSemiApply" else "LetSemiApply"
 }

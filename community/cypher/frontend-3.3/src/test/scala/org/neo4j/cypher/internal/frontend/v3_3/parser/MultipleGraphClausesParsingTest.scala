@@ -20,8 +20,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, Clause}
 import org.parboiled.scala.Rule1
 
-import scala.language.implicitConversions
-
 class MultipleGraphClausesParsingTest
   extends ParserAstTest[ast.Clause]
   with Query

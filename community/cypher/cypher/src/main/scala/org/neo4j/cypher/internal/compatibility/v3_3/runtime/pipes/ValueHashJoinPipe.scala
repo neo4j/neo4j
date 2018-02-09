@@ -32,7 +32,6 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
   extends PipeWithSource(left) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val x = state
     if (input.isEmpty)
       return Iterator.empty
 
@@ -46,13 +45,13 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey = rhsExpression(context, state) if joinKey != Values.NO_VALUE}
-      yield {
-
-        val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-        seq.map(context.mergeWith)
-      }
+    val result = for {
+      context <- rhsIterator
+      joinKey = rhsExpression(context, state) if joinKey != Values.NO_VALUE
+    } yield {
+      val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
+      seq.map(context.mergeWith)
+    }
 
     result.flatten
   }

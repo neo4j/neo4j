@@ -56,7 +56,7 @@ public class CertificatesIT
         settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
         settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
         settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
-        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).address.name(), "localhost:7878" );
     } );
 
     @Test

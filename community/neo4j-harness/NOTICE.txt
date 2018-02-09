@@ -37,7 +37,6 @@ Apache Software License, Version 2.0
   Caffeine cache
   Commons IO
   Commons Lang
-  ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Jackson
   JAX-RS provider for JSON content type

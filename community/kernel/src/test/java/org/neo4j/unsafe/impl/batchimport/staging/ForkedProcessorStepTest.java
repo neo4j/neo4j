@@ -21,14 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import org.junit.Test;
 
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +35,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.Iterables.asList;
 
 public class ForkedProcessorStepTest
 {
@@ -212,8 +209,8 @@ public class ForkedProcessorStepTest
                 {
                     if ( batch[i] % processors == id )
                     {
-                        boolean compareAndSet = reference.compareAndSet( batch[i], ticket, ticket + 1 );
-                        assertTrue( "I am " + id + ". Was expecting " + ticket + " for " + batch[i] + " but was " + reference.get( batch[i] ), compareAndSet );
+                        assertTrue( "Was expecting " + ticket + " for " + batch[i],
+                                reference.compareAndSet( batch[i], ticket, ticket + 1 ) );
                     }
                 }
             }
@@ -285,90 +282,6 @@ public class ForkedProcessorStepTest
         catch ( Exception e )
         {
             assertSame( testPanic, e );
-        }
-    }
-
-    @Test( timeout = 60_000 )
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered() throws Exception
-    {
-        shouldBeAbleToProgressUnderStressfulProcessorChanges( Step.ORDER_SEND_DOWNSTREAM );
-    }
-
-    @Test( timeout = 60_000 )
-    public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered() throws Exception
-    {
-        shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
-    }
-
-    private void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception
-    {
-        // given
-        int batches = 1_000;
-        int processors = Runtime.getRuntime().availableProcessors() * 10;
-        Configuration config = new Configuration.Overridden( Configuration.DEFAULT )
-        {
-            @Override
-            public int maxNumberOfProcessors()
-            {
-                return processors;
-            }
-        };
-        Stage stage = new StressStage( config, orderingGuarantees, batches );
-        StageExecution execution = stage.execute();
-        List<Step<?>> steps = asList( execution.steps() );
-        steps.get( 1 ).processors( processors / 3 );
-
-        // when
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        while ( execution.stillExecuting() )
-        {
-            steps.get( 2 ).processors( random.nextInt( -2, 5 ) );
-            Thread.sleep( 1 );
-        }
-        execution.assertHealthy();
-
-        // then
-        assertEquals( batches, steps.get( steps.size() - 1 ).stats().stat( Keys.done_batches ).asLong() );
-    }
-
-    private static class StressStage extends Stage
-    {
-        StressStage( Configuration config, int orderingGuarantees, int batches )
-        {
-            super( "Stress", config, orderingGuarantees );
-
-            add( new PullingProducerStep( control(), config )
-            {
-                @Override
-                protected long position()
-                {
-                    return 0;
-                }
-
-                @Override
-                protected Object nextBatchOrNull( long ticket, int batchSize )
-                {
-                    return ticket < batches ? ticket : null;
-                }
-            } );
-            add( new ProcessorStep<Long>( control(), "Yeah", config, 3 )
-            {
-                @Override
-                protected void process( Long batch, BatchSender sender ) throws Throwable
-                {
-                    Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
-                    sender.send( batch );
-                }
-            } );
-            add( new ForkedProcessorStep<Long>( control(), "Subject", config )
-            {
-                @Override
-                protected void forkedProcess( int id, int processors, Long batch ) throws Throwable
-                {
-                    Thread.sleep( 0, ThreadLocalRandom.current().nextInt( 100_000 ) );
-                }
-            } );
-            add( new DeadEndStep( control() ) );
         }
     }
 

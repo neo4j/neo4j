@@ -60,13 +60,13 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     implicit val planningContext = mockLogicalPlanningContext(semanticTable)
 
     val inputPlan = mock[LogicalPlan]
-    when(inputPlan.availableSymbols).thenReturn(columns.toSet)
+    when(inputPlan.availableSymbols).thenReturn(columns.map(IdName.apply).toSet)
 
     val queryPlanner = QueryPlanner(planSingleQuery = new FakePlanner(inputPlan))
 
     val pq = RegularPlannerQuery(horizon = RegularQueryProjection(columns.map(c => c -> varFor(c)).toMap))
 
-    val union = UnionQuery(Seq(pq), distinct = false, columns, periodicCommit = None)
+    val union = UnionQuery(Seq(pq), distinct = false, columns.map(IdName.apply), periodicCommit = None)
 
     val (_, result) = queryPlanner.plan(union)
 
@@ -100,7 +100,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     when(context.withStrictness(any())).thenReturn(context)
     val producer = mock[LogicalPlanProducer]
     when(producer.planStarProjection(any(), any(), any())(any())).thenReturn(lp)
-    when(producer.planEmptyProjection(any())(any())).thenReturn(lp)
+    when(producer.planEmptyProjection(any())).thenReturn(lp)
     when(context.logicalPlanProducer).thenReturn(producer)
     val queryPlanner = QueryPlanner(planSingleQuery = PlanSingleQuery())
 

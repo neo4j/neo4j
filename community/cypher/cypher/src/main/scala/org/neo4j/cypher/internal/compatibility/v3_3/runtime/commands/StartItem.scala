@@ -46,7 +46,9 @@ trait ReadOnlyStartItem {
   // AstNode implementations
   def children: Seq[AstNode[_]] = Nil
   def symbolTableDependencies:Set[String] = Set.empty
-  def rewrite(f: (Expression) => Expression): this.type = this
+  def rewrite(f: (Expression) => Expression): this.type = {
+    this
+  }
 }
 
 case class RelationshipById(varName: String, expression: Expression, args: Seq[Argument])

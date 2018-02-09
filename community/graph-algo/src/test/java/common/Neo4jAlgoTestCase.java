@@ -172,6 +172,7 @@ public abstract class Neo4jAlgoTestCase
                 {
                     unexpectedDefs.add( getPathDef( path ) );
                 }
+                path.close();
             }
         }
         assertTrue( "These unexpected paths were found: " + unexpectedDefs +

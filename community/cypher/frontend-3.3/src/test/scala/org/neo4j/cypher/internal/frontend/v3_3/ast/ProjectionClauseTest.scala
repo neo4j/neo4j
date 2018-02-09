@@ -49,7 +49,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState.newSiblingScope)
 
     // WHEN
-    val tree = result.state.scopeTree
+    result.state.scopeTree
 
     // THEN the n variable is no longer accessible
     result.errors shouldBe empty

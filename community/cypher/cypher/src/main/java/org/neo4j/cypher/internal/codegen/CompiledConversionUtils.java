@@ -29,20 +29,18 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_3.IncomparableValuesException;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
@@ -199,21 +197,24 @@ public abstract class CompiledConversionUtils
         }
 
         boolean lhsNodeIdWrapper = lhs instanceof NodeIdWrapper;
-        if ( lhsNodeIdWrapper || rhs instanceof NodeIdWrapper || lhs instanceof RelationshipIdWrapper ||
-             rhs instanceof RelationshipIdWrapper )
+        boolean rhsNodeIdWrapper = rhs instanceof NodeIdWrapper;
+        boolean lhsRelIdWrapper = lhs instanceof RelationshipIdWrapper;
+        boolean rhsRelIdWrapper = rhs instanceof RelationshipIdWrapper;
+
+        if ( lhsNodeIdWrapper || rhsNodeIdWrapper || lhsRelIdWrapper || rhsRelIdWrapper )
         {
-            if ( (lhsNodeIdWrapper && !(rhs instanceof NodeIdWrapper)) ||
-                 (rhs instanceof NodeIdWrapper && !lhsNodeIdWrapper) ||
-                 (lhs instanceof RelationshipIdWrapper && !(rhs instanceof RelationshipIdWrapper)) ||
-                 (rhs instanceof RelationshipIdWrapper && !(lhs instanceof RelationshipIdWrapper)) )
+            if ( (lhsNodeIdWrapper && !rhsNodeIdWrapper) ||
+                 (rhsNodeIdWrapper && !lhsNodeIdWrapper) ||
+                 (lhsRelIdWrapper && !rhsRelIdWrapper) ||
+                 (rhsRelIdWrapper && !lhsRelIdWrapper) )
             {
                 throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
             }
             return lhs.equals( rhs );
         }
 
-        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueUtils.of( lhs );
-        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueUtils.of( rhs );
+        AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueConversion.asValue( lhs );
+        AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueConversion.asValue( rhs );
 
         return lhsValue.ternaryEquals( rhsValue );
     }
@@ -264,7 +265,7 @@ public abstract class CompiledConversionUtils
        return converter.value();
     }
 
-    @SuppressWarnings( {"unchecked", "WeakerAccess"} )
+    @SuppressWarnings( {"unchecked", "WeakerAccess", "rawtypes"} )
     public static Object materializeAnyResult( NodeManager nodeManager, Object anyValue )
     {
         if ( anyValue == null )
@@ -331,10 +332,6 @@ public abstract class CompiledConversionUtils
                 System.arraycopy( anyValue, 0, copy, 0, length );
                 return copy;
             }
-            else if ( anyValue instanceof String[] )
-            {
-                return anyValue;
-            }
             else
             {
                 Object[] copy = new Object[length];
@@ -351,6 +348,7 @@ public abstract class CompiledConversionUtils
         }
     }
 
+    @SuppressWarnings( "rawtypes" )
     public static Iterator iteratorFrom( Object iterable )
     {
         if ( iterable instanceof Iterable )
@@ -377,17 +375,14 @@ public abstract class CompiledConversionUtils
         {
             return Collections.emptyIterator();
         }
-        else if ( iterable.getClass().isArray() )
-        {
-            return new ArrayIterator( iterable );
-        }
         else
         {
-            return Stream.of(iterable).iterator();
+            throw new CypherTypeException(
+                    "Don't know how to create an iterator out of " + iterable.getClass().getSimpleName(), null );
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     public static LongStream toLongStream( Object list )
     {
         if ( list == null )
@@ -423,7 +418,7 @@ public abstract class CompiledConversionUtils
         throw new IllegalArgumentException( format( "Can not be converted to stream: %s", list.getClass().getName() ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
     public static DoubleStream toDoubleStream( Object list )
     {
         if ( list == null )
@@ -736,36 +731,6 @@ public abstract class CompiledConversionUtils
         catch ( ClassCastException e )
         {
             throw new CypherTypeException( "Type mismatch: expected a map but was " + object, e );
-        }
-    }
-
-    static class ArrayIterator implements Iterator
-    {
-        private int position;
-        private final int len;
-        private final Object array;
-
-        private ArrayIterator( Object array )
-        {
-            this.position = 0;
-            this.len = Array.getLength( array );
-            this.array = array;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return position < len;
-        }
-
-        @Override
-        public Object next()
-        {
-            if ( position >= len )
-            {
-                throw new NoSuchElementException();
-            }
-            return Array.get( array, position++ );
         }
     }
 }

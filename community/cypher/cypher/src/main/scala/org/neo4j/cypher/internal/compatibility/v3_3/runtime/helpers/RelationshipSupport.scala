@@ -27,7 +27,7 @@ object RelationshipSupport {
   @tailrec
   def areRelationshipsUnique(relationships: List[Relationship]): Boolean = relationships match {
     case List() => true
-    case head :: Nil => true
+    case _ :: Nil => true
     case head :: tail => !tail.contains(head) && areRelationshipsUnique(tail)
   }
 }

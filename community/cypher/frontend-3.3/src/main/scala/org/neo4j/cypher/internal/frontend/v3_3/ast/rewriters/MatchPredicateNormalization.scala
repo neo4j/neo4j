@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.calculateUsingGetDegree
 
-abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer, getDegreeRewriting: Boolean) extends Rewriter {
+abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -42,11 +42,7 @@ abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer,
       val newWhere: Option[Where] = predOpt.map {
         exp =>
           val pos: InputPosition = where.fold(m.position)(_.position)
-          val e = if (getDegreeRewriting)
-            exp.endoRewrite(whereRewriter)
-          else
-            exp
-          Where(e)(pos)
+          Where(exp.endoRewrite(whereRewriter))(pos)
       }
 
       m.copy(

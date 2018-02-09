@@ -44,7 +44,7 @@ object Ands {
   }
 }
 
-@deprecated("Use Ands (plural) instead")
+@deprecated("Use Ands (plural) instead", "version 2.x")
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m, state)
 
@@ -66,7 +66,7 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
-@deprecated("Use Ands (plural) instead")
+@deprecated("Use Ands (plural) instead", "version 2.x")
 object And {
   def apply(a: Predicate, b: Predicate) = (a, b) match {
     case (True(), other) => other

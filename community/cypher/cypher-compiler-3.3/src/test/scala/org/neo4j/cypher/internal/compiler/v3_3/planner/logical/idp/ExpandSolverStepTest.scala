@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
@@ -31,26 +32,14 @@ import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
 
-class ExpandSolverStepTest extends CypherFunSuite  with AstConstructionTestSupport {
-  self =>
+class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
+
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
 
-  implicit def converter(s: Symbol): String = s.toString()
-
-
-  case class TestPlan(availableSymbols: Set[String] = Set.empty) extends LogicalPlan {
-
-    override def lhs: Option[LogicalPlan] = None
-
-    override def rhs: Option[LogicalPlan] = None
-
-    override def solved: PlannerQuery with CardinalityEstimation = self.solved
-
-    override def strictness: StrictnessMode = ???
-  }
-
-  private val plan1 = TestPlan()
-
+  private val plan1 = mock[LogicalPlan]
+  private val plan2 = mock[LogicalPlan]
+  when(plan1.solved).thenReturn(solved)
+  when(plan2.solved).thenReturn(solved)
 
   private val pattern1 = PatternRelationship('r1, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val pattern2 = PatternRelationship('r2, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -70,33 +59,32 @@ class ExpandSolverStepTest extends CypherFunSuite  with AstConstructionTestSuppo
   test("expands if an unsolved pattern relationship overlaps once with a single solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    val plan = TestPlan(Set[String]('a, 'r1, 'b))
-    table.put(register(pattern1), plan)
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    table.put(register(pattern1), plan1)
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
-      Expand(plan, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
+      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
     ))
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    val plan = TestPlan(Set[String]('a, 'r1, 'b))
-
-    table.put(register(pattern1), plan)
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
+    table.put(register(pattern1), plan1)
 
     val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should equal(Set(
-      Expand(plan, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
-      Expand(plan, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
+      Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
+      Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
     ))
   }
 
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
     implicit val registry = IdRegistry[PatternRelationship]
 
-    when(plan1.availableSymbols).thenReturn(Set[String]('a, 'r1, 'b))
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
 
     val patternX = PatternRelationship('r2, ('x, 'y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -106,15 +94,15 @@ class ExpandSolverStepTest extends CypherFunSuite  with AstConstructionTestSuppo
 
   test("expands if an unsolved pattern relationship overlaps with multiple solved plans") {
     implicit val registry = IdRegistry[PatternRelationship]
-    val plan = TestPlan(Set[String]('a, 'r1, 'b, 'c, 'r2, 'd))
 
-    table.put(register(pattern1, pattern2), plan)
+    when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b, 'c, 'r2, 'd))
+    table.put(register(pattern1, pattern2), plan1)
 
     val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table).toSet should equal(Set(
-      Expand(plan, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
-      Expand(plan, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
+      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
+      Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
     ))
   }
 

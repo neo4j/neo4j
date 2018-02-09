@@ -153,26 +153,6 @@ public class BasicTableTest
             @Override
             public Table newTable( int capacity )
             {
-                return new LongKeyLongValueTable( capacity );
-            }
-
-            @Override
-            public boolean supportsLongs()
-            {
-                return true;
-            }
-
-            @Override
-            public Object sampleValue()
-            {
-                return new long[] {Math.abs( random.nextLong() )};
-            }
-        } } );
-        result.add( new Object[] { new TableFactory()
-        {
-            @Override
-            public Table newTable( int capacity )
-            {
                 return new LongKeyObjectValueTable( capacity );
             }
 

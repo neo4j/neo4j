@@ -40,7 +40,7 @@ case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
       try {
         Values.longValue(java.lang.Long.parseLong(v.stringValue()))
       } catch {
-        case e: Exception =>
+        case _: Exception =>
           try {
             val d = BigDecimal(v.stringValue())
             if (d <= Long.MaxValue && d >= Long.MinValue) Values.longValue(d.toLong)

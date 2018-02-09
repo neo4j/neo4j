@@ -43,8 +43,8 @@ abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
 
 object PatternWithEnds {
   def unapply(p: AbstractPattern): Option[(ParsedEntity, ParsedEntity, Seq[String], SemanticDirection, Boolean, Option[Int], Option[String])] = p match {
-    case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, None, maxHops, relIterator) => Some((start, end, typ, dir, optional, maxHops, relIterator))
-    case ParsedVarLengthRelation(_, _, _, _, _, _, _, Some(x), _, _)                                  => throw new SyntaxException("Shortest path does not support a minimal length")
+    case ParsedVarLengthRelation(_, _, start, end, typ, dir, optional, None, maxHops, relIterator) => Some((start, end, typ, dir, optional, maxHops, relIterator))
+    case ParsedVarLengthRelation(_, _, _, _, _, _, _, Some(_), _, _)                                  => throw new SyntaxException("Shortest path does not support a minimal length")
     case ParsedRelation(name, _, start, end, typ, dir, optional)                                      => Some((start, end, typ, dir, optional, Some(1), Some(name)))
     case _                                                                                            => None
   }

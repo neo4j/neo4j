@@ -33,7 +33,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
 
   override def description = "using cost estimates, plan the query to a logical plan"
 
-  override def postConditions = Set(CompilationContains[LogicalPlan])
+  override def postConditions = Set(CompilationContains[LogicalPlan]())
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
     val logicalPlanProducer = LogicalPlanProducer(context.metrics.cardinality)
@@ -70,9 +70,9 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
         (periodicCommitHint, createProduceResultOperator(plan, unionQuery))
     }
 
-  private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
-                                         (implicit context: LogicalPlanningContext): LogicalPlan = {
-    ProduceResult(unionQuery.returns, in)
+  private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery): LogicalPlan = {
+    val columns = unionQuery.returns.map(_.name)
+    ProduceResult(columns, in)
   }
 
   private def planQueries(queries: Seq[PlannerQuery], distinct: Boolean)(implicit context: LogicalPlanningContext) = {

@@ -20,8 +20,6 @@
 package org.neo4j.time;
 
 import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.concurrent.TimeUnit;
@@ -81,16 +79,5 @@ public class Clocks
     {
         return new FakeClock( initialTime.getLong( ChronoField.INSTANT_SECONDS ), TimeUnit.SECONDS )
                 .forward( initialTime.getLong( ChronoField.NANO_OF_SECOND ), TimeUnit.NANOSECONDS );
-    }
-
-    /**
-     * Returns a clock that ticks every time it is accessed
-     * @param initialInstant initial time for clock
-     * @param tickDuration amount of time of each tick
-     * @return access tick clock
-     */
-    public static TickOnAccessClock tickOnAccessClock( Instant initialInstant, Duration tickDuration )
-    {
-        return new TickOnAccessClock( initialInstant, tickDuration );
     }
 }

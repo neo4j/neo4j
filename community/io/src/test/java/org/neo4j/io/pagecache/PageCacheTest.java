@@ -76,7 +76,6 @@ import static java.lang.Long.toHexString;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.hamcrest.Matchers.both;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -1139,6 +1138,29 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext );
     }
 
+    @Test
+    public void tryMappedPagedFileShouldReportMappedFilePresent() throws Exception
+    {
+        configureStandardPageCache();
+        final File file = file( "a" );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            final Optional<PagedFile> optional = pageCache.getExistingMapping( file );
+            assertTrue( optional.isPresent() );
+            final PagedFile actual = optional.get();
+            assertThat( actual, sameInstance( pf ) );
+            actual.close();
+        }
+    }
+
+    @Test
+    public void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
+    {
+        configureStandardPageCache();
+        final Optional<PagedFile> dont_exist = pageCache.getExistingMapping( new File( "dont_exist" ) );
+        assertFalse( dont_exist.isPresent() );
+    }
+
     private void verifyOnReadCursor(
             ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
     {
@@ -1273,62 +1295,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             action.apply( cursor );
             assertTrue( cursor.checkAndClearBoundsFlag() );
         }
-    }
-
-    @Test
-    public void tryMappedPagedFileShouldReportMappedFilePresent() throws Exception
-    {
-        configureStandardPageCache();
-        final File file = file( "a" );
-        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
-        {
-            final Optional<PagedFile> optional = pageCache.getExistingMapping( file );
-            assertTrue( optional.isPresent() );
-            final PagedFile actual = optional.get();
-            assertThat( actual, sameInstance( pf ) );
-            actual.close();
-        }
-    }
-
-    @Test
-    public void tryMappedPagedFileShouldReportNonMappedFileNotPresent() throws Exception
-    {
-        configureStandardPageCache();
-        final Optional<PagedFile> dontExist = pageCache.getExistingMapping( new File( "dont_exist" ) );
-        assertFalse( dontExist.isPresent() );
-    }
-
-    @Test
-    public void mustListExistingMappings() throws Exception
-    {
-        configureStandardPageCache();
-        File f1 = existingFile( "1" );
-        File f2 = existingFile( "2" );
-        File f3 = existingFile( "3" ); // Not mapped at the time of calling listExistingMappings.
-        existingFile( "4" ); // Never mapped.
-        try ( PagedFile pf1 = pageCache.map( f1, filePageSize );
-              PagedFile pf2 = pageCache.map( f2, filePageSize ) )
-        {
-            pageCache.map( f3, filePageSize ).close();
-            List<PagedFile> existingMappings = pageCache.listExistingMappings();
-            assertThat( existingMappings.size(), is( 2 ) );
-            assertThat( existingMappings, containsInAnyOrder( pf1, pf2 ) );
-            for ( PagedFile existingMapping : existingMappings )
-            {
-                existingMapping.close();
-            }
-        }
-    }
-
-    @Test
-    public void listExistingMappingsMustThrowOnClosedPageCache() throws Exception
-    {
-        configureStandardPageCache();
-        T pc = pageCache;
-        pageCache = null;
-        pc.close();
-        expectedException.expect( IllegalStateException.class );
-        pc.listExistingMappings();
     }
 
     @Test( timeout = SHORT_TIMEOUT_MILLIS )

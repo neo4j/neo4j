@@ -36,8 +36,8 @@ public class Mark
     private boolean quoted;
 
     /**
-     * @param startPosition position of first character in value (inclusive).
-     * @param position position of last character in value (exclusive).
+     * @param startPosition
+     * @param position
      * @param character use {@code -1} to denote that the matching character was an end-of-line or end-of-file
      * @param quoted whether or not the original data was quoted.
      */

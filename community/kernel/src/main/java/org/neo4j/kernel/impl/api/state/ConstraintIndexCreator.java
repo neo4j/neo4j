@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor.Type;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.locking.Locks.Client;
@@ -115,7 +114,6 @@ public class ConstraintIndexCreator
         try
         {
             long indexId = schemaOps.indexGetCommittedId( state, index );
-            IndexProxy proxy = indexingService.getIndexProxy( indexId );
 
             // Release the LABEL WRITE lock during index population.
             // At this point the integrity of the constraint to be created was checked
@@ -123,7 +121,7 @@ public class ConstraintIndexCreator
             // has been created. Now it's just the population left, which can take a long time
             releaseLabelLock( locks, descriptor.getLabelId() );
 
-            awaitConstrainIndexPopulation( constraint, proxy );
+            awaitConstrainIndexPopulation( constraint, indexId );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
@@ -131,19 +129,14 @@ public class ConstraintIndexCreator
             // created and activated.
             acquireLabelLock( state, locks, descriptor.getLabelId() );
             reacquiredLabelLock = true;
-
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
             success = true;
             return indexId;
         }
-        catch ( SchemaRuleNotFoundException e )
+        catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {
             throw new IllegalStateException(
-                    String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
-        }
-        catch ( IndexNotFoundKernelException e )
-        {
-            throw new TransactionFailureException( String.format( "Index (%s) that we just created does not exist.", descriptor ), e );
+                    String.format( "Index (%s) that we just created does not exist.", descriptor ) );
         }
         catch ( IndexEntryConflictException e )
         {
@@ -161,20 +154,9 @@ public class ConstraintIndexCreator
                 {
                     acquireLabelLock( state, locks, descriptor.getLabelId() );
                 }
-
-                if ( indexStillExists( schemaOps, state, descriptor, index ) )
-                {
-                    dropUniquenessConstraintIndex( index );
-                }
+                dropUniquenessConstraintIndex( index );
             }
         }
-    }
-
-    private boolean indexStillExists( SchemaReadOperations schemaOps, KernelStatement state, LabelSchemaDescriptor descriptor,
-            IndexDescriptor index )
-    {
-        IndexDescriptor existingIndex = schemaOps.indexGetForSchema( state, descriptor );
-        return existingIndex != null && existingIndex.equals( index );
     }
 
     private void acquireLabelLock( KernelStatement state, Client locks, int labelId )
@@ -202,12 +184,17 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy )
+    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, long indexId )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try
         {
-            proxy.awaitStoreScanCompleted();
+            indexingService.getIndexProxy( indexId ).awaitStoreScanCompleted();
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new IllegalStateException(
+                    String.format( "Index (indexId=%d) that we just created does not exist.", indexId ) );
         }
         catch ( IndexPopulationFailedKernelException e )
         {

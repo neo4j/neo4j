@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -70,7 +69,7 @@ public interface PageCache extends AutoCloseable
      * If no mapping exist for this file, then returned {@link Optional} will report {@link Optional#isPresent()}
      * false.
      * <p>
-     * <strong>NOTE:</strong> The calling code is responsible for closing the returned paged file, if any.
+     * NOTE! User is responsible for closing the returned paged file.
      *
      * @param file The file to try to get the mapped paged file for.
      * @return {@link Optional} containing the {@link PagedFile} mapped by this {@link PageCache} for given file, or an
@@ -79,26 +78,11 @@ public interface PageCache extends AutoCloseable
      */
     Optional<PagedFile> getExistingMapping( File file ) throws IOException;
 
-    /**
-     * List a snapshot of the current file mappings.
-     * <p>
-     * The mappings can change as soon as this method returns. However, the returned {@link PagedFile}s will remain
-     * valid even if they are closed elsewhere.
-     * <p>
-     * <strong>NOTE:</strong> The calling code is responsible for closing <em>all</em> the returned paged files.
-     *
-     * @throws IOException if page cache has been closed or page eviction problems occur.
-     */
-    List<PagedFile> listExistingMappings() throws IOException;
-
-    /**
-     * Flush all dirty pages.
-     */
+    /** Flush all dirty pages */
     void flushAndForce() throws IOException;
 
     /**
      * Flush all dirty pages, but limit the rate of IO as advised by the given IOPSLimiter.
-     *
      * @param limiter The {@link IOLimiter} that determines if pauses or sleeps should be injected into the flushing
      * process to keep the IO rate down.
      */
@@ -108,22 +92,21 @@ public interface PageCache extends AutoCloseable
      * Close the page cache to prevent any future mapping of files.
      * This also releases any internal resources, including the {@link PageSwapperFactory} through its
      * {@link PageSwapperFactory#close() close} method.
-     *
      * @throws IllegalStateException if not all files have been unmapped, with {@link PagedFile#close()}, prior to
      * closing the page cache. In this case, the page cache <em>WILL NOT</em> be considered to be successfully closed.
      * @throws RuntimeException if the {@link PageSwapperFactory#close()} method throws. In this case the page cache
      * <em>WILL BE</em> considered to have been closed successfully.
-     */
+     **/
     void close() throws IllegalStateException;
 
     /**
      * The size in bytes of the pages managed by this cache.
-     */
+     **/
     int pageSize();
 
     /**
      * The max number of cached pages.
-     */
+     **/
     long maxCachedPages();
 
     /**

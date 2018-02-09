@@ -31,5 +31,5 @@ case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPatter
   val lhs = Some(left)
   def rhs = None
 
-  val availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
+  def availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
 }

@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ProcedureRuntimeName}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
 
 /**

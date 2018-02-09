@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{CreateIndex, DropIndex, IndexOperation}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 case class IndexOperationPipe(indexOp: IndexOperation)(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
@@ -46,10 +45,11 @@ case class IndexOperationPipe(indexOp: IndexOperation)(val id: LogicalPlanId = L
 
     Iterator.empty
   }
-
+/*
   private def single[T](s: Seq[T]): T = {
     if (s.isEmpty || s.tail.nonEmpty)
       throw new SyntaxException("Cypher support only one property key per index right now")
     s(0)
   }
+*/
 }

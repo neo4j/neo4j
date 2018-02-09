@@ -22,28 +22,29 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.util.function.Consumer;
 
 /**
- * Abstract class that implement common logic for making the consumer to consume the description of this
+ * Abstract class that implement common logic for making the consumer to consume the {@link #description()} of this
  * threshold if {@link #thresholdReached(long)} is true.
  */
-public abstract class AbstractCheckPointThreshold implements CheckPointThreshold
+abstract class AbstractCheckPointThreshold implements CheckPointThreshold
 {
-    private final String description;
-
-    public AbstractCheckPointThreshold( String description )
-    {
-        this.description = description;
-    }
-
     @Override
     public final boolean isCheckPointingNeeded( long lastCommittedTransactionId, Consumer<String> consumer )
     {
-        if ( thresholdReached( lastCommittedTransactionId ) )
+        boolean result = thresholdReached( lastCommittedTransactionId );
+        try
         {
-            consumer.accept( description );
-            return true;
+            return result;
         }
-        return false;
+        finally
+        {
+            if ( result )
+            {
+                consumer.accept( description() );
+            }
+        }
     }
 
     protected abstract boolean thresholdReached( long lastCommittedTransactionId );
+
+    protected abstract String description();
 }

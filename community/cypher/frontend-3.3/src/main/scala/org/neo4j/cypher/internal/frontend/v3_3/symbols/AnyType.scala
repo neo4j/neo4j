@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
+import scala.language.{existentials}
+
 object AnyType {
   val instance = new AnyType() {
     val parentType = this

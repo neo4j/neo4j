@@ -30,7 +30,7 @@ public class LongKeyTable<VALUE>
     @Override
     public long key( int index )
     {
-        return getLong( address( index ) );
+        return getLong( index( index ) );
     }
 
     @Override

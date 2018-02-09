@@ -80,7 +80,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
       case _ =>
         val listOfValues = groupingKey.asInstanceOf[ListValue]
         for (i <- 0 until keyExpressions.size) {
-          val (k, v) = expressionOrder(i)
+          val (k, _) = expressionOrder(i)
           val value: AnyValue = listOfValues.value(i)
           newMap += (k -> value)
         }

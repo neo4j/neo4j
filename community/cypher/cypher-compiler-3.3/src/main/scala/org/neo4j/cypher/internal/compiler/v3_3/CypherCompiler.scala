@@ -68,11 +68,11 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
 
   val irConstruction: Transformer[CompilerContext, BaseState, LogicalPlanState] =
     ResolveTokens andThen
-      CreatePlannerQuery.adds(CompilationContains[UnionQuery]) andThen
+      CreatePlannerQuery.adds(CompilationContains[UnionQuery]()) andThen
       OptionalMatchRemover
 
   val costBasedPlanning: Transformer[CompilerContext, LogicalPlanState, LogicalPlanState] =
-    QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
+    QueryPlanner().adds(CompilationContains[LogicalPlan]()) andThen
     PlanRewriter(sequencer) andThen
     If((s: LogicalPlanState) => s.unionQuery.readOnly) (
       CheckForUnresolvedTokens

@@ -28,5 +28,5 @@ case class Sort(left: LogicalPlan, sortItems: Seq[ColumnOrder])
   val lhs = Some(left)
   val rhs = None
 
-  val availableSymbols = left.availableSymbols
+  def availableSymbols = left.availableSymbols
 }

@@ -86,9 +86,7 @@ class PathValueBuilderTest extends CypherFunSuite {
   test("p = <empty> should throw") {
     val builder = new PathValueBuilder
 
-    evaluating {
-      builder.result()
-    } should produce[IllegalArgumentException]
+    intercept[IllegalArgumentException] {builder.result()}
   }
 
   test("p = (a)-[r:X*]->(b)") {

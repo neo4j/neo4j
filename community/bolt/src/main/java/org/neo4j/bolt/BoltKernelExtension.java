@@ -36,10 +36,8 @@ import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
-import org.neo4j.bolt.v1.runtime.BoltChannelAutoReadLimiter;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
@@ -235,22 +233,14 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
         protocolHandlers.put(
                 (long) BoltMessagingProtocolV1Handler.VERSION,
-                boltChannel -> createV1Handler( boltChannel, logging, workerFactory )
+                boltChannel ->
+                        new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), logging )
         );
         return protocolHandlers;
-    }
-
-    private BoltMessagingProtocolHandler createV1Handler( BoltChannel boltChannel, LogService logging, WorkerFactory workerFactory )
-    {
-        BoltChannelAutoReadLimiter limiter =
-                new BoltChannelAutoReadLimiter( boltChannel.rawChannel(), logging.getInternalLog( BoltChannelAutoReadLimiter.class ) );
-        BoltWorker worker = workerFactory.newWorker( boltChannel, limiter );
-        return new BoltMessagingProtocolV1Handler( boltChannel, worker, logging );
     }
 
     private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
     {
         return new BasicAuthentication( authManager, userManagerSupplier );
     }
-
 }

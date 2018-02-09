@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -113,8 +112,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         void populationCompleteOn( IndexDescriptor descriptor );
 
-        void indexPopulationScanStarting();
-
         void indexPopulationScanComplete();
 
         void awaitingPopulationOfRecoveredIndex( long indexId, IndexDescriptor descriptor );
@@ -124,11 +121,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )
-        {   // Do nothing
-        }
-
-        @Override
-        public void indexPopulationScanStarting()
         {   // Do nothing
         }
 
@@ -227,10 +219,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     public void start() throws Exception
     {
         state = State.STARTING;
-
-        // Recovery will not do refresh (update read views) while applying recovered transactions and instead
-        // do it at one point after recovery... i.e. here
-        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "refresh", proxy -> proxy.refresh() ) );
 
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
         indexMapRef.modify( indexMap ->
@@ -570,28 +558,29 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public void forceAll()
     {
-        indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force() ) );
+        indexMapRef.indexMapSnapshot().forEachIndexProxy( forceIndexProxy() );
     }
 
-    private BiConsumer<Long,IndexProxy> indexProxyOperation( String name, ThrowingConsumer<IndexProxy,Exception> operation )
+    private BiConsumer<Long,IndexProxy> forceIndexProxy()
     {
         return ( id, indexProxy ) ->
         {
             try
             {
-                operation.accept( indexProxy );
+                indexProxy.force();
             }
             catch ( Exception e )
             {
                 try
                 {
                     IndexProxy proxy = indexMapRef.getIndexProxy( id );
-                    throw new UnderlyingStorageException( "Unable to " + name + " " + proxy, e );
+                    throw new UnderlyingStorageException( "Unable to force " + proxy, e );
                 }
                 catch ( IndexNotFoundKernelException infe )
                 {
-                    // index was dropped while trying to operate on it, we can continue to other indexes
+                    // index was dropped while we where try to flush it, we can continue to flush other indexes
                 }
+
             }
         };
     }

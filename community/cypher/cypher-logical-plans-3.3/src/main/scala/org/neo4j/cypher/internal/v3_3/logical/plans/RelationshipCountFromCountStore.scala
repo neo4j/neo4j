@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, RelTypeName}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
 
-case class RelationshipCountFromCountStore(idName: String, startLabel: Option[LabelName],
-                                           typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[String])
+case class RelationshipCountFromCountStore(idName: IdName, startLabel: Option[LabelName],
+                                           typeNames: Seq[RelTypeName], endLabel: Option[LabelName], argumentIds: Set[IdName])
                                           (val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
-  val availableSymbols = Set(idName)
+  def availableSymbols = Set(idName)
 }

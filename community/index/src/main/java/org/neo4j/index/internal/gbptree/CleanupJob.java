@@ -43,11 +43,6 @@ public interface CleanupJob extends Runnable
     Exception getCause();
 
     /**
-     * Mark this job as closed and cleanup all it's resources.
-     */
-    void close();
-
-    /**
      * A {@link CleanupJob} that doesn't need cleaning, i.e. it's already clean.
      */
     CleanupJob CLEAN = new CleanupJob()
@@ -73,11 +68,6 @@ public interface CleanupJob extends Runnable
         public Exception getCause()
         {
             return null;
-        }
-
-        @Override
-        public void close()
-        {   // no-op
         }
     };
 }

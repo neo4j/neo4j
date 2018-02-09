@@ -22,6 +22,8 @@ import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala._
 import org.parboiled.support.IndexRange
 
+import scala.language.{postfixOps}
+
 trait Base extends Parser {
 
   def OpChar = rule("an operator char") { anyOf("|^&<>=?!:+-*/%~") }

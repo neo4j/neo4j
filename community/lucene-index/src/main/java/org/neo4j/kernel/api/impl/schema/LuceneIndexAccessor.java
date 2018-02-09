@@ -56,7 +56,17 @@ public class LuceneIndexAccessor implements IndexAccessor
         {
             throw new UnsupportedOperationException( "Can't create updater for read only index." );
         }
-        return new LuceneIndexUpdater( mode.requiresIdempotency(), mode.requiresRefresh() );
+        switch ( mode )
+        {
+        case ONLINE:
+            return new LuceneIndexUpdater( false );
+
+        case RECOVERY:
+            return new LuceneIndexUpdater( true );
+
+        default:
+            throw new IllegalArgumentException( "Unsupported update mode: " + mode );
+        }
     }
 
     @Override
@@ -73,12 +83,6 @@ public class LuceneIndexAccessor implements IndexAccessor
         {
             luceneIndex.markAsOnline();
         }
-        luceneIndex.maybeRefreshBlocking();
-    }
-
-    @Override
-    public void refresh() throws IOException
-    {
         luceneIndex.maybeRefreshBlocking();
     }
 
@@ -122,15 +126,12 @@ public class LuceneIndexAccessor implements IndexAccessor
 
     private class LuceneIndexUpdater implements IndexUpdater
     {
-        private final boolean idempotent;
-        private final boolean refresh;
-
+        private final boolean isRecovery;
         private boolean hasChanges;
 
-        private LuceneIndexUpdater( boolean idempotent, boolean refresh )
+        private LuceneIndexUpdater( boolean isRecovery )
         {
-            this.idempotent = idempotent;
-            this.refresh = refresh;
+            this.isRecovery = isRecovery;
         }
 
         @Override
@@ -142,9 +143,9 @@ public class LuceneIndexAccessor implements IndexAccessor
             switch ( update.updateMode() )
             {
             case ADDED:
-                if ( idempotent )
+                if ( isRecovery )
                 {
-                    addIdempotent( update.getEntityId(), update.values() );
+                    addRecovered( update.getEntityId(), update.values() );
                 }
                 else
                 {
@@ -166,13 +167,13 @@ public class LuceneIndexAccessor implements IndexAccessor
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            if ( hasChanges && refresh )
+            if ( hasChanges )
             {
                 luceneIndex.maybeRefreshBlocking();
             }
         }
 
-        private void addIdempotent( long nodeId, Value[] values ) throws IOException
+        private void addRecovered( long nodeId, Value[] values ) throws IOException
         {
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );

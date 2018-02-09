@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AscSortItem, PatternExpression}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AscSortItem}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans._
@@ -33,8 +33,6 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
   val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
   val columnOrder: ColumnOrder = Ascending("n")
-
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("should add skip if query graph contains skip") {
     // given
@@ -122,7 +120,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       shuffle = QueryShuffle(sortItems, skip, limit)
     )
 
-    val qg = QueryGraph(patternNodes = Set("n"))
+    val qg = QueryGraph(patternNodes = Set(IdName("n")))
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)
 
     val context = newMockedLogicalPlanningContext(
@@ -130,8 +128,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     val plan =
-      newMockedLogicalPlanWithSolved(Set("n"),
-        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n")), Cardinality(0))
+      newMockedLogicalPlanWithSolved(Set(IdName("n")),
+        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"))), Cardinality(0))
       )
 
     (query, context, plan)

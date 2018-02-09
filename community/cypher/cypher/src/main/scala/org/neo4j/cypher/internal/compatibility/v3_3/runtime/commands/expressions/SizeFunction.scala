@@ -33,8 +33,8 @@ case class SizeFunction(inner: Expression)
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case _: PathValue => throw new CypherTypeException("SIZE cannot be used on paths")
-    case s: TextValue => Values.longValue(s.length())
-    case x => Values.longValue(makeTraversable(x).size())
+    case s: TextValue => Values.longValue(s.length().toLong)
+    case x => Values.longValue(makeTraversable(x).size().toLong)
   }
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))

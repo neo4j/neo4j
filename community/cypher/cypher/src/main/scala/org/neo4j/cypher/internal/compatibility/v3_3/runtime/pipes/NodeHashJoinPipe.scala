@@ -45,9 +45,10 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey <- computeKey(context)}
-    yield {
+    val result = for {
+      context <- rhsIterator
+      joinKey <- computeKey(context)
+    } yield {
       val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
       seq.map(context.mergeWith)
     }

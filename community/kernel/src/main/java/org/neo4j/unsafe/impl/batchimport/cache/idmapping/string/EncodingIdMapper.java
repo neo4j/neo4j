@@ -271,12 +271,12 @@ public class EncodingIdMapper implements IdMapper
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
                     processorsForParallelWork, progress, comparator ).run();
 
-            int pessimisticNumberOfCollisions = detectAndMarkCollisions( progress );
-            if ( pessimisticNumberOfCollisions > 0 )
+            int numberOfCollisions = detectAndMarkCollisions( progress );
+            if ( numberOfCollisions > 0 )
             {
                 try ( InputIterator<Object> idIterator = ids.iterator() )
                 {
-                    buildCollisionInfo( idIterator, pessimisticNumberOfCollisions, collector, progress );
+                    buildCollisionInfo( idIterator, numberOfCollisions, collector, progress );
                 }
             }
         }
@@ -444,10 +444,6 @@ public class EncodingIdMapper implements IdMapper
      * - accidental: there are two different input values coerced into the same encoded value
      *   in the same id space
      *     ==> original input values needs to be kept
-     *
-     * @return rough number of collisions. The number can be slightly more than it actually is due to benign
-     * races between detector workers. This is not a problem though, this value serves as a pessimistic value
-     * for allocating arrays to hold collision data to later sort and use to discover duplicates.
      */
     private int detectAndMarkCollisions( ProgressListener progress )
     {
@@ -507,17 +503,16 @@ public class EncodingIdMapper implements IdMapper
         return true;
     }
 
-    private void buildCollisionInfo( InputIterator<Object> ids, int pessimisticNumberOfCollisions,
+    private void buildCollisionInfo( InputIterator<Object> ids, int numberOfCollisions,
             Collector collector, ProgressListener progress )
             throws InterruptedException
     {
-        progress.started( "RESOLVE (~" + pessimisticNumberOfCollisions + " collisions)" );
+        progress.started( "RESOLVE (" + numberOfCollisions + " collisions)" );
         Radix radix = radixFactory.newInstance();
         List<String> sourceDescriptions = new ArrayList<>();
         String lastSourceDescription = null;
-        collisionSourceDataCache = cacheFactory.newLongArray( pessimisticNumberOfCollisions, ID_NOT_FOUND );
-        collisionTrackerCache = trackerFactory.create( cacheFactory, pessimisticNumberOfCollisions );
-        int numberOfCollisions = 0;
+        collisionSourceDataCache = cacheFactory.newLongArray( numberOfCollisions, ID_NOT_FOUND );
+        collisionTrackerCache = trackerFactory.create( cacheFactory, numberOfCollisions );
         for ( long i = 0; ids.hasNext(); )
         {
             long j = 0;
@@ -528,7 +523,6 @@ public class EncodingIdMapper implements IdMapper
                 if ( isCollision( eId ) )
                 {
                     // Store this collision input id for matching later in get()
-                    numberOfCollisions++;
                     long eIdFromInputId = encode( id );
                     long eIdWithoutCollisionBit = clearCollision( eId );
                     assert eIdFromInputId == eIdWithoutCollisionBit : format( "Encoding mismatch during building of " +

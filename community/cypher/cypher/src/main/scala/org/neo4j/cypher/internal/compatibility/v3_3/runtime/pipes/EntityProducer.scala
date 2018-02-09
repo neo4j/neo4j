@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.graphdb.PropertyContainer
 

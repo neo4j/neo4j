@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -82,7 +83,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception
     {
-        return new RecoveryVisitor( storageEngine, mode );
+        return new RecoveryVisitor( new TransactionQueue( 100, ( first, last ) -> storageEngine.apply( first, mode ) ) );
     }
 
     @Override
@@ -117,13 +118,11 @@ public class DefaultRecoverySPI implements Recovery.SPI
 
     static class RecoveryVisitor implements RecoveryApplier
     {
-        private final StorageEngine storageEngine;
-        private final TransactionApplicationMode mode;
+        private final TransactionQueue transactionsToApply;
 
-        RecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode )
+        RecoveryVisitor( TransactionQueue transactionsToApply )
         {
-            this.storageEngine = storageEngine;
-            this.mode = mode;
+            this.transactionsToApply = transactionsToApply;
         }
 
         @Override
@@ -134,13 +133,14 @@ public class DefaultRecoverySPI implements Recovery.SPI
             TransactionToApply tx = new TransactionToApply( txRepresentation, txId );
             tx.commitment( NO_COMMITMENT, txId );
             tx.logPosition( transaction.getStartEntry().getStartPosition() );
-            storageEngine.apply( tx, mode );
+            transactionsToApply.queue( tx );
             return false;
         }
 
         @Override
         public void close() throws Exception
-        {   // nothing to close
+        {
+            transactionsToApply.empty();
         }
     }
 }

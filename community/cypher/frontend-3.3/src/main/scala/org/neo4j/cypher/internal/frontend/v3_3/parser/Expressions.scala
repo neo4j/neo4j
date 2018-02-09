@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.parboiled.scala._
 
 import scala.collection.mutable.ListBuffer
+import scala.language.{postfixOps}
 
 trait Expressions extends Parser
   with Literals

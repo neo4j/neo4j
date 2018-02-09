@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import org.junit.Test;
 
-import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.Assert.assertEquals;

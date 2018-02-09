@@ -27,8 +27,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocati
 import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, _}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
-import scala.language.implicitConversions
-
 object Metrics {
 
   import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
@@ -61,7 +59,7 @@ object Metrics {
 
   type QueryGraphCardinalityModel = (QueryGraph, QueryGraphSolverInput, SemanticTable) => Cardinality
 
-  type LabelInfo = Map[String, Set[LabelName]]
+  type LabelInfo = Map[IdName, Set[LabelName]]
 }
 
 trait ExpressionEvaluator {

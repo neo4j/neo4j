@@ -28,5 +28,5 @@ case class CartesianProduct(left: LogicalPlan, right: LogicalPlan)(val solved: P
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val availableSymbols = left.availableSymbols ++ right.availableSymbols
+  def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

@@ -31,5 +31,5 @@ case class Selection(predicates: Seq[Expression], left: LogicalPlan)
 
   def numPredicates = predicates.size
 
-  val availableSymbols = left.availableSymbols
+  def availableSymbols = left.availableSymbols
 }

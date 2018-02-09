@@ -30,13 +30,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
-import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values._
 
 /**
@@ -132,13 +130,13 @@ class ProcedureExecutionResult(context: QueryContext,
     indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
     mapData
   }
-
+/*
   private def resultAsRefMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
     val mapData = new util.HashMap[String, AnyRef](rowData.length)
     indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
     mapData
   }
-
+*/
   override def executionPlanDescription(): InternalPlanDescription = executionMode match {
     case ProfileMode if executionResults.hasNext =>
       completed(success = false)

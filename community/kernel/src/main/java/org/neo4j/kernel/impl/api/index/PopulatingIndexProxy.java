@@ -119,13 +119,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public void force()
     {
-        // Ignored... this isn't called from the outside while we're populating the index.
-    }
-
-    @Override
-    public void refresh()
-    {
-        // Ignored... this isn't called from the outside while we're populating the index.
+        // Ignored... this isn't controlled from the outside while we're populating the index.
     }
 
     @Override

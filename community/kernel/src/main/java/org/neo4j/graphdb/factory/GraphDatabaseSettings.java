@@ -356,17 +356,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> store_internal_log_max_archives =
             buildSetting( "dbms.logs.debug.rotation.keep_number", INTEGER, "7" ).constraint( min( 1 ) ).build();
 
-    @Description( "Configures the general policy for when check-points should occur. The default policy is the " +
-                  "'periodic' check-point policy, as specified by the 'dbms.checkpoint.interval.tx' and " +
-                  "'dbms.checkpoint.interval.time' settings. " +
-                  "The Neo4j Enterprise Edition provides two alternative policies: " +
-                  "The first is the 'continuous' check-point policy, which will ignore those settings and run the " +
-                  "check-point process all the time. " +
-                  "The second is the 'volumetric' check-point policy, which makes a best-effort at check-pointing " +
-                  "often enough so that the database doesn't get too far behind on deleting old transaction logs in " +
-                  "accordance with the 'dbms.tx_log.rotation.retention_policy' setting." )
-    public static final Setting<String> check_point_policy = setting( "dbms.checkpoint", STRING, "periodic" );
-
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
                   "often  than this (unless check pointing is triggered by a different event), but might check-point " +
                   "less often than this interval, if performing a check-point takes longer time than the configured " +

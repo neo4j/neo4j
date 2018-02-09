@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import org.junit.Test;
-import org.mockito.InOrder;
 import org.mockito.Matchers;
 
 import java.io.File;
@@ -30,9 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,8 +74,7 @@ public class ThresholdBasedPruneStrategyTest
         final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, threshold );
 
         // When
-        strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( files.getLogFileForVersion( v ) ) );
+        strategy.prune( 7L );
 
         // Then
         verify( threshold, times( 1 ) ).init();
@@ -126,17 +122,12 @@ public class ThresholdBasedPruneStrategyTest
         );
 
         // When
-        strategy.findLogVersionsToDelete( 7L ).forEachOrdered(
-                v -> fileSystem.deleteFile( files.getLogFileForVersion( v ) ) );
+        strategy.prune( 7L );
 
         // Then
-        InOrder order = inOrder( threshold, fileSystem );
-        order.verify( threshold, times( 1 ) ).init();
-        order.verify( fileSystem, times( 1 ) ).deleteFile( fileName1 );
-        order.verify( fileSystem, times( 1 ) ).deleteFile( fileName2 );
-        order.verify( fileSystem, times( 1 ) ).deleteFile( fileName3 );
-        verify( fileSystem, never() ).deleteFile( fileName4 );
-        verify( fileSystem, never() ).deleteFile( fileName5 );
-        verify( fileSystem, never() ).deleteFile( fileName6 );
+        verify( threshold, times( 1 ) ).init();
+        verify( fileSystem, times( 1 ) ).deleteFile( fileName1 );
+        verify( fileSystem, times( 1 ) ).deleteFile( fileName2 );
+        verify( fileSystem, times( 1 ) ).deleteFile( fileName3 );
     }
 }

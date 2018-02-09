@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -29,7 +30,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan single create") {
     planFor("CREATE (a)")._2 should equal(
       EmptyResult(
-        CreateNode(SingleRow()(solved), "a", Seq.empty, None)(solved))(solved)
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved))(solved)
     )
   }
 
@@ -38,9 +39,9 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         CreateNode(
           CreateNode(
-            CreateNode(SingleRow()(solved), "a", Seq.empty, None)(solved),
-            "b", Seq.empty, None)(solved),
-          "c", Seq.empty, None)(solved))
+            CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+            IdName("b"), Seq.empty, None)(solved),
+          IdName("c"), Seq.empty, None)(solved))
         (solved)
     )
   }
@@ -50,23 +51,23 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       EmptyResult(
         CreateNode(
           CreateNode(
-            CreateNode(SingleRow()(solved), "a", Seq.empty, None)(solved),
-            "b", Seq.empty, None)(solved),
-          "c", Seq.empty, None)(solved))
+            CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+            IdName("b"), Seq.empty, None)(solved),
+          IdName("c"), Seq.empty, None)(solved))
         (solved)
     )
   }
 
   test("should plan single create with return") {
     planFor("CREATE (a) return a")._2 should equal(
-        CreateNode(SingleRow()(solved), "a", Seq.empty, None)(solved)
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved)
     )
   }
 
   test("should plan create with labels") {
     planFor("CREATE (a:A:B)")._2 should equal(
       EmptyResult(
-        CreateNode(SingleRow()(solved), "a", Seq(lblName("A"), lblName("B")), None)(solved))(solved)
+        CreateNode(SingleRow()(solved), IdName("a"), Seq(lblName("A"), lblName("B")), None)(solved))(solved)
     )
   }
 
@@ -74,7 +75,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
 
     planFor("CREATE (a {prop: 42})")._2 should equal(
       EmptyResult(
-        CreateNode(SingleRow()(solved), "a", Seq.empty,
+        CreateNode(SingleRow()(solved), IdName("a"), Seq.empty,
           Some(
             MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
           )
@@ -86,7 +87,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan match and create") {
     planFor("MATCH (a) CREATE (b)")._2 should equal(
       EmptyResult(
-          CreateNode(AllNodesScan("a", Set.empty)(solved), "b", Seq.empty, None)(solved)
+          CreateNode(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("b"), Seq.empty, None)(solved)
       )(solved)
     )
   }
@@ -99,13 +100,13 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
             Apply(
               Eager(
                 CreateNode(
-                  AllNodesScan("a", Set.empty)(solved),
-                  "b", Seq.empty, None)(solved)
+                  AllNodesScan(IdName("a"), Set.empty)(solved),
+                  IdName("b"), Seq.empty, None)(solved)
               )(solved),
-              AllNodesScan("c", Set("a", "b"))(solved)
+              AllNodesScan(IdName("c"), Set(IdName("a"), IdName("b")))(solved)
             )(solved)
           )(solved),
-          "d", Seq.empty, None)(solved))(solved)
+          IdName("d"), Seq.empty, None)(solved))(solved)
     )
   }
 }

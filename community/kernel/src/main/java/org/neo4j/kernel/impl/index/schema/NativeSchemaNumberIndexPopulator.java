@@ -211,7 +211,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     {
         if ( tree == null )
         {
-            instantiateTree( RecoveryCleanupWorkCollector.IGNORE, NO_HEADER_WRITER );
+            instantiateTree( RecoveryCleanupWorkCollector.NULL, NO_HEADER_WRITER );
         }
     }
 

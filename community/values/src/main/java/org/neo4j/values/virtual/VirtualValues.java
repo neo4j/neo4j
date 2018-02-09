@@ -156,16 +156,6 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static MapValue copy( MapValue map )
-    {
-        HashMap<String,AnyValue> hashMap = new HashMap<>( map.size() );
-        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
-        {
-            hashMap.put( entry.getKey(), entry.getValue() );
-        }
-        return new MapValue( hashMap );
-    }
-
     public static NodeReference node( long id )
     {
         return new NodeReference( id );

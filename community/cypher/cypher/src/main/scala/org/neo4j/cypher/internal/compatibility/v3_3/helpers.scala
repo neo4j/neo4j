@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import scala.language.{implicitConversions}
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {

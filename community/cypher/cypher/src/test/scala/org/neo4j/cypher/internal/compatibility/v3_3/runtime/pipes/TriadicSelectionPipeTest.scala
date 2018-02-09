@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.collection.primitive.PrimitiveLongIterable
+//import org.neo4j.collection.primitive.PrimitiveLongIterable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -86,6 +86,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
+      case result => fail(s"unknown result: $result")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
@@ -102,6 +103,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
+      case result => fail(s"unknown result: $result")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 1), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
@@ -118,6 +120,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
+      case result => fail(s"unknown result: $result")
     }.toSet
     ids should equal(Set((0, 2)))
   }
@@ -134,6 +137,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id, c.id)
+      case result => fail(s"unknown result: $result")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
@@ -150,10 +154,11 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id, c.id())
+      case result => fail(s"unknown result: $result")
     }.toSet
     ids should equal(Set((0, 11), (0, 12), (0, 21), (0, 22), (3, 21), (3, 22), (3, 41), (3, 42)))
   }
-
+/*
   private def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
     val iter = in.iterator()
@@ -162,7 +167,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     }
     builder.result()
   }
-
+*/
 //  private def createFakeDataWith(keys: Array[String], data: (Int, List[Any])*) = {
 //    def nodeWithId(id: Long) = {
 //      VirtualValues.nodeValue(id, Values.stringArray(), VirtualValues.EMPTY_MAP)

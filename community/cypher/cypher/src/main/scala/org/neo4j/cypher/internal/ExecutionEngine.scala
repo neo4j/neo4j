@@ -25,7 +25,6 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, ValueConversion}
 import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
-import org.neo4j.cypher.internal.frontend.v3_3.ParameterNotFoundException
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
@@ -74,7 +73,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   private val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any], Seq[String])](cacheMonitor)
+  private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](getPlanCacheSize)
   private val parsedQueries = new LFUCache[String, ParsedQuery](getPlanCacheSize)
@@ -94,10 +93,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     profile(query, ValueConversion.asValues(scalaParams), context)
   }
 
-  def profile(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
-    val (preparedPlanExecution, wrappedContext, queryParamNames) = planQuery(context)
-    checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
-    preparedPlanExecution.profile(wrappedContext, mapParams)
+  def profile(query: String, mapValue: MapValue, context: TransactionalContext): Result = {
+    // we got deep java parameters => convert to shallow scala parameters for passing into the engine
+    val (preparedPlanExecution, wrappedContext) = planQuery(context)
+    preparedPlanExecution.profile(wrappedContext, mapValue)
   }
 
   def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
@@ -113,10 +112,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
   def execute(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
-    val (preparedPlanExecution, wrappedContext, queryParamNames) = planQuery(context)
-    if (preparedPlanExecution.executionMode.name != "explain") {
-      checkParameters(queryParamNames, mapParams, preparedPlanExecution.extractedParams)
-    }
+    val (preparedPlanExecution, wrappedContext) = planQuery(context)
     preparedPlanExecution.execute(wrappedContext, mapParams)
   }
 
@@ -138,7 +134,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     preParsedQueries.getOrElseUpdate(queryText, queryDispatcher.preParseQuery(queryText))
 
   @throws(classOf[SyntaxException])
-  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapper, Seq[String]) = {
+  protected def planQuery(transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapper) = {
     val executingQuery = transactionalContext.executingQuery()
     val queryText = executingQuery.queryText()
     executionMonitor.startQueryExecution(executingQuery)
@@ -165,15 +161,17 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         // NOTE: This will force read access mode if the current transaction did not have it
         val revertable = tc.restrictCurrentTransaction(tc.securityContext.withMode(AccessMode.Static.READ))
 
-        val ((plan: ExecutionPlan, extractedParameters, queryParamNames), touched) = try {
+        val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache
-          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any], Seq[String])] = getOrCreateFromSchemaState(tc.readOperations, {
+          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(tc.readOperations, {
             cacheMonitor.cacheFlushDetected(tc.statement)
-            val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any], Seq[String])](getPlanCacheSize)
+            val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
             new QueryCache(cacheAccessor, lruCache)
           })
 
-          def isStale(plan: ExecutionPlan, ignored1: Map[String, Any], ignored2: Seq[String]) = plan.isStale(lastCommittedTxId, tc)
+          def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = {
+            plan.isStale(lastCommittedTxId, tc)
+          }
 
           def producePlan() = {
             val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
@@ -181,7 +179,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           }
 
           val stateBefore = schemaState(tc)
-          var (plan: (ExecutionPlan, Map[String, Any], Seq[String]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          val result = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          val plan : (ExecutionPlan, Map[String, Any]) = result._1
+          var touched = result._2
           if (!touched) {
             val labelIds: Seq[Long] = extractPlanLabels(plan, preParsedQuery.version, tc)
             if (labelIds.nonEmpty) {
@@ -210,7 +210,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         } else {
           tc.cleanForReuse()
           tc.notifyPlanningCompleted(plan)
-          return (PreparedPlanExecution(plan, executionMode, extractedParameters), tc, queryParamNames)
+          return (PreparedPlanExecution(plan, executionMode, extractedParameters), tc)
         }
 
         n += 1
@@ -218,16 +218,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     } finally phaseTracer.close()
 
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
-  }
-
-  @throws(classOf[ParameterNotFoundException])
-  private def checkParameters(queryParams: Seq[String], givenParams: MapValue, extractedParams: Map[String, Any]) {
-    exceptionHandler.runSafely {
-      val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.contains(key)))
-      if (missingKeys.nonEmpty) {
-        throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
-      }
-    }
   }
 
   private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
@@ -238,7 +228,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     tc.readOperations.acquireShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
   }
 
-  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any], Seq[String]), version: CypherVersion, tc:
+  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any]), version: CypherVersion, tc:
   TransactionalContextWrapper): Seq[Long] = {
     import scala.collection.JavaConverters._
 
@@ -246,21 +236,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
     }
 
-    def allLabels: Seq[Long] = {
-      tc.statement.readOperations().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
-    }
-
     version match {
-      // old cypher versions plans do not contain information about indexes used in query
-      // and since we do not know what labels are actually used by the query we assume that all of them are
-      case CypherVersion.v2_3 => allLabels
-      case CypherVersion.v3_1 => allLabels
-      case _ => planLabels
+      case CypherVersion.v3_3 => planLabels
     }
   }
 
   private def schemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
-    (ExecutionPlan, Map[String, Any], Seq[String])], LFUCache[String, (ExecutionPlan, Map[String, Any], Seq[String])]] = {
+    (ExecutionPlan, Map[String, Any])], LFUCache[String, (ExecutionPlan, Map[String, Any])]] = {
     tc.readOperations.schemaStateGet(this)
   }
 
@@ -305,7 +287,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
     )
 
-    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2) || (version != CypherVersion.v3_3)) &&
+    if ((version != CypherVersion.v3_3) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"

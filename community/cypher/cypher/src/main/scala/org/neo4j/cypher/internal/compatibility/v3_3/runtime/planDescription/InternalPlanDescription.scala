@@ -29,10 +29,6 @@ import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QualifiedNam
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
 /**
   * Abstract description of an execution plan
   */
@@ -58,29 +54,20 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   def addArgument(arg: Argument): InternalPlanDescription
 
   def flatten: Seq[InternalPlanDescription] = {
-      val flatten = new ArrayBuffer[InternalPlanDescription]
-      val stack = new mutable.Stack[InternalPlanDescription]()
-      stack.push(self)
-      while (stack.nonEmpty) {
-        val plan = stack.pop()
-        flatten.append(plan)
-        plan.children match {
-          case NoChildren =>
-          case SingleChild(child) =>
-            stack.push(child)
-          case TwoChildren(l, r) =>
-            stack.push(r)
-            stack.push(l)
-        }
+    def flattenAcc(acc: Seq[InternalPlanDescription], plan: InternalPlanDescription): Seq[InternalPlanDescription] = {
+      plan.children.toIndexedSeq.foldLeft(acc :+ plan) {
+        case (acc1, plan1) => flattenAcc(acc1, plan1)
       }
-      flatten
+    }
+
+    flattenAcc(Seq.empty, this)
   }
 
   def orderedVariables: Seq[String] = variables.toIndexedSeq.sorted
 
   def totalDbHits: Option[Long] = {
     val allMaybeDbHits: Seq[Option[Long]] = flatten.map {
-      plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
+      case plan: InternalPlanDescription => plan.arguments.collectFirst { case DbHits(x) => x }
     }
 
     allMaybeDbHits.reduce[Option[Long]] {
@@ -109,15 +96,16 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   override def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
   override def getProfilerStatistics: ExecutionPlanDescription.ProfilerStatistics = new ProfilerStatistics {
-    def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    def getDbHits: Long = extract { case DbHits(count) => count }
 
-    def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    def getRows: Long = extract { case Rows(count) => count }
 
-    def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(0)
+    override def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }
 
-    def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(0)
+    override def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }
 
-    private def extract(f: PartialFunction[Argument, Long]): Option[Long] = arguments.collectFirst(f)
+    private def extract(f: PartialFunction[Argument, Long]): Long =
+      arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
   }
 
 }
@@ -380,13 +368,32 @@ final case class SingleRowPlanDescription(id: LogicalPlanId,
 
   def name = "EmptyRow"
 
-  def render(builder: StringBuilder) {}
+  def render(builder: StringBuilder) {
+  }
 
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
+  def render(builder: StringBuilder, separator: String, levelSuffix: String) {
+  }
 
   def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 
   def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = f(this)
 
   def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
+}
+
+final case class LegacyPlanDescription(name: String,
+                                       arguments: Seq[Argument],
+                                       variables: Set[String],
+                                       stringRep: String
+                                      ) extends InternalPlanDescription {
+
+  override def id: LogicalPlanId = LogicalPlanId.DEFAULT
+
+  override def children: Children = NoChildren
+
+  override def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = this
+
+  override def find(searchedName: String): Seq[InternalPlanDescription] = if (searchedName == name) Seq(this) else Seq.empty
+
+  override def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 }

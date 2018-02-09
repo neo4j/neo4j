@@ -79,16 +79,9 @@ public class SchemaIndexExtensionLoader
         @Override
         public void add( CleanupJob job )
         {
-            try
+            if ( job.needed() )
             {
-                if ( job.needed() )
-                {
-                    throw new IllegalStateException( "Consistency checker should not do recovery" );
-                }
-            }
-            finally
-            {
-                job.close();
+                throw new IllegalStateException( "Consistency checker should not do recovery" );
             }
         }
     }

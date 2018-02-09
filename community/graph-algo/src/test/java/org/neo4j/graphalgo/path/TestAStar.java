@@ -63,12 +63,14 @@ public class TestAStar extends Neo4jAlgoTestCase
         Node start = graph.makeNode( "start", "x", 0d, "y", 0d );
 
         // WHEN
-        WeightedPath path = finder.findSinglePath( start, start );
-        // THEN
-        assertNotNull( path );
-        assertEquals( start, path.startNode() );
-        assertEquals( start, path.endNode() );
-        assertEquals( 0, path.length() );
+        try ( WeightedPath path = finder.findSinglePath( start, start ) )
+        {
+            // THEN
+            assertNotNull( path );
+            assertEquals( start, path.startNode() );
+            assertEquals( start, path.endNode() );
+            assertEquals( 0, path.length() );
+        }
     }
 
     @Test
@@ -88,6 +90,8 @@ public class TestAStar extends Neo4jAlgoTestCase
             assertEquals( start, path.endNode() );
             assertEquals( 0, path.length() );
         }
+
+        paths.forEach( Path::close );
     }
 
     @Test
@@ -124,9 +128,12 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "e", "end", "length", 2 );
 
         // WHEN
-        WeightedPath path = finder.findSinglePath( start, end );
-        // THEN
-        assertPathDef( path, "start", "d", "e", "end" );
+        try ( WeightedPath path = finder.findSinglePath( start, end ) )
+        {
+
+            // THEN
+            assertPathDef( path, "start", "d", "e", "end" );
+        }
     }
 
     /**
@@ -158,6 +165,7 @@ public class TestAStar extends Neo4jAlgoTestCase
             assertPath( path, nodeA, nodeB, nodeC );
             counter++;
         }
+        allPaths.forEach( Path::close );
         assertEquals( 1, counter );
     }
 
@@ -220,10 +228,12 @@ public class TestAStar extends Neo4jAlgoTestCase
         PathFinder<WeightedPath> traversalFinder = new TraversalAStar( expander,
                 new InitialBranchState.State( initialStateValue, initialStateValue ),
                 doubleCostEvaluator( "length" ), ESTIMATE_EVALUATOR );
-        WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC );
-        assertEquals( (Double) 5.0D, (Double) path.weight() );
-        assertPathDef( path, "A", "B", "C" );
-        assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
+        try ( WeightedPath path = traversalFinder.findSinglePath( nodeA, nodeC ) )
+        {
+            assertEquals( (Double) 5.0D, (Double) path.weight() );
+            assertPathDef( path, "A", "B", "C" );
+            assertEquals( MapUtil.<Node,Double>genericMap( nodeA, 0D, nodeB, 2D ), seenBranchStates );
+        }
     }
 
     @Test
@@ -247,9 +257,11 @@ public class TestAStar extends Neo4jAlgoTestCase
         graph.makeEdge( "3", "4", "weight", 0.013d );
 
         // WHEN
-        WeightedPath best1_4 = finder.findSinglePath( node1, node4 );
-        // THEN
-        assertPath( best1_4, node1, node2, node3, node4 );
+        try ( WeightedPath best1_4 = finder.findSinglePath( node1, node4 ) )
+        {
+            // THEN
+            assertPath( best1_4, node1, node2, node3, node4 );
+        }
     }
 
     static EstimateEvaluator<Double> ESTIMATE_EVALUATOR = ( node, goal ) ->

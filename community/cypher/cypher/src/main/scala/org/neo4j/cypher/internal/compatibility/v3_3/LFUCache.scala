@@ -25,7 +25,7 @@ import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 
 class LFUCache[K <: AnyRef, V <: AnyRef](val size: Int) extends ((K, => V) => V) {
 
-  val inner: Cache[K, V] = Caffeine.newBuilder().maximumSize(size).build[K, V]()
+  val inner: Cache[K, V] = Caffeine.newBuilder().maximumSize(size.toLong).build[K, V]()
 
   def getOrElseUpdate(key: K, f: => V): V = inner.get(key, new Function[K, V] {
     override def apply(t: K): V = f

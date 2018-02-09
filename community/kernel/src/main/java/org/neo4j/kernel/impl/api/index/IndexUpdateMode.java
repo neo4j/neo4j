@@ -24,34 +24,10 @@ public enum IndexUpdateMode
     /**
      * Used when the db is online
      */
-    ONLINE( false, true ),
-
-    /**
-     * Used when flipping from populating to online
-     */
-    ONLINE_IDEMPOTENT( true, true ),
+    ONLINE,
 
     /**
      * Used when the db is recoverying
      */
-    RECOVERY( true, false );
-
-    private final boolean idempotency;
-    private final boolean refresh;
-
-    IndexUpdateMode( boolean idempotency, boolean refresh )
-    {
-        this.idempotency = idempotency;
-        this.refresh = refresh;
-    }
-
-    public boolean requiresIdempotency()
-    {
-        return idempotency;
-    }
-
-    public boolean requiresRefresh()
-    {
-        return refresh;
-    }
+    RECOVERY
 }

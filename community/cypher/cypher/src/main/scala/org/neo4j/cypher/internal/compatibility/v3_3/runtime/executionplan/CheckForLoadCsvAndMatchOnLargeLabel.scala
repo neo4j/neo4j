@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ir.v3_3.Cardinality
 
 case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long) extends (Pipe => Option[InternalNotification]) {
 
-  private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
+  private val threshold = Cardinality(nonIndexedLabelWarningThreshold.toDouble)
 
   def apply(pipe: Pipe) = {
     import org.neo4j.cypher.internal.frontend.v3_3.Foldable._

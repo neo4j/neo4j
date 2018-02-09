@@ -28,9 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics,
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_3.PeriodicCommit
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
-
-import scala.collection.mutable
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan}
 
 class PipeExecutionPlanBuilder(clock: Clock,
                                monitors: Monitors,
@@ -79,13 +77,25 @@ class PipeExecutionPlanBuilder(clock: Clock,
       readOnly = plan.solved.all(_.queryGraph.readOnly),
       expressionConverters = expressionConverters)
 
-    val planStack = new mutable.Stack[LogicalPlan]()
-    val pipeStack = new mutable.Stack[Pipe]()
+    var planStack: List[LogicalPlan] = Nil
+    def planStackPush(logicalPlan: LogicalPlan) {planStack = logicalPlan :: planStack}
+    def planStackPop(): LogicalPlan = {
+      val logicalPlan = planStack.head
+      planStack = planStack.tail
+      logicalPlan
+    }
+    var pipeStack: List[Pipe] = Nil
+    def pipeStackPush(pipe: Pipe) {pipeStack = pipe :: pipeStack}
+    def pipeStackPop(): Pipe = {
+      val pipe = pipeStack.head
+      pipeStack = pipeStack.tail
+      pipe
+    }
     var comingFrom = plan
     def populate(plan: LogicalPlan) = {
       var current = plan
       while (!current.isLeaf) {
-        planStack.push(current)
+        planStackPush(current)
         (current.lhs, current.rhs) match {
           case (Some(_), Some(right)) =>
             current = right
@@ -96,41 +106,41 @@ class PipeExecutionPlanBuilder(clock: Clock,
         }
       }
       comingFrom = current
-      planStack.push(current)
+      planStackPush(current)
     }
 
     populate(plan)
 
     while (planStack.nonEmpty) {
-      val current = planStack.pop()
+      val current = planStackPop()
 
       (current.lhs, current.rhs) match {
         case (None, None) =>
           val newPipe = pipeBuilder
             .build(current)
 
-          pipeStack.push(newPipe)
+          pipeStackPush(newPipe)
 
         case (Some(_), None) =>
-          val source = pipeStack.pop()
+          val source = pipeStackPop()
           val newPipe = pipeBuilder
             .build(current, source)
 
-          pipeStack.push(newPipe)
+          pipeStackPush(newPipe)
 
         case (Some(left), Some(right)) if right == left =>
           throw new InternalException(s"Tried to build pipes from bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
 
         case (Some(left), Some(_)) if comingFrom == left =>
-          val arg1 = pipeStack.pop()
-          val arg2 = pipeStack.pop()
+          val arg1 = pipeStackPop()
+          val arg2 = pipeStackPop()
           val newPipe = pipeBuilder
             .build(current, arg1, arg2)
 
-          pipeStack.push(newPipe)
+          pipeStackPush(newPipe)
 
         case (Some(left), Some(right)) if comingFrom == right =>
-          planStack.push(current)
+          planStackPush(current)
           populate(left)
       }
 
@@ -138,7 +148,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
 
     }
 
-    val result = pipeStack.pop()
+    val result = pipeStackPop()
     assert(pipeStack.isEmpty, "Should have emptied the stack of pipes by now!")
 
     result

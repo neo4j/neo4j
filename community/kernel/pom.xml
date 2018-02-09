@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright (c) 2002-2018 "Neo Technology,"
+  Copyright (c) 2002-2016 "Neo Technology,"
   Network Engine for Objects in Lund AB [http://neotechnology.com]
 
   This file is part of Neo4j.
@@ -23,13 +23,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.3.3-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-kernel</artifactId>
-  <version>3.3.3-SNAPSHOT</version>
+  <version>3.3.1-SNAPSHOT</version>
 
   <name>Neo4j - Graph Database Kernel</name>
   <description>

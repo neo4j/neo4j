@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.result.QueryResult
-import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
 
@@ -99,7 +98,7 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
-    def remove() { throw new UnsupportedOperationException("remove") }
+    override def remove() { throw new UnsupportedOperationException("remove") }
     def close() { self.close() }
   }
 

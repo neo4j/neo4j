@@ -20,33 +20,23 @@
 package org.neo4j.kernel.impl.factory;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.MultipleFoundException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.values.storable.Values;
 
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -59,10 +49,6 @@ public class GraphDatabaseFacadeTest
     private GraphDatabaseFacade.SPI spi = Mockito.mock( GraphDatabaseFacade.SPI.class, RETURNS_DEEP_STUBS );
     private GraphDatabaseFacade graphDatabaseFacade = new GraphDatabaseFacade();
     private GraphDatabaseQueryService queryService;
-    private ReadOperations readOperations;
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp()
@@ -70,17 +56,14 @@ public class GraphDatabaseFacadeTest
         queryService = mock( GraphDatabaseQueryService.class );
         DependencyResolver resolver = mock( DependencyResolver.class );
         Statement statement = mock( Statement.class, RETURNS_DEEP_STUBS );
-        readOperations = mock( ReadOperations.class );
         ThreadToStatementContextBridge contextBridge = mock( ThreadToStatementContextBridge.class );
 
         when( spi.queryService() ).thenReturn( queryService );
         when( spi.resolver() ).thenReturn( resolver );
-        when( spi.currentStatement() ).thenReturn( statement );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
         when( resolver.resolveDependency( Guard.class ) ).thenReturn( mock( Guard.class ) );
         when( contextBridge.get() ).thenReturn( statement );
         when( resolver.resolveDependency( Config.class ) ).thenReturn( Config.defaults() );
-        when( statement.readOperations() ).thenReturn( readOperations );
 
         graphDatabaseFacade.init( spi );
     }
@@ -128,21 +111,5 @@ public class GraphDatabaseFacadeTest
 
         long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
         verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout );
-    }
-
-    @Test
-    public void multipleNodesFoundExceptionMessageContainsLabelAndPropertyData() throws EntityNotFoundException
-    {
-        Label label = Label.label( "test label" );
-        String propertyName = "test property";
-        String propertyValue = "testValue";
-        when( readOperations.nodesGetForLabel( 0 ) ).thenReturn( PrimitiveLongCollections.iterator( 1, 2 ) );
-        when( readOperations.nodeGetProperty( anyLong(), eq( 0 ) ) ).thenReturn( Values.stringValue(propertyValue) );
-
-        expectedException.expect( MultipleFoundException.class );
-        expectedException.expectMessage( "Found multiple nodes with label: 'test label', property name: 'test " +
-                "property' and property value: 'testValue' while only one was expected." );
-
-        graphDatabaseFacade.findNode( label, propertyName, propertyValue );
     }
 }

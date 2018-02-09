@@ -37,7 +37,6 @@ public class BufferedCharSeeker implements CharSeeker
     private static final char EOL_CHAR_2 = '\r';
     private static final char EOF_CHAR = (char) -1;
     private static final char BACK_SLASH = '\\';
-    private static final char WHITESPACE = ' ';
 
     private char[] buffer;
     private int dataLength;
@@ -64,7 +63,6 @@ public class BufferedCharSeeker implements CharSeeker
     private final boolean legacyStyleQuoting;
     private final Source source;
     private Chunk currentChunk;
-    private final boolean trim;
 
     public BufferedCharSeeker( Source source, Configuration config )
     {
@@ -73,7 +71,6 @@ public class BufferedCharSeeker implements CharSeeker
         this.lineStartPos = this.bufferPos;
         this.multilineFields = config.multilineFields();
         this.legacyStyleQuoting = config.legacyStyleQuoting();
-        this.trim = getTrimStringIgnoreErrors( config );
     }
 
     @Override
@@ -99,20 +96,12 @@ public class BufferedCharSeeker implements CharSeeker
             ch = nextChar( skippedChars );
             if ( quoteDepth == 0 )
             {   // In normal mode, i.e. not within quotes
-                if ( isWhitespace( ch ) && trim )
-                {
-                    if ( seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
-                    {
-                        // We found a whitespace, which was the first of the value and we've been told to trim that off
-                        seekStartPos++;
-                    }
-                }
-                else if ( ch == quoteChar && seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
+                if ( ch == quoteChar && seekStartPos == bufferPos - 1/* -1 since we just advanced one */ )
                 {   // We found a quote, which was the first of the value, skip it and switch mode
                     quoteDepth++;
-                    isQuoted = true;
                     seekStartPos++;
                     quoteStartLine = lineNumber;
+                    continue;
                 }
                 else if ( isNewLine( ch ) )
                 {   // Encountered newline, done for now
@@ -126,25 +115,27 @@ public class BufferedCharSeeker implements CharSeeker
                 }
                 else if ( ch == untilChar )
                 {   // We found a delimiter, set marker and return true
-                    return setMark( mark, endOffset, skippedChars, ch, isQuoted );
-                }
-                else
-                {   // This is a character to include as part of the current value
-                    if ( isQuoted )
-                    {   // This value is quoted, i.e. started with a quote and has also seen a quote
-                        throw new DataAfterQuoteException( this,
-                                new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
-                    }
+                    mark.set( seekStartPos, bufferPos - endOffset - skippedChars, ch, isQuoted );
+                    return true;
                 }
             }
             else
             {   // In quoted mode, i.e. within quotes
+                isQuoted = true;
                 if ( ch == quoteChar )
                 {   // Found a quote within a quote, peek at next char
                     int nextCh = peekChar( skippedChars );
+
                     if ( nextCh == quoteChar )
                     {   // Found a double quote, skip it and we're going down one more quote depth (quote-in-quote)
                         repositionChar( bufferPos++, ++skippedChars );
+                    }
+                    else if ( nextCh != untilChar && !isNewLine( nextCh ) && nextCh != EOF_CHAR )
+                    {   // Found an ending quote of sorts, although the next char isn't a delimiter, newline, or EOF
+                        // so it looks like there's data characters after this end quote. We don't really support that.
+                        // So circle this back to the user saying there's something wrong with the field.
+                        throw new DataAfterQuoteException( this,
+                                new String( buffer, seekStartPos, bufferPos - seekStartPos ) );
                     }
                     else
                     {   // Found an ending quote, skip it and switch mode
@@ -189,29 +180,8 @@ public class BufferedCharSeeker implements CharSeeker
         // We found the last value of the line or stream
         lineNumber++;
         lineStartPos = bufferPos;
-        return setMark( mark, endOffset, skippedChars, END_OF_LINE_CHARACTER, isQuoted );
-    }
-
-    private boolean setMark( Mark mark, int endOffset, int skippedChars, int ch, boolean isQuoted )
-    {
-        int pos = (trim ? rtrim( bufferPos ) : bufferPos) - endOffset - skippedChars;
-        mark.set( seekStartPos, pos, ch, isQuoted );
+        mark.set( seekStartPos, bufferPos - endOffset - skippedChars, END_OF_LINE_CHARACTER, isQuoted );
         return true;
-    }
-
-    private int rtrim( int start )
-    {
-        int index = start;
-        while ( isWhitespace( buffer[index - 1 /*bufferPos has advanced*/ - 1 /*don't check the last read char (delim or EOF)*/] ) )
-        {
-            index--;
-        }
-        return index;
-    }
-
-    private boolean isWhitespace( int ch )
-    {
-        return ch == WHITESPACE;
     }
 
     private void repositionChar( int offset, int stepsBack )
@@ -248,20 +218,6 @@ public class BufferedCharSeeker implements CharSeeker
     {
         mark.set( -1, -1, Mark.END_OF_LINE_CHARACTER, false );
         return false;
-    }
-
-    private static boolean getTrimStringIgnoreErrors( Configuration config )
-    {
-        try
-        {
-            return config.trimStrings();
-        }
-        catch ( Throwable t )
-        {
-            // Cypher compatibility can result in older Cypher 2.3 code being passed here with older implementations of
-            // Configuration. So we need to ignore the fact that those implementations do not include trimStrings().
-            return Configuration.DEFAULT.trimStrings();
-        }
     }
 
     @Override

@@ -43,7 +43,7 @@ trait TypeSafeMathSupport {
         case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
         case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
         case (l: ByteValue, r: IntValue) => Values.longValue(l.value() + r.value().toLong)
-        case (l: ByteValue, r: LongValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: ByteValue, r: LongValue) => Values.longValue(Math.addExact(l.value().toLong,r.value()))
         case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() + r.value())
 
         case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() + r.value())
@@ -64,25 +64,25 @@ trait TypeSafeMathSupport {
         case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
         case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
         case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() + r.longValue())
-        case (l: IntValue, r: LongValue) => Values.longValue(Math.addExact(l.value(), r.value()))
+        case (l: IntValue, r: LongValue) => Values.longValue(Math.addExact(l.value().toLong, r.value()))
         case (l: IntValue, r: ShortValue) => Values.intValue(l.value() + r.value())
 
-        case (l: LongValue, r: ByteValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: LongValue, r: ByteValue) => Values.longValue(Math.addExact(l.value(),r.value().toLong))
         case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
         case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
-        case (l: LongValue, r: IntValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: LongValue, r: IntValue) => Values.longValue(Math.addExact(l.value(),r.value().toLong))
         case (l: LongValue, r: LongValue) => Values.longValue(Math.addExact(l.value(),r.value()))
-        case (l: LongValue, r: ShortValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: LongValue, r: ShortValue) => Values.longValue(Math.addExact(l.value(),r.value().toLong))
 
         case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() + r.value())
         case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
         case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
         case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() + r.longValue())
-        case (l: ShortValue, r: LongValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: ShortValue, r: LongValue) => Values.longValue(Math.addExact(l.value().toLong,r.value()))
         case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() + r.value())
       }
     } catch {
-      case e: java.lang.ArithmeticException =>
+      case _: java.lang.ArithmeticException =>
         throw new ArithmeticException(s"result of $left + $right cannot be represented as an integer")
     }
   }
@@ -144,7 +144,7 @@ trait TypeSafeMathSupport {
         case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
         case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
         case (l: ByteValue, r: IntValue) => Values.longValue(l.value() - r.value().toLong)
-        case (l: ByteValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: ByteValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value().toLong,r.value()))
         case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() - r.value())
 
         case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() - r.value())
@@ -165,26 +165,26 @@ trait TypeSafeMathSupport {
         case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
         case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
         case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() - r.longValue())
-        case (l: IntValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(), r.value()))
+        case (l: IntValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value().toLong, r.value()))
         case (l: IntValue, r: ShortValue) => Values.intValue(l.value() - r.value())
 
-        case (l: LongValue, r: ByteValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: LongValue, r: ByteValue) => Values.longValue(Math.subtractExact(l.value(),r.value().toLong))
         case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
         case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
-        case (l: LongValue, r: IntValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: LongValue, r: IntValue) => Values.longValue(Math.subtractExact(l.value(),r.value().toLong))
         case (l: LongValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
-        case (l: LongValue, r: ShortValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: LongValue, r: ShortValue) => Values.longValue(Math.subtractExact(l.value(),r.value().toLong))
 
         case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() - r.value())
         case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
         case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
         case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() - r.longValue())
-        case (l: ShortValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: ShortValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value().toLong,r.value()))
         case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() - r.value())
 
       }
     } catch {
-      case e: java.lang.ArithmeticException  =>
+      case _: java.lang.ArithmeticException  =>
         throw new ArithmeticException(s"result of $left - $right cannot be represented as an integer")
     }
   }
@@ -198,7 +198,7 @@ trait TypeSafeMathSupport {
         case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
         case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
         case (l: ByteValue, r: IntValue) => Values.longValue(l.value() * r.value().toLong)
-        case (l: ByteValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: ByteValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value().toLong,r.value()))
         case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() * r.value())
 
         case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() * r.value())
@@ -219,26 +219,26 @@ trait TypeSafeMathSupport {
         case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
         case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
         case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() * r.longValue())
-        case (l: IntValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(), r.value()))
+        case (l: IntValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value().toLong, r.value()))
         case (l: IntValue, r: ShortValue) => Values.intValue(l.value() * r.value())
 
-        case (l: LongValue, r: ByteValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: LongValue, r: ByteValue) => Values.longValue(Math.multiplyExact(l.value(),r.value().toLong))
         case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
         case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
-        case (l: LongValue, r: IntValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: LongValue, r: IntValue) => Values.longValue(Math.multiplyExact(l.value(),r.value().toLong))
         case (l: LongValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
-        case (l: LongValue, r: ShortValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: LongValue, r: ShortValue) => Values.longValue(Math.multiplyExact(l.value(),r.value().toLong))
 
         case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() * r.value())
         case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
         case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
         case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() * r.longValue())
-        case (l: ShortValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: ShortValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value().toLong,r.value()))
         case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() * r.value())
 
       }
     } catch {
-      case e: java.lang.ArithmeticException  =>
+      case _: java.lang.ArithmeticException  =>
         throw new ArithmeticException(s"result of $left * $right cannot be represented as an integer")
     }
   }
@@ -295,11 +295,11 @@ trait TypeSafeMathSupport {
     override def add(next: AnyValue): OverflowAwareSum[_] = next match {
       case (x: ByteValue)    => addLong(x.longValue())
       case (x: ShortValue)   => addLong(x.longValue())
-      case (x: CharValue)    => addLong(x.value())
+      case (x: CharValue)    => addLong(x.value().toLong)
       case (x: IntValue)     => addLong(x.longValue())
       case (x: LongValue)    => addLong(x.longValue())
-      case (_: FloatValue)   => DoubleSum(sum).add(next)
-      case (_: DoubleValue)  => DoubleSum(sum).add(next)
+      case (_: FloatValue)   => DoubleSum(sum.toDouble).add(next)
+      case (_: DoubleValue)  => DoubleSum(sum.toDouble).add(next)
       case _ => this
     }
   }
@@ -317,13 +317,13 @@ trait TypeSafeMathSupport {
     }
 
     override def add(next: AnyValue): OverflowAwareSum[_] = next match {
-      case (x: ByteValue)    => addInt(x.value())
-      case (x: ShortValue)   => addInt(x.value())
-      case (x: CharValue)    => addInt(x.value())
+      case (x: ByteValue)    => addInt(x.value().toInt)
+      case (x: ShortValue)   => addInt(x.value().toInt)
+      case (x: CharValue)    => addInt(x.value().toInt)
       case (x: IntValue)     => addInt(x.value())
-      case (x: LongValue)    => LongSum(sum).add(x)
-      case (x: FloatValue)   => DoubleSum(sum).add(x)
-      case (x: DoubleValue)  => DoubleSum(sum).add(x)
+      case (x: LongValue)    => LongSum(sum.toLong).add(x)
+      case (x: FloatValue)   => DoubleSum(sum.toDouble).add(x)
+      case (x: DoubleValue)  => DoubleSum(sum.toDouble).add(x)
       case _ => this
     }
   }

@@ -27,7 +27,7 @@ case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
   val lhs = Some(left)
   val rhs = None
 
-  val availableSymbols = left.availableSymbols
+  def availableSymbols = left.availableSymbols
 }
 
 // Using a trait instead of a bool to make the code more readable

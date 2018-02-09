@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileUtils
 
 import scala.io.Codec
 import scala.reflect.io.File
+import scala.language.{implicitConversions}
 
 trait CreateTempFileTestSupport extends CypherTestSupport {
   self: CypherFunSuite =>
@@ -52,16 +53,16 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
   def createCSVTempFileURL(filename: String, dir: String)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     createTempFileURL(filename, ".csv")(f)
 
-  def createGzipCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+  def createGzipCSVTempFileURL(f: PrintWriter => Unit): String =
     createGzipCSVTempFileURL()(f)
 
-  def createGzipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String =
+  def createGzipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =
     createTempFileURL(filename, ".csv.gz")(f)(gzipWriter)
 
-  def createZipCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
+  def createZipCSVTempFileURL(f: PrintWriter => Unit): String =
     createZipCSVTempFileURL()(f)
 
-  def createZipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String =
+  def createZipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit): String =
     createTempFileURL(filename, ".csv.zip")(f)(zipWriter)
 
   def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String = synchronized {

@@ -29,6 +29,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.parser
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticDirection, ast}
 import org.parboiled.scala._
 
+import scala.language.{postfixOps}
+
 trait Patterns extends Parser
   with Literals
   with Base {

@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.3.3-SNAPSHOT</version>
+    <version>3.3.1-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>community-build</artifactId>
-  <version>3.3.3-SNAPSHOT</version>
+  <version>3.3.1-SNAPSHOT</version>
 
   <name>Neo4j - Community Build</name>
   <packaging>pom</packaging>
@@ -22,6 +22,7 @@
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.skip>true</docs-plugin.skip>
     <componentversion.skip>true</componentversion.skip>
+    <test.regex>none</test.regex>
   </properties>
 
   <scm>
@@ -103,4 +104,31 @@ the relevant Commercial Agreement.
       </modules>
     </profile>
   </profiles>
+
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>build-helper-maven-plugin</artifactId>
+      <version>1.12</version>
+      <executions>
+        <execution>
+          <id>regex-property</id>
+          <goals>
+            <goal>regex-property</goal>
+          </goals>
+          <configuration>
+            <name>maven.test.skip</name>
+            <value>${project.artifactId}</value>
+            <regex>${test.regex}</regex>
+            <replacement>true</replacement>
+            <failIfNoMatch>false</failIfNoMatch>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+
 </project>
+

@@ -328,7 +328,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   }
 }
 
-case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition) extends UpdateClause {
+case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =
@@ -505,8 +505,6 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
-    val variableStar = returnItems.isStarOnly
-    val graphsStar = graphReturnItems.forall(_.isGraphsStarOnly)
     declareAllTheThings
   }
 
