@@ -176,7 +176,7 @@ class FusionIndexReader implements IndexReader
     /**
      * Combine multiple progressor to act like one single logical progressor seen from clients perspective.
      */
-    private class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
+    private static class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
     {
         private final NodeValueClient client;
         private final int[] keys;

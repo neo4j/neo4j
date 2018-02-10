@@ -331,7 +331,7 @@ public class DbStructureCollector implements DbStructureVisitor
         }
     }
 
-    private class IndexStatistics
+    private static class IndexStatistics
     {
         private final double uniqueValuesPercentage;
         private final long size;

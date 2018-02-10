@@ -40,8 +40,8 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
@@ -465,7 +465,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
     }
 
-    private class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
+    private static class RelationshipPropertyEntryView implements PropertyEntry<Relationship>
     {
         private final Relationship relationship;
         private final String key;

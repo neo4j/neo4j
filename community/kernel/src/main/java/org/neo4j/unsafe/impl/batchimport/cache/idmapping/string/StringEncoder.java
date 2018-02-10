@@ -36,7 +36,7 @@ public class StringEncoder implements Encoder
 
     // fixed values
     private final int numCodes;
-    private final int encodingThreshold = 7;
+    private static final int encodingThreshold = 7;
 
     // data changing over time, potentially with each encoding
     private final byte[] reMap = new byte[256];

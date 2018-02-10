@@ -21,6 +21,7 @@ package org.neo4j.commandline;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -109,13 +110,21 @@ public class Util
         Properties props = new Properties();
         try
         {
-            props.load( Util.class.getResourceAsStream( "/org/neo4j/commandline/build.properties" ) );
+            loadProperties( props );
             return props.getProperty( "neo4jVersion" );
         }
         catch ( IOException e )
         {
             // This should never happen
             throw new RuntimeException( e );
+        }
+    }
+
+    private static void loadProperties( Properties props ) throws IOException
+    {
+        try ( InputStream resource = Util.class.getResourceAsStream( "/org/neo4j/commandline/build.properties" ) )
+        {
+            props.load( resource );
         }
     }
 }

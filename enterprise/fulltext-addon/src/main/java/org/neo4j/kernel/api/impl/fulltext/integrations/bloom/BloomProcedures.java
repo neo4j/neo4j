@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
 import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator;
 import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.ScoreEntry;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -156,7 +156,7 @@ public class BloomProcedures
         }
     }
 
-    public class StatusOutput
+    public static class StatusOutput
     {
         public final String state;
 
