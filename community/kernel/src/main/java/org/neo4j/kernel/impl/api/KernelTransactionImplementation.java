@@ -744,6 +744,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenRead tokenRead()
     {
+        currentStatement.assertAllows( AccessMode::allowsReads, "Read" );
         return operations.token();
     }
 
