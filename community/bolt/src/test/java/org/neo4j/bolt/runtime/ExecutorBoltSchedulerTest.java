@@ -165,11 +165,7 @@ public class ExecutorBoltSchedulerTest
     {
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
-        //when( connection.processNextBatch() ).thenThrow( new RuntimeException( "some unexpected error" ) );
-        doAnswer( inv ->
-        {
-            throw new RuntimeException( "some unexpected error" );
-        } ).when( connection ).processNextBatch();
+        when( connection.processNextBatch() ).thenThrow( new RuntimeException( "some unexpected error" ) );
 
         boltScheduler.start();
         boltScheduler.created( connection );
@@ -191,11 +187,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         AtomicInteger counter = new AtomicInteger( 0 );
-        doAnswer( inv ->
-        {
-            counter.incrementAndGet();
-            return true;
-        } ).when( connection ).processNextBatch();
+        doAnswer( inv -> counter.incrementAndGet() > 0 ).when( connection ).processNextBatch();
         when( connection.hasPendingJobs() ).thenReturn( true ).thenReturn( false );
 
         boltScheduler.start();

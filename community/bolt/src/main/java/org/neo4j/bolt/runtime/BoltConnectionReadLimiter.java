@@ -107,7 +107,7 @@ public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
         {
             if ( log != null )
             {
-                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.remoteAddress(), currentSize );
+                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.remoteAddress(), lowWatermark );
             }
 
             channel.config().setAutoRead( true );

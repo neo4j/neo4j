@@ -24,8 +24,11 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
+import org.neo4j.util.FeatureToggles;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -41,18 +44,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class BoltChannelAutoReadLimiterTest
+public class BoltConnectionReadLimiterTest
 {
-    /*private static final Job job = s -> s.run( "INIT", null, null );
+    private static final Job job = s -> s.run( "INIT", null, null );
+    private BoltConnection connection;
     private Channel channel;
     private Log log;
 
     @Before
     public void setup()
     {
-        this.channel = new EmbeddedChannel();
-        this.log = mock( Log.class );
+        channel = new EmbeddedChannel();
+        log = mock( Log.class );
+
+        connection = mock( BoltConnection.class );
+        when( connection.id() ).thenReturn( channel.id().asLongText() );
+        when( connection.channel() ).thenReturn( channel );
     }
 
     @Test
@@ -82,7 +91,7 @@ public class BoltChannelAutoReadLimiterTest
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
+        limiter.enqueued( connection, job );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log, never() ).warn( anyString(), any(), any() );
@@ -95,9 +104,9 @@ public class BoltChannelAutoReadLimiterTest
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
 
         assertFalse( channel.config().isAutoRead() );
         verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -110,11 +119,11 @@ public class BoltChannelAutoReadLimiterTest
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
 
         assertFalse( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -127,11 +136,10 @@ public class BoltChannelAutoReadLimiterTest
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.dequeued( job );
-        limiter.dequeued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.drained( connection, Arrays.asList( job, job  ) );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -145,12 +153,10 @@ public class BoltChannelAutoReadLimiterTest
 
         assertTrue( channel.config().isAutoRead() );
 
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.enqueued( job );
-        limiter.dequeued( job );
-        limiter.dequeued( job );
-        limiter.dequeued( job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.enqueued( connection, job );
+        limiter.drained( connection, Arrays.asList( job, job, job ) );
 
         assertTrue( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
@@ -229,12 +235,12 @@ public class BoltChannelAutoReadLimiterTest
 
     private BoltConnectionReadLimiter newLimiter( int low, int high )
     {
-        return new BoltConnectionReadLimiter( channel, log, low, high );
+        return new BoltConnectionReadLimiter( log, low, high );
     }
 
     private BoltConnectionReadLimiter newLimiterWithDefaults()
     {
-        return new BoltConnectionReadLimiter( channel, log );
-    }*/
+        return new BoltConnectionReadLimiter( log );
+    }
 
 }
