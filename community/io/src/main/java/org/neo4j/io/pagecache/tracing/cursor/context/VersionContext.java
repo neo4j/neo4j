@@ -22,11 +22,24 @@ package org.neo4j.io.pagecache.tracing.cursor.context;
 /**
  * Context that contains state of ongoing versioned data read or write.
  *
- * Read context performing data read with a version that is equal to last closed transaction.
- * Write context data modification with have version that is equal to transaction that is currently committing.
- *
- * As soon reader that associated with a context will observe data version that it should not see, context will be
- * marked as dirty.
+ * <br/>
+ * Context can be in one of two states:
+ * <ul>
+ *     <li>Read context: reading is performed for a version that context was initialised with.
+ *     As soon as reader that associated with a context will observe data with version that it higher,
+ *     context will be marked as dirty.
+ *     <br/>
+ *     For example, when context is initialised with last closed transaction id and if
+ *     at the end of reading operation context is not marked as dirty its guarantee that context did not
+ *     encounter any data from more recent transaction.</li>
+ *     <li>Write context: context that performs data modifications. Any modifications will be tagged with
+ *     some version that write context was initialised with.
+ *     <br/>
+ *     For example, commit will start write context that with a version that is equal to current
+ *     committing transaction id./li>
+ * </ul>
+ * By default non context will be initialised with last closed transaction id which is equal to {@link Long#MAX_VALUE}
+ * and transaction id that is equal to minimal possible transaction id: 1.
  */
 public interface VersionContext
 {
