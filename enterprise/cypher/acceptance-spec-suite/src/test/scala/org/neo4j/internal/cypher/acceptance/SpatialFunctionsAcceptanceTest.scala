@@ -477,6 +477,29 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
+  test("Index query with MERGE") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.700001, longitude: 12.7800001, crs: 'WGS-84'})")
+
+    // When matching in merge
+    val result = innerExecuteDeprecated("MERGE (p:Place {location: point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) }) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+
+    //  And when creating in merge
+    val result2 = innerExecuteDeprecated("MERGE (p:Place {location: point({latitude: 156.7, longitude: 112.78, crs: 'WGS-84'}) }) RETURN p.location as point", Map.empty)
+
+    // Then
+    val plan2 = result2.executionPlanDescription()
+    plan2 should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+    result2.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 112.78, 156.7))))
+  }
+
   test("indexed points close together in WGS84 - range query greaterThan") {
     // Given
     graph.createIndex("Place", "location")
@@ -567,6 +590,90 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     plan should useOperatorWithText("Projection", "point")
     plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location) >= point", ":Place(location) < point")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 11.78, 55.7))))
+  }
+
+  test("points with distance query and mixed crs") {
+    // Given
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 55.7, x: 11.78, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
+
+    val query =
+      """CYPHER runtime=slotted MATCH (p:Place)
+        |WHERE distance(p.location, point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})) < 1000
+        |RETURN p.location as point
+      """.stripMargin
+    // When
+    val result = innerExecuteDeprecated(query, Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("Filter", "distance")
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 11.78, 55.7))))
+  }
+
+  test("indexed points with distance query and points within bbox") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: -10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: 10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: -10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: 10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: 0, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: 0, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: -10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 9.99, x: 0, crs: 'cartesian'})")
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+
+    // <=
+    {
+      val query =
+        s"""CYPHER runtime=slotted MATCH (p:Place)
+           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
+           |RETURN p.location as point
+        """.stripMargin
+      // When
+      val result = innerExecuteDeprecated(query, Map.empty)
+
+      // Then
+      val plan = result.executionPlanDescription()
+      plan should useOperatorWithText("Projection", "point")
+      plan should useOperatorWithText("Filter", "distance")
+      plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", "<= ")
+      result.toList.toSet should equal(Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+      ))
+    }
+    // <
+    {
+      val query =
+        s"""CYPHER runtime=slotted MATCH (p:Place)
+           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) < 10
+           |RETURN p.location as point
+        """.stripMargin
+      // When
+      val result = innerExecuteDeprecated(query, Map.empty)
+
+      // Then
+      val plan = result.executionPlanDescription()
+      plan should useOperatorWithText("Projection", "point")
+      plan should useOperatorWithText("Filter", "distance")
+      plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", "< ")
+      result.toList.toSet should equal(Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+      ))
+    }
   }
 
   test("array of points should be assignable to node property") {

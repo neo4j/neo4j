@@ -37,3 +37,9 @@ case class InequalitySeekRangeWrapper(
                                      )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
+
+case class PointDistanceSeekRangeWrapper(
+                                       range: PointDistanceRange[Expression]
+                                     )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+}

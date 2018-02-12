@@ -32,9 +32,10 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
-                              context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
-    (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds, context)
+                              context: LogicalPlanningContext): (Seq[Expression], Seq[Expression]) => LogicalPlan =
+    (predicatesSolved: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]) =>
+      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKeys, valueExpr, predicatesSolved,
+        predicatesForCardinalityEstimation, hint, argumentIds, context)
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{CoordinateReferenceSystem, DoubleValue, PointValue, Values}
+import org.neo4j.values.storable._
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
@@ -41,13 +41,13 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
     }
   }
 
-  def calculateDistance(geometry1: PointValue, geometry2: PointValue): DoubleValue = {
-    Values.doubleValue(availableCalculators.collectFirst {
+  def calculateDistance(geometry1: PointValue, geometry2: PointValue): AnyValue = {
+    availableCalculators.collectFirst {
       case distance: DistanceCalculator if distance.isDefinedAt(geometry1, geometry2) =>
-        distance(geometry1, geometry2)
+        Values.doubleValue(distance(geometry1, geometry2))
     }.getOrElse(
-      throw new IllegalArgumentException(s"Invalid points passed to distance($p1, $p2)")
-    ).get)
+      Values.NO_VALUE
+    )
   }
 
   override def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
@@ -59,29 +59,28 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
   override def toString = "Distance(" + p1 + ", " + p2 + ")"
 }
 
-trait DistanceCalculator {
-  def isDefinedAt(p1: PointValue, p2: PointValue): Boolean
-
-  def calculateDistance(p1: PointValue, p2: PointValue): Double
-
-  def apply(p1: PointValue, p2: PointValue): Option[Double] =
-    if (isDefinedAt(p1, p2))
-      Some(calculateDistance(p1, p2))
-    else
-      None
+trait DistanceCalculator extends PartialFunction[(PointValue, PointValue), Double] {
+  def boundingBox(p1: PointValue, distance: Double): (PointValue, PointValue)
 }
 
 object CartesianCalculator extends DistanceCalculator {
-  override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode() &&
-      p2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode()
+  override def isDefinedAt(points: (PointValue, PointValue)): Boolean =
+    points._1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode() &&
+      points._2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode()
 
-  override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val p1Coordinates = p1.coordinate()
-    val p2Coordinates = p2.coordinate()
+  override def apply(points: (PointValue, PointValue)): Double = {
+    val p1Coordinates = points._1.coordinate()
+    val p2Coordinates = points._2.coordinate()
 
     sqrt((p2Coordinates(0) - p1Coordinates(0)) * (p2Coordinates(0) - p1Coordinates(0)) +
            (p2Coordinates(1) - p1Coordinates(1)) * (p2Coordinates(1) - p1Coordinates(1)))
+  }
+
+  override def boundingBox(p: PointValue, distance: Double): (PointValue, PointValue) = {
+    val coordinates = p.coordinate()
+    val min = Values.pointValue(p.getCoordinateReferenceSystem, coordinates(0) - distance, coordinates(1) - distance)
+    val max = Values.pointValue(p.getCoordinateReferenceSystem, coordinates(0) + distance, coordinates(1) + distance)
+    (min, max)
   }
 }
 
@@ -89,13 +88,13 @@ object HaversinCalculator extends DistanceCalculator {
 
   private val EARTH_RADIUS_METERS = 6378140.0
 
-  override def isDefinedAt(p1: PointValue, p2: PointValue): Boolean =
-    p1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode() &&
-      p2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode()
+  override def isDefinedAt(points: (PointValue, PointValue)): Boolean =
+    points._1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode() &&
+      points._2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode()
 
-  override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val c1Coord = p1.coordinate()
-    val c2Coord = p2.coordinate()
+  override def apply(points: (PointValue, PointValue)): Double = {
+    val c1Coord = points._1.coordinate()
+    val c2Coord = points._2.coordinate()
     val c1: Array[Double] = Array(toRadians(c1Coord(0)), toRadians(c1Coord(1)))
     val c2: Array[Double] = Array(toRadians(c2Coord(0)), toRadians(c2Coord(1)))
     val dx = c2(0) - c1(0)
@@ -103,5 +102,13 @@ object HaversinCalculator extends DistanceCalculator {
     val a = pow(sin(dy / 2), 2.0) + cos(c1(1)) * cos(c2(1)) * pow(sin(dx / 2.0), 2.0)
     val greatCircleDistance = 2.0 * atan2(sqrt(a), sqrt(1-a))
     EARTH_RADIUS_METERS * greatCircleDistance
+  }
+
+  override def boundingBox(p: PointValue, distance: Double): (PointValue, PointValue) = {
+    val coordinates = p.coordinate()
+    val dx = 180.0 / Math.pow(2.0 * Math.PI, 2) * distance / EARTH_RADIUS_METERS
+    val min = Values.pointValue(p.getCoordinateReferenceSystem, coordinates(0) - dx, coordinates(1) - dx)
+    val max = Values.pointValue(p.getCoordinateReferenceSystem, coordinates(0) + dx, coordinates(1) + dx)
+    (min, max)
   }
 }

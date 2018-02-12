@@ -42,6 +42,17 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 
+  test("x") {
+    //graph.createIndex("P", "prop")
+    graph.execute("CREATE (:P {prop : 's'})")
+    for(i <- Range(0, 1000)) {
+      graph.execute(s"CREATE (:P {prop : $i})")
+    }
+    val result = innerExecuteDeprecated("MATCH (n:P) WHERE n.prop < 50 AND n.prop > 10 AND n.prop * 2 < 100 RETURN n")
+    println(result.toList)
+    println(result.executionPlanDescription())
+  }
+
   test("Do not count null elements in nodes with labels") {
 
     createLabeledNode(Map("name" -> "a"), "Person")

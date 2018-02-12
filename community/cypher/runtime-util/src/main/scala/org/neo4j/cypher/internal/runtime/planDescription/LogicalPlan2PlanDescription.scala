@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, ReadOnlies}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
-import org.neo4j.cypher.internal.v3_4.expressions.{LabelToken, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyName, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -405,6 +405,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             val lessThanBoundsText = lessThanBounds.bounds.map(bound =>
               s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
+          case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
+            val poi = point match {
+              case FunctionInvocation(Namespace(List()), FunctionName("point"), _, Seq(MapExpression(args))) =>
+                s"point(${args.map(_._1.name).mkString(",")})"
+              case _ => point.toString
+            }
+            (name, PointDistanceIndex(label.name, propertyKey, poi, distance.toString, inclusive))
           case _ => throw new InternalException("This should never happen. Missing a case?")
         }
       case _ =>
