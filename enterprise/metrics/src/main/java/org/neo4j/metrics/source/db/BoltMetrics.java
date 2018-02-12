@@ -87,7 +87,7 @@ public class BoltMetrics extends LifecycleAdapter
         monitors.removeMonitorListener( boltMonitor );
     }
 
-    private class BoltMetricsMonitor implements MonitoredWorkerFactory.SessionMonitor
+    private static class BoltMetricsMonitor implements MonitoredWorkerFactory.SessionMonitor
     {
         final AtomicLong sessionsStarted = new AtomicLong();
 

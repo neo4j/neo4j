@@ -740,7 +740,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
+    private static class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
     {
         private final ProgressReporter progressReporter;
 

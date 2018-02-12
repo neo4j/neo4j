@@ -160,7 +160,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         return new File( new File( new File( storeRootDir, "schema" ), "label" ), "lucene" );
     }
 
-    private class MonitoredFullLabelStream extends FullLabelStream
+    private static class MonitoredFullLabelStream extends FullLabelStream
     {
 
         private final ProgressReporter progressReporter;

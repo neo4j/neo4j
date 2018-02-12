@@ -59,8 +59,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -1303,7 +1301,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements LabelSchemaSupplier
     {
-        private final int batchSize = 1_000;
+        private static final int batchSize = 1_000;
         private final IndexPopulator populator;
         private final IndexDescriptor index;
         private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );

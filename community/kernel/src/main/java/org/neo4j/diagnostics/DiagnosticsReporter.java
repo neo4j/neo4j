@@ -66,11 +66,11 @@ public class DiagnosticsReporter
         }
 
         // Add additional sources
-        for ( String classifier : additionalSources.keySet() )
+        for ( Map.Entry<String,List<DiagnosticsReportSource>> classifier : additionalSources.entrySet() )
         {
-            if ( classifiers.contains( "all" ) || classifiers.contains( classifier ) )
+            if ( classifiers.contains( "all" ) || classifiers.contains( classifier.getKey() ) )
             {
-                sources.addAll( additionalSources.get( classifier ) );
+                sources.addAll( classifier.getValue() );
             }
         }
 

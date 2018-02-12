@@ -40,15 +40,12 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 class NativeNonUniqueSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndexPopulator<KEY,VALUE>
 {
-    private final IndexSamplingConfig samplingConfig;
-    private boolean updateSampling;
     private NonUniqueIndexSampler sampler;
 
     NativeNonUniqueSchemaIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig, SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
-        this.samplingConfig = samplingConfig;
         this.sampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
     }
 

@@ -74,7 +74,7 @@ public class ReadOnlyIdGeneratorFactory implements IdGeneratorFactory
         return idGenerators.get( idType );
     }
 
-    class ReadOnlyIdGenerator implements IdGenerator
+    static class ReadOnlyIdGenerator implements IdGenerator
     {
         private final long highId;
         private final long defragCount;
