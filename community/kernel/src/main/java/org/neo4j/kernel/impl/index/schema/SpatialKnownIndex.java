@@ -136,13 +136,17 @@ public class SpatialKnownIndex
     public void takeOnline( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         initIfNeeded( descriptor, samplingConfig );
+        if ( !indexExists() )
+        {
+            throw new IOException( "Index file does not exist." );
+        }
         if ( state == State.INIT || state == State.POPULATED )
         {
             online();
         }
         if ( state != State.ONLINE )
         {
-            throw new IllegalStateException( "" );
+            throw new IllegalStateException( "Failed to bring index online." );
         }
     }
 
@@ -179,19 +183,6 @@ public class SpatialKnownIndex
         schemaIndex.closeTree();
     }
 
-    public IndexUpdater newUpdater()
-    {
-        schemaIndex.assertOpen();
-        try
-        {
-            return singleUpdater.initialize( schemaIndex.tree.writer(), true );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-    }
-
     public BoundedIterable<Long> newAllEntriesReader()
     {
         return new NativeAllEntriesReader<>( schemaIndex.tree, layout );
@@ -212,6 +203,19 @@ public class SpatialKnownIndex
     {
         // TODO add IOLimiter arg
         schemaIndex.tree.checkpoint( IOLimiter.unlimited() );
+    }
+
+    private IndexUpdater newUpdater()
+    {
+        schemaIndex.assertOpen();
+        try
+        {
+            return singleUpdater.initialize( schemaIndex.tree.writer(), true );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     // POPULATING
@@ -308,7 +312,7 @@ public class SpatialKnownIndex
         }
     }
 
-    public IndexUpdater newPopulatingUpdater()
+    private IndexUpdater newPopulatingUpdater()
     {
         return new IndexUpdater()
         {

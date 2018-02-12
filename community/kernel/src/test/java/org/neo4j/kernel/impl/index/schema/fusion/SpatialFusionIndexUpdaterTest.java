@@ -60,20 +60,21 @@ public class SpatialFusionIndexUpdaterTest
     {
         SpatialKnownIndex.Factory indexFactory = mock( SpatialKnownIndex.Factory.class );
         IndexDescriptor descriptor = mock( IndexDescriptor.class );
+        IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
 
         for ( CoordinateReferenceSystem crs : asList( CoordinateReferenceSystem.WGS84, CoordinateReferenceSystem.Cartesian ) )
         {
             updaterMap.put( crs, mock( IndexUpdater.class ) );
             indexMap.put( crs, mock( SpatialKnownIndex.class ) );
             when( indexFactory.selectAndCreate( indexMap, 0, crs ) ).thenReturn( indexMap.get( crs ) );
-            when( indexMap.get( crs ).newUpdater() ).thenReturn( updaterMap.get( crs ) );
-            when( indexMap.get( crs ).newPopulatingUpdater() ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).updaterWithCreate( descriptor, samplingConfig, true ) ).thenReturn( updaterMap.get( crs ) );
+            when( indexMap.get( crs ).updaterWithCreate( descriptor, samplingConfig, false ) ).thenReturn( updaterMap.get( crs ) );
         }
 
         fusionIndexAccessorUpdater = SpatialFusionIndexUpdater.updaterForAccessor(
-                indexMap, 0, indexFactory, descriptor, mock( IndexSamplingConfig.class ) );
+                indexMap, 0, indexFactory, descriptor, samplingConfig );
         fusionIndexPopulatorUpdater = SpatialFusionIndexUpdater.updaterForPopulator(
-                indexMap, 0, indexFactory, descriptor, mock( IndexSamplingConfig.class ) );
+                indexMap, 0, indexFactory, descriptor, samplingConfig );
     }
 
     @Test
