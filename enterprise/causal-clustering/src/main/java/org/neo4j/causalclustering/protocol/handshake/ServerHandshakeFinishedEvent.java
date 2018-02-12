@@ -17,36 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.protocol;
+package org.neo4j.causalclustering.protocol.handshake;
 
-import io.netty.channel.Channel;
+import org.neo4j.helpers.SocketAddress;
 
-public abstract class ProtocolInstaller<O extends ProtocolInstaller.Orientation>
+public interface ServerHandshakeFinishedEvent
 {
-    private final Protocol protocol;
-
-    protected ProtocolInstaller( Protocol protocol )
+    class Created
     {
-        this.protocol = protocol;
-    }
+        public final SocketAddress advertisedSocketAddress;
+        public final ProtocolStack protocolStack;
 
-    public abstract void install( Channel channel ) throws Exception;
-
-    public final Protocol protocol()
-    {
-        return protocol;
-    }
-
-    public interface Orientation
-    {
-        interface Server extends Orientation
+        public Created( SocketAddress advertisedSocketAddress, ProtocolStack protocolStack )
         {
-            String INBOUND = "inbound";
+            this.advertisedSocketAddress = advertisedSocketAddress;
+            this.protocolStack = protocolStack;
         }
+    }
 
-        interface Client extends Orientation
+    class Closed
+    {
+        public final SocketAddress advertisedSocketAddress;
+
+        public Closed( SocketAddress advertisedSocketAddress )
         {
-            String OUTBOUND = "outbound";
+            this.advertisedSocketAddress = advertisedSocketAddress;
         }
     }
 }

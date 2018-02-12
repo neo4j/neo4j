@@ -58,6 +58,7 @@ class RaftServerModule
     private final MessageLogger<MemberId> messageLogger;
     private final LogProvider logProvider;
     private final NettyPipelineBuilderFactory pipelineBuilderFactory;
+    private final RaftServer raftServer;
 
     RaftServerModule( PlatformModule platformModule, ConsensusModule consensusModule, IdentityModule identityModule, CoreServerModule coreServerModule,
             LocalDatabase localDatabase, NettyPipelineBuilderFactory pipelineBuilderFactory, MessageLogger<MemberId> messageLogger )
@@ -72,10 +73,11 @@ class RaftServerModule
 
         LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain = createMessageHandlerChain( coreServerModule );
 
-        createRaftServer( coreServerModule, messageHandlerChain );
+        raftServer = createRaftServer( coreServerModule, messageHandlerChain );
     }
 
-    private void createRaftServer( CoreServerModule coreServerModule, LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain )
+    private RaftServer createRaftServer( CoreServerModule coreServerModule,
+            LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> messageHandlerChain )
     {
         ProtocolRepository protocolRepository = new ProtocolRepository( Protocol.Protocols.values() );
 
@@ -97,6 +99,8 @@ class RaftServerModule
         platformModule.life.add( coreServerModule.createCoreLife( messageHandlerChain ) );
         platformModule.life.add( coreServerModule.catchupServer() ); // must start last and stop first, since it handles external requests
         platformModule.life.add( coreServerModule.downloadService() );
+
+        return raftServer;
     }
 
     private LifecycleMessageHandler<ReceivedInstantClusterIdAwareMessage<?>> createMessageHandlerChain( CoreServerModule coreServerModule )
@@ -122,5 +126,10 @@ class RaftServerModule
                 .compose( batchingMessageHandler )
                 .compose( monitoringHandler )
                 .apply( messageApplier );
+    }
+
+    public RaftServer raftServer()
+    {
+        return raftServer;
     }
 }

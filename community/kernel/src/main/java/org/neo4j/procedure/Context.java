@@ -29,8 +29,8 @@ import java.lang.annotation.Target;
  * Practically, this means that before the procedure is called, fields with this annotation are automatically
  * populated with implementations of the specified APIs.
  *
- * In fact, apart from static fields, <i>only</i> fields with this annotation are allowed in classses that
- * define procedure. Each of the fields must be public and non-final.
+ * In fact, apart from static fields, <i>only</i> fields with this annotation are allowed in classes that
+ * define procedures. Each of the fields must be public and non-final.
  *
  * @see Procedure
  */

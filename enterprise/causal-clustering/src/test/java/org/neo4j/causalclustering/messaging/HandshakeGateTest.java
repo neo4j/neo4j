@@ -17,36 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.protocol;
+package org.neo4j.causalclustering.messaging;
 
 import io.netty.channel.Channel;
+import org.junit.Test;
+import org.mockito.Answers;
+import org.mockito.Mockito;
 
-public abstract class ProtocolInstaller<O extends ProtocolInstaller.Orientation>
+import java.util.Optional;
+
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.logging.NullLog;
+
+import static co.unruly.matchers.OptionalMatchers.empty;
+import static org.junit.Assert.assertThat;
+
+public class HandshakeGateTest
 {
-    private final Protocol protocol;
-
-    protected ProtocolInstaller( Protocol protocol )
+    @Test
+    public void shouldReturnNoInstalledProtocolIfHandshakeNotComplete() throws Throwable
     {
-        this.protocol = protocol;
-    }
+        // given
+        HandshakeGate handshakeGate = new HandshakeGate( Mockito.mock( Channel.class, Answers.RETURNS_MOCKS ), NullLog.getInstance() );
 
-    public abstract void install( Channel channel ) throws Exception;
+        // when
+        Optional<ProtocolStack> protocolStack = handshakeGate.installedProtocolStack();
 
-    public final Protocol protocol()
-    {
-        return protocol;
-    }
-
-    public interface Orientation
-    {
-        interface Server extends Orientation
-        {
-            String INBOUND = "inbound";
-        }
-
-        interface Client extends Orientation
-        {
-            String OUTBOUND = "outbound";
-        }
+        // then
+        assertThat( protocolStack, empty() );
     }
 }

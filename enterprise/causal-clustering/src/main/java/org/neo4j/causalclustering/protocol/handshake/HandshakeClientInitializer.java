@@ -135,7 +135,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
         if ( failure != null )
         {
             log.error( "Error when negotiating protocol stack", failure );
-            channel.pipeline().fireUserEventTriggered( HandshakeFinishedEvent.getFailure() );
+            channel.pipeline().fireUserEventTriggered( ClientHandshakeFinishedEvent.Failure.instance() );
         }
         else
         {
@@ -144,7 +144,7 @@ public class HandshakeClientInitializer extends ChannelInitializer<SocketChannel
                 log.info( "Installing: " + protocolStack );
                 protocolInstaller.installerFor( protocolStack.applicationProtocol() ).install( channel );
                 log.info( "Firing handshake success event to handshake gate" );
-                channel.pipeline().fireUserEventTriggered( HandshakeFinishedEvent.getSuccess() );
+                channel.pipeline().fireUserEventTriggered( new ClientHandshakeFinishedEvent.Success( protocolStack ) );
             }
             catch ( Exception e )
             {

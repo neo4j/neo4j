@@ -19,15 +19,17 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
+
+import java.net.InetSocketAddress;
 
 import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.NettyPipelineBuilderFactory;
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.causalclustering.protocol.ProtocolInstaller;
 import org.neo4j.causalclustering.protocol.ProtocolInstallerRepository;
+import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -64,10 +66,13 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
     {
         HandshakeServer handshakeServer = new HandshakeServer( new SimpleNettyChannel( channel, log ), protocolRepository, allowedProtocol );
         handshakeServer.protocolStackFuture().whenComplete( ( protocolStack, failure ) -> onHandshakeComplete( protocolStack, channel, failure ) );
+        channel.closeFuture().addListener(
+                ignored -> channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Closed( toSocketAddress( channel ) ) )
+        );
         return new NettyHandshakeServer( handshakeServer );
     }
 
-    private void onHandshakeComplete( ProtocolStack protocolStack, Channel channel, Throwable failure )
+    private void onHandshakeComplete( ProtocolStack protocolStack, SocketChannel channel, Throwable failure )
     {
         if ( failure != null )
         {
@@ -78,10 +83,17 @@ public class HandshakeServerInitializer extends ChannelInitializer<SocketChannel
         try
         {
             protocolInstallerRepository.installerFor( protocolStack.applicationProtocol() ).install( channel );
+            channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Created( toSocketAddress( channel ), protocolStack ) );
         }
         catch ( Throwable t )
         {
             log.error( "Error installing protocol stack", t );
         }
+    }
+
+    private SocketAddress toSocketAddress( SocketChannel channel )
+    {
+        InetSocketAddress inetSocketAddress = channel.remoteAddress();
+        return new SocketAddress( inetSocketAddress.getHostString(), inetSocketAddress.getPort() );
     }
 }

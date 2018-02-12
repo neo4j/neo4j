@@ -23,14 +23,17 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Stream;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -164,5 +167,10 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         {
             serviceLock.writeLock().unlock();
         }
+    }
+
+    public Stream<Pair<AdvertisedSocketAddress,ProtocolStack>> installedProtocols()
+    {
+        return channels.installedProtocols();
     }
 }

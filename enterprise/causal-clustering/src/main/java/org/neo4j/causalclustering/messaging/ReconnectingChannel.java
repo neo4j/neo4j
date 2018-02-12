@@ -25,12 +25,14 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.util.concurrent.Future;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.helper.TimeoutStrategy;
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 
@@ -186,6 +188,11 @@ public class ReconnectingChannel implements Channel
                 promise.completeExceptionally( f.cause() );
             }
         } );
+    }
+
+    public Optional<ProtocolStack> installedProtocolStack()
+    {
+        return channelInterceptor.installedProtocolStack();
     }
 
     @Override

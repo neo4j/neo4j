@@ -45,11 +45,9 @@ import org.neo4j.causalclustering.messaging.SimpleNettyChannel;
 import org.neo4j.causalclustering.protocol.Protocol;
 import org.neo4j.logging.NullLog;
 
-import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class NettyProtocolHandshakeIT
 {
@@ -88,7 +86,7 @@ public class NettyProtocolHandshakeIT
 
         // then
         ProtocolStack clientProtocolStack = clientHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_3 ) );
+        assertThat( clientProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
     @Test
@@ -101,7 +99,7 @@ public class NettyProtocolHandshakeIT
 
         // then
         ProtocolStack serverProtocolStack = serverHandshakeFuture.get( 1, TimeUnit.MINUTES );
-        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_3 ) );
+        assertThat( serverProtocolStack.applicationProtocol(), equalTo( TestProtocols.RAFT_LATEST ) );
     }
 
     @Test( expected = ClientHandshakeException.class )

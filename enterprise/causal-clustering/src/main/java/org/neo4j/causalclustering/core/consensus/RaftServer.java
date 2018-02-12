@@ -21,6 +21,8 @@ package org.neo4j.causalclustering.core.consensus;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -29,10 +31,17 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.net.BindException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
+import org.neo4j.causalclustering.protocol.handshake.ProtocolStack;
+import org.neo4j.causalclustering.protocol.handshake.ServerHandshakeFinishedEvent;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
+import org.neo4j.helpers.SocketAddress;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -42,6 +51,8 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_list
 
 public class RaftServer extends LifecycleAdapter
 {
+    public static final String RAFT_SERVER = "RaftServer";
+
     private final ChannelInitializer<SocketChannel> channelInitializer;
 
     private final ListenSocketAddress listenAddress;
@@ -50,6 +61,7 @@ public class RaftServer extends LifecycleAdapter
 
     private EventLoopGroup workerGroup;
     private Channel channel;
+    private ConcurrentMap<SocketAddress,ProtocolStack> installedProtocols = new ConcurrentHashMap<>();
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
@@ -98,6 +110,27 @@ public class RaftServer extends LifecycleAdapter
                 .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, true )
                 .localAddress( listenAddress.socketAddress() )
+                .handler( new ChannelInboundHandlerAdapter()
+                {
+                    @Override
+                    public void userEventTriggered( ChannelHandlerContext ctx, Object evt ) throws Exception
+                    {
+                        if ( evt instanceof ServerHandshakeFinishedEvent.Created )
+                        {
+                            ServerHandshakeFinishedEvent.Created created = (ServerHandshakeFinishedEvent.Created) evt;
+                            installedProtocols.put( created.advertisedSocketAddress, created.protocolStack );
+                        }
+                        else if ( evt instanceof ServerHandshakeFinishedEvent.Closed )
+                        {
+                            ServerHandshakeFinishedEvent.Closed closed = (ServerHandshakeFinishedEvent.Closed) evt;
+                            installedProtocols.remove( closed.advertisedSocketAddress );
+                        }
+                        else
+                        {
+                            super.userEventTriggered( ctx, evt );
+                        }
+                    }
+                } )
                 .childHandler( channelInitializer );
 
         try
@@ -116,5 +149,10 @@ public class RaftServer extends LifecycleAdapter
                 throw e;
             }
         }
+    }
+
+    public Stream<Pair<SocketAddress,ProtocolStack>> installedProtocols()
+    {
+        return installedProtocols.entrySet().stream().map( entry -> Pair.of( entry.getKey(), entry.getValue() ) );
     }
 }

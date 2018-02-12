@@ -19,48 +19,34 @@
  */
 package org.neo4j.causalclustering.protocol.handshake;
 
-import java.util.Objects;
-
-public class HandshakeFinishedEvent
+public interface ClientHandshakeFinishedEvent
 {
-    private final boolean isSuccess;
-
-    private HandshakeFinishedEvent( boolean isSuccess )
+    class Success implements ClientHandshakeFinishedEvent
     {
-        this.isSuccess = isSuccess;
-    }
+        private final ProtocolStack protocolStack;
 
-    private static HandshakeFinishedEvent success = new HandshakeFinishedEvent( true );
-    private static HandshakeFinishedEvent failure = new HandshakeFinishedEvent( false );
-
-    public static HandshakeFinishedEvent getSuccess()
-    {
-        return success;
-    }
-
-    public static HandshakeFinishedEvent getFailure()
-    {
-        return failure;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
+        public Success( ProtocolStack protocolStack )
         {
-            return true;
+            this.protocolStack = protocolStack;
         }
-        if ( o == null || getClass() != o.getClass() )
+
+        public ProtocolStack protocolStack()
         {
-            return false;
+            return protocolStack;
         }
-        HandshakeFinishedEvent that = (HandshakeFinishedEvent) o;
-        return isSuccess == that.isSuccess;
     }
 
-    @Override
-    public int hashCode()
+    class Failure implements ClientHandshakeFinishedEvent
     {
-        return Objects.hash( isSuccess );
+        private Failure()
+        {
+        }
+
+        private static Failure instance = new Failure();
+
+        public static Failure instance()
+        {
+            return instance;
+        }
     }
 }

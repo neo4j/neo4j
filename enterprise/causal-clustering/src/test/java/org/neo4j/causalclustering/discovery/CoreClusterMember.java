@@ -66,6 +66,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
+    private final String raftListenAddress;
     protected CoreGraphDatabase database;
     private final Config memberConfig;
     private final ThreadGroup threadGroup;
@@ -93,13 +94,14 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
+        raftListenAddress = listenAddress( listenAddress, raftPort );
 
         config.put( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
         config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, discoveryPort ) );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
-        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
+        config.put( CausalClusteringSettings.raft_listen_address.name(), raftListenAddress );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.minimum_core_cluster_size_at_formation.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.minimum_core_cluster_size_at_runtime.name(), String.valueOf( clusterSize ) );
@@ -155,6 +157,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public String directURI()
     {
         return String.format( "bolt://%s", boltAdvertisedSocketAddress );
+    }
+
+    public String raftListenAddress()
+    {
+        return raftListenAddress;
     }
 
     @Override
