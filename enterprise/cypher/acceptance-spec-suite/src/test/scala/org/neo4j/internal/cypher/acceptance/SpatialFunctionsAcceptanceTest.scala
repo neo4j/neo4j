@@ -676,6 +676,75 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     }
   }
 
+  test("invalid location with index") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = 5")
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+
+    val query =
+      s"""CYPHER runtime=slotted MATCH (p:Place)
+         |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
+         |RETURN p.location as point
+        """.stripMargin
+    // When
+    val result = innerExecuteDeprecated(query, Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("Filter", "distance")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", "<= ")
+    result.toList.toSet should equal(Set.empty)
+  }
+
+  test("invalid location without index") {
+    // Given
+    graph.execute("CREATE (p:Place) SET p.location = 5")
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+
+    val query =
+      s"""CYPHER runtime=slotted MATCH (p:Place)
+         |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
+         |RETURN p.location as point
+        """.stripMargin
+    // When
+    val result = innerExecuteDeprecated(query, Map.empty)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("Filter", "distance")
+    plan should useOperatorWithText("NodeByLabelScan", ":Place")
+    result.toList.toSet should equal(Set.empty)
+  }
+
+  test("no error for distance with no point") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+
+    val query =
+      """CYPHER runtime=slotted MATCH (p:Place)
+         |WHERE distance(p.location, $poi) <= 10
+         |RETURN p.location as point
+        """.stripMargin
+    // When
+    val result = innerExecuteDeprecated(query, Map("poi" -> 5))
+
+    // Then
+    result.toList shouldBe empty
+
+    // And given
+    graph.execute(s"DROP INDEX ON :Place(location)")
+    // when
+    val resultNoIndex = innerExecuteDeprecated(query,  Map("poi" -> 5))
+
+    // Then
+    resultNoIndex.toList shouldBe empty
+  }
+
   test("array of points should be assignable to node property") {
     // Given
     createLabeledNode("Place")

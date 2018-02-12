@@ -21,9 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.lang.Math._
 
-import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 
@@ -35,9 +34,8 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     // TODO: Support more coordinate systems
     (p1(ctx, state), p2(ctx, state)) match {
-      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (geometry1: PointValue, geometry2: PointValue) => calculateDistance(geometry1, geometry2)
-      case (x, y) => throw new CypherTypeException(s"Expected two Points, but got $x and $y")
+      case _ => Values.NO_VALUE
     }
   }
 

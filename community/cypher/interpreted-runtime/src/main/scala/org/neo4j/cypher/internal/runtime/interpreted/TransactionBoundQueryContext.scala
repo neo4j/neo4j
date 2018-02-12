@@ -251,10 +251,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         case p:PointValue if p.getCoordinateReferenceSystem == WGS84 =>
           HaversinCalculator.boundingBox(p, distance)
         case _ =>
-          // TODO have a consistent error message with DistanceFunction
           // when it tries to evaluate the distance on something that is not a point
-          throw new IllegalArgumentException(
-          "Cannot compute distance to something that is not a point.")
+          return Iterator.empty
       }
 
       val (fromBounds, toBounds) =
