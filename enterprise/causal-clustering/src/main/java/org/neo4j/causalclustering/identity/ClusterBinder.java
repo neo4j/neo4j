@@ -26,12 +26,14 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -44,12 +46,13 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     private final Clock clock;
     private final ThrowingAction<InterruptedException> retryWaiter;
     private final long timeoutMillis;
+    private final Config cfg;
 
     private ClusterId clusterId;
 
     public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
                             LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-                            long timeoutMillis, CoreBootstrapper coreBootstrapper )
+                            long timeoutMillis, CoreBootstrapper coreBootstrapper, Config cfg )
     {
         this.clusterIdStorage = clusterIdStorage;
         this.topologyService = topologyService;
@@ -58,6 +61,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         this.clock = clock;
         this.retryWaiter = retryWaiter;
         this.timeoutMillis = timeoutMillis;
+        this.cfg = cfg;
     }
 
     /**
@@ -84,7 +88,8 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
         do
         {
-            topology = topologyService.coreServers();
+            String dbName = cfg.get( CausalClusteringSettings.database );
+            topology = topologyService.coreServers( dbName );
 
             if ( topology.clusterId() != null )
             {

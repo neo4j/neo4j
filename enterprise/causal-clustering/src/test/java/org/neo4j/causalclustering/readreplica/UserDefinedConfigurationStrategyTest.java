@@ -203,13 +203,13 @@ public class UserDefinedConfigurationStrategyTest
             private Map<MemberId,AdvertisedSocketAddress> catchupAddresses = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
 
             @Override
-            public CoreTopology coreServers()
+            public CoreTopology coreServers( String database )
             {
                 return coreTopology;
             }
 
             @Override
-            public ReadReplicaTopology readReplicas()
+            public ReadReplicaTopology readReplicas( String database )
             {
                 return readReplicaTopology;
             }

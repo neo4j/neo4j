@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.identity;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -57,7 +56,7 @@ public class ClusterBinderTest
         // given
         CoreTopology unboundTopology = new CoreTopology( null, false, emptyMap() );
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.coreServers() ).thenReturn( unboundTopology );
+        when( topologyService.coreServers( "default" ) ).thenReturn( unboundTopology );
 
         ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
@@ -75,7 +74,7 @@ public class ClusterBinderTest
         }
 
         // then
-        verify( topologyService, atLeast( 2 ) ).coreServers();
+        verify( topologyService, atLeast( 2 ) ).coreServers( "default" );
     }
 
     @Test
@@ -87,7 +86,7 @@ public class ClusterBinderTest
         CoreTopology boundTopology = new CoreTopology( publishedClusterId, false, emptyMap() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.coreServers() ).thenReturn( unboundTopology ).thenReturn( boundTopology );
+        when( topologyService.coreServers( "default" ) ).thenReturn( unboundTopology ).thenReturn( boundTopology );
 
         ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
@@ -100,7 +99,7 @@ public class ClusterBinderTest
         Optional<ClusterId> clusterId = binder.get();
         assertTrue( clusterId.isPresent() );
         assertEquals( publishedClusterId, clusterId.get() );
-        verify( topologyService, atLeast( 2 ) ).coreServers();
+        verify( topologyService, atLeast( 2 ) ).coreServers( "default" );
     }
 
     @Test
@@ -164,7 +163,7 @@ public class ClusterBinderTest
         CoreTopology bootstrappableTopology = new CoreTopology( null, true, emptyMap() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.coreServers() ).thenReturn( bootstrappableTopology );
+        when( topologyService.coreServers( "default" ) ).thenReturn( bootstrappableTopology );
         when( topologyService.setClusterId( any() ) ).thenReturn( true );
         CoreSnapshot snapshot = mock( CoreSnapshot.class );
         when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );

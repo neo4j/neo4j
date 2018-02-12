@@ -32,7 +32,9 @@ public interface TopologyService extends Lifecycle
 {
     CoreTopology coreServers();
 
-    ReadReplicaTopology readReplicas();
+    CoreTopology coreServers( String database );
+
+    ReadReplicaTopology readReplicas( String database );
 
     Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream );
 }

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
@@ -306,13 +307,29 @@ public class HazelcastCoreTopologyService extends LifecycleAdapter implements Co
     @Override
     public CoreTopology coreServers()
     {
-        return coreTopology;
+        return this.coreTopology;
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public CoreTopology coreServers( String databaseName )
     {
-        return readReplicaTopology;
+        CoreTopology coreTopology = this.coreTopology;
+
+        Map<MemberId,CoreServerInfo> filteredCores = coreTopology.members().entrySet().stream().filter( e -> e.getValue().getDatabaseName().equals( databaseName ) )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+
+        return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
+    }
+
+    @Override
+    public ReadReplicaTopology readReplicas( String databaseName )
+    {
+        ReadReplicaTopology readReplicaTopology = this.readReplicaTopology;
+
+        Map<MemberId,ReadReplicaInfo> filteredRRs = readReplicaTopology.members().entrySet().stream().filter(
+                e -> e.getValue().getDatabaseName().equals( databaseName ) ).collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+
+        return new ReadReplicaTopology( filteredRRs );
     }
 
     @Override

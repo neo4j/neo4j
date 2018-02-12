@@ -102,8 +102,8 @@ public class GetServersProcedureV1Test
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, new HashMap<>() );
-        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( coreTopologyService.coreServers( "default" ) ).thenReturn( clusterTopology );
+        when( coreTopologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         // set the TTL in minutes
         config.augment( cluster_routing_ttl, "10m" );
@@ -147,8 +147,8 @@ public class GetServersProcedureV1Test
         coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
-        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( coreTopologyService.coreServers( "default" ) ).thenReturn( clusterTopology );
+        when( coreTopologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         final LegacyGetServersProcedure proc =
                 new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
@@ -179,8 +179,8 @@ public class GetServersProcedureV1Test
         coreMembers.put( member( 2 ), addressesForCore( 2 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
-        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( coreTopologyService.coreServers( "default" ) ).thenReturn( clusterTopology );
+        when( coreTopologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         final LegacyGetServersProcedure proc =
                 new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
@@ -213,8 +213,8 @@ public class GetServersProcedureV1Test
         coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
-        when( coreTopologyService.coreServers() ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( coreTopologyService.coreServers( "default" ) ).thenReturn( clusterTopology );
+        when( coreTopologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         final LegacyGetServersProcedure proc =
                 new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
@@ -241,8 +241,8 @@ public class GetServersProcedureV1Test
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, addressesForCore( 0 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( readReplicaInfoMap( 1 ) ) );
+        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( readReplicaInfoMap( 1 ) ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -276,8 +276,8 @@ public class GetServersProcedureV1Test
         MemberId theLeader = member( 0 );
         coreMembers.put( theLeader, addressesForCore( 0 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -306,8 +306,8 @@ public class GetServersProcedureV1Test
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenThrow( new NoLeaderFoundException() );
@@ -335,8 +335,8 @@ public class GetServersProcedureV1Test
         Map<MemberId,CoreServerInfo> coreMembers = new HashMap<>();
         coreMembers.put( member( 0 ), addressesForCore( 0 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( clusterId, false, coreMembers ) );
+        when( topologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( member( 1 ) );

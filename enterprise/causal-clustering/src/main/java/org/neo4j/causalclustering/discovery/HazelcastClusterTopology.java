@@ -57,6 +57,7 @@ public class HazelcastClusterTopology
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
     static final String CLIENT_CONNECTOR_ADDRESSES = "client_connector_addresses";
+    static final String MEMBER_DB_NAME = "member_database_name";
 
     private static final String REFUSE_TO_BE_LEADER_KEY = "refuseToBeLeader";
 
@@ -71,7 +72,7 @@ public class HazelcastClusterTopology
     {
     }
 
-    static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log )
+    static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log, Config cfg )
     {
         Map<MemberId,ReadReplicaInfo> readReplicas = emptyMap();
 
@@ -172,7 +173,7 @@ public class HazelcastClusterTopology
             ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.fromString( sAddresses );
             AdvertisedSocketAddress catchupAddress = socketAddress( sCatchupAddress, AdvertisedSocketAddress::new );
 
-            ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( clientConnectorAddresses, catchupAddress, asSet( sServerGroups ) );
+            ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( clientConnectorAddresses, catchupAddress, asSet( sServerGroups ), );
             result.put( new MemberId( UUID.fromString( sMemberId ) ), readReplicaInfo );
         }
         return result;

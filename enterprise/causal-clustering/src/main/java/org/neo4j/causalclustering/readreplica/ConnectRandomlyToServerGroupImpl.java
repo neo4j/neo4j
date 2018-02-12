@@ -35,18 +35,20 @@ class ConnectRandomlyToServerGroupImpl
     private final List<String> groups;
     private final TopologyService topologyService;
     private final MemberId myself;
+    private final String dbName;
     private final Random random = new Random();
 
-    ConnectRandomlyToServerGroupImpl( List<String> groups, TopologyService topologyService, MemberId myself )
+    ConnectRandomlyToServerGroupImpl( List<String> groups, TopologyService topologyService, MemberId myself, String dbName )
     {
         this.groups = groups;
         this.topologyService = topologyService;
         this.myself = myself;
+        this.dbName = dbName;
     }
 
     public Optional<MemberId> upstreamDatabase()
     {
-        Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas().members();
+        Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas( dbName ).members();
 
         List<MemberId> choices = groups.stream()
                 .flatMap( group -> replicas.entrySet().stream().filter( isMyGroupAndNotMe( group ) ) )

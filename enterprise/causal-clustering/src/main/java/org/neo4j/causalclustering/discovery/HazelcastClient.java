@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -32,6 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.management.CausalClustering;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -57,6 +60,9 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final List<String> groups;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
+    //TODO: Work out if this is the right place to introduce the dbName and percolate down -  I think it is.
+    private final String dbName;
+
     private JobScheduler.JobHandle keepAliveJob;
     private JobScheduler.JobHandle refreshTopologyJob;
 
@@ -78,6 +84,7 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.myself = myself;
         this.groups = config.get( CausalClusteringSettings.server_groups );
         this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod, logProvider );
+        this.dbName = config.get( CausalClusteringSettings.database );
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis, LogProvider logProvider )
@@ -95,9 +102,29 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public CoreTopology coreServers( String databaseName )
     {
-        return rrTopology;
+        CoreTopology coreTopology = this.coreTopology;
+
+        Map<MemberId,CoreServerInfo> filteredCores = filterServersByDb( coreTopology.members(), databaseName );
+
+        return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
+    }
+
+    @Override
+    public ReadReplicaTopology readReplicas( String databaseName )
+    {
+        ReadReplicaTopology readReplicaTopology = rrTopology;
+
+        Map<MemberId,ReadReplicaInfo> filteredRRs = filterServersByDb( readReplicaTopology.members(), databaseName );
+
+        return new ReadReplicaTopology( filteredRRs );
+    }
+
+    private <T extends DiscoveryServerInfo> Map<MemberId, T> filterServersByDb( Map<MemberId, T> s, String dbName )
+    {
+        return s.entrySet().stream().filter(e -> e.getValue().getDatabaseName().equals( dbName ) )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }
 
     @Override

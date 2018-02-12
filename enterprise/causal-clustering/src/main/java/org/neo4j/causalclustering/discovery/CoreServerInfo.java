@@ -31,20 +31,28 @@ public class CoreServerInfo implements DiscoveryServerInfo
     private final AdvertisedSocketAddress catchupServer;
     private final ClientConnectorAddresses clientConnectorAddresses;
     private final Set<String> groups;
+    private final String dbName;
 
     public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
-            ClientConnectorAddresses clientConnectors )
+            ClientConnectorAddresses clientConnectors, String dbName )
     {
-        this( raftServer, catchupServer, clientConnectors, emptySet() );
+        this( raftServer, catchupServer, clientConnectors, emptySet(), dbName );
     }
 
     public CoreServerInfo( AdvertisedSocketAddress raftServer, AdvertisedSocketAddress catchupServer,
-            ClientConnectorAddresses clientConnectorAddresses, Set<String> groups )
+            ClientConnectorAddresses clientConnectorAddresses, Set<String> groups, String dbName )
     {
         this.raftServer = raftServer;
         this.catchupServer = catchupServer;
         this.clientConnectorAddresses = clientConnectorAddresses;
         this.groups = groups;
+        this.dbName = dbName;
+    }
+
+    @Override
+    public String getDatabaseName()
+    {
+        return dbName;
     }
 
     public AdvertisedSocketAddress getRaftServer()

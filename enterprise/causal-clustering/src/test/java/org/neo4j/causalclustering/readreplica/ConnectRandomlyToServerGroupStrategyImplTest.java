@@ -57,7 +57,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService = getTopologyService( myServerGroup, myGroupMemberIds, Collections.singletonList( "your_server_group" ) );
 
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0] );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0], "default" );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();
@@ -75,7 +75,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService = getTopologyService( myServerGroups, myGroupMemberIds, Arrays.asList( "x", "y", "z" ) );
 
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroups, topologyService, myGroupMemberIds[0] );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroups, topologyService, myGroupMemberIds[0], "default" );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();
@@ -91,7 +91,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService =
                 getTopologyService( Collections.singletonList( "my_server_group" ), myGroupMemberIds, Arrays.asList( "x", "y", "z" ) );
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( Collections.emptyList(), topologyService, null );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( Collections.emptyList(), topologyService, null, "default" );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();
@@ -109,7 +109,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
         MemberId[] myGroupMemberIds = memberIDs( 1 );
         TopologyService topologyService = getTopologyService( myServerGroup, myGroupMemberIds, Arrays.asList( "x", "y", "z" ) );
 
-        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0] );
+        ConnectRandomlyToServerGroupImpl strategy = new ConnectRandomlyToServerGroupImpl( myServerGroup, topologyService, myGroupMemberIds[0], "default" );
 
         // when
         Optional<MemberId> memberId = strategy.upstreamDatabase();

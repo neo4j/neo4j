@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
 import org.neo4j.kernel.api.proc.QualifiedName;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -62,9 +64,10 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Log log;
+    private final Config cfg;
 
     public ClusterOverviewProcedure( TopologyService topologyService,
-            LeaderLocator leaderLocator, LogProvider logProvider )
+            LeaderLocator leaderLocator, LogProvider logProvider, Config cfg  )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
                 .out( "id", Neo4jTypes.NTString )
@@ -76,6 +79,10 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.log = logProvider.getLog( getClass() );
+        this.cfg = cfg;
+
+        //TODO: Think about how to return an overview of the complete cluster of clusters here, but indicate which is the current cluster from the perspective
+        // of the overview.
     }
 
     @Override
@@ -83,7 +90,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             Context ctx, Object[] input, ResourceTracker resourceTracker )
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        CoreTopology coreTopology = topologyService.coreServers();
+        String dbName = cfg.get( CausalClusteringSettings.database ) ;
+        CoreTopology coreTopology = topologyService.coreServers( dbName );
         Set<MemberId> coreMembers = coreTopology.members().keySet();
         MemberId leader = null;
 
@@ -111,7 +119,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             }
         }
 
-        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas().members().entrySet() )
+        for ( Map.Entry<MemberId,ReadReplicaInfo> readReplica : topologyService.readReplicas( dbName ).members().entrySet() )
         {
             ReadReplicaInfo readReplicaInfo = readReplica.getValue();
             endpoints.add( new ReadWriteEndPoint( readReplicaInfo.connectors(), Role.READ_REPLICA,

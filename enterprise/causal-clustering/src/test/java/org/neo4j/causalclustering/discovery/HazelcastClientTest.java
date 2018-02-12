@@ -137,7 +137,7 @@ public class HazelcastClientTest
         // when
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers();
+        CoreTopology topology = client.coreServers( "default" );
 
         // then
         assertEquals( members.size(), topology.members().size() );
@@ -174,7 +174,7 @@ public class HazelcastClientTest
         CoreTopology topology;
         for ( int i = 0; i < 5; i++ )
         {
-            topology = client.coreServers();
+            topology = client.coreServers( "default" );
             assertEquals( members.size(), topology.members().size() );
         }
 
@@ -210,7 +210,7 @@ public class HazelcastClientTest
         // when
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers();
+        CoreTopology topology = client.coreServers( "default" );
 
         assertEquals( 0, topology.members().size() );
     }

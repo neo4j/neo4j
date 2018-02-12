@@ -73,6 +73,7 @@ public class LegacyGetServersProcedure implements CallableProcedure
     private final LeaderLocator leaderLocator;
     private final Config config;
     private final Log log;
+    private final String dbName;
 
     public LegacyGetServersProcedure( TopologyService topologyService, LeaderLocator leaderLocator,
             Config config, LogProvider logProvider )
@@ -81,6 +82,7 @@ public class LegacyGetServersProcedure implements CallableProcedure
         this.leaderLocator = leaderLocator;
         this.config = config;
         this.log = logProvider.getLog( getClass() );
+        this.dbName = config.get( CausalClusteringSettings.database );
     }
 
     @Override
@@ -115,12 +117,12 @@ public class LegacyGetServersProcedure implements CallableProcedure
             return Optional.empty();
         }
 
-        return topologyService.coreServers().find( leader ).map( extractBoltAddress() );
+        return topologyService.coreServers( this.dbName ).find( leader ).map( extractBoltAddress() );
     }
 
     private List<Endpoint> routeEndpoints()
     {
-        Stream<AdvertisedSocketAddress> routers = topologyService.coreServers()
+        Stream<AdvertisedSocketAddress> routers = topologyService.coreServers( this.dbName )
                 .members().values().stream().map( extractBoltAddress() );
         List<Endpoint> routeEndpoints = routers.map( Endpoint::route ).collect( toList() );
         Collections.shuffle( routeEndpoints );
@@ -134,7 +136,7 @@ public class LegacyGetServersProcedure implements CallableProcedure
 
     private List<Endpoint> readEndpoints()
     {
-        List<AdvertisedSocketAddress> readReplicas = topologyService.readReplicas().allMemberInfo().stream()
+        List<AdvertisedSocketAddress> readReplicas = topologyService.readReplicas( this.dbName ).allMemberInfo().stream()
                 .map( extractBoltAddress() ).collect( toList() );
         boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
         Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();
@@ -147,8 +149,8 @@ public class LegacyGetServersProcedure implements CallableProcedure
     private Stream<AdvertisedSocketAddress> coreReadEndPoints()
     {
         Optional<AdvertisedSocketAddress> leader = leaderBoltAddress();
-        Collection<CoreServerInfo> coreServerInfo = topologyService.coreServers().members().values();
-        Stream<AdvertisedSocketAddress> boltAddresses = topologyService.coreServers()
+        Collection<CoreServerInfo> coreServerInfo = topologyService.coreServers( this.dbName ).members().values();
+        Stream<AdvertisedSocketAddress> boltAddresses = topologyService.coreServers( this.dbName )
                 .members().values().stream().map( extractBoltAddress() );
 
         // if the leader is present and it is not alone filter it out from the read end points

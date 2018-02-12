@@ -74,8 +74,8 @@ public class ClusterOverviewProcedureTest
         replicaMembers.put( replica4, addressesForReadReplica( 4 ) );
         replicaMembers.put( replica5, addressesForReadReplica( 5 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
+        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( null, false, coreMembers ) );
+        when( topologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );

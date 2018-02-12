@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.util.Optional;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
@@ -39,11 +40,11 @@ public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabas
     {
         if ( counter.shouldReturnCoreMemberId() )
         {
-            return topologyService.coreServers().anyCoreMemberId();
+            return topologyService.coreServers( dbName ).anyCoreMemberId();
         }
         else
         {
-            return topologyService.readReplicas().anyReadReplicaMemberId();
+            return topologyService.readReplicas( dbName ).anyReadReplicaMemberId();
         }
     }
 

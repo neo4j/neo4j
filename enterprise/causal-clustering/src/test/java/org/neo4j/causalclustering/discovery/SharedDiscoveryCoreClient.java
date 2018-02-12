@@ -83,7 +83,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public ReadReplicaTopology readReplicas( String database )
     {
         return readReplicaTopology;
     }
@@ -99,6 +99,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
 
     @Override
     public CoreTopology coreServers()
+    {
+        return this.coreTopology;
+    }
+
+    @Override
+    public CoreTopology coreServers( String database )
     {
         return coreTopology;
     }
@@ -124,8 +130,9 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         AdvertisedSocketAddress raftAddress = config.get( CausalClusteringSettings.raft_advertised_address );
         AdvertisedSocketAddress transactionSource = config.get( CausalClusteringSettings.transaction_advertised_address );
         ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.extractFromConfig( config );
+        String dbName = config.get( CausalClusteringSettings.database );
 
-        return new CoreServerInfo( raftAddress, transactionSource, clientConnectorAddresses );
+        return new CoreServerInfo( raftAddress, transactionSource, clientConnectorAddresses, dbName );
     }
 
     public boolean refusesToBeLeader()

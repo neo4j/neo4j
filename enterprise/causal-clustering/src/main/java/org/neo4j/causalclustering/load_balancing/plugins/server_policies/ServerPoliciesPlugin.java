@@ -64,6 +64,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     private Long timeToLive;
     private boolean allowReadsOnFollowers;
     private Policies policies;
+    private String ourDatabaseName;
 
     @Override
     public void validate( Config config, Log log ) throws InvalidSettingException
@@ -87,6 +88,7 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
         this.timeToLive = config.get( CausalClusteringSettings.cluster_routing_ttl ).toMillis();
         this.allowReadsOnFollowers = config.get( CausalClusteringSettings.cluster_allow_reads_on_followers );
         this.policies = load( config, PLUGIN_NAME, logProvider.getLog( getClass() ) );
+        this.ourDatabaseName = config.get( CausalClusteringSettings.database );
     }
 
     @Override
@@ -100,8 +102,8 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     {
         Policy policy = policies.selectFor( context );
 
-        CoreTopology coreTopology = topologyService.coreServers();
-        ReadReplicaTopology rrTopology = topologyService.readReplicas();
+        CoreTopology coreTopology = topologyService.coreServers( context.get( "database" ) );
+        ReadReplicaTopology rrTopology = topologyService.readReplicas( context.get( "database" ) );
 
         return new LoadBalancingResult( routeEndpoints( coreTopology ), writeEndpoints( coreTopology ),
                 readEndpoints( coreTopology, rrTopology, policy ), timeToLive );

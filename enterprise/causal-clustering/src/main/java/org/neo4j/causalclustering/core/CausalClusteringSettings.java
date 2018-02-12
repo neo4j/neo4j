@@ -80,6 +80,10 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> refuse_to_be_leader =
             setting( "causal_clustering.refuse_to_be_leader", BOOLEAN, FALSE );
 
+    @Description( "The name of the database hosted by this server instance" )
+    public static final Setting<String> database =
+            setting( "causal_clustering.database", STRING, "default" );
+
     @Description( "Enable pre-voting extension to the Raft protocol (this is breaking and must match between the core cluster members)" )
     public static final Setting<Boolean> enable_pre_voting =
             setting( "causal_clustering.enable_pre_voting", BOOLEAN, FALSE );
