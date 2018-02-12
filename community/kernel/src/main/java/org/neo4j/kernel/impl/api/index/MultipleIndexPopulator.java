@@ -58,6 +58,7 @@ import static java.lang.String.format;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+import static org.neo4j.kernel.impl.api.index.IndexUpdateProcessor.applyIndexUpdatesByMode;
 
 /**
  * {@link IndexPopulator} that allow population of multiple indexes during one iteration.
@@ -384,7 +385,8 @@ public class MultipleIndexPopulator implements IndexPopulator
                 // Generifying IndexUpdateProcessor with exception type doesn't work due to multiple exception types thrown.
                 try
                 {
-                    IndexUpdateProcessor.applyIndexUpdatesByMode( queue, update -> storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId ) );
+                    applyIndexUpdatesByMode( extractUpdatesFromQueue(),
+                            update -> storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId ) );
                 }
                 catch ( IOException | IndexEntryConflictException e )
                 {
@@ -392,6 +394,22 @@ public class MultipleIndexPopulator implements IndexPopulator
                 }
             }
         }
+    }
+
+    /**
+     * Extracts {@link IndexEntryUpdate} from {@link #queue} into a {@link List}. This is done since updates can be added to this
+     * queue while we're doing this and the way we apply them requires a stable set of updates.
+     * @return a {@link List} of updates from {@link #queue}.
+     */
+    private List extractUpdatesFromQueue()
+    {
+        List updatesSnapshot = new ArrayList( queue.size() * 2 );
+        do
+        {
+            updatesSnapshot.add( queue.poll() );
+        }
+        while ( !queue.isEmpty() );
+        return updatesSnapshot;
     }
 
     private void forEachPopulation( ThrowingConsumer<IndexPopulation,Exception> action )
