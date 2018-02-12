@@ -523,7 +523,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 //   are made only once per batch instead of once per key/value.
                 // - (FAST) there are keys/values read and validated and ready to simply be returned to the user.
 
-                if ( cachedIndex + 1 < cachedLength && !closed && !cursor.shouldRetry() )
+                if ( cachedIndex + 1 < cachedLength && !closed && !(concurrentWriteHappened = cursor.shouldRetry()) )
                 {   // FAST, key/value is readily available
                     cachedIndex++;
                     if ( 0 <= pos && pos < keyCount && insideEndRange( exactMatch ) )
