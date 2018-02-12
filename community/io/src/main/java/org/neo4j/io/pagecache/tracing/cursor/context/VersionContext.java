@@ -36,7 +36,8 @@ package org.neo4j.io.pagecache.tracing.cursor.context;
  *     some version that write context was initialised with.
  *     <br/>
  *     For example, commit will start write context that with a version that is equal to current
- *     committing transaction id./li>
+ *     committing transaction id.
+ *     </li>
  * </ul>
  * By default non context will be initialised with last closed transaction id which is equal to {@link Long#MAX_VALUE}
  * and transaction id that is equal to minimal possible transaction id: 1.
