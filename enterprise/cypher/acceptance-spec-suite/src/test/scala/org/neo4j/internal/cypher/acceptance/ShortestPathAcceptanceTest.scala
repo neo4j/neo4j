@@ -750,9 +750,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
       """MATCH p=shortestPath( (:Person)-[*1..4]->(:Movie) )
         |RETURN length(p)
       """.stripMargin
-    val result = graph.execute(query)
-
-    println(result.next())
+    graph.execute(query).columnAs[Int]("length(p)").next() should be (1)
   }
 
   private def createLdbc14Model(): Unit = {
