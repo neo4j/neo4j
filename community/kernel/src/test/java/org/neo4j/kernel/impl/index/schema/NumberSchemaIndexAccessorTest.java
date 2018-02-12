@@ -37,7 +37,6 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
 public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<NumberSchemaKey,NativeSchemaValue>
@@ -79,7 +78,7 @@ public abstract class NumberSchemaIndexAccessorTest extends NativeSchemaIndexAcc
             {
                 assertEquals( "values in order", expectedValues[i++], client.values[0] );
             }
-            assertTrue( "found all values", i == expectedValues.length );
+            assertEquals( "found all values", i, expectedValues.length );
         }
     }
 

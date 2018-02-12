@@ -52,7 +52,6 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
     @Override
     void initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
-        // todo initialize the keys to prepare for seek
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
         {
@@ -63,10 +62,7 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
-            // No need to do the String --> byte[] conversion twice, right?
-            treeKeyTo.bytes = treeKeyFrom.bytes;
-            treeKeyTo.setEntityIdIsSpecialTieBreaker( false );
-            treeKeyTo.setEntityId( Long.MAX_VALUE );
+            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             break;
         case rangeString:
             StringRangePredicate rangePredicate = (StringRangePredicate)predicate;

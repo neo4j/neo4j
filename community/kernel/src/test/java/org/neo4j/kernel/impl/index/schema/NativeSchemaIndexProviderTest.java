@@ -150,8 +150,6 @@ public abstract class NativeSchemaIndexProviderTest
         }
     }
 
-    protected abstract Value someValue();
-
     @Test
     public void getOnlineAccessorMustCreateNonUniqueAccessorForTypeGeneral() throws IOException, IndexEntryConflictException
     {
@@ -373,6 +371,8 @@ public abstract class NativeSchemaIndexProviderTest
     }
 
     /* storeMigrationParticipant */
+
+    protected abstract Value someValue();
 
     abstract SchemaIndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
             SchemaIndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );

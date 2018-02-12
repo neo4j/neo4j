@@ -194,12 +194,12 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
             }
         }
 
-        if ( a.length < b.length )
+        if ( Integer.compare( a.length, b.length ) < 0 )
         {
             return -1;
         }
 
-        if ( a.length > b.length )
+        if ( Integer.compare( a.length, b.length ) > 0 )
         {
             return 1;
         }
