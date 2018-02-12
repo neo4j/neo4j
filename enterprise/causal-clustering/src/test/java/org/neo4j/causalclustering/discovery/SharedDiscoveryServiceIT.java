@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -73,7 +72,7 @@ public class SharedDiscoveryServiceIT
                 members.add( new MemberId( UUID.randomUUID() ) );
             }
 
-            SharedDiscoveryService sharedService = new SharedDiscoveryService();
+            DiscoveryServiceFactory sharedService = new SharedDiscoveryServiceFactory();
 
             List<Callable<Void>> discoveryJobs = new ArrayList<>();
             for ( MemberId member : members )
@@ -118,8 +117,10 @@ public class SharedDiscoveryServiceIT
             try
             {
                 RaftMachine raftMock = mock( RaftMachine.class );
+                RaftCoreTopologyConnector tc = new RaftCoreTopologyConnector( topologyService,
+                        raftMock, CausalClusteringSettings.database.getDefaultValue() );
                 topologyService.start();
-                topologyService.addCoreTopologyListener( new RaftCoreTopologyConnector( topologyService, raftMock ) );
+                tc.start();
 
                 assertEventually( "should discover complete target set", () ->
                 {

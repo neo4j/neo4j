@@ -23,8 +23,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.TimeoutException;
-
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -115,7 +113,7 @@ public class ClusterIdReuseIT
         assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 
         // Force leader switch
-        cluster.removeCoreMemberWithMemberId( creationLeader.serverId() );
+        cluster.removeCoreMemberWithServerId( creationLeader.serverId() );
 
         // waiting for new leader
         CoreClusterMember newLeader = cluster.awaitLeader();
@@ -154,13 +152,13 @@ public class ClusterIdReuseIT
         assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 
         // Restart and re-elect first leader
-        cluster.removeCoreMemberWithMemberId( creationLeader.serverId() );
+        cluster.removeCoreMemberWithServerId( creationLeader.serverId() );
         cluster.addCoreMemberWithId( creationLeader.serverId() ).start();
 
         CoreClusterMember leader = cluster.awaitLeader();
         while ( leader.serverId() != creationLeader.serverId() )
         {
-            cluster.removeCoreMemberWithMemberId( leader.serverId() );
+            cluster.removeCoreMemberWithServerId( leader.serverId() );
             cluster.addCoreMemberWithId( leader.serverId() ).start();
             leader = cluster.awaitLeader();
         }

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
@@ -37,6 +38,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
     protected Log log;
     protected MemberId myself;
     protected String readableName;
+    protected String dbName;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {
@@ -50,6 +52,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         this.config = config;
         this.log = logProvider.getLog( this.getClass() );
         this.myself = myself;
+        this.dbName = config.get( CausalClusteringSettings.database );
 
         readableName = StreamSupport.stream( getKeys().spliterator(), false ).collect( Collectors.joining( ", " ) );
         log.info( "Using upstream selection strategy " + readableName );

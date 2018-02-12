@@ -34,10 +34,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.discovery.AbstractTopologyService;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
+import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -46,6 +48,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static co.unruly.matchers.OptionalMatchers.empty;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isIn;
@@ -193,23 +196,23 @@ public class UserDefinedConfigurationStrategyTest
         return new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                 new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                         new AdvertisedSocketAddress( "localhost", offset.getAndIncrement() ) ) ) ),
-                new AdvertisedSocketAddress( "localhost", offset.getAndIncrement() ), groupGenerator.apply( memberId ) );
+                new AdvertisedSocketAddress( "localhost", offset.getAndIncrement() ), groupGenerator.apply( memberId ), "default" );
     }
 
     static TopologyService fakeTopologyService( CoreTopology coreTopology, ReadReplicaTopology readReplicaTopology )
     {
-        return new TopologyService()
+        return new AbstractTopologyService()
         {
             private Map<MemberId,AdvertisedSocketAddress> catchupAddresses = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
 
             @Override
-            public CoreTopology coreServers()
+            public CoreTopology allCoreServers()
             {
                 return coreTopology;
             }
 
             @Override
-            public ReadReplicaTopology readReplicas()
+            public ReadReplicaTopology allReadReplicas()
             {
                 return readReplicaTopology;
             }
@@ -218,6 +221,18 @@ public class UserDefinedConfigurationStrategyTest
             public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
             {
                 return Optional.ofNullable( catchupAddresses.get( upstream ) );
+            }
+
+            @Override
+            public Map<MemberId,RoleInfo> allCoreRoles()
+            {
+                return emptyMap();
+            }
+
+            @Override
+            public String localDBName()
+            {
+                return "default";
             }
 
             @Override

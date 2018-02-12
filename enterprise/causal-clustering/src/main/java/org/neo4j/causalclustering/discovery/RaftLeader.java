@@ -17,20 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.discovery.RoleInfo;
+import java.io.Serializable;
+import java.util.UUID;
 
-public class ReadReplicaRoleProcedure extends RoleProcedure
+import org.neo4j.causalclustering.identity.MemberId;
+
+/**
+ * Simple struct representing a raft leader - move to the raft module and make sure its used properly there.
+ */
+public class RaftLeader implements Serializable
 {
-    public ReadReplicaRoleProcedure()
+
+    private final long term;
+    private final UUID memberUUID;
+
+    public RaftLeader( MemberId memberId, long term )
     {
-        super();
+        this.memberUUID = memberId.getUuid();
+        this.term = term;
     }
 
-    @Override
-    RoleInfo role()
+    public long term()
     {
-        return RoleInfo.READ_REPLICA;
+        return term;
+    }
+
+    public MemberId memberId()
+    {
+        return new MemberId( memberUUID );
     }
 }
+

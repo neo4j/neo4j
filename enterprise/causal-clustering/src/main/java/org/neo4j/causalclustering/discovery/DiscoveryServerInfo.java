@@ -21,4 +21,5 @@ package org.neo4j.causalclustering.discovery;
 
 public interface DiscoveryServerInfo extends CatchupServerAddress, ClientConnector, GroupedServer
 {
+    String getDatabaseName();
 }

@@ -59,4 +59,12 @@ public class ReadReplicaTopology implements Topology<ReadReplicaInfo>
     {
         return readReplicaMembers.keySet().stream().findAny();
     }
+
+    @Override
+    public ReadReplicaTopology filterTopologyByDb( String dbName )
+    {
+        Map<MemberId, ReadReplicaInfo> filteredMembers = filterHostsByDb( members(), dbName );
+
+        return new ReadReplicaTopology( filteredMembers );
+    }
 }
