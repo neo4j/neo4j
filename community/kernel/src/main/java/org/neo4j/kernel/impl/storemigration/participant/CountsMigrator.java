@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -158,7 +159,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, config, idGeneratorFactory, pageCache,
-                fileSystem, recordFormats, logProvider );
+                fileSystem, recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )
@@ -174,7 +175,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                         highRelationshipTypeId, NumberArrayFactory.auto( pageCache, migrationDir, true ),
                         progressMonitor );
                 life.add( new CountsTracker( logProvider, fileSystem, pageCache, config,
-                        storeFileBase ).setInitializer( initializer ) );
+                        storeFileBase, EmptyVersionContextSupplier.EMPTY ).setInitializer( initializer ) );
             }
         }
     }

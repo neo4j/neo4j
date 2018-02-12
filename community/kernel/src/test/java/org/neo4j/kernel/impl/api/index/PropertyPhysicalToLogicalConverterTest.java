@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -226,7 +227,8 @@ public class PropertyPhysicalToLogicalConverterTest
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );

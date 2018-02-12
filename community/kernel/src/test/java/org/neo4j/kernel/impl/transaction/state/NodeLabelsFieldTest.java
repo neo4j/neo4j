@@ -38,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.CloneableInPublic;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -63,9 +64,33 @@ import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class NodeLabelsFieldTest
 {
+    @ClassRule
+    public static final PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule
+    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
     public RandomRule random = new RandomRule();
+
     private NeoStores neoStores;
+    private NodeStore nodeStore;
+
+    @Before
+    public void startUp()
+    {
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
+        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
+        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        neoStores = storeFactory.openAllNeoStores( true );
+        nodeStore = neoStores.getNodeStore();
+    }
+
+    @After
+    public void cleanUp()
+    {
+        neoStores.close();
+    }
 
     @Test
     public void shouldInlineOneLabel()
@@ -503,30 +528,6 @@ public class NodeLabelsFieldTest
             bits.put( labelId, bitsPerLabel );
         }
         return header | bits.getLongs()[0];
-    }
-
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private NodeStore nodeStore;
-
-    @Before
-    public void startUp()
-    {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
-        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
-        StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
-        neoStores = storeFactory.openAllNeoStores( true );
-        nodeStore = neoStores.getNodeStore();
-    }
-
-    @After
-    public void cleanUp()
-    {
-        neoStores.close();
     }
 
     private NodeRecord nodeRecordWithInlinedLabels( long... labels )

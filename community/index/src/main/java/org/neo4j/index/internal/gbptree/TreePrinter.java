@@ -33,6 +33,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
@@ -76,7 +77,8 @@ public class TreePrinter<KEY, VALUE>
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
         swapper.open( fs, EMPTY );
         PageCursorTracerSupplier cursorTracerSupplier = PageCursorTracerSupplier.NULL;
-        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier ) )
+        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier,
+                EmptyVersionContextSupplier.EMPTY ) )
         {
             printHeader( pageCache, file, out );
         }

@@ -34,6 +34,8 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
@@ -96,6 +98,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
     private final ClockContext clockContext;
+    private final VersionContextSupplier versionContextSupplier;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
@@ -104,7 +107,8 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
                             AccessCapability accessCapability,
                             LockTracer systemLockTracer,
                             StatementOperationParts statementOperations,
-                            ClockContext clockContext )
+                            ClockContext clockContext,
+                            VersionContextSupplier versionContextSupplier )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
@@ -115,6 +119,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.systemLockTracer = systemLockTracer;
         this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
         this.clockContext = clockContext;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     @Override
@@ -317,6 +322,11 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     public KernelTransactionImplementation getTransaction()
     {
         return transaction;
+    }
+
+    public VersionContext getVersionContext()
+    {
+        return versionContextSupplier.getVersionContext();
     }
 
     void assertAllows( Function<AccessMode,Boolean> allows, String mode )

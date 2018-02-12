@@ -37,6 +37,7 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.rule.Resources;
@@ -93,7 +94,7 @@ public class AbstractKeyValueStoreTest
     public void retryLookupOnConcurrentStoreStateChange() throws IOException
     {
         Store testStore = resourceManager.managed( createTestStore( TimeUnit.DAYS.toMillis( 2 ) ) );
-        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ) );
+        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ), EmptyVersionContextSupplier.EMPTY );
         testStore.put( "test", "value" );
 
         CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, newState );
@@ -595,7 +596,8 @@ public class AbstractKeyValueStoreTest
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
             super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
-                    new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ), 16, 16, headerFields );
+                    new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ),
+                    EmptyVersionContextSupplier.EMPTY, 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {

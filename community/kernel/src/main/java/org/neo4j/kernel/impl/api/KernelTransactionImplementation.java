@@ -53,6 +53,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.AssertOpen;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -128,6 +129,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
     private final AccessCapability accessCapability;
@@ -180,7 +182,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
             TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier,
             StorageEngine storageEngine, AccessCapability accessCapability, KernelToken token, DefaultCursors cursors, AutoIndexing autoIndexing,
-            ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -196,9 +198,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations, new ClockContext( clock ) );
+                procedures, accessCapability, lockTracer, statementOperations, new ClockContext( clock ),
+                versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = new HashMap<>();
@@ -229,7 +233,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.beforeHookInvoked = false;
         this.failure = false;
         this.success = false;
-        this.beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.millis();
         this.timeoutMillis = transactionTimeout;
@@ -630,7 +633,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation,
+                            versionContextSupplier.getVersionContext() );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }

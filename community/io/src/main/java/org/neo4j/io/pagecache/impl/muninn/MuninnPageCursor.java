@@ -30,6 +30,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
@@ -55,7 +57,7 @@ abstract class MuninnPageCursor extends PageCursor
     private final PageCursorTracer tracer;
     protected MuninnPagedFile pagedFile;
     protected PageSwapper swapper;
-    protected int swapperId;
+    protected short swapperId;
     protected long pinnedPageRef;
     protected PinEvent pinEvent;
     protected long pageId;
@@ -69,6 +71,7 @@ abstract class MuninnPageCursor extends PageCursor
     private long pointer;
     private int pageSize;
     private int filePageSize;
+    protected final VersionContextSupplier versionContextSupplier;
     private int offset;
     private boolean outOfBounds;
     private boolean isLinkedCursor;
@@ -77,11 +80,12 @@ abstract class MuninnPageCursor extends PageCursor
     // offending code.
     private Object cursorException;
 
-    MuninnPageCursor( long victimPage, PageCursorTracer tracer )
+    MuninnPageCursor( long victimPage, PageCursorTracer tracer, VersionContextSupplier versionContextSupplier )
     {
         this.victimPage = victimPage;
         this.pointer = victimPage;
         this.tracer = tracer;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     final void initialiseFile( MuninnPagedFile pagedFile )
@@ -127,10 +131,39 @@ abstract class MuninnPageCursor extends PageCursor
     {
         if ( currentPageId == pageId )
         {
+            verifyContext();
             return true;
         }
         nextPageId = pageId;
         return next();
+    }
+
+    void verifyContext()
+    {
+        VersionContext versionContext = versionContextSupplier.getVersionContext();
+        long lastClosedTransactionId = versionContext.lastClosedTransactionId();
+        if ( lastClosedTransactionId == Long.MAX_VALUE )
+        {
+            return;
+        }
+        if ( isPotentiallyReadingDirtyData( lastClosedTransactionId ) )
+        {
+            versionContext.markAsDirty();
+        }
+    }
+
+    /**
+     * We reading potentially dirty data in case if our page last modification version is higher then
+     * requested lastClosedTransactionId; or for this page file we already evict some page with version that is higher
+     * then requested lastClosedTransactionId. In this case we can't be sure that data of current page satisfying
+     * visibility requirements and we pessimistically will assume that we reading dirty data.
+     * @param lastClosedTransactionId last closed transaction id
+     * @return true in case if we reading potentially dirty data for requested lastClosedTransactionId.
+     */
+    private boolean isPotentiallyReadingDirtyData( long lastClosedTransactionId )
+    {
+        return pagedFile.getLastModifiedTxId( pinnedPageRef ) > lastClosedTransactionId ||
+                pagedFile.getHighestEvictedTransactionId() > lastClosedTransactionId;
     }
 
     @Override

@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -346,7 +347,8 @@ public class KernelTransactionTerminationTest
                     TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
                     mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), mock( KernelToken.class ),
-                    mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ) );
+                    mock( DefaultCursors.class ), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ),
+                    EmptyVersionContextSupplier.EMPTY );
 
             this.monitor = monitor;
         }

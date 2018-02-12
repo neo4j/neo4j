@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -138,7 +139,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new BufferedIdController(
                 new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
                         idConfigurationProvider ), jobScheduler ),
-                OperationalMode.single );
+                OperationalMode.single, new TransactionVersionContextSupplier() );
         return dataSource;
     }
 

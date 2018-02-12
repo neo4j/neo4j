@@ -26,6 +26,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -102,8 +103,8 @@ public class KernelTransactionFactory
                 Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite(), new KernelToken( storeReadLayer ), new DefaultCursors(), AutoIndexing.UNSUPPORTED, mock(
-                ExplicitIndexStore.class) );
+                storageEngine, new CanWrite(), new KernelToken( storeReadLayer ), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
+                mock( ExplicitIndexStore.class), EmptyVersionContextSupplier.EMPTY );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

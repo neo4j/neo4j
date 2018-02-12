@@ -29,6 +29,7 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -49,6 +50,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
+    private final VersionContextSupplier versionContextSupplier;
     private final RotationTimerFactory rotationTimerFactory;
     volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
@@ -58,9 +60,11 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     private volatile boolean stopped;
 
     public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, File base, RotationMonitor monitor,
-            RotationTimerFactory timerFactory, int keySize, int valueSize, HeaderField<?>... headerFields )
+            RotationTimerFactory timerFactory, VersionContextSupplier versionContextSupplier, int keySize,
+            int valueSize, HeaderField<?>... headerFields )
     {
         this.fs = fs;
+        this.versionContextSupplier = versionContextSupplier;
         this.keySize = keySize;
         this.valueSize = valueSize;
         Rotation rotation = getClass().getAnnotation( Rotation.class );
@@ -71,7 +75,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         this.format = new Format( headerFields );
         this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, base, rotation.parameters() );
         this.rotationTimerFactory = timerFactory;
-        this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value() );
+        this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value(),
+                versionContextSupplier );
     }
 
     protected final void setEntryUpdaterInitializer( DataInitializer<EntryUpdater<Key>> stateInitializer )

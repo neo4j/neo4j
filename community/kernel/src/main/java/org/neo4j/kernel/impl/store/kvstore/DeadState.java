@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 
 abstract class DeadState<Key> extends ProgressiveState<Key>
 {
@@ -99,18 +100,20 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
 
     private final KeyFormat<Key> keys;
     final ActiveState.Factory stateFactory;
+    final VersionContextSupplier versionContextSupplier;
 
-    private DeadState( KeyFormat<Key> keys, ActiveState.Factory stateFactory )
+    private DeadState( KeyFormat<Key> keys, ActiveState.Factory stateFactory, VersionContextSupplier versionContextSupplier )
     {
         this.keys = keys;
         this.stateFactory = stateFactory;
+        this.versionContextSupplier = versionContextSupplier;
     }
 
     static class Stopped<Key> extends DeadState<Key>
     {
-        Stopped( KeyFormat<Key> keys, ActiveState.Factory stateFactory )
+        Stopped( KeyFormat<Key> keys, ActiveState.Factory stateFactory, VersionContextSupplier versionContextSupplier )
         {
-            super( keys, stateFactory );
+            super( keys, stateFactory, versionContextSupplier );
         }
 
         @Override
@@ -125,10 +128,10 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
             Pair<File, KeyValueStoreFile> opened = rotation.open();
             if ( opened == null )
             {
-                return new NeedsCreation<>( keyFormat(), stateFactory, rotation );
+                return new NeedsCreation<>( keyFormat(), stateFactory, rotation, versionContextSupplier );
             }
             return new Prepared<>( stateFactory.open( ReadableState.store( keyFormat(), opened.other() ),
-                                                      opened.first() ) );
+                                                      opened.first(), versionContextSupplier ) );
         }
 
         @Override
@@ -143,16 +146,17 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
     {
         private final RotationStrategy rotation;
 
-        private NeedsCreation( KeyFormat<Key> keys, ActiveState.Factory stateFactory, RotationStrategy rotation )
+        private NeedsCreation( KeyFormat<Key> keys, ActiveState.Factory stateFactory, RotationStrategy rotation,
+                VersionContextSupplier versionContextSupplier )
         {
-            super( keys, stateFactory );
+            super( keys, stateFactory, versionContextSupplier );
             this.rotation = rotation;
         }
 
         @Override
         ProgressiveState<Key> stop()
         {
-            return new Stopped<>( keyFormat(), stateFactory );
+            return new Stopped<>( keyFormat(), stateFactory, versionContextSupplier );
         }
 
         @Override
@@ -169,14 +173,16 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
                 throw new IllegalStateException( "Store needs to be created, and no initializer is given." );
             }
             Pair<File, KeyValueStoreFile> created = initialState( initializer );
-            return stateFactory.open( ReadableState.store( keyFormat(), created.other() ), created.first() );
+            return stateFactory.open( ReadableState.store( keyFormat(), created.other() ), created.first(),
+                    versionContextSupplier );
         }
 
         private Pair<File, KeyValueStoreFile> initialState( DataInitializer<EntryUpdater<Key>> initializer )
                 throws IOException
         {
             long version = initializer.initialVersion();
-            try ( ActiveState<Key> creation = stateFactory.open( ReadableState.empty( keyFormat(), version ), null ) )
+            try ( ActiveState<Key> creation = stateFactory.open( ReadableState.empty( keyFormat(), version ), null,
+                    versionContextSupplier ) )
             {
                 try ( EntryUpdater<Key> updater = creation.resetter( new ReentrantLock(), () -> {} ) )
                 {
@@ -238,7 +244,7 @@ abstract class DeadState<Key> extends ProgressiveState<Key>
 
         private Prepared( ActiveState<Key> state )
         {
-            super( state.keyFormat(), state.factory() );
+            super( state.keyFormat(), state.factory(), state.versionContextSupplier );
             this.state = state;
         }
 

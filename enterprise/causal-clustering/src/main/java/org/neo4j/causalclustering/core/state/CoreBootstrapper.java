@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.core.state.snapshot.RaftCoreState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -106,7 +107,7 @@ public class CoreBootstrapper
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider );
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = factory.openAllNeoStores( true );
         neoStores.close();

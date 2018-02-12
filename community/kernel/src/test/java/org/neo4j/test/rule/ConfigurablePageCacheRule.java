@@ -24,6 +24,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.logging.FormattedLogProvider;
@@ -50,8 +51,8 @@ public class ConfigurablePageCacheRule extends PageCacheRule
                 pageCacheConfig.pageCursorTracerSupplier, PageCursorTracerSupplier.NULL );
         config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fs, config, tracer, cursorTracerSupplier, logProvider.getLog( PageCache.class ) );
+        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, tracer, cursorTracerSupplier,
+                        logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
         return pageCacheFactory.getOrCreatePageCache();
     }
 }

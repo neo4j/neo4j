@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.GlobalMemoryTracker;
@@ -46,6 +47,7 @@ public class ConfiguringPageCacheFactory
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
     private final Log log;
+    private final VersionContextSupplier versionContextSupplier;
     private PageCache pageCache;
     private PageCursorTracerSupplier pageCursorTracerSupplier;
 
@@ -57,11 +59,14 @@ public class ConfiguringPageCacheFactory
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
      * @param log page cache factory log
+     * @param versionContextSupplier cursor context factory
      */
     public ConfiguringPageCacheFactory( FileSystemAbstraction fs, Config config, PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier, Log log )
+            PageCursorTracerSupplier pageCursorTracerSupplier, Log log,
+            VersionContextSupplier versionContextSupplier )
     {
         this.fs = fs;
+        this.versionContextSupplier = versionContextSupplier;
         this.config = config;
         this.pageCacheTracer = pageCacheTracer;
         this.log = log;
@@ -82,7 +87,8 @@ public class ConfiguringPageCacheFactory
     {
         checkPageSize( config );
         MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
-        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier,
+                versionContextSupplier );
     }
 
     private MemoryAllocator buildMemoryAllocator( Config config )

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -79,6 +80,6 @@ public class StatementLifecycleTest
             StorageStatement storageStatement )
     {
         return new KernelStatement( transaction, null, storageStatement, new Procedures(), new CanWrite(),
-                LockTracer.NONE, mock( StatementOperationParts.class ), new ClockContext() );
+                LockTracer.NONE, mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 }

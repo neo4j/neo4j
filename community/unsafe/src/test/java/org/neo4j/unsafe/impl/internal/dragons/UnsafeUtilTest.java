@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.System.currentTimeMillis;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
@@ -41,10 +42,12 @@ import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.arrayBaseOffset;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.arrayIndexScale;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.arrayOffset;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.assertHasUnsafe;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.compareAndSetMaxLong;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.compareAndSwapLong;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.compareAndSwapObject;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.free;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getAndAddInt;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getAndSetLong;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getAndSetObject;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getBoolean;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getBooleanVolatile;
@@ -400,7 +403,30 @@ public class UnsafeUtilTest
     }
 
     @Test
-    public void unsafeArrayElementAccess()
+    public void getAndSetLongField()
+    {
+        Obj obj = new Obj();
+        long offset = getFieldOffset( Obj.class, "aLong" );
+        assertThat( getAndSetLong( obj, offset, 42L ), equalTo( 0L ) );
+        assertThat( getAndSetLong( obj, offset, -1 ), equalTo( 42L ) );
+    }
+
+    @Test
+    public void compareAndSetMaxLongField()
+    {
+        Obj obj = new Obj();
+        long offset = getFieldOffset( Obj.class, "aLong" );
+        assertThat( getAndSetLong( obj, offset, 42L ), equalTo( 0L ) );
+
+        compareAndSetMaxLong( obj, offset, 5 );
+        assertEquals( 42, getLong( obj, offset ) );
+
+        compareAndSetMaxLong( obj, offset, 105 );
+        assertEquals( 105, getLong( obj, offset ) );
+    }
+
+    @Test
+    public void unsafeArrayElementAccess() throws Exception
     {
         int len = 3;
         int scale;

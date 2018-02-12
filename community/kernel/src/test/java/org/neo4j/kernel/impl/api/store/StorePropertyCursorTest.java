@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -306,7 +307,8 @@ public class StorePropertyCursorTest
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             NullLogProvider logProvider = NullLogProvider.getInstance();
-            neoStores = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider )
+            neoStores = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
+                    EmptyVersionContextSupplier.EMPTY )
                     .openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }
