@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KeyReadTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -105,6 +106,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final PageCursorTracerSupplier cursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     private final StoreReadLayer storeLayer;
     private final Clock clock;
 
@@ -160,7 +162,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             LockTracer lockTracer,
                                             PageCursorTracerSupplier cursorTracerSupplier,
                                             StorageEngine storageEngine,
-                                            AccessCapability accessCapability )
+                                            AccessCapability accessCapability,
+                                            VersionContextSupplier versionContextSupplier )
     {
         this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
@@ -176,9 +179,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clock = clock;
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.storageStatement = storeLayer.newStatement();
         this.currentStatement = new KernelStatement( this, this, storageStatement,
-                procedures, accessCapability, lockTracer, statementOperations );
+                procedures, accessCapability, lockTracer, statementOperations, versionContextSupplier );
         this.userMetaData = new HashMap<>();
     }
 
@@ -197,7 +201,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.beforeHookInvoked = false;
         this.failure = false;
         this.success = false;
-        this.beforeHookInvoked = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clock.millis();
         this.timeoutMillis = transactionTimeout;
@@ -593,7 +596,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                     // Commit the transaction
                     success = true;
-                    TransactionToApply batch = new TransactionToApply( transactionRepresentation );
+                    TransactionToApply batch = new TransactionToApply( transactionRepresentation,
+                            versionContextSupplier.getVersionContext() );
                     txId = transactionId = commitProcess.commit( batch, commitEvent, INTERNAL );
                     commitTime = timeCommitted;
                 }

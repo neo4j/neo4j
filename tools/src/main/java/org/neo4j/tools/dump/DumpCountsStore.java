@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
@@ -83,8 +84,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             if ( fs.isDirectory( path ) )
             {
                 StoreFactory factory = new StoreFactory( path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                        pages, fs,
-                        logProvider );
+                        pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
@@ -273,7 +273,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
                 PageCache pages, Config config, File baseFile )
         {
-            super( logProvider, fs, pages, config, baseFile );
+            super( logProvider, fs, pages, config, baseFile, EmptyVersionContextSupplier.EMPTY );
         }
 
         @Override

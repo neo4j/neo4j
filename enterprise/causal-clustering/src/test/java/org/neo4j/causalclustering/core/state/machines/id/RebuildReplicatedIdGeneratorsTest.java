@@ -28,6 +28,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -66,7 +67,7 @@ public class RebuildReplicatedIdGeneratorsTest
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), Config.defaults(),
                 getIdGenerationFactory( fileSystem ), pageCacheRule.getPageCache( fileSystem ), fileSystem,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             NodeStore nodeStore = neoStores.getNodeStore();

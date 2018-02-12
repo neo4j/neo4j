@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.unsafe.impl.internal.dragons.MemoryManager;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
@@ -153,6 +154,7 @@ public class MuninnPageCache implements PageCache
     private final int keepFree;
     private final PageCacheTracer pageCacheTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final VersionContextSupplier versionContextSupplier;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
@@ -190,7 +192,6 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
-
     /**
      * Create page cache
      * @param swapperFactory page cache swapper factory
@@ -199,13 +200,16 @@ public class MuninnPageCache implements PageCache
      * @param pageCacheTracer global page cache tracer
      * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
      * thread local page cache statistics
+     * @param versionContextSupplier supplier of thread local (transaction local) version context that will provide
+     * access to thread local version context
      */
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
             int maxPages,
             int cachePageSize,
             PageCacheTracer pageCacheTracer,
-            PageCursorTracerSupplier pageCursorTracerSupplier )
+            PageCursorTracerSupplier pageCursorTracerSupplier,
+            VersionContextSupplier versionContextSupplier )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
@@ -217,6 +221,7 @@ public class MuninnPageCache implements PageCache
         this.keepFree = Math.min( pagesToKeepFree, maxPages / 2 );
         this.pageCacheTracer = pageCacheTracer;
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
+        this.versionContextSupplier = versionContextSupplier;
         this.printExceptionsOnClose = true;
 
         long alignment = swapperFactory.getRequiredBufferAlignment();
@@ -339,6 +344,7 @@ public class MuninnPageCache implements PageCache
                 swapperFactory,
                 pageCacheTracer,
                 pageCursorTracerSupplier,
+                versionContextSupplier,
                 createIfNotExists,
                 truncateExisting );
         pagedFile.incrementRefCount();
@@ -908,7 +914,7 @@ public class MuninnPageCache implements PageCache
         do
         {
             current = getFreelistHead();
-            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() >= pages.getPageCount() )
+            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() > pages.getPageCount() )
             {
                 current = null;
             }

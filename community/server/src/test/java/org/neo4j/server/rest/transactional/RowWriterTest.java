@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import org.neo4j.cypher.internal.javacompat.MapRow;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.util.Arrays.asList;

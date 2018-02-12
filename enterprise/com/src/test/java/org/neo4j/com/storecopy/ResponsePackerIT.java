@@ -32,6 +32,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -112,7 +113,7 @@ public class ResponsePackerIT
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
+                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openAllNeoStores( true );
     }
 }

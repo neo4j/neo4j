@@ -37,6 +37,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.Dependencies;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.MasterClient320;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -127,6 +128,7 @@ public class MasterClientTest
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
         when( deps.commitProcess() ).thenReturn( commitProcess );
         when( deps.logService() ).thenReturn( NullLogService.getInstance() );
+        when( deps.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
         when( deps.kernelTransactions() ).thenReturn( mock( KernelTransactions.class ) );
 
         ResponseUnpacker unpacker = life.add(

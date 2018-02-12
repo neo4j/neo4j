@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -91,7 +92,7 @@ public class PageCacheStressTest
             swapperFactory.open( fs, Configuration.EMPTY );
 
             try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, numberOfCachePages, cachePageSize,
-                    tracer, pageCursorTracerSupplier ) )
+                    tracer, pageCursorTracerSupplier, EmptyVersionContextSupplier.EMPTY ) )
             {
                 PageCacheStresser pageCacheStresser =
                         new PageCacheStresser( numberOfPages, numberOfThreads, workingDirectory );

@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -89,7 +90,8 @@ public class LockingStatementOperationsTest
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
     private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
-            mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE, null );
+            mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE, null,
+            EmptyVersionContextSupplier.EMPTY );
     private final SchemaStateOperations schemaStateOps;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );

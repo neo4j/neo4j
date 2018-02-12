@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,12 +34,6 @@ import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
-
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -45,6 +45,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -381,7 +382,7 @@ public class NodeStoreTest
             }
         } );
         StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), idGeneratorFactory, pageCache, fs,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
         return nodeStore;

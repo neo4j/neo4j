@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
@@ -58,6 +57,8 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
@@ -94,6 +95,9 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.lang.Long.max;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -101,11 +105,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Long.max;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -444,15 +443,18 @@ public class RecoveryIT
     private void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
+                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                        .getOrCreatePageCache();
                 PageCache pageCache2 = new ConfiguringPageCacheFactory( fs2, defaults(), PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
+                        PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                        .getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs1 ),
-                        pageCache1, fs1, logProvider ).openAllNeoStores();
+                        pageCache1, fs1, logProvider, contextSupplier ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( storeDir, defaults(), new DefaultIdGeneratorFactory( fs2 ),
-                        pageCache2, fs2, logProvider ).openAllNeoStores();
+                        pageCache2, fs2, logProvider, contextSupplier ).openAllNeoStores();
                 )
         {
             for ( StoreType storeType : StoreType.values() )
