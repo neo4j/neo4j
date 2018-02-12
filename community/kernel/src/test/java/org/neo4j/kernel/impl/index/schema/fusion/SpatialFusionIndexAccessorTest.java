@@ -73,7 +73,6 @@ public class SpatialFusionIndexAccessorTest
         for ( CoordinateReferenceSystem crs : asList( WGS84, Cartesian ) )
         {
             indexMap.put( crs, mock( SpatialKnownIndex.class ) );
-            when( indexMap.get( crs ).getState() ).thenReturn( SpatialKnownIndex.State.ONLINE );
         }
 
         fusionIndexAccessor = new SpatialFusionIndexAccessor( indexMap, 0, mock( IndexDescriptor.class ), null, indexFactory );

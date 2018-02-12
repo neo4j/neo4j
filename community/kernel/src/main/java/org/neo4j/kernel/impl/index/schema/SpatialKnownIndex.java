@@ -117,35 +117,60 @@ public class SpatialKnownIndex
         state = State.NONE;
     }
 
-    public void initialize( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public void initIfNeeded( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        assert state == State.NONE;
-        layout = layout( descriptor );
-        treeKey = layout.newKey();
-        treeValue = layout.newValue();
-        schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
-        if ( uniqueSampler( descriptor ) )
+        if ( state == State.NONE )
         {
-            uniqueSampler = new UniqueIndexSampler();
+            initialize( descriptor, samplingConfig );
+        }
+    }
+
+    public void createIfNeeded () throws IOException
+    {
+        if ( state == State.INIT )
+        {
+            // First add to sub-index, make sure to create
+            create();
+        }
+    }
+
+    public void takeOnline( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    {
+        initIfNeeded( descriptor, samplingConfig );
+        if ( state == State.INIT || state == State.POPULATED )
+        {
+            online();
+        }
+        if ( state != State.ONLINE )
+        {
+            throw new IllegalStateException( "" );
+        }
+    }
+
+    public IndexUpdater updateWithCreate(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating ) throws IOException
+    {
+        if ( populating )
+        {
+            if ( state == State.NONE )
+            {
+                // sub-index didn't exist, create in populating mode
+                initialize( descriptor, samplingConfig );
+                create();
+            }
+            return newPopulatingUpdater();
         }
         else
         {
-            generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+            if ( state == State.NONE )
+            {
+                // sub-index didn't exist, create and make it online
+                initialize( descriptor, samplingConfig );
+                create();
+                close( true );
+                online();
+            }
+            return newUpdater();
         }
-        state = State.INIT;
-    }
-
-    public void online() throws IOException
-    {
-        assert state == State.POPULATED || state == State.INIT;
-        singleUpdater = new NativeSchemaIndexUpdater<>( treeKey, treeValue );
-        schemaIndex.instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
-        state = State.ONLINE;
-    }
-
-    public State getState()
-    {
-        return state;
     }
 
     public synchronized void drop() throws IOException
@@ -161,17 +186,6 @@ public class SpatialKnownIndex
             dropped = true;
             state = State.NONE; // ???
         }
-    }
-
-    public synchronized void create() throws IOException
-    {
-        assert state == State.INIT;
-        // extra check here???
-        schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile ); /// TODO <- warning
-        schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
-        instantiateWriter();
-        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger<>() ) );
-        state = State.POPULATING;
     }
 
     public void close() throws IOException
@@ -343,6 +357,72 @@ public class SpatialKnownIndex
         return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor );
     }
 
+    public boolean indexExists()
+    {
+        return fs.fileExists( indexFile );
+    }
+
+    public String readPopulationFailure( IndexDescriptor descriptor ) throws IOException
+    {
+        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
+        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
+        return headerReader.failureMessage;
+    }
+
+    public InternalIndexState readState( IndexDescriptor descriptor ) throws IOException
+    {
+        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
+        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
+        switch ( headerReader.state )
+        {
+        case BYTE_FAILED:
+            return InternalIndexState.FAILED;
+        case BYTE_ONLINE:
+            return InternalIndexState.ONLINE;
+        case BYTE_POPULATING:
+            return InternalIndexState.POPULATING;
+        default:
+            throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
+        }
+    }
+
+    private synchronized void create() throws IOException
+    {
+        assert state == State.INIT;
+        // extra check here???
+        schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile ); /// TODO <- warning
+        schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
+        instantiateWriter();
+        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger<>() ) );
+        state = State.POPULATING;
+    }
+
+    private void initialize( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    {
+        assert state == State.NONE;
+        layout = layout( descriptor );
+        treeKey = layout.newKey();
+        treeValue = layout.newValue();
+        schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
+        if ( uniqueSampler( descriptor ) )
+        {
+            uniqueSampler = new UniqueIndexSampler();
+        }
+        else
+        {
+            generalSampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
+        }
+        state = State.INIT;
+    }
+
+    private void online() throws IOException
+    {
+        assert state == State.POPULATED || state == State.INIT;
+        singleUpdater = new NativeSchemaIndexUpdater<>( treeKey, treeValue );
+        schemaIndex.instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
+        state = State.ONLINE;
+    }
+
     private void instantiateWriter() throws IOException
     {
         assert singleTreeWriter == null;
@@ -434,35 +514,6 @@ public class SpatialKnownIndex
         return "index-" + indexId;
     }
 
-    public boolean indexExists()
-    {
-        return fs.fileExists( indexFile );
-    }
-
-    public String readPopulationFailure( IndexDescriptor descriptor ) throws IOException
-    {
-        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
-        return headerReader.failureMessage;
-    }
-
-    public InternalIndexState readState( IndexDescriptor descriptor ) throws IOException
-    {
-        NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, layout( descriptor ), headerReader );
-        switch ( headerReader.state )
-        {
-        case BYTE_FAILED:
-            return InternalIndexState.FAILED;
-        case BYTE_ONLINE:
-            return InternalIndexState.ONLINE;
-        case BYTE_POPULATING:
-            return InternalIndexState.POPULATING;
-        default:
-            throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
-        }
-    }
-
     private SpatialLayout layout( IndexDescriptor descriptor )
     {
         SpatialLayout layout;
@@ -490,7 +541,7 @@ public class SpatialKnownIndex
         }
     }
 
-    public enum State
+    private enum State
     {
         NONE,
         INIT,

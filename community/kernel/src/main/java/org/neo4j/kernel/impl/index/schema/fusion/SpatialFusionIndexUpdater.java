@@ -113,28 +113,8 @@ class SpatialFusionIndexUpdater implements IndexUpdater
             return updater;
         }
         SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        if ( populating )
-        {
-            if ( index.getState() == SpatialKnownIndex.State.NONE )
-            {
-                // sub-index didn't exist, create in populating mode
-                index.initialize( descriptor, samplingConfig );
-                index.create();
-            }
-            return remember( crs, index.newPopulatingUpdater() );
-        }
-        else
-        {
-            if ( index.getState() == SpatialKnownIndex.State.NONE )
-            {
-                // sub-index didn't exist, create and make it online
-                index.initialize( descriptor, samplingConfig );
-                index.create();
-                index.close( true );
-                index.online();
-            }
-            return remember( crs, index.newUpdater() );
-        }
+        IndexUpdater indexUpdater = index.updateWithCreate( descriptor, samplingConfig, populating );
+        return remember( crs, indexUpdater );
     }
 
     private IndexUpdater remember( CoordinateReferenceSystem crs, IndexUpdater indexUpdater )

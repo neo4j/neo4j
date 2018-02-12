@@ -88,11 +88,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
             SpatialKnownIndex index = getOrCreateInitializedIndex( crs );
-            if ( index.getState() == SpatialKnownIndex.State.INIT )
-            {
-                // First add to sub-index, make sure to create
-                index.create();
-            }
+            index.createIfNeeded();
             index.add( batchMap.get( crs ) );
         }
     }
@@ -142,10 +138,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     private SpatialKnownIndex getOrCreateInitializedIndex( CoordinateReferenceSystem crs )
     {
         SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        if ( index.getState() == SpatialKnownIndex.State.NONE )
-        {
-            index.initialize( descriptor, samplingConfig );
-        }
+        index.initIfNeeded( descriptor, samplingConfig );
         return index;
     }
 

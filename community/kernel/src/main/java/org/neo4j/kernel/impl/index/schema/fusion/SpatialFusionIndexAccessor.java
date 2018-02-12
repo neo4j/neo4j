@@ -62,18 +62,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
         this.indexFactory = indexFactory;
         for ( SpatialKnownIndex index : indexMap.values() )
         {
-            if ( index.getState() == SpatialKnownIndex.State.NONE )
-            {
-                index.initialize( descriptor, samplingConfig );
-            }
-            if ( index.getState() == SpatialKnownIndex.State.INIT || index.getState() == SpatialKnownIndex.State.POPULATED )
-            {
-                index.online();
-            }
-            if ( index.getState() != SpatialKnownIndex.State.ONLINE )
-            {
-                throw new IllegalStateException( "" );
-            }
+            index.takeOnline(descriptor, samplingConfig);
         }
     }
 
