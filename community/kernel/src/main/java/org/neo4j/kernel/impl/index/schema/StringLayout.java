@@ -23,7 +23,6 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
-
 import static org.neo4j.kernel.impl.index.schema.StringSchemaKey.ENTITY_ID_SIZE;
 
 /**
@@ -81,6 +80,11 @@ abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaV
     public void readKey( PageCursor cursor, StringSchemaKey into, int keySize )
     {
         // TODO consider reusing byte[] instances somehow
+        if ( keySize < ENTITY_ID_SIZE )
+        {
+            into.bytes = null;
+            return;
+        }
         into.setEntityId( cursor.getLong() );
         into.bytes = new byte[keySize - ENTITY_ID_SIZE];
         cursor.getBytes( into.bytes );
