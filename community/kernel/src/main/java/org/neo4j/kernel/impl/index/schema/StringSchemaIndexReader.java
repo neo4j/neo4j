@@ -46,10 +46,7 @@ class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,Na
             throw new UnsupportedOperationException();
         }
 
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            throw new UnsupportedOperationException( "unsupported order " + indexOrder );
-        }
+        CapabilityValidator.validateQuery( StringSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
