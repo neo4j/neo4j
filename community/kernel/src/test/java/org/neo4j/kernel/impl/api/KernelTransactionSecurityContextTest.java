@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
@@ -47,7 +49,20 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         exception.expect( AuthorizationViolationException.class );
 
         // When
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
+    }
+
+    @Test
+    public void shouldNotAllowTokenReadsInNoneMode()
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction( AnonymousContext.none() );
+
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+
+        // When
+        tx.tokenRead();
     }
 
     @Test
@@ -60,7 +75,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         exception.expect( AuthorizationViolationException.class );
 
         // When
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
     }
 
     @Test
@@ -99,7 +114,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         exception.expect( AuthorizationViolationException.class );
 
         // When
-        tx.acquireStatement().dataWriteOperations();
+        tx.dataWrite();
     }
 
     @Test
@@ -125,7 +140,20 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         exception.expect( AuthorizationViolationException.class );
 
         // When
-        tx.acquireStatement().readOperations();
+        tx.dataRead();
+    }
+
+    @Test
+    public void shouldNotAllowTokenReadAccessInWriteOnlyMode()
+    {
+        // Given
+        KernelTransactionImplementation tx = newTransaction( AnonymousContext.writeOnly() );
+
+        // Expect
+        exception.expect( AuthorizationViolationException.class );
+
+        // When
+        tx.tokenRead();
     }
 
     @Test
@@ -135,7 +163,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.writeOnly() );
 
         // When
-        DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
+        Write writes = tx.dataWrite();
 
         // Then
         assertNotNull( writes );
@@ -161,7 +189,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.write() );
 
         // When
-        ReadOperations reads = tx.acquireStatement().readOperations();
+        Read reads = tx.dataRead();
 
         // Then
         assertNotNull( reads );
@@ -174,7 +202,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         KernelTransactionImplementation tx = newTransaction( AnonymousContext.write() );
 
         // When
-        DataWriteOperations writes = tx.acquireStatement().dataWriteOperations();
+        Write writes = tx.dataWrite();
 
         // Then
         assertNotNull( writes );
@@ -200,7 +228,7 @@ public class KernelTransactionSecurityContextTest extends KernelTransactionTestB
         KernelTransactionImplementation tx = newTransaction( AUTH_DISABLED );
 
         // When
-        ReadOperations reads = tx.acquireStatement().readOperations();
+        Read reads = tx.dataRead();
 
         // Then
         assertNotNull( reads );
