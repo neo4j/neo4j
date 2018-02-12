@@ -338,7 +338,7 @@ public class KernelTransactionTerminationTest
                     mock( Pool.class ), Clocks.fakeClock(), TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL,
                             mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
-                    EmptyVersionContextSupplier.INSTANCE );
+                    EmptyVersionContextSupplier.EMPTY );
 
             this.monitor = monitor;
         }

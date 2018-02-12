@@ -42,7 +42,6 @@ import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -93,6 +92,28 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                 return super.beginCacheFlush();
             }
         };
+    }
+
+    @Test
+    public void ableToEvictAllPageInAPageCache() throws IOException
+    {
+        writeInitialDataTo( file( "a" ) );
+        RecordingPageCacheTracer tracer = new RecordingPageCacheTracer();
+        RecordingPageCursorTracer cursorTracer = new RecordingPageCursorTracer();
+        ConfigurablePageCursorTracerSupplier cursorTracerSupplier = new ConfigurablePageCursorTracerSupplier( cursorTracer );
+        try ( MuninnPageCache pageCache = createPageCache( fs, 2, 8, blockCacheFlush( tracer ), cursorTracerSupplier );
+                PagedFile pagedFile = pageCache.map( file( "a" ), 8 ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            try ( PageCursor cursor = pagedFile.io( 1, PF_SHARED_READ_LOCK ) )
+            {
+                assertTrue( cursor.next() );
+            }
+            assertEquals( 2, pageCache.evictPages( 2, 0, EvictionRunEvent.NULL ) );
+        }
     }
 
     @Test
@@ -414,8 +435,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 4 );
         }
 
-        pageCache.pages.tryEvict( pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ),
-                EvictionRunEvent.NULL );
+        assertEquals( 2, pageCache.evictPages( 2, 0, EvictionRunEvent.NULL ) );
 
         cursorContext.initRead();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
@@ -449,8 +469,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 4 );
         }
 
-        pageCache.pages.tryEvict( pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL ),
-                EvictionRunEvent.NULL );
+        assertEquals( 2, pageCache.evictPages( 2, 0, EvictionRunEvent.NULL ) );
 
         cursorContext.initRead();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )

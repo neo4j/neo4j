@@ -894,7 +894,7 @@ public class MuninnPageCache implements PageCache
         do
         {
             current = getFreelistHead();
-            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() >= pages.getPageCount() )
+            if ( current instanceof AtomicInteger && ((AtomicInteger) current).get() > pages.getPageCount() )
             {
                 current = null;
             }

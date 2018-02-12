@@ -75,7 +75,7 @@ public class StoreFactoryTest
         LogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForStoreOrConfig( config, storeDir, fsRule.get(), pageCache, logProvider );
         return new StoreFactory( storeDir, DEFAULT_NAME, config, idGeneratorFactory, pageCache, fsRule.get(),
-                recordFormats, logProvider, EmptyVersionContextSupplier.INSTANCE, openOptions );
+                recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 
     private File directory( String name )

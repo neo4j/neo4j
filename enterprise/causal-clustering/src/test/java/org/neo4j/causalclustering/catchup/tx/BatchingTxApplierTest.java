@@ -57,7 +57,7 @@ public class BatchingTxApplierTest
 
     private final BatchingTxApplier txApplier = new BatchingTxApplier(
             maxBatchSize, () -> idStore, () -> commitProcess, new Monitors(), PageCursorTracerSupplier.NULL,
-            EmptyVersionContextSupplier.INSTANCE, NullLogProvider.getInstance() );
+            EmptyVersionContextSupplier.EMPTY, NullLogProvider.getInstance() );
 
     @Before
     public void before() throws Throwable

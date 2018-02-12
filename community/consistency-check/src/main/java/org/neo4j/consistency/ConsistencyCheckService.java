@@ -151,7 +151,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fileSystem, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.INSTANCE );
+                logProvider.getLog( PageCache.class ), EmptyVersionContextSupplier.EMPTY );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         try
@@ -210,7 +210,7 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.read_only, TRUE );
 
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );

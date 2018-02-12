@@ -108,7 +108,7 @@ public class RsdrMain
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.INSTANCE );
+        return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
     private static void interact( FileSystemAbstraction fileSystem, NeoStores neoStores ) throws IOException

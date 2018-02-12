@@ -96,7 +96,7 @@ public class KernelTransactionFactory
                 NULL,
                 LockTracer.NONE,
                 PageCursorTracerSupplier.NULL,
-                storageEngine, new CanWrite(), EmptyVersionContextSupplier.INSTANCE );
+                storageEngine, new CanWrite(), EmptyVersionContextSupplier.EMPTY );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

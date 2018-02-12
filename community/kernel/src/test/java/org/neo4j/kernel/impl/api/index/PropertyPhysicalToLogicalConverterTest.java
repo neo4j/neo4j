@@ -228,7 +228,7 @@ public class PropertyPhysicalToLogicalConverterTest
         fs.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );

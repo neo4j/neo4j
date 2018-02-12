@@ -296,7 +296,7 @@ public class StorePropertyCursorTest
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             NullLogProvider logProvider = NullLogProvider.getInstance();
             neoStores = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
-                    EmptyVersionContextSupplier.INSTANCE )
+                    EmptyVersionContextSupplier.EMPTY )
                     .openAllNeoStores( true );
             propertyStore = neoStores.getPropertyStore();
         }

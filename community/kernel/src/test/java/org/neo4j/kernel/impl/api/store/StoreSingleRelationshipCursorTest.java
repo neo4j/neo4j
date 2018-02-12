@@ -114,7 +114,7 @@ public class StoreSingleRelationshipCursorTest
         return new StoreFactory(
                 testDirectory.directory(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
     private StoreSingleRelationshipCursor createRelationshipCursor()

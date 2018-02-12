@@ -210,7 +210,7 @@ public class RecordStorageEngineRule extends ExternalResource
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
                     lockService, new DefaultSchemaIndexProviderMap( indexProvider ),
                     indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
-                    idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.INSTANCE );
+                    idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

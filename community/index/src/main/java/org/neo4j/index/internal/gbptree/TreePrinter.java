@@ -76,7 +76,7 @@ public class TreePrinter<KEY, VALUE>
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
         swapper.open( fs, EMPTY );
         try ( PageCache pageCache = new MuninnPageCache( swapper, 100, (int) kibiBytes( 8 ), NULL,
-                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.INSTANCE ) )
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY ) )
         {
             printHeader( pageCache, file, out );
         }

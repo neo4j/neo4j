@@ -427,7 +427,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, File storeDir )
     {
         return new StoreFactory( storeDir, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( File storeDir, File migrationDir, RecordFormats oldFormat,
@@ -497,7 +497,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory(
                 migrationDir, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider,
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();

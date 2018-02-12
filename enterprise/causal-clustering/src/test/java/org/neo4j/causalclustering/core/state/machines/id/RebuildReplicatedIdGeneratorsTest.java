@@ -67,7 +67,7 @@ public class RebuildReplicatedIdGeneratorsTest
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), Config.defaults(),
                 getIdGenerationFactory( fileSystem ), pageCacheRule.getPageCache( fileSystem ), fileSystem,
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             NodeStore nodeStore = neoStores.getNodeStore();

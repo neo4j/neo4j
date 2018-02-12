@@ -55,7 +55,7 @@ public class ConfigurablePageCacheRule extends PageCacheRule
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fs, config, tracer, cursorTracerSupplier, logProvider.getLog( PageCache.class ),
-                EmptyVersionContextSupplier.INSTANCE )
+                EmptyVersionContextSupplier.EMPTY )
         {
             @Override
             public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )

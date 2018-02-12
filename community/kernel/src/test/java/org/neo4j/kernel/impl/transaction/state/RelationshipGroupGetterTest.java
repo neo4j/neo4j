@@ -67,7 +67,7 @@ public class RelationshipGroupGetterTest
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( dir, Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCache.getPageCache( fs.get() ), fs.get(),
-                logProvider, EmptyVersionContextSupplier.INSTANCE );
+                logProvider, EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores stores = storeFactory.openNeoStores( true, StoreType.RELATIONSHIP_GROUP ) )
         {
             RecordStore<RelationshipGroupRecord> store = spy( stores.getRelationshipGroupStore() );

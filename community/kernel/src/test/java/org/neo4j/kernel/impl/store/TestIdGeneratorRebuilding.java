@@ -125,7 +125,7 @@ public class TestIdGeneratorRebuilding
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
-                .getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                .getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 

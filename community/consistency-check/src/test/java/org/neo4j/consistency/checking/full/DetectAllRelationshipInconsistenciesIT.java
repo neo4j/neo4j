@@ -151,7 +151,7 @@ public class DetectAllRelationshipInconsistenciesIT
         FileSystemAbstraction fileSystem = fileSystemRule.get();
         return new StoreFactory( directory.directory(), getTuningConfiguration(),
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
     }
 
     private Config getTuningConfiguration()

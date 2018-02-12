@@ -84,7 +84,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             if ( fs.isDirectory( path ) )
             {
                 StoreFactory factory = new StoreFactory( path, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                        pages, fs, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                        pages, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
                 NeoStores neoStores = factory.openAllNeoStores();
                 SchemaStorage schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
@@ -273,7 +273,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
         VisitableCountsTracker( LogProvider logProvider, FileSystemAbstraction fs,
                 PageCache pages, Config config, File baseFile )
         {
-            super( logProvider, fs, pages, config, baseFile, EmptyVersionContextSupplier.INSTANCE );
+            super( logProvider, fs, pages, config, baseFile, EmptyVersionContextSupplier.EMPTY );
         }
 
         @Override

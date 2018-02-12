@@ -53,7 +53,7 @@ public class CommitProcessStateMachineCollaborationTest
         ReplicatedTransactionStateMachine stateMachine =
                 new ReplicatedTransactionStateMachine( mock( CommandIndexTracker.class ),
                         lockState( finalLockSessionId ), 16, NullLogProvider.getInstance(),
-                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.INSTANCE );
+                        PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( localCommitProcess, -1L );
 
         DirectReplicator<ReplicatedTransaction> replicator = new DirectReplicator<>( stateMachine );

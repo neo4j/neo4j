@@ -386,7 +386,7 @@ public class RandomPageCacheTestHarness implements Closeable
         PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fs, Configuration.EMPTY );
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, cachePageCount, cachePageSize, tracer,
-                cursorTracerSupplier, EmptyVersionContextSupplier.INSTANCE );
+                cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY );
         cache.setPrintExceptionsOnClose( false );
         Map<File,PagedFile> fileMap = new HashMap<>( files.length );
         for ( int i = 0; i < Math.min( files.length, initialMappedFiles ); i++ )

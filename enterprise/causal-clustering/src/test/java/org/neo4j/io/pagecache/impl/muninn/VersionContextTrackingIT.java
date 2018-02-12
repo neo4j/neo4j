@@ -34,7 +34,10 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -130,14 +133,14 @@ public class VersionContextTrackingIT
             long lastPageId = pageFile.getLastPageId();
             for ( int i = 0; i <= lastPageId; i++ )
             {
-//                try ( CursorPageAccessor pageCursor = new CursorPageAccessor(
-//                        (MuninnPageCursor) pageFile.io( i, PagedFile.PF_SHARED_READ_LOCK ) ) )
-//                {
-//                    if ( pageCursor.next() )
-//                    {
-//                        maxTransactionId = Math.max( maxTransactionId, pageCursor.lastTxModifierId() );
-//                    }
-//                }
+                try ( CursorPageAccessor pageCursor = new CursorPageAccessor(
+                        (MuninnPageCursor) pageFile.io( i, PagedFile.PF_SHARED_READ_LOCK ) ) )
+                {
+                    if ( pageCursor.next() )
+                    {
+                        maxTransactionId = Math.max( maxTransactionId, pageCursor.lastTxModifierId() );
+                    }
+                }
             }
         }
         return maxTransactionId;
@@ -155,68 +158,68 @@ public class VersionContextTrackingIT
         }
     }
 
-//    private class CursorPageAccessor extends MuninnPageCursor
-//    {
-//
-//        private MuninnPageCursor delegate;
-//
-//        CursorPageAccessor( MuninnPageCursor delegate )
-//        {
-//            super( -1, PageCursorTracer.NULL, EmptyVersionContext.INSTANCE );
-//            this.delegate = delegate;
-//        }
-//
-//        long lastTxModifierId()
-//        {
-//            return delegate.page.getLastModifiedTxId();
-//        }
-//
-//        @Override
-//        protected void unpinCurrentPage()
-//        {
-//            delegate.unpinCurrentPage();
-//        }
-//
-//        @Override
-//        protected void convertPageFaultLock( MuninnPage page )
-//        {
-//            delegate.convertPageFaultLock( page );
-//        }
-//
-//        @Override
-//        protected void pinCursorToPage( MuninnPage page, long filePageId, PageSwapper swapper )
-//        {
-//            delegate.pinCursorToPage( page, filePageId, swapper );
-//        }
-//
-//        @Override
-//        protected boolean tryLockPage( MuninnPage page )
-//        {
-//            return delegate.tryLockPage( page );
-//        }
-//
-//        @Override
-//        protected void unlockPage( MuninnPage page )
-//        {
-//            delegate.unlockPage( page );
-//        }
-//
-//        @Override
-//        protected void releaseCursor()
-//        {
-//            delegate.releaseCursor();
-//        }
-//
-//        @Override
-//        public boolean next() throws IOException
-//        {
-//            return delegate.next();
-//        }
-//
-//        @Override
-//        public boolean shouldRetry() throws IOException
-//        {
-//            return delegate.shouldRetry();
-//        }
-//    }
+    private static class CursorPageAccessor extends MuninnPageCursor
+    {
+
+        private MuninnPageCursor delegate;
+
+        CursorPageAccessor( MuninnPageCursor delegate )
+        {
+            super( -1, PageCursorTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+            this.delegate = delegate;
+        }
+
+        long lastTxModifierId()
+        {
+            return delegate.pagedFile.getLastModifiedTxId( delegate.pinnedPageRef );
+        }
+
+        @Override
+        protected void unpinCurrentPage()
+        {
+            delegate.unpinCurrentPage();
+        }
+
+        @Override
+        protected void convertPageFaultLock( long pageRef )
+        {
+            delegate.convertPageFaultLock( pageRef );
+        }
+
+        @Override
+        protected void pinCursorToPage( long pageRef, long filePageId, PageSwapper swapper )
+        {
+            delegate.pinCursorToPage( pageRef, filePageId, swapper );
+        }
+
+        @Override
+        protected boolean tryLockPage( long pageRef )
+        {
+            return delegate.tryLockPage( pageRef );
+        }
+
+        @Override
+        protected void unlockPage( long pageRef )
+        {
+            delegate.unlockPage( pageRef );
+        }
+
+        @Override
+        protected void releaseCursor()
+        {
+            delegate.releaseCursor();
+        }
+
+        @Override
+        public boolean next() throws IOException
+        {
+            return delegate.next();
+        }
+
+        @Override
+        public boolean shouldRetry() throws IOException
+        {
+            return delegate.shouldRetry();
+        }
+    }
 }

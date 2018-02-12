@@ -135,7 +135,7 @@ public class ManyPropertyKeysIT
         StoreFactory storeFactory = new StoreFactory(
                 storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ), pageCache,
                 fileSystemRule.get(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )

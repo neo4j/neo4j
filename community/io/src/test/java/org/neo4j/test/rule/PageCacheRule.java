@@ -173,7 +173,7 @@ public class PageCacheRule extends ExternalResource
                 selectConfig( baseConfig.pageSize, overriddenConfig.pageSize, null ),
                 selectConfig( baseConfig.tracer, overriddenConfig.tracer, PageCacheTracer.NULL ),
                 selectConfig( baseConfig.pageCursorTracerSupplier, overriddenConfig.pageCursorTracerSupplier,
-                        DefaultPageCursorTracerSupplier.INSTANCE ), EmptyVersionContextSupplier.INSTANCE);
+                        DefaultPageCursorTracerSupplier.INSTANCE ), EmptyVersionContextSupplier.EMPTY );
         pageCachePostConstruct( overriddenConfig );
         return pageCache;
     }

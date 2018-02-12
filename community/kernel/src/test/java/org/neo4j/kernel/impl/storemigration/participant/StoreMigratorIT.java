@@ -139,7 +139,7 @@ public class StoreMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider(), EmptyVersionContextSupplier.INSTANCE );
+                logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -179,7 +179,7 @@ public class StoreMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider(), EmptyVersionContextSupplier.INSTANCE );
+                logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
         logProvider.assertNoLogCallContaining( "ERROR" );
     }
@@ -219,7 +219,7 @@ public class StoreMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( storeDirectory, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                        logService.getInternalLogProvider(), EmptyVersionContextSupplier.INSTANCE );
+                        logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
         storeFactory.openAllNeoStores().close();
     }
 

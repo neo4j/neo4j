@@ -27,7 +27,7 @@ import java.util.function.LongSupplier;
  */
 public class EmptyVersionContextSupplier implements VersionContextSupplier
 {
-    public static final VersionContextSupplier INSTANCE = new EmptyVersionContextSupplier();
+    public static final VersionContextSupplier EMPTY = new EmptyVersionContextSupplier();
 
     private EmptyVersionContextSupplier()
     {
@@ -41,6 +41,6 @@ public class EmptyVersionContextSupplier implements VersionContextSupplier
     @Override
     public VersionContext getVersionContext()
     {
-        return EmptyVersionContext.INSTANCE;
+        return EmptyVersionContext.EMPTY;
     }
 }

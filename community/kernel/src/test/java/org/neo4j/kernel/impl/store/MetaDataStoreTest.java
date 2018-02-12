@@ -116,7 +116,7 @@ public class MetaDataStoreTest
     {
         LogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( STORE_DIR, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCacheWithFakeOverflow, fs, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                pageCacheWithFakeOverflow, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 

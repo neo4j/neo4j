@@ -42,7 +42,7 @@ public class TransactionVersionContextSupplier implements VersionContextSupplier
     @Override
     public VersionContext getVersionContext()
     {
-        return cursorContext == null ? EmptyVersionContext.INSTANCE : cursorContext.get();
+        return cursorContext == null ? EmptyVersionContext.EMPTY : cursorContext.get();
     }
 
 }

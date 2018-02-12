@@ -35,7 +35,7 @@ public class ReadOnlyCountsTracker extends CountsTracker
     public ReadOnlyCountsTracker( LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache,
                                   Config config, File baseFile )
     {
-        super( logProvider, fileSystem, pageCache, config, baseFile, EmptyVersionContextSupplier.INSTANCE );
+        super( logProvider, fileSystem, pageCache, config, baseFile, EmptyVersionContextSupplier.EMPTY );
     }
 
     @Override

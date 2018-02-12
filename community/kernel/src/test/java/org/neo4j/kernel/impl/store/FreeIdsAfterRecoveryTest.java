@@ -56,7 +56,7 @@ public class FreeIdsAfterRecoveryTest
         StoreFactory storeFactory = new StoreFactory(
                 directory.directory(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {

@@ -71,7 +71,7 @@ public class TestGrowingFileMemoryMapping
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                fileSystemAbstraction, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         NodeStore nodeStore = neoStores.getNodeStore();

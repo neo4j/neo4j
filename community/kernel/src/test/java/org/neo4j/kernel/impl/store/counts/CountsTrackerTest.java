@@ -272,7 +272,7 @@ public class CountsTrackerTest
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    Config.defaults(), resourceManager.testPath(), EmptyVersionContextSupplier.INSTANCE )
+                    Config.defaults(), resourceManager.testPath(), EmptyVersionContextSupplier.EMPTY )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -413,7 +413,7 @@ public class CountsTrackerTest
         // GIVEN
         FakeClock clock = Clocks.fakeClock();
         CallTrackingClock callTrackingClock = new CallTrackingClock( clock );
-        CountsTracker tracker = resourceManager.managed( newTracker( callTrackingClock, EmptyVersionContextSupplier.INSTANCE ) );
+        CountsTracker tracker = resourceManager.managed( newTracker( callTrackingClock, EmptyVersionContextSupplier.EMPTY ) );
         int labelId = 1;
         try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
         {
@@ -463,7 +463,7 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return newTracker( Clocks.nanoClock(), EmptyVersionContextSupplier.INSTANCE );
+        return newTracker( Clocks.nanoClock(), EmptyVersionContextSupplier.EMPTY );
     }
 
     private CountsTracker newTracker( VersionContextSupplier versionContextSupplier )

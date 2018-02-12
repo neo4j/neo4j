@@ -141,7 +141,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         RecordFormats recordFormats = selectForVersion( versionToMigrateFrom );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         return new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
     private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException

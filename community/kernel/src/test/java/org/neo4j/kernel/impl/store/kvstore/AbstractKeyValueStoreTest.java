@@ -94,7 +94,7 @@ public class AbstractKeyValueStoreTest
     public void retryLookupOnConcurrentStoreStateChange() throws IOException
     {
         Store testStore = resourceManager.managed( createTestStore( TimeUnit.DAYS.toMillis( 2 ) ) );
-        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ), EmptyVersionContextSupplier.INSTANCE );
+        ConcurrentMapState<String> newState = new ConcurrentMapState<>( testStore.state, mock( File.class ), EmptyVersionContextSupplier.EMPTY );
         testStore.put( "test", "value" );
 
         CountingErroneousReader countingErroneousReader = new CountingErroneousReader( testStore, newState );
@@ -597,7 +597,7 @@ public class AbstractKeyValueStoreTest
         {
             super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
                     new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ),
-                    EmptyVersionContextSupplier.INSTANCE, 16, 16, headerFields );
+                    EmptyVersionContextSupplier.EMPTY, 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {

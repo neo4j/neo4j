@@ -79,7 +79,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionObligationFulfiller fulfiller = mock( TransactionObligationFulfiller.class );
         when( dependencies.obligationFulfiller() ).thenReturn( fulfiller );
         when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
-        when( dependencies.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.INSTANCE );
+        when( dependencies.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
         KernelTransactions kernelTransactions = mock( KernelTransactions.class );
         when( dependencies.kernelTransactions() ).thenReturn( kernelTransactions );
         TransactionCommitProcess commitProcess = mock( TransactionCommitProcess.class );
@@ -126,7 +126,7 @@ public class TransactionCommittingResponseUnpackerTest
         TransactionCountingTransactionCommitProcess commitProcess = new TransactionCountingTransactionCommitProcess();
         when( dependencies.commitProcess() ).thenReturn( commitProcess );
         when( dependencies.logService() ).thenReturn( NullLogService.getInstance() );
-        when( dependencies.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.INSTANCE );
+        when( dependencies.versionContextSupplier() ).thenReturn( EmptyVersionContextSupplier.EMPTY );
         KernelTransactions kernelTransactions = mock( KernelTransactions.class );
         when( dependencies.kernelTransactions() ).thenReturn( kernelTransactions );
         TransactionCommittingResponseUnpacker unpacker =

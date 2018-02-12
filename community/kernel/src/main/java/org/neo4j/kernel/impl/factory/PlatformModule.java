@@ -214,7 +214,7 @@ public class PlatformModule
     protected VersionContextSupplier createCursorContextSupplier( Config config )
     {
         return config.get( GraphDatabaseSettings.snapshot_query ) ? new TransactionVersionContextSupplier()
-                                                                  : EmptyVersionContextSupplier.INSTANCE;
+                                                                  : EmptyVersionContextSupplier.EMPTY;
     }
 
     protected AvailabilityGuard createAvailabilityGuard()

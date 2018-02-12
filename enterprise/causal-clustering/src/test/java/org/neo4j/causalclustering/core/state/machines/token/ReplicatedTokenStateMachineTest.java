@@ -58,7 +58,7 @@ public class ReplicatedTokenStateMachineTest
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
-                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
         // when
@@ -75,7 +75,7 @@ public class ReplicatedTokenStateMachineTest
         // given
         TokenRegistry<Token> registry = new TokenRegistry<>( "Label" );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>( registry,
-                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                new Token.Factory(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         stateMachine.installCommitProcess( mock( TransactionCommitProcess.class ), -1 );
 
@@ -101,7 +101,7 @@ public class ReplicatedTokenStateMachineTest
         StubTransactionCommitProcess commitProcess = new StubTransactionCommitProcess( null, null );
         ReplicatedTokenStateMachine<Token> stateMachine = new ReplicatedTokenStateMachine<>(
                 new TokenRegistry<>( "Token" ), new Token.Factory(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         stateMachine.installCommitProcess( commitProcess, -1 );
 
         // when

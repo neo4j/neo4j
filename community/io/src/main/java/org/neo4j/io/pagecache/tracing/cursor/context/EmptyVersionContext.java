@@ -25,7 +25,7 @@ package org.neo4j.io.pagecache.tracing.cursor.context;
  */
 public class EmptyVersionContext implements VersionContext
 {
-    public static final VersionContext INSTANCE = new EmptyVersionContext();
+    public static final VersionContext EMPTY = new EmptyVersionContext();
 
     private EmptyVersionContext()
     {

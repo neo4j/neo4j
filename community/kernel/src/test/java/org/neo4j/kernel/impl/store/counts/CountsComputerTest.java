@@ -317,7 +317,7 @@ public class CountsComputerTest
     private CountsTracker createCountsTracker()
     {
         return new CountsTracker( LOG_PROVIDER, fs, pageCache,
-                CONFIG, new File( dir, COUNTS_STORE_BASE ), EmptyVersionContextSupplier.INSTANCE );
+                CONFIG, new File( dir, COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException
@@ -325,7 +325,7 @@ public class CountsComputerTest
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.INSTANCE );
+        StoreFactory storeFactory = new StoreFactory( dir, CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

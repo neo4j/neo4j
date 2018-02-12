@@ -226,7 +226,7 @@ public class ConcurrentMapStateTest
 
     private ConcurrentMapState<String> createMapState()
     {
-        return createMapState( EmptyVersionContextSupplier.INSTANCE );
+        return createMapState( EmptyVersionContextSupplier.EMPTY );
     }
 
     private ConcurrentMapState<String> createMapState( VersionContextSupplier versionContextSupplier )

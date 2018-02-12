@@ -443,7 +443,7 @@ public class RecoveryIT
     private void assertSameStoreContents( EphemeralFileSystemAbstraction fs1, EphemeralFileSystemAbstraction fs2, File storeDir )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.INSTANCE;
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try (
                 PageCache pageCache1 = new ConfiguringPageCacheFactory( fs1, defaults(), PageCacheTracer.NULL,
                         PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )

@@ -563,7 +563,7 @@ public class KernelTransactionsTest
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard,
                 tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite(),
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -575,7 +575,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite(), EmptyVersionContextSupplier.INSTANCE );
+                new CanWrite(), EmptyVersionContextSupplier.EMPTY );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )

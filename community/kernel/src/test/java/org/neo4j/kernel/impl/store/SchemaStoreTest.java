@@ -71,7 +71,7 @@ public class SchemaStoreTest
         config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
-                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getSchemaStore();
     }

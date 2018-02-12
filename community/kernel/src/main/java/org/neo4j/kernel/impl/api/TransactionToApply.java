@@ -81,7 +81,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
      */
     public TransactionToApply( TransactionRepresentation transactionRepresentation )
     {
-        this( transactionRepresentation, EmptyVersionContext.INSTANCE );
+        this( transactionRepresentation, EmptyVersionContext.EMPTY );
     }
 
     /**
@@ -94,7 +94,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
 
     public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId )
     {
-        this( transactionRepresentation, transactionId, EmptyVersionContext.INSTANCE );
+        this( transactionRepresentation, transactionId, EmptyVersionContext.EMPTY );
     }
 
     public TransactionToApply( TransactionRepresentation transactionRepresentation, long transactionId,

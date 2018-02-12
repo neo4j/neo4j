@@ -48,13 +48,13 @@ public final class ConfigurableStandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem )
     {
         return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE,
-                Config.defaults(), EmptyVersionContextSupplier.INSTANCE );
+                Config.defaults(), EmptyVersionContextSupplier.EMPTY );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config )
     {
         return createPageCache( fileSystem, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE, config,
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
     }
 
     /**

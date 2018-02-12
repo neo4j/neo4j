@@ -167,7 +167,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             Config config = Config.defaults();
             DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
             StoreFactory storeFactory = new StoreFactory(
-                    directory, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                    directory, config, idGeneratorFactory, pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
             neoStore = storeFactory.openAllNeoStores();
             StoreAccess nativeStores;
             if ( keepStatistics )

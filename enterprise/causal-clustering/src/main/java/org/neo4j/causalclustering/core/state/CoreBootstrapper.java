@@ -110,7 +110,7 @@ public class CoreBootstrapper
     public CoreSnapshot bootstrap( Set<MemberId> members ) throws IOException
     {
         StoreFactory factory = new StoreFactory( storeDir, config,
-                new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
 
         NeoStores neoStores = factory.openAllNeoStores( true );
         neoStores.close();

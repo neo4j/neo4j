@@ -114,7 +114,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
         return createPageCache( swapperFactory, maxPages, pageSize, tracer, cursorTracerSupplier,
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
     }
 
     protected final T createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
@@ -128,7 +128,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
             PageCursorTracerSupplier cursorTracerSupplier )
     {
         return createPageCache( fs, maxPages, pageSize, tracer, cursorTracerSupplier,
-                EmptyVersionContextSupplier.INSTANCE );
+                EmptyVersionContextSupplier.EMPTY );
     }
 
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheTracer tracer,

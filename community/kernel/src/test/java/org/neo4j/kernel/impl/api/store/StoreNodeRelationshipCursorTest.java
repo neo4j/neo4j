@@ -104,13 +104,13 @@ public class StoreNodeRelationshipCursorTest
         fs = new DefaultFileSystemAbstraction();
         Config config = Config.defaults( pagecache_memory, "8m" );
         pageCache = new ConfiguringPageCacheFactory( fs,
-                config, NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE )
+                config, NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .getOrCreatePageCache();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider,
-                        EmptyVersionContextSupplier.INSTANCE );
+                        EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

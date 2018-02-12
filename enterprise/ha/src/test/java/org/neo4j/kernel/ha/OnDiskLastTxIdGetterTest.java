@@ -60,7 +60,7 @@ public class OnDiskLastTxIdGetterTest
         final StoreFactory storeFactory = new StoreFactory(
                 new File( "store" ), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         final NeoStores neoStores = storeFactory.openAllNeoStores( true );
         neoStores.close();
 

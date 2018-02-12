@@ -67,7 +67,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )
@@ -89,7 +89,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.INSTANCE );
+                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
 
         // Then
         try ( PageCache pageCache = pageCacheFactory.getOrCreatePageCache() )
@@ -112,7 +112,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         ConfiguringPageCacheFactory cacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                        PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.INSTANCE );
+                        PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
         try ( PageCache pageCache = cacheFactory.getOrCreatePageCache() )
         {
             // empty block
@@ -134,7 +134,7 @@ public class ConfiguringPageCacheFactoryTest
 
         // When
         try ( PageCache pageCache = new ConfiguringPageCacheFactory( fsRule.get(), config, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE )
+                PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .getOrCreatePageCache() )
         {
             //empty
@@ -153,7 +153,7 @@ public class ConfiguringPageCacheFactoryTest
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
                 fsRule.get(), config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
-                NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY );
 
         // Then
         try ( PageCache cache = factory.getOrCreatePageCache() )

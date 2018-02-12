@@ -159,7 +159,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
         IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
         StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, config, idGeneratorFactory, pageCache,
-                fileSystem, recordFormats, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                fileSystem, recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
         try ( NeoStores neoStores = storeFactory
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )
@@ -175,7 +175,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                         highRelationshipTypeId, NumberArrayFactory.auto( pageCache, migrationDir, true ),
                         progressMonitor );
                 life.add( new CountsTracker( logProvider, fileSystem, pageCache, config,
-                        storeFileBase, EmptyVersionContextSupplier.INSTANCE ).setInitializer( initializer ) );
+                        storeFileBase, EmptyVersionContextSupplier.EMPTY ).setInitializer( initializer ) );
             }
         }
     }

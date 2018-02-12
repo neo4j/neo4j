@@ -88,7 +88,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
                 config().withInconsistentReads( nextReadIsInconsistent ) );
         File storeDir = new File( "stores" );
         StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), new DefaultIdGeneratorFactory( fs ),
-                pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = factory.openAllNeoStores( true );
         S store = initialiseStore( neoStores );
 

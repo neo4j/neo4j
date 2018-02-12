@@ -81,7 +81,7 @@ public class NeoStoresRule extends ExternalResource
         File storeDir = testDirectory.makeGraphDbDir();
         Config configuration = configOf( config );
         StoreFactory storeFactory = new StoreFactory( storeDir, configuration, idGeneratorFactory.apply( fs ),
-                pageCache, fs, format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE );
+                pageCache, fs, format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
                 : storeFactory.openNeoStores( true, stores );
@@ -106,7 +106,7 @@ public class NeoStoresRule extends ExternalResource
     {
         Log log = NullLog.getInstance();
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fs, config, NULL,
-                PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.INSTANCE );
+                PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY );
         return pageCacheFactory.getOrCreatePageCache();
     }
 

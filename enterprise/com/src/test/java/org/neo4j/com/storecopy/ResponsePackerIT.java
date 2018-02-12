@@ -113,7 +113,7 @@ public class ResponsePackerIT
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
-                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, EmptyVersionContextSupplier.INSTANCE );
+                new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
         return storeFactory.openAllNeoStores( true );
     }
 }

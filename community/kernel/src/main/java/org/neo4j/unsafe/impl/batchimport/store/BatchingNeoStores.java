@@ -167,7 +167,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
-                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.INSTANCE );
+                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.EMPTY );
 
         return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
                 initialIds, false, tracer::bytesWritten );
@@ -207,7 +207,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         return new StoreFactory( storeDir, name, neo4jConfig,
                 new BatchingIdGeneratorFactory( fileSystem ), pageCache, fileSystem, recordFormats, logProvider,
-                EmptyVersionContextSupplier.INSTANCE, openOptions );
+                EmptyVersionContextSupplier.EMPTY, openOptions );
     }
 
     /**

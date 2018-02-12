@@ -66,11 +66,11 @@ public class DirectRecordStoreMigrator
 
         try (
                 NeoStores fromStores = new StoreFactory( fromStoreDir, config, new DefaultIdGeneratorFactory( fs ),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.INSTANCE )
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toStoreDir, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
                     new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat, NullLogProvider.getInstance(),
-                        EmptyVersionContextSupplier.INSTANCE )
+                        EmptyVersionContextSupplier.EMPTY )
                         .openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )

@@ -76,7 +76,7 @@ public class StoreMigratorTest
 
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, NULL,
-                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.INSTANCE )
+                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), EmptyVersionContextSupplier.EMPTY )
                      .getOrCreatePageCache() )
         {
             // For test code sanity

@@ -389,7 +389,7 @@ public class CountsRotationTest
     private CountsTracker createCountsTracker( PageCache pageCache, Config config )
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache, config,
-                new File( dir.getPath(), COUNTS_STORE_BASE ), EmptyVersionContextSupplier.INSTANCE );
+                new File( dir.getPath(), COUNTS_STORE_BASE ), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void checkPoint( GraphDatabaseAPI db ) throws IOException

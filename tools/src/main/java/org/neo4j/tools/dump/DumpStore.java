@@ -73,7 +73,7 @@ public class DumpStore<RECORD extends AbstractBaseRecord, STORE extends RecordSt
         {
             final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
             Function<File,StoreFactory> createStoreFactory = file -> new StoreFactory( file.getParentFile(),
-                    Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider(), EmptyVersionContextSupplier.INSTANCE );
+                    Config.defaults(), idGeneratorFactory, pageCache, fs, logProvider(), EmptyVersionContextSupplier.EMPTY );
 
             for ( String arg : args )
             {
