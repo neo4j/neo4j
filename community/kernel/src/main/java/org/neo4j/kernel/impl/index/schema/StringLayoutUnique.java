@@ -27,9 +27,9 @@ import org.neo4j.index.internal.gbptree.Layout;
 class StringLayoutUnique extends StringLayout
 {
     private static final String IDENTIFIER_NAME = "USI";
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     @Override
     public long identifier()

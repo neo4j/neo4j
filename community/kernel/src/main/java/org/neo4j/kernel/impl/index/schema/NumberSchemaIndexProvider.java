@@ -43,7 +43,7 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
-    static final IndexCapability CAPABILITY = new NativeIndexCapability();
+    static final IndexCapability CAPABILITY = new NumberIndexCapability();
 
     public NumberSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
@@ -78,7 +78,14 @@ public class NumberSchemaIndexProvider extends NativeSchemaIndexProvider<NumberS
         return CAPABILITY;
     }
 
-    private static class NativeIndexCapability implements IndexCapability
+    /**
+     * For single property number queries capabilities are
+     * Order: ASCENDING
+     * Value: YES (can provide exact value)
+     *
+     * For other queries there is no support
+     */
+    private static class NumberIndexCapability implements IndexCapability
     {
         private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
         private static final IndexOrder[] EMPTY_ORDER = new IndexOrder[0];

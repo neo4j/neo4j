@@ -42,10 +42,10 @@ import org.neo4j.values.storable.ValueGroup;
 public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringSchemaKey,NativeSchemaValue>
 {
     public static final String KEY = "string";
-    public static final Descriptor STRING_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     static final IndexCapability CAPABILITY = new StringIndexCapability();
+    private static final Descriptor STRING_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
 
-    public StringSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+    StringSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean readOnly )
     {
@@ -78,6 +78,13 @@ public class StringSchemaIndexProvider extends NativeSchemaIndexProvider<StringS
         return CAPABILITY;
     }
 
+    /**
+     * For single property string queries capabilities are
+     * Order: ASCENDING
+     * Value: YES (can provide exact value)
+     *
+     * For other queries there is no support
+     */
     private static class StringIndexCapability implements IndexCapability
     {
         private static final IndexOrder[] SUPPORTED_ORDER = {IndexOrder.ASCENDING};
