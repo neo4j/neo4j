@@ -113,7 +113,7 @@ class SpatialFusionIndexUpdater implements IndexUpdater
             return updater;
         }
         SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        IndexUpdater indexUpdater = index.updateWithCreate( descriptor, samplingConfig, populating );
+        IndexUpdater indexUpdater = index.updaterWithCreate( descriptor, samplingConfig, populating );
         return remember( crs, indexUpdater );
     }
 

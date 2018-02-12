@@ -70,6 +70,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     public void drop() throws IOException
     {
         forAll( index -> ((SpatialKnownIndex) index).drop(), indexMap.values().toArray() );
+        indexMap.clear();
     }
 
     @Override
@@ -79,13 +80,13 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force() throws IOException
+    public void force()
     {
         forAll( entry -> ((SpatialKnownIndex) entry).force(), indexMap.values().toArray() );
     }
 
     @Override
-    public void refresh() throws IOException
+    public void refresh()
     {
         // not required in this implementation
     }
@@ -132,7 +133,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
             }
 
             @Override
-            public void close() throws Exception
+            public void close()
             {
                 forAll( entries -> ((BoundedIterable) entries).close(), allEntriesReader.toArray() );
             }

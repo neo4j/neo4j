@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -112,7 +111,7 @@ public class SpatialKnownIndex
                 new SchemaIndexProvider.Descriptor( Integer.toString( crs.getTable().getTableId() ), Integer.toString( crs.getCode() ) );
         IndexDirectoryStructure indexDir =
                 IndexDirectoryStructure.directoriesBySubProvider( directoryStructure ).forProvider( crsDescriptor );
-        indexFile = new File( indexDir.directoryForIndex( indexId ), indexFileName( indexId ) );
+        indexFile = new File( indexDir.directoryForIndex( indexId ), "index-" + indexId );
         curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
         state = State.NONE;
     }
@@ -125,7 +124,7 @@ public class SpatialKnownIndex
         }
     }
 
-    public void createIfNeeded () throws IOException
+    public void createIfNeeded() throws IOException
     {
         if ( state == State.INIT )
         {
@@ -147,7 +146,7 @@ public class SpatialKnownIndex
         }
     }
 
-    public IndexUpdater updateWithCreate(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating ) throws IOException
+    public IndexUpdater updaterWithCreate( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, boolean populating ) throws IOException
     {
         if ( populating )
         {
@@ -173,25 +172,49 @@ public class SpatialKnownIndex
         }
     }
 
-    public synchronized void drop() throws IOException
-    {
-        try
-        {
-            closeWriter();
-            schemaIndex.closeTree();
-            schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
-        }
-        finally
-        {
-            dropped = true;
-            state = State.NONE; // ???
-        }
-    }
+    // ONLINE
 
     public void close() throws IOException
     {
         schemaIndex.closeTree();
     }
+
+    public IndexUpdater newUpdater()
+    {
+        schemaIndex.assertOpen();
+        try
+        {
+            return singleUpdater.initialize( schemaIndex.tree.writer(), true );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public BoundedIterable<Long> newAllEntriesReader()
+    {
+        return new NativeAllEntriesReader<>( schemaIndex.tree, layout );
+    }
+
+    public IndexReader newReader( IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    {
+        schemaIndex.assertOpen();
+        return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor );
+    }
+
+    public ResourceIterator<File> snapshotFiles()
+    {
+        return asResourceIterator( iterator( indexFile ) );
+    }
+
+    public void force() throws IOException
+    {
+        // TODO add IOLimiter arg
+        schemaIndex.tree.checkpoint( IOLimiter.unlimited() );
+    }
+
+    // POPULATING
 
     public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
     {
@@ -224,14 +247,9 @@ public class SpatialKnownIndex
         }
     }
 
-    public void add( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( Collection<IndexEntryUpdate<?>> updates ) throws IOException
     {
         applyWithWorkSync( updates );
-    }
-
-    public void markAsFailed( String failure )
-    {
-        failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
     }
 
     public void includeSample( IndexEntryUpdate<?> update )
@@ -280,7 +298,6 @@ public class SpatialKnownIndex
                 }
                 catch ( IOException e )
                 {
-                    System.out.println( "GAAAAAH" );
                     throw new UncheckedIOException( e );
                 }
             }
@@ -291,7 +308,7 @@ public class SpatialKnownIndex
         }
     }
 
-    public IndexUpdater newPopulatingUpdater() throws IOException
+    public IndexUpdater newPopulatingUpdater()
     {
         return new IndexUpdater()
         {
@@ -299,14 +316,14 @@ public class SpatialKnownIndex
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
-            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
+            public void process( IndexEntryUpdate<?> update )
             {
                 assertOpen();
                 updates.add( update );
             }
 
             @Override
-            public void close() throws IOException, IndexEntryConflictException
+            public void close() throws IOException
             {
                 applyWithWorkSync( updates );
                 closed = true;
@@ -322,39 +339,27 @@ public class SpatialKnownIndex
         };
     }
 
-    public IndexUpdater newUpdater()
+    // GENERAL
+
+    public synchronized void drop() throws IOException
     {
-        schemaIndex.assertOpen();
         try
         {
-            return singleUpdater.initialize( schemaIndex.tree.writer(), true );
+            closeWriter();
+            schemaIndex.closeTree();
+            schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
         }
-        catch ( IOException e )
+        finally
         {
-            throw new UncheckedIOException( e );
+            dropped = true;
+            state = State.NONE;
         }
     }
 
-    public ResourceIterator<File> snapshotFiles() throws IOException
+    public void markAsFailed( String failure )
     {
-        return asResourceIterator( iterator( indexFile ) );
-    }
-
-    public void force() throws IOException
-    {
-        // TODO add IOLimiter arg
-        schemaIndex.tree.checkpoint( IOLimiter.unlimited() );
-    }
-
-    public BoundedIterable<Long> newAllEntriesReader()
-    {
-        return new NativeAllEntriesReader<>( schemaIndex.tree, layout );
-    }
-
-    public IndexReader newReader( IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
-    {
-        schemaIndex.assertOpen();
-        return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor );
+        failureBytes = failure.getBytes( StandardCharsets.UTF_8 );
+        state = State.FAILED;
     }
 
     public boolean indexExists()
@@ -389,8 +394,7 @@ public class SpatialKnownIndex
     private synchronized void create() throws IOException
     {
         assert state == State.INIT;
-        // extra check here???
-        schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile ); /// TODO <- warning
+        schemaIndex.gbpTreeFileUtil.deleteFileIfPresent( indexFile );
         schemaIndex.instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
         instantiateWriter();
         workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, new ConflictDetectingValueMerger<>() ) );
@@ -404,7 +408,7 @@ public class SpatialKnownIndex
         treeKey = layout.newKey();
         treeValue = layout.newValue();
         schemaIndex = new NativeSchemaIndex<>( pageCache, fs, indexFile, layout, monitor, descriptor, indexId );
-        if ( uniqueSampler( descriptor ) )
+        if ( isUnique( descriptor ) )
         {
             uniqueSampler = new UniqueIndexSampler();
         }
@@ -484,6 +488,43 @@ public class SpatialKnownIndex
         }
     }
 
+    private SpatialLayout layout( IndexDescriptor descriptor )
+    {
+        SpatialLayout layout;
+        if ( isUnique( descriptor ) )
+        {
+            layout = new SpatialLayoutUnique( crs, curve );
+        }
+        else
+        {
+            layout = new SpatialLayoutNonUnique( crs, curve );
+        }
+        return layout;
+    }
+
+    private boolean isUnique( IndexDescriptor descriptor )
+    {
+        switch ( descriptor.type() )
+        {
+        case GENERAL:
+            return false;
+        case UNIQUE:
+            return true;
+        default:
+            throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
+        }
+    }
+
+    private enum State
+    {
+        NONE,
+        INIT,
+        POPULATING,
+        POPULATED,
+        ONLINE,
+        FAILED
+    }
+
     public interface Factory
     {
         SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value );
@@ -507,47 +548,5 @@ public class SpatialKnownIndex
         }
         //TODO: support 3D
         return curveEnvelope;
-    }
-
-    private static String indexFileName( long indexId )
-    {
-        return "index-" + indexId;
-    }
-
-    private SpatialLayout layout( IndexDescriptor descriptor )
-    {
-        SpatialLayout layout;
-        if ( uniqueSampler( descriptor ) )
-        {
-            layout = new SpatialLayoutUnique( crs, curve );
-        }
-        else
-        {
-            layout = new SpatialLayoutNonUnique( crs, curve );
-        }
-        return layout;
-    }
-
-    private boolean uniqueSampler( IndexDescriptor descriptor )
-    {
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            return false;
-        case UNIQUE:
-            return true;
-        default:
-            throw new UnsupportedOperationException( "Unexpected index type " + descriptor.type() );
-        }
-    }
-
-    private enum State
-    {
-        NONE,
-        INIT,
-        POPULATING,
-        POPULATED,
-        ONLINE,
-        FAILED
     }
 }

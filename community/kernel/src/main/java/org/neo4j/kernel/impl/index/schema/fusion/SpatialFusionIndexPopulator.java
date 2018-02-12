@@ -108,7 +108,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
+    public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor )
     {
         return SpatialFusionIndexUpdater.updaterForPopulator( indexMap, indexId, indexFactory, descriptor, samplingConfig );
     }
@@ -120,7 +120,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void markAsFailed( String failure ) throws IOException
+    public void markAsFailed( String failure )
     {
         forAll( entry -> ((SpatialKnownIndex) entry).markAsFailed( failure ), indexMap.values().toArray() );
     }

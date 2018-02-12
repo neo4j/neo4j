@@ -251,12 +251,13 @@ public class IndexQueryTest
     // GEOMETRY RANGE
 
     private PointValue gps1 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -56.7 );
-    private PointValue gps2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -11.6, -55.7 );
+    private PointValue gps2 = Values.pointValue( CoordinateReferenceSystem.WGS84, -12.6, -55.7 );
     private PointValue gps3 = Values.pointValue( CoordinateReferenceSystem.WGS84, -11.0, -55 );
     private PointValue gps4 = Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 );
-    private PointValue gps5 = Values.pointValue( CoordinateReferenceSystem.WGS84, 12.6, 56.7 );
+    private PointValue gps5 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 56.7 );
     private PointValue gps6 = Values.pointValue( CoordinateReferenceSystem.WGS84, 14.6, 58.7 );
     private PointValue gps7 = Values.pointValue( CoordinateReferenceSystem.WGS84, 15.6, 59.7 );
+    private PointValue car1 = Values.pointValue( CoordinateReferenceSystem.Cartesian, 0, 0 );
 
     //TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
 
@@ -278,6 +279,7 @@ public class IndexQueryTest
         assertTrue( test( p, gps5 ) );
         assertFalse( test( p, gps6 ) );
         assertFalse( test( p, gps7 ) );
+        assertFalse( test( p, car1 ) );
     }
 
     @Test
@@ -289,6 +291,7 @@ public class IndexQueryTest
         assertTrue( test( p, gps3 ) );
         assertTrue( test( p, gps5 ) );
         assertFalse( test( p, gps6 ) );
+        assertFalse( test( p, car1 ) );
     }
 
     @Test
@@ -300,6 +303,7 @@ public class IndexQueryTest
         assertTrue( test( p, gps2 ) );
         assertTrue( test( p, gps3 ) );
         assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
     }
 
     @Test
@@ -311,6 +315,7 @@ public class IndexQueryTest
         assertTrue( test( p, gps3 ) );
         assertTrue( test( p, gps4 ) );
         assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
     }
 
     @Test
@@ -321,6 +326,7 @@ public class IndexQueryTest
         assertFalse( test( p, gps2 ) );
         assertTrue( test( p, gps3 ) );
         assertTrue( test( p, gps7 ) );
+        assertFalse( test( p, car1 ) );
     }
 
     @Test
@@ -331,6 +337,7 @@ public class IndexQueryTest
         assertTrue( test( p, gps1 ) );
         assertTrue( test( p, gps3 ) );
         assertFalse( test( p, gps5 ) );
+        assertFalse( test( p, car1 ) );
     }
 
     // STRING PREFIX

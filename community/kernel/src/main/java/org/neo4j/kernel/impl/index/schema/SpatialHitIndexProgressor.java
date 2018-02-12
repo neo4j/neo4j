@@ -20,15 +20,13 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class SpatialHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY, VALUE>
+class SpatialHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue> extends NativeHitIndexProgressor<KEY, VALUE>
 {
     SpatialHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
@@ -37,23 +35,8 @@ public class SpatialHitIndexProgressor<KEY extends NativeSchemaKey, VALUE extend
     }
 
     @Override
-    public boolean next()
+    Value[] extractValues( KEY key )
     {
-        try
-        {
-            while ( seeker.next() )
-            {
-                KEY key = seeker.get().key();
-                if ( client.acceptNode( key.getEntityId(), (Value[]) null ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        return null;
     }
 }

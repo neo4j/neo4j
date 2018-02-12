@@ -213,7 +213,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAll() throws Exception
+    public void allEntriesReaderMustCombineResultFromAll()
     {
         // given
         long[] wgsEntries = {0, 1, 2, 5, 6};
@@ -230,7 +230,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAllWithWGSEmpty() throws Exception
+    public void allEntriesReaderMustCombineResultFromAllWithWGSEmpty()
     {
         // given
         long[] wgsEntries = new long[0];
@@ -247,7 +247,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAllWithCartesianEmpty() throws Exception
+    public void allEntriesReaderMustCombineResultFromAllWithCartesianEmpty()
     {
         // given
         long[] wgsEntries = {0, 1, 2, 5, 6};
@@ -264,7 +264,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustCombineResultFromAllWithAllEmpty() throws Exception
+    public void allEntriesReaderMustCombineResultFromAllWithAllEmpty()
     {
         // given
         long[] wgsEntries = new long[0];
@@ -323,7 +323,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportFusionUnknownMaxCountIfWGSReportUnknownMaxCount() throws Exception
+    public void allEntriesReaderMustReportFusionUnknownMaxCountIfWGSReportUnknownMaxCount()
     {
         mockSingleAllEntriesReaderWithUnknownMaxCount( indexMap.get( WGS84 ), new long[0] );
         mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[0] );
@@ -334,7 +334,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportFusionUnknownMaxCountIfCartesianReportUnknownMaxCount() throws Exception
+    public void allEntriesReaderMustReportFusionUnknownMaxCountIfCartesianReportUnknownMaxCount()
     {
         mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[0] );
         mockSingleAllEntriesReaderWithUnknownMaxCount( indexMap.get( Cartesian ), new long[0] );
@@ -345,7 +345,7 @@ public class SpatialFusionIndexAccessorTest
     }
 
     @Test
-    public void allEntriesReaderMustReportFusionMacCountOfAll() throws Exception
+    public void allEntriesReaderMustReportFusionMacCountOfAll()
     {
         mockSingleAllEntriesReader( indexMap.get( WGS84 ), new long[]{0, 1, 2, 5, 6} );
         mockSingleAllEntriesReader( indexMap.get( Cartesian ), new long[]{3, 4, 7, 8} );
