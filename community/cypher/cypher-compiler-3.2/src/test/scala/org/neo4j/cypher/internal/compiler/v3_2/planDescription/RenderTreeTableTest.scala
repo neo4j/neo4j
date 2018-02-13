@@ -21,14 +21,19 @@ package org.neo4j.cypher.internal.compiler.v3_2.planDescription
 
 import java.util.Locale
 
+import org.neo4j.cypher.internal.compiler.v3_2.ast.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.compiler.v3_2.{RangeBetween, RangeGreaterThan, RangeLessThan}
+import org.neo4j.cypher.internal.compiler.v3_2.commands.RangeQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_2.commands.expressions.{LengthFunction, Property, Variable}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.predicates.{Equals, HasLabel, Not, PropertyExists}
 import org.neo4j.cypher.internal.compiler.v3_2.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.planner.execution.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlan2PlanDescription
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Expand, ExpandAll, SingleRow}
-import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Expand, ExpandAll, NodeIndexSeek, SingleRow}
+import org.neo4j.cypher.internal.frontend.v3_2.{DummyPosition, ExclusiveBound, LabelId, PropertyKeyId, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_2.ast.{LabelToken, PropertyKeyName, PropertyKeyToken, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_2.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.scalatest.BeforeAndAfterAll
@@ -46,6 +51,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   override def afterAll() = {
     Locale.setDefault(defaultLocale)
   }
+
+  private val pos = DummyPosition(0)
 
   test("node feeding from other node") {
     val leaf = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq.empty, Set())
@@ -439,6 +446,49 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |+----------+----------------+------+---------+-----------+-----------+
         || +NAME    |              1 |   42 |      33 | n         | length(n) |
         |+----------+----------------+------+---------+-----------+-----------+
+        |""".stripMargin)
+  }
+
+  test("format index range seek properly") {
+    val rangeQuery = RangeQueryExpression(InequalitySeekRangeWrapper(
+      RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")(pos))))
+    )(pos))
+    val seekPlan = NodeIndexSeek(
+      IdName("a"),
+      LabelToken("Person", LabelId(0)),
+      Seq(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0))),
+      rangeQuery,
+      Set.empty)(solved)
+    val description = LogicalPlan2PlanDescription(new FakeIdMap, true)
+
+    renderAsTreeTable(description.create(seekPlan)) should equal(
+      """+-----------------------+----------------+-----------+----------------------------+
+        || Operator              | Estimated Rows | Variables | Other                      |
+        |+-----------------------+----------------+-----------+----------------------------+
+        || +NodeIndexSeekByRange |              1 | a         | :Person(age) < Literal(12) |
+        |+-----------------------+----------------+-----------+----------------------------+
+        |""".stripMargin)
+  }
+
+  test("format index range seek by bounds") {
+    val greaterThan = RangeGreaterThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")(pos))))
+    val lessThan = RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("21")(pos))))
+    val between = RangeBetween(greaterThan, lessThan)
+    val rangeQuery = RangeQueryExpression(InequalitySeekRangeWrapper(between)(pos))
+    val seekPlan = NodeIndexSeek(
+      IdName("a"),
+      LabelToken("Person", LabelId(0)),
+      Seq(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0))),
+      rangeQuery,
+      Set.empty)(solved)
+    val description = LogicalPlan2PlanDescription(new FakeIdMap, true)
+
+    renderAsTreeTable(description.create(seekPlan)) should equal(
+      """+-----------------------+----------------+-----------+-----------------------------------------------------------+
+        || Operator              | Estimated Rows | Variables | Other                                                     |
+        |+-----------------------+----------------+-----------+-----------------------------------------------------------+
+        || +NodeIndexSeekByRange |              1 | a         | :Person(age) > Literal(12) AND :Person(age) < Literal(21) |
+        |+-----------------------+----------------+-----------+-----------------------------------------------------------+
         |""".stripMargin)
   }
 
