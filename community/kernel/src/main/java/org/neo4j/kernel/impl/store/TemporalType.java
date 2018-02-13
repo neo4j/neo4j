@@ -251,7 +251,7 @@ public enum TemporalType
                         long epochSecond = valueBlocks[1 + offset];
                         short zoneNumber = (short) valueBlocks[2 + offset];
                         return DateTimeValue.datetime( epochSecond, nanoOfSecond,
-                                ZoneId.of( TimeZoneMapping.TIME_ZONE_SHORT_TO_STRING.get( zoneNumber ) ) );
+                                ZoneId.of( TimeZoneMapping.map( zoneNumber ) ) );
                     }
                 }
 
@@ -283,7 +283,7 @@ public enum TemporalType
                             {
                                 short zoneNumber = (short) (zoneValue >>> 1);
                                 dateTimes[i] = ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nanos ),
-                                        ZoneId.of( TimeZoneMapping.TIME_ZONE_SHORT_TO_STRING.get( zoneNumber ) ) );
+                                        ZoneId.of( TimeZoneMapping.map( zoneNumber ) ) );
                             }
                         }
                         return Values.dateTimeArray( dateTimes );
@@ -478,7 +478,7 @@ public enum TemporalType
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, String zoneId )
     {
         int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
-        short zoneNumber = TimeZoneMapping.TIME_ZONE_STRING_TO_SHORT.get( zoneId );
+        short zoneNumber = TimeZoneMapping.map( zoneId );
 
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_DATE_TIME.temporalType << (idBits + 4);
@@ -629,7 +629,7 @@ public enum TemporalType
             else
             {
                 String timeZoneId = dateTimes[i].getZone().getId();
-                short zoneNumber = TimeZoneMapping.TIME_ZONE_STRING_TO_SHORT.get( timeZoneId );
+                short zoneNumber = TimeZoneMapping.map( timeZoneId );
                 // Set lowest bit to 0 means zone id
                 data[i * BLOCKS_DATETIME + 2] = zoneNumber << 1;
             }

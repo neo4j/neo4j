@@ -40,7 +40,6 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.store.TimeZoneMapping;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
@@ -593,20 +592,6 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         newTransaction();
 
         assertTrue( !node1.hasProperty( key ) );
-    }
-
-    /**
-     * Update {@link TimeZoneMapping#TIME_ZONE_SHORT_TO_STRING} if this test fails.
-     * To do that, run {@link ZoneId#getAvailableZoneIds()} and add new time zones
-     * at the end.
-     *
-     * After that, change the test to expect the new Java version.
-     */
-    @Test
-    public void timeZoneTokenListIsUpToDate()
-    {
-        assertEquals( "When updating to a new Java version, make sure to update to time zone mappings.",
-                "1.8", Runtime.class.getPackage().getSpecificationVersion() );
     }
 
     @Test
