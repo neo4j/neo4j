@@ -135,7 +135,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
             readReplicas.put( memberId, new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                     new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                             new AdvertisedSocketAddress( "localhost", 11000 + offset ) ) ) ), new AdvertisedSocketAddress( "localhost", 10000 + offset ),
-                    new HashSet<>( wanted ) ) );
+                    new HashSet<>( wanted ), "default" ) );
 
             offset++;
         }
@@ -145,7 +145,7 @@ public class ConnectRandomlyToServerGroupStrategyImplTest
             readReplicas.put( new MemberId( UUID.randomUUID() ), new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                     new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                             new AdvertisedSocketAddress( "localhost", 11000 + offset ) ) ) ), new AdvertisedSocketAddress( "localhost", 10000 + offset ),
-                    new HashSet<>( unwanted ) ) );
+                    new HashSet<>( unwanted ), "default" ) );
 
             offset++;
         }

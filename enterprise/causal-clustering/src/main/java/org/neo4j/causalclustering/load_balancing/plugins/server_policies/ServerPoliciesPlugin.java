@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.load_balancing.plugins.server_policies;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,7 +60,9 @@ import static org.neo4j.causalclustering.load_balancing.plugins.server_policies.
 public class ServerPoliciesPlugin implements LoadBalancingPlugin
 {
     public static final String PLUGIN_NAME = "server_policies";
+    public static final String DB_CONTEXT_KEY = "database";
 
+    //TODO: Think about whether thie topology service should be prefiltered. Need to move routeEndpoints into TopologyService
     private TopologyService topologyService;
     private LeaderLocator leaderLocator;
     private Long timeToLive;
@@ -102,11 +106,13 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
     {
         Policy policy = policies.selectFor( context );
 
-        CoreTopology coreTopology = topologyService.coreServers( context.get( "database" ) );
-        ReadReplicaTopology rrTopology = topologyService.readReplicas( context.get( "database" ) );
+        String dbName = context.get( DB_CONTEXT_KEY );
 
-        return new LoadBalancingResult( routeEndpoints( coreTopology ), writeEndpoints( coreTopology ),
-                readEndpoints( coreTopology, rrTopology, policy ), timeToLive );
+        CoreTopology coreTopology = topologyService.coreServers( dbName );
+        ReadReplicaTopology rrTopology = topologyService.readReplicas( dbName );
+
+        return new LoadBalancingResult( routeEndpoints( coreTopology ), writeEndpoints( coreTopology, dbName ),
+                readEndpoints( coreTopology, rrTopology, policy, dbName ), timeToLive );
     }
 
     private List<Endpoint> routeEndpoints( CoreTopology cores )
@@ -115,8 +121,14 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
                 .map( Endpoint::route ).collect( Collectors.toList() );
     }
 
-    private List<Endpoint> writeEndpoints( CoreTopology cores )
+    private List<Endpoint> writeEndpoints( CoreTopology cores, String dbName )
     {
+
+        if ( !dbName.equals( this.ourDatabaseName ) )
+        {
+            return Collections.emptyList();
+        }
+
         MemberId leader;
         try
         {
@@ -134,8 +146,14 @@ public class ServerPoliciesPlugin implements LoadBalancingPlugin
         return asList( endPoint );
     }
 
-    private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Policy policy )
+    private List<Endpoint> readEndpoints( CoreTopology coreTopology, ReadReplicaTopology rrTopology, Policy policy, String dbName )
     {
+
+        if ( !dbName.equals( this.ourDatabaseName ) )
+        {
+            return Collections.emptyList();
+        }
+
         Set<ServerInfo> possibleReaders = rrTopology.members().entrySet().stream()
                 .map( entry -> new ServerInfo( entry.getValue().connectors().boltAddress(), entry.getKey(),
                         entry.getValue().groups() ) )

@@ -83,7 +83,7 @@ public class ConnectToRandomCoreServerStrategyTest
             coreMembers.put( memberId, new CoreServerInfo( new AdvertisedSocketAddress( "localhost", 5000 + offset ),
                     new AdvertisedSocketAddress( "localhost", 6000 + offset ), new ClientConnectorAddresses(
                     singletonList( new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
-                            new AdvertisedSocketAddress( "localhost", 7000 + offset ) ) ) ), asSet( "core" ) ) );
+                            new AdvertisedSocketAddress( "localhost", 7000 + offset ) ) ) ), asSet( "core" ), "default" ) );
 
             offset++;
         }

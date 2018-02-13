@@ -78,7 +78,7 @@ public class ClusteringModule
                 new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
         clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
-                () -> sleep( 100 ), 300_000, coreBootstrapper, config );
+                () -> sleep( 100 ), 300_000, coreBootstrapper, config.get( CausalClusteringSettings.database ) );
     }
 
     private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )

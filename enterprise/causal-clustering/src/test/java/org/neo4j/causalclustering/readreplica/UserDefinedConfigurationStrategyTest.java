@@ -193,7 +193,7 @@ public class UserDefinedConfigurationStrategyTest
         return new ReadReplicaInfo( new ClientConnectorAddresses( singletonList(
                 new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
                         new AdvertisedSocketAddress( "localhost", offset.getAndIncrement() ) ) ) ),
-                new AdvertisedSocketAddress( "localhost", offset.getAndIncrement() ), groupGenerator.apply( memberId ) );
+                new AdvertisedSocketAddress( "localhost", offset.getAndIncrement() ), groupGenerator.apply( memberId ), "default" );
     }
 
     static TopologyService fakeTopologyService( CoreTopology coreTopology, ReadReplicaTopology readReplicaTopology )
@@ -203,9 +203,15 @@ public class UserDefinedConfigurationStrategyTest
             private Map<MemberId,AdvertisedSocketAddress> catchupAddresses = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
 
             @Override
-            public CoreTopology coreServers( String database )
+            public CoreTopology coreServers()
             {
                 return coreTopology;
+            }
+
+            @Override
+            public CoreTopology coreServers( String database )
+            {
+                return coreServers();
             }
 
             @Override

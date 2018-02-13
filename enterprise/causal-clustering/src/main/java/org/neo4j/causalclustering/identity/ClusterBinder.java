@@ -46,13 +46,13 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
     private final Clock clock;
     private final ThrowingAction<InterruptedException> retryWaiter;
     private final long timeoutMillis;
-    private final Config cfg;
+    private final String dbName;
 
     private ClusterId clusterId;
 
     public ClusterBinder( SimpleStorage<ClusterId> clusterIdStorage, CoreTopologyService topologyService,
                             LogProvider logProvider, Clock clock, ThrowingAction<InterruptedException> retryWaiter,
-                            long timeoutMillis, CoreBootstrapper coreBootstrapper, Config cfg )
+                            long timeoutMillis, CoreBootstrapper coreBootstrapper, String dbName )
     {
         this.clusterIdStorage = clusterIdStorage;
         this.topologyService = topologyService;
@@ -61,7 +61,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         this.clock = clock;
         this.retryWaiter = retryWaiter;
         this.timeoutMillis = timeoutMillis;
-        this.cfg = cfg;
+        this.dbName = dbName;
     }
 
     /**
@@ -88,7 +88,6 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
         do
         {
-            String dbName = cfg.get( CausalClusteringSettings.database );
             topology = topologyService.coreServers( dbName );
 
             if ( topology.clusterId() != null )

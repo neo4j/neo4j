@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -34,10 +33,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.management.CausalClustering;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICAS_MAP_DB_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
@@ -61,6 +60,7 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
     //TODO: Work out if this is the right place to introduce the dbName and percolate down -  I think it is.
+    //TODO: Work out semantics in case cluster hosts change their dbName unexpectedly
     private final String dbName;
 
     private JobScheduler.JobHandle keepAliveJob;
@@ -106,7 +106,7 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     {
         CoreTopology coreTopology = this.coreTopology;
 
-        Map<MemberId,CoreServerInfo> filteredCores = filterServersByDb( coreTopology.members(), databaseName );
+        Map<MemberId,CoreServerInfo> filteredCores = filterHostsByDb( coreTopology.members(), databaseName );
 
         return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
     }
@@ -116,12 +116,12 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     {
         ReadReplicaTopology readReplicaTopology = rrTopology;
 
-        Map<MemberId,ReadReplicaInfo> filteredRRs = filterServersByDb( readReplicaTopology.members(), databaseName );
+        Map<MemberId,ReadReplicaInfo> filteredRRs = filterHostsByDb( readReplicaTopology.members(), databaseName );
 
         return new ReadReplicaTopology( filteredRRs );
     }
 
-    private <T extends DiscoveryServerInfo> Map<MemberId, T> filterServersByDb( Map<MemberId, T> s, String dbName )
+    private <T extends DiscoveryServerInfo> Map<MemberId, T> filterHostsByDb( Map<MemberId, T> s, String dbName )
     {
         return s.entrySet().stream().filter(e -> e.getValue().getDatabaseName().equals( dbName ) )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
@@ -186,6 +186,8 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
             String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
             String addresses = connectorAddresses.toString();
             log.debug( "Adding read replica into cluster (%s -> %s)", uuid, addresses );
+
+            hazelcastInstance.getMap( READ_REPLICAS_MAP_DB_NAME ).put( uuid, dbName, timeToLive, MILLISECONDS);
 
             hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME ).put( uuid, transactionSource.toString(), timeToLive, MILLISECONDS );
 

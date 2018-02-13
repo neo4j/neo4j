@@ -64,10 +64,12 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     private final TopologyService topologyService;
     private final LeaderLocator leaderLocator;
     private final Log log;
-    private final Config cfg;
+    private final String dbName;
 
+    //TODO: Only inject the name, injecting the config is making it hard to test without additional mocks and the dbName is the only thing we are using the
+    // config for.
     public ClusterOverviewProcedure( TopologyService topologyService,
-            LeaderLocator leaderLocator, LogProvider logProvider, Config cfg  )
+            LeaderLocator leaderLocator, LogProvider logProvider, String dbName )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME ) )
                 .out( "id", Neo4jTypes.NTString )
@@ -79,7 +81,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         this.topologyService = topologyService;
         this.leaderLocator = leaderLocator;
         this.log = logProvider.getLog( getClass() );
-        this.cfg = cfg;
+        this.dbName = dbName;
 
         //TODO: Think about how to return an overview of the complete cluster of clusters here, but indicate which is the current cluster from the perspective
         // of the overview.
@@ -90,7 +92,6 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
             Context ctx, Object[] input, ResourceTracker resourceTracker )
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
-        String dbName = cfg.get( CausalClusteringSettings.database ) ;
         CoreTopology coreTopology = topologyService.coreServers( dbName );
         Set<MemberId> coreMembers = coreTopology.members().keySet();
         MemberId leader = null;

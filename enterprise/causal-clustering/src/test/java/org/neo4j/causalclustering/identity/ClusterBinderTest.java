@@ -60,7 +60,7 @@ public class ClusterBinderTest
 
         ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper );
+                coreBootstrapper, "default" );
 
         try
         {
@@ -90,7 +90,7 @@ public class ClusterBinderTest
 
         ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper );
+                coreBootstrapper, "default" );
 
         // when
         binder.bindToCluster();
@@ -116,7 +116,7 @@ public class ClusterBinderTest
 
         ClusterBinder binder = new ClusterBinder( clusterIdStorage, topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper );
+                coreBootstrapper, "default" );
 
         // when
         binder.bindToCluster();
@@ -142,7 +142,7 @@ public class ClusterBinderTest
 
         ClusterBinder binder = new ClusterBinder( clusterIdStorage, topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ), 3_000,
-                coreBootstrapper );
+                coreBootstrapper, "default" );
 
         // when
         try
@@ -170,7 +170,7 @@ public class ClusterBinderTest
 
         ClusterBinder binder = new ClusterBinder( new StubClusterIdStorage(), topologyService,
                 NullLogProvider.getInstance(), clock, () -> clock.forward( 1, TimeUnit.SECONDS ),
-                3_000, coreBootstrapper );
+                3_000, coreBootstrapper, "default" );
 
         // when
         BoundState boundState = binder.bindToCluster();

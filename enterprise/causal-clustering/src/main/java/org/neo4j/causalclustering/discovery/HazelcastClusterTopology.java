@@ -41,6 +41,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
+import org.neo4j.management.CausalClustering;
 
 import static java.util.Collections.emptyMap;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.refuse_to_be_leader;
@@ -67,12 +68,13 @@ public class HazelcastClusterTopology
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME = "read-replica-transaction-servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas"; // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_MEMBER_ID_MAP_NAME = "read-replica-member-ids";
+    static final String READ_REPLICAS_MAP_DB_NAME = "read_replicas_database_names";
 
     private HazelcastClusterTopology()
     {
     }
 
-    static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log, Config cfg )
+    static ReadReplicaTopology getReadReplicaTopology( HazelcastInstance hazelcastInstance, Log log )
     {
         Map<MemberId,ReadReplicaInfo> readReplicas = emptyMap();
 
@@ -152,6 +154,7 @@ public class HazelcastClusterTopology
         IMap<String,String> txServerMap = hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME );
         IMap<String,String> memberIdMap = hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP_NAME );
         MultiMap<String,String> serverGroups = hazelcastInstance.getMultiMap( SERVER_GROUPS_MULTIMAP_NAME );
+        IMap<String, String> memberDbMap = hazelcastInstance.getMap( READ_REPLICAS_MAP_DB_NAME );
 
         if ( of( clientAddressMap, txServerMap, memberIdMap, serverGroups ).anyMatch( Objects::isNull ) )
         {
@@ -163,6 +166,7 @@ public class HazelcastClusterTopology
             String sAddresses = clientAddressMap.get( hzUUID );
             String sCatchupAddress = txServerMap.get( hzUUID );
             String sMemberId = memberIdMap.get( hzUUID );
+            String dbName = memberDbMap.get( hzUUID );
             Collection<String> sServerGroups = serverGroups.get( hzUUID );
 
             if ( concat( of( sServerGroups ), of( sAddresses, sCatchupAddress, sMemberId ) ).anyMatch( Objects::isNull ) )
@@ -173,7 +177,7 @@ public class HazelcastClusterTopology
             ClientConnectorAddresses clientConnectorAddresses = ClientConnectorAddresses.fromString( sAddresses );
             AdvertisedSocketAddress catchupAddress = socketAddress( sCatchupAddress, AdvertisedSocketAddress::new );
 
-            ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( clientConnectorAddresses, catchupAddress, asSet( sServerGroups ), );
+            ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( clientConnectorAddresses, catchupAddress, asSet( sServerGroups ), dbName );
             result.put( new MemberId( UUID.fromString( sMemberId ) ), readReplicaInfo );
         }
         return result;
@@ -211,12 +215,14 @@ public class HazelcastClusterTopology
             try
             {
                 MemberId memberId = new MemberId( UUID.fromString( member.getStringAttribute( MEMBER_UUID ) ) );
+                String dbName = member.getStringAttribute( MEMBER_DB_NAME );
 
                 CoreServerInfo coreServerInfo = new CoreServerInfo(
                         socketAddress( member.getStringAttribute( RAFT_SERVER ), AdvertisedSocketAddress::new ),
                         socketAddress( member.getStringAttribute( TRANSACTION_SERVER ), AdvertisedSocketAddress::new ),
                         ClientConnectorAddresses.fromString( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) ),
-                        asSet( serverGroupsMMap.get( memberId.getUuid().toString() ) ) );
+                        asSet( serverGroupsMMap.get( memberId.getUuid().toString() ) ),
+                        dbName );
 
                 coreMembers.put( memberId, coreServerInfo );
             }
@@ -243,6 +249,7 @@ public class HazelcastClusterTopology
 
     static MemberAttributeConfig buildMemberAttributesForCore( MemberId myself, Config config )
     {
+
         MemberAttributeConfig memberAttributeConfig = new MemberAttributeConfig();
         memberAttributeConfig.setStringAttribute( MEMBER_UUID, myself.getUuid().toString() );
 
@@ -261,6 +268,8 @@ public class HazelcastClusterTopology
 
         memberAttributeConfig.setBooleanAttribute( REFUSE_TO_BE_LEADER_KEY,
                 config.get( refuse_to_be_leader )  );
+
+        memberAttributeConfig.setStringAttribute( MEMBER_DB_NAME, config.get( CausalClusteringSettings.database ) );
 
         return memberAttributeConfig;
     }

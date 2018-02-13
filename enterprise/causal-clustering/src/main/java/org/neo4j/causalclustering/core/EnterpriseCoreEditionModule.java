@@ -169,7 +169,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                     config, logProvider ) );
         }
 
-        procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider, config ) );
+        procedures.register( new ClusterOverviewProcedure( topologyService, consensusModule.raftMachine(), logProvider,
+                config.get(CausalClusteringSettings.database ) ) );
         procedures.register( new CoreRoleProcedure( consensusModule.raftMachine() ) );
         procedures.register( new InstalledProtocolsProcedure( clientInstalledProtocols, serverInstalledProtocols ) );
         procedures.registerComponent( Replicator.class, x -> replicationModule.getReplicator(), true );

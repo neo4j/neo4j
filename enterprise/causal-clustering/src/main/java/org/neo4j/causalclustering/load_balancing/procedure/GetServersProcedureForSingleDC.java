@@ -122,7 +122,7 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
             return Optional.empty();
         }
 
-        return topologyService.coreServers( this.dbName ).find( leader ).map( extractBoltAddress() );
+        return topologyService.coreServers( dbName ).find( leader ).map( extractBoltAddress() );
     }
 
     private List<Endpoint> routeEndpoints()

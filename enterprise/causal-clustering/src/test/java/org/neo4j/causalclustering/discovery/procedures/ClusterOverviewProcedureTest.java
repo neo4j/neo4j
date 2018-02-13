@@ -80,8 +80,9 @@ public class ClusterOverviewProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
+        //TODO: Fix this
         ClusterOverviewProcedure procedure =
-                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance(), "default" );
 
         // when
         final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0], null );

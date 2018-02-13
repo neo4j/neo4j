@@ -315,7 +315,8 @@ public class HazelcastCoreTopologyService extends LifecycleAdapter implements Co
     {
         CoreTopology coreTopology = this.coreTopology;
 
-        Map<MemberId,CoreServerInfo> filteredCores = coreTopology.members().entrySet().stream().filter( e -> e.getValue().getDatabaseName().equals( databaseName ) )
+        Map<MemberId,CoreServerInfo> filteredCores = coreTopology.members().entrySet().stream()
+                .filter( e -> e.getValue().getDatabaseName().equals( databaseName ) )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
 
         return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
