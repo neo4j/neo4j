@@ -25,7 +25,9 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
   extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), features: _*)
+    val startState = from.maybeSemantics.getOrElse(SemanticState.clean).withFeatures(features: _*)
+
+    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), startState)
     if (warn) state.notifications.foreach(context.notificationLogger.log)
 
     context.errorHandler(errors)
