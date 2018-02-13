@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /*
@@ -47,7 +48,8 @@ case class LogicalPlanState(queryText: String,
                             maybeUnionQuery: Option[UnionQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
-                            accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+                            accumulatedConditions: Set[Condition] = Set.empty,
+                            initialFields: Map[String, CypherType] = Map.empty) extends BaseState {
 
   def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
@@ -67,6 +69,7 @@ object LogicalPlanState {
     LogicalPlanState(queryText = state.queryText,
                      startPosition = state.startPosition,
                      plannerName = state.plannerName,
+                     initialFields = state.initialFields,
                      solveds = new Solveds,
                      cardinalities = new Cardinalities,
                      maybeStatement = state.maybeStatement,
