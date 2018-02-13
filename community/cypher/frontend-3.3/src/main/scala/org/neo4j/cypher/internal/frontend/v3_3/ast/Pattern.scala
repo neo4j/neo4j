@@ -151,7 +151,6 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
   def semanticCheck(ctx: SemanticContext) =
     checkContext(ctx) chain
       checkContainsSingle chain
-      checkKnownEnds chain
       checkLength chain
       checkRelVariablesUnknown chain
       element.semanticCheck(ctx)
@@ -172,18 +171,6 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
       }
     case _                                                    =>
       SemanticError(s"$name(...) requires a pattern containing a single relationship", position, element.position)
-  }
-
-  private def checkKnownEnds: SemanticCheck = element match {
-    case RelationshipChain(l: NodePattern, _, r: NodePattern) =>
-      if (l.variable.isEmpty)
-        SemanticError(s"$name(...) requires named nodes", position, l.position)
-      else if (r.variable.isEmpty)
-        SemanticError(s"$name(...) requires named nodes", position, r.position)
-      else
-        None
-    case _                                                    =>
-      None
   }
 
   private def checkLength: SemanticCheck = (state: SemanticState) => element match {
