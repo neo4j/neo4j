@@ -80,7 +80,7 @@ case class PatternExpressionSolver(pathStepBuilder: EveryPath => PathStep = proj
         newPlan
     }
 
-    (finalPlan.updateSolved(source.solved), expressionBuild)
+    (finalPlan, expressionBuild)
   }
 
   def apply(source: LogicalPlan, projectionsMap: Map[String, Expression])

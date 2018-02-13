@@ -430,8 +430,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping)(solved)
   }
 
-  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, reported: Expression)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val solved = inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, reported)))
+  def planUnwind(inner: LogicalPlan, name: String, expression: Expression)(implicit context: LogicalPlanningContext): LogicalPlan = {
+    val solved = inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     UnwindCollection(inner, name, expression)(solved)
   }
 
