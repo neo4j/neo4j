@@ -347,6 +347,12 @@ public class CheckPointSchedulerTest
             limitEnabled = true;
         }
 
+        @Override
+        public boolean isLimited()
+        {
+            return !limitEnabled;
+        }
+
         boolean isLimitEnabled()
         {
             return limitEnabled;

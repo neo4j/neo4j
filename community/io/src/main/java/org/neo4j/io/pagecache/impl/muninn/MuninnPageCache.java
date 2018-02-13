@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.CopyOption;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -28,13 +29,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Stream;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -144,7 +147,7 @@ public class MuninnPageCache implements PageCache
     // the constructor of the PageCache, because the Executors have too many configuration options, many of which are
     // highly troublesome for our use case; caller-runs, bounded submission queues, bounded thread count, non-daemon
     // thread factories, etc.
-    private static final Executor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
+    private static final BackgroundThreadExecutor backgroundThreadExecutor = BackgroundThreadExecutor.INSTANCE;
 
     private static final List<OpenOption> ignoredOpenOptions = Arrays.asList( (OpenOption) StandardOpenOption.APPEND,
             StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.SPARSE );
@@ -594,33 +597,80 @@ public class MuninnPageCache implements PageCache
     }
 
     @Override
-    public synchronized void flushAndForce( IOLimiter limiter ) throws IOException
+    public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         if ( limiter == null )
         {
             throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
         }
-        assertNotClosed();
-        flushAllPages( limiter );
+        List<PagedFile> pagedFiles = listExistingMappings();
+
+        try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
+        {
+            if ( limiter.isLimited() )
+            {
+                flushAllPages( pagedFiles, limiter );
+            }
+            else
+            {
+                flushAllPagesParallel( pagedFiles );
+            }
+        }
+        finally
+        {
+            IOUtils.closeAll( pagedFiles );
+        }
+
         clearEvictorException();
     }
 
-    private void flushAllPages( IOLimiter limiter ) throws IOException
+    private void flushAllPages( List<PagedFile> pagedFiles, IOLimiter limiter ) throws IOException
     {
-        try ( MajorFlushEvent cacheFlush = pageCacheTracer.beginCacheFlush() )
+        for ( PagedFile file : pagedFiles )
         {
-            FileMapping fileMapping = mappedFiles;
-            while ( fileMapping != null )
+            MuninnPagedFile pagedFile = (MuninnPagedFile) file;
+            try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( pagedFile.swapper ) )
             {
-                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( fileMapping.pagedFile.swapper ) )
+                FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
+                pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+            }
+        }
+        syncDevice();
+    }
+
+    private void flushAllPagesParallel( List<PagedFile> pagedFiles ) throws IOException
+    {
+        List<Future<?>> flushes = new ArrayList<>();
+
+        for ( PagedFile file : pagedFiles )
+        {
+            MuninnPagedFile pagedFile = (MuninnPagedFile) file;
+            flushes.add( backgroundThreadExecutor.submit( () ->
+            {
+                try ( MajorFlushEvent fileFlush = pageCacheTracer.beginFileFlush( pagedFile.swapper ) )
                 {
                     FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
-                    fileMapping.pagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
+                    pagedFile.flushAndForceInternal( flushOpportunity, false, IOLimiter.unlimited() );
                 }
-                fileMapping = fileMapping.next;
-            }
-            syncDevice();
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+            } ) );
         }
+
+        for ( Future<?> flush : flushes )
+        {
+            try
+            {
+                flush.get();
+            }
+            catch ( InterruptedException | ExecutionException e )
+            {
+                throw new IOException( e );
+            }
+        }
+        syncDevice();
     }
 
     void syncDevice() throws IOException

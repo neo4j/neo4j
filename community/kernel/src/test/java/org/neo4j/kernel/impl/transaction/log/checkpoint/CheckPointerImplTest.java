@@ -273,7 +273,20 @@ public class CheckPointerImplTest
     @Test
     public void mustUseIoLimiterFromFlushing() throws Throwable
     {
-        limiter = (stamp, ios, flushable) -> 42;
+        limiter = new IOLimiter()
+        {
+            @Override
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            {
+                return 42;
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return false;
+            }
+        };
         when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( true, false );
         mockTxIdStore();
         CheckPointerImpl checkPointing = checkPointer();
@@ -292,7 +305,6 @@ public class CheckPointerImplTest
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
-                    throws IOException
             {
                 return 0;
             }
@@ -301,6 +313,12 @@ public class CheckPointerImplTest
             public void enableLimit()
             {
                 doneDisablingLimits.set( true );
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return false;
             }
         };
         mockTxIdStore();
@@ -318,7 +336,6 @@ public class CheckPointerImplTest
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
-                    throws IOException
             {
                 return 0;
             }
@@ -327,6 +344,12 @@ public class CheckPointerImplTest
             public void enableLimit()
             {
                 doneDisablingLimits.set( true );
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return false;
             }
         };
         mockTxIdStore();
@@ -347,7 +370,6 @@ public class CheckPointerImplTest
         {
             @Override
             public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
-                    throws IOException
             {
                 return 0;
             }
@@ -363,6 +385,12 @@ public class CheckPointerImplTest
             public void enableLimit()
             {
                 limitDisableCounter.getAndDecrement();
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return limitDisableCounter.get() == 0;
             }
         };
 

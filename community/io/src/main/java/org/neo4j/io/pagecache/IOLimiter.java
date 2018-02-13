@@ -109,6 +109,21 @@ public interface IOLimiter
      */
     static IOLimiter unlimited()
     {
-        return ( previousStamp, recentlyCompletedIOs, flushable ) -> previousStamp;
+        return new IOLimiter()
+        {
+            @Override
+            public long maybeLimitIO( long previousStamp, int recentlyCompletedIOs, Flushable flushable )
+            {
+                return previousStamp;
+            }
+
+            @Override
+            public boolean isLimited()
+            {
+                return false;
+            }
+        };
     }
+
+    boolean isLimited();
 }
