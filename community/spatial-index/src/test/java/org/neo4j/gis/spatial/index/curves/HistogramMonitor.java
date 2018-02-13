@@ -22,9 +22,9 @@ package org.neo4j.gis.spatial.index.curves;
 public class HistogramMonitor implements SpaceFillingCurveMonitor
 {
     private int[] counts;
-    private int highestDepth = 0;
+    private int highestDepth;
     private long searchArea;
-    private long coveredArea = 0;
+    private long coveredArea;
 
     HistogramMonitor( int maxLevel )
     {
@@ -35,7 +35,7 @@ public class HistogramMonitor implements SpaceFillingCurveMonitor
     public void addRangeAtDepth( int depth )
     {
         this.counts[depth]++;
-        if(depth > highestDepth)
+        if ( depth > highestDepth )
         {
             highestDepth = depth;
         }

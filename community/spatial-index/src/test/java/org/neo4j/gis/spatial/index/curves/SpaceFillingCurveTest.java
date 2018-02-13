@@ -398,10 +398,10 @@ public class SpaceFillingCurveTest
 
     private static class MonitorStats
     {
-        long total = 0;
+        long total;
         long min = Long.MAX_VALUE;
-        long max = 0;
-        int count = 0;
+        long max;
+        int count;
 
         void add( long value )
         {
@@ -419,10 +419,10 @@ public class SpaceFillingCurveTest
 
     private static class MonitorDoubleStats
     {
-        double total = 0;
+        double total;
         double min = Double.MAX_VALUE;
-        double max = 0;
-        int count = 0;
+        double max;
+        int count;
 
         void add( double value )
         {
@@ -497,7 +497,8 @@ public class SpaceFillingCurveTest
                                     List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( searchEnvelope, config, monitor );
                                     final long end = System.currentTimeMillis();
                                     debug( String.format(
-                                            "Results for level %d, with x=[%f,%f] y=[%f,%f]. Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
+                                            "Results for level %d, with x=[%f,%f] y=[%f,%f]. " +
+                                                    "Search size vs covered size: %d vs %d (%f x). Ranges: %d. Took %d ms\n",
                                             level, xStart, xEnd, yStart, yEnd, monitor.getSearchArea(), monitor.getCoveredArea(),
                                             (double) (monitor.getCoveredArea()) / monitor.getSearchArea(), ranges.size(), end - start ) );
                                     int[] counts = monitor.getCounts();
