@@ -66,6 +66,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -426,10 +427,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
-            for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
-            {
-                processUpdate( updaterMap, indexUpdate );
-            }
+            IndexUpdateProcessor.applyIndexUpdatesByMode( updates, update -> processUpdate( updaterMap, update ) );
         }
     }
 
