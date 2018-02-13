@@ -21,8 +21,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.ScopeTreeVerifier
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 
 object SemanticChecker {
-  def check(statement: Statement, startState: SemanticState = SemanticState.clean): SemanticCheckResult = {
-    val result = statement.semanticCheck(startState)
+  def check(statement: Statement, features: SemanticFeature*): SemanticCheckResult = {
+    val result = statement.semanticCheck(SemanticState.clean.withFeatures(features: _*))
     val scopeTreeIssues = ScopeTreeVerifier.verify(result.state.scopeTree)
     if (scopeTreeIssues.nonEmpty)
       throw new InternalException(scopeTreeIssues.mkString(s"\n"))

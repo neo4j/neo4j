@@ -51,21 +51,3 @@ trait BaseState {
   def withSemanticState(s: SemanticState): BaseState
   def withParams(p: Map[String, Any]): BaseState
 }
-
-case class InitialState(queryText: String,
-  startPosition: Option[InputPosition],
-  plannerName: PlannerName,
-  maybeStatement: Option[Statement] = None,
-  maybeSemantics: Option[SemanticState] = None,
-  maybeExtractedParams: Option[Map[String, Any]] = None,
-  maybeSemanticTable: Option[SemanticTable] = None,
-  accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
-
-  override def withStatement(s: Statement): InitialState = copy(maybeStatement = Some(s))
-
-  override def withSemanticTable(s: SemanticTable): InitialState = copy(maybeSemanticTable = Some(s))
-
-  override def withSemanticState(s: SemanticState): InitialState = copy(maybeSemantics = Some(s))
-
-  override def withParams(p: Map[String, Any]): InitialState = copy(maybeExtractedParams = Some(p))
-}
