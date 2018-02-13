@@ -3,3 +3,7 @@ max() over mixed values
 min() over mixed values
 max() over list values
 min() over list values
+
+//UnwindAcceptance.feature
+Pattern comprehension in unwind with empty db
+Pattern comprehension in unwind with hits
