@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.runtime.vectorized
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.RefSlot
-import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyLabel, LazyTypes}
+import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.translateColumnOrder
+import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationExpressionOperator
 import org.neo4j.cypher.internal.runtime.vectorized.operators._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.logical.plans
@@ -101,6 +102,26 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           val preSorting = new PreSortOperator(ordering, slots)
           source = source.addOperator(preSorting)
           new MergeSortOperator(ordering, slots)
+
+        case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
+          val (in, out) = aggregationExpression.foldLeft[(Seq[MapperOffsets], Seq[ReducerOffsets])]((Seq.empty, Seq.empty)) {
+            case ((maps, reds), (key, expression)) =>
+              val aggregator = converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator]
+              val currentSlot = slots.get(key).get
+              //we need to make room for storing aggregation value in
+              //source slot
+              source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              val offsetIn = source.slots.getReferenceOffsetFor(key)
+              (maps:+ MapperOffsets(offsetIn, aggregator.createAggregationMapper),
+                reds:+ ReducerOffsets(offsetIn, currentSlot.offset, aggregator.createAggregationReducer))
+          }
+
+          val mapper = new AggregationMapperOperatorNoGrouping(slots, in.toArray)
+          source = source.addOperator(mapper)
+
+          val reducer = new AggregationReduceOperatorNoGrouping(slots, out.toArray)
+          reducer
+
 
         case plans.UnwindCollection(src, variable, collection) =>
           val offset = slots.get(variable) match {

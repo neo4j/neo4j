@@ -47,7 +47,7 @@ class MergeSortOperator(orderBy: Seq[ColumnOrder], slots: SlotConfiguration) ext
     message match {
       case StartLoopWithEagerData(inputs, is) =>
         iterationState = is
-        sortedInputs = new PriorityQueue[MorselWithReadPos](inputs.size, comparator)
+        sortedInputs = new PriorityQueue[MorselWithReadPos](inputs.length, comparator)
         inputs.foreach { morsel =>
           if (morsel.validRows > 0) sortedInputs.add(new MorselWithReadPos(morsel, 0))
         }

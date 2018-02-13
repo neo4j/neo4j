@@ -82,7 +82,7 @@ class ParallelDispatcher(morselSize: Int, workers: Int, executor: Executor) exte
 
             case Some(eagerConsumingPipeline) =>
               query.eagerReceiver = None
-              val startEager = StartLoopWithEagerData(query.eagerData.asScala.toSeq, incoming.iterationState)
+              val startEager = StartLoopWithEagerData(query.eagerData.asScala.toArray, incoming.iterationState)
               executor.execute(createAction(query, startEager, eagerConsumingPipeline, queryContext, state))
           }
 
