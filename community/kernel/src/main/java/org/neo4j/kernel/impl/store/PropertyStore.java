@@ -135,7 +135,9 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
  * DATETIME:  [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxx1] [ 05 ,type][K][K][K] nanoOfSecond
  *            epochSecond in next long block
  *            secondOffset in next long block
- * TODO alternative DateTime format
+ * DATETIME:  [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxx0] [ 05 ,type][K][K][K] nanoOfSecond
+ *            epochSecond in next long block
+ *            timeZone number in next long block
  * DURATION:  [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [ 06 ,type][K][K][K] nanoOfSecond
  *            months in next long block
  *            days in next long block
