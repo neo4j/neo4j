@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -95,6 +96,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void ableToEvictAllPageInAPageCache() throws IOException
     {
         writeInitialDataTo( file( "a" ) );
@@ -242,6 +244,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void trackPageModificationTransactionId() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
@@ -267,6 +270,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
@@ -301,6 +305,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void pageModificationTracksHighestModifierTransactionId() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
@@ -338,6 +343,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
@@ -361,6 +367,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
@@ -387,6 +394,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 23 );
@@ -413,6 +421,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 5 );
@@ -447,6 +456,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
+    @Ignore
     public void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 15 );
