@@ -18,3 +18,7 @@ min() over list values
 Shorthand case with filter should work as expected
 equality with boolean lists
 optional equality with boolean lists
+
+//UnwindAcceptance.feature
+Pattern comprehension in unwind with empty db
+Pattern comprehension in unwind with hits
