@@ -41,22 +41,20 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     static final int ENTITY_ID_SIZE = Long.BYTES;
 
     private long entityId;
-    private boolean entityIdIsSpecialTieBreaker;
+    private boolean compareId;
 
     // TODO something better or?
     // TODO this is UTF-8 bytes for now
     byte[] bytes;
 
-    @Override
-    public void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker )
+    public void setCompareId( boolean compareId )
     {
-        this.entityIdIsSpecialTieBreaker = entityIdIsSpecialTieBreaker;
+        this.compareId = compareId;
     }
 
-    @Override
-    public boolean getEntityIdIsSpecialTieBreaker()
+    public boolean getCompareId()
     {
-        return entityIdIsSpecialTieBreaker;
+        return compareId;
     }
 
     int size()
@@ -80,7 +78,7 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     public void from( long entityId, Value... values )
     {
         this.entityId = entityId;
-        entityIdIsSpecialTieBreaker = false;
+        compareId = false;
         assertValidValue( values ).writeTo( this );
     }
 
@@ -120,7 +118,7 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     {
         bytes = null;
         entityId = Long.MIN_VALUE;
-        entityIdIsSpecialTieBreaker = true;
+        compareId = true;
     }
 
     @Override
@@ -128,12 +126,12 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
     {
         bytes = null;
         entityId = Long.MAX_VALUE;
-        entityIdIsSpecialTieBreaker = true;
+        compareId = true;
     }
 
     private boolean isHighest()
     {
-        return entityIdIsSpecialTieBreaker && entityId == Long.MAX_VALUE && bytes == null;
+        return compareId && entityId == Long.MAX_VALUE && bytes == null;
     }
 
     /**
@@ -194,16 +192,7 @@ class StringSchemaKey extends ValueWriter.Adapter<RuntimeException> implements N
             }
         }
 
-        if ( Integer.compare( a.length, b.length ) < 0 )
-        {
-            return -1;
-        }
-
-        if ( Integer.compare( a.length, b.length ) > 0 )
-        {
-            return 1;
-        }
-        return 0;
+        return Integer.compare( a.length, b.length );
     }
 
     @Override

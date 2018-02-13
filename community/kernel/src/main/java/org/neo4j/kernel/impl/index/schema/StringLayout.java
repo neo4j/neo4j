@@ -42,7 +42,7 @@ abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaV
         // TODO when we have reuse of byte[] take that into consideration here too
         into.bytes = key.bytes.clone();
         into.setEntityId( key.getEntityId() );
-        into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
+        into.setCompareId( key.getCompareId() );
         return into;
     }
 

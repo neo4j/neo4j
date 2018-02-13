@@ -84,7 +84,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         else
         {
             treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
-            treeKeyTo.setEntityIdIsSpecialTieBreaker( true );
+            treeKeyTo.setCompareId( true );
         }
     }
 
@@ -98,7 +98,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         else
         {
             treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
-            treeKeyFrom.setEntityIdIsSpecialTieBreaker( true );
+            treeKeyFrom.setCompareId( true );
         }
     }
 
