@@ -32,12 +32,12 @@ import java.nio.file.Path;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -53,9 +53,9 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
-import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.rest.domain.JsonParseException;
+import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -107,6 +107,10 @@ public class InProcessBuilderTestIT
         // Given
         trustAllSSLCerts();
 
+        // Get default trusted cypher suites
+        SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+        String[] defaultCiphers = ssf.getDefaultCipherSuites();
+
         // When
         HttpConnector httpConnector = new HttpConnector( "0", Encryption.NONE );
         HttpConnector httpsConnector = new HttpConnector( "1", Encryption.TLS );
@@ -119,8 +123,15 @@ public class InProcessBuilderTestIT
                 .withConfig( httpsConnector.enabled, "true" )
                 .withConfig( httpsConnector.encryption, "TLS" )
                 .withConfig( httpsConnector.listen_address, "localhost:" + PortAuthority.allocatePort() )
-                .withConfig( LegacySslPolicyConfig.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
+                // override legacy policy
+                .withConfig( "https.ssl_policy", "test" )
+                .withConfig( "dbms.ssl.policy.test.base_directory", testDir.directory( "certificates" ).getAbsolutePath() )
+                .withConfig( "dbms.ssl.policy.test.allow_key_generation", "true" )
+                .withConfig( "dbms.ssl.policy.test.ciphers", String.join( ",", defaultCiphers ) )
+                .withConfig( "dbms.ssl.policy.test.tls_versions", "TLSv1.2, TLSv1.1, TLSv1" )
+                .withConfig( "dbms.ssl.policy.test.client_auth", ClientAuth.NONE.name() )
+                .withConfig( "dbms.ssl.policy.test.trust_all", "true" )
                 .newServer() )
         {
             // Then
