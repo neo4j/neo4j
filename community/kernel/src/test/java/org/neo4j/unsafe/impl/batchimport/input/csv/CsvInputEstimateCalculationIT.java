@@ -39,6 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -119,10 +121,12 @@ public class CsvInputEstimateCalculationIT
                 format, NO_MONITOR ).doImport( input );
 
         // then compare estimates with actual disk sizes
+        VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;
         try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL,
-                      PageCursorTracerSupplier.NULL, NullLog.getInstance() ).getOrCreatePageCache();
+                      PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier )
+                .getOrCreatePageCache();
               NeoStores stores = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                      NullLogProvider.getInstance() ).openAllNeoStores() )
+                      NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
         {
             assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
             assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );

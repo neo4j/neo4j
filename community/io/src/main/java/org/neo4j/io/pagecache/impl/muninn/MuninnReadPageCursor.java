@@ -59,9 +59,9 @@ final class MuninnReadPageCursor extends MuninnPageCursor
             return false;
         }
         currentPageId = nextPageId;
-        verifyContext();
         nextPageId++;
         pin( currentPageId, false );
+        verifyContext();
         return true;
     }
 

@@ -52,7 +52,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class VersionContextTrackingIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
     private static final int NUMBER_OF_TRANSACTIONS = 3;
     private Cluster cluster;
 

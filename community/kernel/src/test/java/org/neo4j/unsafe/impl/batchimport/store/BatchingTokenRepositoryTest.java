@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.RelationshipTypeToken;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -41,14 +42,13 @@ import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingL
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
+import static java.lang.Integer.parseInt;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Integer.parseInt;
 
 public class BatchingTokenRepositoryTest
 {
@@ -110,7 +110,8 @@ public class BatchingTokenRepositoryTest
         // given
         try ( NeoStores stores = new StoreFactory( storage.directory().absolutePath(), Config.defaults(),
                 new DefaultIdGeneratorFactory( storage.fileSystem() ), storage.pageCache(), storage.fileSystem(),
-                NullLogProvider.getInstance() ).openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
+                .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord,Token> tokenStore = stores.getPropertyKeyTokenStore();
             int rounds = 3;

@@ -71,6 +71,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.test.rule.RepeatRule;
 
 import static java.lang.Long.toHexString;
@@ -144,7 +145,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         };
         PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         Exception exception = null;
         try
         {
@@ -193,7 +194,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         };
         PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         try
         {
             cache.close();
@@ -901,7 +902,6 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 assertFalse( cursorA.next() );
                 startLatch.countDown();
                 unpinLatch.await();
-                cursorA.close();
             }
             catch ( Exception e )
             {
@@ -3892,7 +3892,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 1, 2 ); // closing+forcing the files one by one, we get 2 more `syncDevice`
         PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
         try ( PageCache cache = createPageCache( factory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
               PagedFile p1 = cache.map( existingFile( "a" ), filePageSize );
               PagedFile p2 = cache.map( existingFile( "b" ), filePageSize ) )
         {
@@ -3921,7 +3921,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 1, 2 ); // after test, files are closed+forced one by one
         PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
         try ( PageCache cache = createPageCache( factory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
               PagedFile p1 = cache.map( existingFile( "a" ), filePageSize );
               PagedFile p2 = cache.map( existingFile( "b" ), filePageSize ) )
         {
@@ -4085,7 +4085,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
         PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         File file = file( "a" );
         try ( PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
               WritableByteChannel channel = pf.openWritableByteChannel() )
@@ -4102,7 +4102,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
         PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
+                PageCursorTracerSupplier.NULL, EmptyVersionContextSupplier.EMPTY );
         File file = file( "a" );
         try ( PagedFile pf = cache.map( file, filePageSize );
               WritableByteChannel channel = pf.openWritableByteChannel() )

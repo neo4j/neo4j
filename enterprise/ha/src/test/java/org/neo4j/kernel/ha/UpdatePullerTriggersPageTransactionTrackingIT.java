@@ -55,7 +55,7 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
 public class UpdatePullerTriggersPageTransactionTrackingIT
 {
     @Rule
-    public final ClusterRule clusterRule = new ClusterRule( getClass() );
+    public final ClusterRule clusterRule = new ClusterRule();
     private final Label NODE_LABEL = Label.label( "mark" );
     private final TestTransactionVersionContextSupplier contextSupplier = new TestTransactionVersionContextSupplier();
     private ClusterManager.ManagedCluster cluster;
