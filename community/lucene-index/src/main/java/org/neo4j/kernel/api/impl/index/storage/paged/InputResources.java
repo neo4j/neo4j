@@ -22,10 +22,8 @@ package org.neo4j.kernel.api.impl.index.storage.paged;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.WeakIdentityMap;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
@@ -59,14 +57,11 @@ public interface InputResources
         private final PagedFile pagedFile;
         private final CloneInputResources cloneResources = new CloneInputResources( this );
 
-        private final WeakIdentityMap<PagedIndexInput,Boolean> clones;
-
         private volatile boolean closed;
 
         RootInputResources( PagedFile pagedFile )
         {
             this.pagedFile = pagedFile;
-            this.clones = WeakIdentityMap.newConcurrentHashMap();
         }
 
         @Override
@@ -80,9 +75,7 @@ public interface InputResources
                 throw new IOException( "This index has been closed, cannot open more inputs" );
             }
 
-            PageCursor cursor = pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK );
-            clones.put( owner, true );
-            return cursor;
+            return pagedFile.io( pageId, PagedFile.PF_SHARED_READ_LOCK );
         }
 
         @Override
@@ -99,17 +92,11 @@ public interface InputResources
             }
 
             closed = true;
-            Throwable error = null;
 
             try
             {
-                for ( Iterator<PagedIndexInput> it = clones.keyIterator(); it.hasNext(); )
-                {
-                    PagedIndexInput clone = it.next();
-                    error = IOUtils.chainedClose( error, clone.cursor );
-                    clone.cursor = null;
-                }
-                error = IOUtils.chainedClose( error, input.cursor );
+                Throwable error;
+                error = IOUtils.chainedClose( null, input.cursor );
                 error = IOUtils.chainedClose( error, pagedFile );
                 IOUtils.chainedCloseFinish( IOException.class, error );
             }
@@ -154,9 +141,6 @@ public interface InputResources
                 // Already closed
                 return;
             }
-
-            // Remove us from the tracked set of clones
-            root.clones.remove( input );
 
             // Close the cursor
             try

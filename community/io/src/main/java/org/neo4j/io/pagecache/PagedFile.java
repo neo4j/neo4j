@@ -83,6 +83,10 @@ public interface PagedFile extends AutoCloseable
      * Flush pages more aggressively, after they have been dirtied by a write cursor.
      */
     int PF_EAGER_FLUSH = 1 << 6;
+    /**
+     * Do not pool read cursors.
+     */
+    int PF_NO_READ_CURSOR_POOL = 1 << 7;
 
     /**
      * Initiate an IO interaction with the contents of the paged file.

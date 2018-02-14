@@ -121,13 +121,12 @@ public final class IOUtils
     }
 
     /**
-     * This can be used to do the same thing as {@link #closeAll(AutoCloseable[])}, but can be used without needing
-     * heap allocations.
+     * This can be used to do the same thing as {@link #closeAll(AutoCloseable[])}, without heap allocations.
      * <p>
      * Use like:
      * <p>
      * <code>
-     * Throwable t = null;
+     * Throwable t;
      * t = chainedClose(t, resource1);
      * t = chainedClose(t, resource2);
      * chainedCloseFinish(IOException.class, t);

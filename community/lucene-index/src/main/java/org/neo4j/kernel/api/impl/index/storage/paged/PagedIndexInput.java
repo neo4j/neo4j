@@ -32,6 +32,17 @@ import org.neo4j.io.pagecache.PagedFile;
 public class PagedIndexInput extends IndexInput implements RandomAccessInput
 {
     /**
+     * Fast bitwise modulo the page size: (x & moduloPageSize) == (x % pageSize).
+     * Before this change, calculating where to position the cursor was 50% of the overhead of this class.
+     */
+    private final int moduloPageSize;
+
+    /**
+     * Fast bitwise division by page size: (x >> divideByPageSize) == (x / pageSize)
+     */
+    private final int divideByPageSize;
+
+    /**
      * Tracks open resources across cloned inputs, see {@link InputResources}.
      */
     final InputResources resources;
@@ -80,6 +91,14 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     {
         super( resourceDescription );
 
+        if ( Integer.bitCount( pageSize ) != 1 )
+        {
+            throw new AssertionError(
+                    String.format( "Only power-of-two page sizes are supported, got %d.", pageSize ) );
+        }
+
+        this.moduloPageSize = pageSize - 1;
+        this.divideByPageSize = Integer.numberOfTrailingZeros( pageSize );
         this.pageSize = pageSize;
         this.length = size;
         this.startPosition = startPosition;
@@ -104,12 +123,12 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
     private long pageId( long position )
     {
-        return (startPosition + position) / pageSize;
+        return (startPosition + position) >> divideByPageSize;
     }
 
     private int pageOffset( long position )
     {
-        return (int) ((startPosition + position) % pageSize);
+        return (int) ((startPosition + position) & moduloPageSize);
     }
 
     @Override
@@ -128,7 +147,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
     private byte readByte( long pageId, int pageOffset ) throws IOException
     {
-        moveCursor( pageId, pageOffset );
+        moveCursorTo( pageId, pageOffset );
 
         byte val;
         do
@@ -137,7 +156,11 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         }
         while ( cursor.shouldRetry() );
 
-        boundsCheck();
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw newEOFException( "Cursor bounds check failed" );
+        }
+
         return val;
     }
 
@@ -160,24 +183,13 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         // Cross-page read?
         if ( pageSize - pageOffset < 2 )
         {
-            long originalPageId = currentPageId;
-            int originalPageOffset = currentPageOffset;
-            try
-            {
-                currentPageId = pageId;
-                currentPageOffset = pageOffset;
-                // Delegate to parent, which reads byte-by-byte
-                return super.readShort();
-            }
-            finally
-            {
-                currentPageId = originalPageId;
-                currentPageOffset = originalPageOffset;
-            }
+            byte byte1 = readByte( pageId, pageOffset );
+            byte byte2 = readByte( pageId + 1, 0 );
+            return (short) (((byte1 & 0xFF) << 8) | (byte2 & 0xFF));
         }
 
         // Regular read
-        moveCursor( pageId, pageOffset );
+        moveCursorTo( pageId, pageOffset );
 
         short val;
         do
@@ -186,7 +198,10 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         }
         while ( cursor.shouldRetry() );
 
-        boundsCheck();
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw newEOFException( "Cursor bounds check failed" );
+        }
 
         return val;
     }
@@ -207,38 +222,99 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
     private int readInt( long pageId, int pageOffset ) throws IOException
     {
-        // Cross-page read?
-        if ( pageSize - pageOffset < 4 )
-        {
-            long originalPageId = currentPageId;
-            int originalPageOffset = currentPageOffset;
-            try
-            {
-                currentPageId = pageId;
-                currentPageOffset = pageOffset;
-                // Delegate to parent, which reads byte-by-byte
-                return super.readInt();
-            }
-            finally
-            {
-                currentPageId = originalPageId;
-                currentPageOffset = originalPageOffset;
-            }
-        }
-
-        // Regular read
-        moveCursor( pageId, pageOffset );
+        // 1. Optimistic fast path, relies on bounds check at checkAndClearBoundsFlag
+        moveCursorTo( pageId, pageOffset );
 
         int val;
         do
         {
+            // This may totally fail, since we may be reading an int that's split
+            // across multiple pages - meaning this call is reading more bytes than
+            // what fits in current page. If that happens, checkAndClearBoundsFlag
+            // saves us, and we fall back to the slow path readPageCrossingInt
             val = cursor.getInt( pageOffset );
         }
         while ( cursor.shouldRetry() );
 
-        boundsCheck();
+        // Our savior!
+        if ( !cursor.checkAndClearBoundsFlag() )
+        {
+            // Fast path worked
+            return val;
+        }
 
-        return val;
+        // 2. Slow path
+        return readPageCrossingInt( pageId, pageOffset );
+    }
+
+    private int readPageCrossingInt( long pageId, int pageOffset ) throws IOException
+    {
+        // Note: This relies on callers already having called moveCursorTo( pageId, pageOffset )!
+
+        // This beast is to avoid calling shouldRetry() four times to read a cross-boundary integer;
+        // this optimization improved performance ~20% for for memory-resident indexes in
+        // FindNodeNonUnique.countNodesWithLabelKeyValueWhenSelectivityLow.
+        // This optimization also being used by readLong(..), since it converts to two readInt(..) on page-cross.
+        byte b1, b2, b3, b4;
+        int bytesLeftInPage = pageSize - pageOffset;
+        if ( bytesLeftInPage == 1 )
+        {
+            do
+            {
+                b1 = cursor.getByte( pageOffset );
+            }
+            while ( cursor.shouldRetry() );
+
+            moveCursorTo( pageId + 1, 0 );
+            do
+            {
+                b2 = cursor.getByte( 0 );
+                b3 = cursor.getByte( 1 );
+                b4 = cursor.getByte( 2 );
+            }
+            while ( cursor.shouldRetry() );
+        }
+        else if ( bytesLeftInPage == 2 )
+        {
+            do
+            {
+                b1 = cursor.getByte( pageOffset );
+                b2 = cursor.getByte( pageOffset + 1 );
+            }
+            while ( cursor.shouldRetry() );
+
+            moveCursorTo( pageId + 1, 0 );
+            do
+            {
+                b3 = cursor.getByte( 0 );
+                b4 = cursor.getByte( 1 );
+            }
+            while ( cursor.shouldRetry() );
+        }
+        else
+        {
+            do
+            {
+                b1 = cursor.getByte( pageOffset );
+                b2 = cursor.getByte( pageOffset + 1 );
+                b3 = cursor.getByte( pageOffset + 2 );
+            }
+            while ( cursor.shouldRetry() );
+
+            moveCursorTo( pageId + 1, 0 );
+            do
+            {
+                b4 = cursor.getByte( 0 );
+            }
+            while ( cursor.shouldRetry() );
+        }
+
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw newEOFException( "Cursor bounds check failed" );
+        }
+
+        return ((b1 & 0xFF) << 24) | ((b2 & 0xFF) << 16) | ((b3 & 0xFF) << 8) | (b4 & 0xFF);
     }
 
     @Override
@@ -260,24 +336,17 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         // Cross-page read?
         if ( pageSize - pageOffset < 8 )
         {
-            long originalPageId = currentPageId;
-            int originalPageOffset = currentPageOffset;
-            try
-            {
-                currentPageId = pageId;
-                currentPageOffset = pageOffset;
-                // Delegate to parent, which reads byte-by-byte
-                return super.readLong();
-            }
-            finally
-            {
-                currentPageId = originalPageId;
-                currentPageOffset = originalPageOffset;
-            }
+            // Delegate to readInt, which delegates to readPageCrossingInt
+            int secondPageOffset = (pageOffset + 4) & moduloPageSize;
+            long secondPage = secondPageOffset < pageOffset ? pageId + 1 : pageId;
+
+            int int1 = readInt( pageId, pageOffset );
+            int int2 = readInt( secondPage, secondPageOffset );
+            return (((long) int1) << 32) | (int2 & 0xFFFFFFFFL);
         }
 
         // Regular read
-        moveCursor( pageId, pageOffset );
+        moveCursorTo( pageId, pageOffset );
 
         long val;
         do
@@ -286,7 +355,10 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         }
         while ( cursor.shouldRetry() );
 
-        boundsCheck();
+        if ( cursor.checkAndClearBoundsFlag() )
+        {
+            throw newEOFException( "Cursor bounds check failed" );
+        }
 
         return val;
     }
@@ -298,7 +370,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
         while ( bytesRead < len )
         {
-            moveCursor( currentPageId, currentPageOffset );
+            moveCursorTo( currentPageId, currentPageOffset );
 
             int toRead = Math.min( len - bytesRead, pageSize - currentPageOffset );
             do
@@ -308,7 +380,11 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
             }
             while ( cursor.shouldRetry() );
 
-            boundsCheck();
+            if ( cursor.checkAndClearBoundsFlag() )
+            {
+                throw newEOFException( "Cursor bounds check failed" );
+            }
+
             incrementPageOffset( toRead );
             bytesRead += toRead;
         }
@@ -322,9 +398,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
 
         if ( isEOF( newPageId, newOffset ) )
         {
-            throw newEOFException(
-                    String.format( "seek EOF check failed for { pageId: %d, offsetInPage: %d }", newPageId,
-                            newOffset ) );
+            throw newSeekEOFException( pos, newPageId, newOffset );
         }
 
         currentPageId = newPageId;
@@ -335,14 +409,12 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     public void skipBytes( long numBytes ) throws IOException
     {
         long overflowingOffset = currentPageOffset + numBytes;
-        long newPageId = currentPageId + overflowingOffset / pageSize;
-        int newOffset = (int) (overflowingOffset % pageSize);
+        long newPageId = currentPageId + overflowingOffset >> divideByPageSize;
+        int newOffset = (int) (overflowingOffset & moduloPageSize);
 
         if ( isEOF( newPageId, newOffset ) )
         {
-            throw newEOFException(
-                    String.format( "skipBytes EOF check failed for { pageId: %d, offsetInPage: %d }", newPageId,
-                            newOffset ) );
+            throw newSkipBytesEOFException( newPageId, newOffset );
         }
 
         currentPageId = newPageId;
@@ -382,7 +454,7 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
     {
         // Implementation notes:
         // This is used for both slice() and clone()
-        // - Lucene does not always close these child inputs
+        // - Lucene does not close these child inputs
         // - Lucene may create infinitely many of these, dumping them to be GCd as it goes
         // - Lucene will access the clones concurrently with each other and their root
         if ( offset < 0 || length < 0 || offset + length > this.length )
@@ -409,21 +481,6 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         resources.close( this );
     }
 
-    @Override
-    protected void finalize() throws Throwable
-    {
-        close();
-        super.finalize();
-    }
-
-    private void boundsCheck() throws EOFException
-    {
-        if ( cursor.checkAndClearBoundsFlag() )
-        {
-            throw newEOFException( "Cursor bounds check failed" );
-        }
-    }
-
     private void incrementPageOffset( int byOffset )
     {
         currentPageOffset += byOffset;
@@ -435,36 +492,59 @@ public class PagedIndexInput extends IndexInput implements RandomAccessInput
         }
     }
 
-    private void moveCursor( long pageId, int offsetInPage ) throws IOException
+    private void moveCursorTo( long pageId, int offsetInPage ) throws IOException
     {
-        if ( !cursor.next( pageId ) )
-        {
-            throw newEOFException(
-                    String.format( "Page cache EOF for { pageId: %d, offsetInPage: %d }", pageId, offsetInPage ) );
-        }
-
         if ( isEOF( pageId, offsetInPage ) )
         {
-            throw newEOFException(
-                    String.format( "moveCursor EOF check failed for { pageId: %d, offsetInPage: %d }", pageId,
-                            offsetInPage ) );
+            throw newCursorMoveEOFException( pageId, offsetInPage );
+        }
+
+        if ( !cursor.next( pageId ) )
+        {
+            throw newCursorMoveEOFException( pageId, offsetInPage );
         }
     }
 
     private boolean isEOF( long pageId, int offsetInPage )
     {
-        boolean isBeforeLastPage = pageId > endPageId;
-        boolean isLastPage = pageId == endPageId;
-        boolean offsetOutsidePage = offsetInPage >= endPageOffset;
-        return isBeforeLastPage || (isLastPage && offsetOutsidePage);
+        return pageId >= endPageId && (pageId != endPageId || offsetInPage >= endPageOffset);
+    }
+
+    private EOFException newCursorMoveEOFException( long pageId, int offsetInPage )
+    {
+        // These are extracted from hot methods to keep bytecode down, to help the JIT
+        return newEOFException( String.format( "EOF at { pageId: %d, offsetInPage: %d } %s", pageId, offsetInPage,
+                describeCurrentPosition() ) );
+    }
+
+    private EOFException newSeekEOFException( long pos, long newPageId, int newOffset )
+    {
+        // These are extracted from hot methods to keep bytecode down, to help the JIT
+        return newEOFException(
+                String.format( "seek EOF check failed for { pos: %d, pageId: %d, offsetInPage: %d }", pos, newPageId,
+                        newOffset ) );
+    }
+
+    private EOFException newSkipBytesEOFException( long newPageId, int newOffset )
+    {
+        // These are extracted from hot methods to keep bytecode down, to help the JIT
+        return newEOFException(
+                String.format( "skipBytes EOF check failed for { pageId: %d, offsetInPage: %d }", newPageId,
+                        newOffset ) );
     }
 
     private EOFException newEOFException( String message )
     {
         return new EOFException( String.format( "Input [%s] read past EOF. Please ensure you are using the latest " +
-                        "version of Neo4j and if you are, file a bug report including this message. Details: %s " +
-                        "{ startPosition: %d, currentPageId: %d,  currentPageOffset: %d, endPageId: %d, endPageOffset: %d, " +
-                        "length: %d, pageSize: %d }", this, message, startPosition, currentPageId, currentPageOffset, endPageId,
-                endPageOffset, length, pageSize ) );
+                        "version of Neo4j and if you are, file a bug report including this message. Details: %s " + "%s", this,
+                message, describeCurrentPosition() ) );
+    }
+
+    private String describeCurrentPosition()
+    {
+        return String.format(
+                "{ startPosition: %d, currentPageId: %d,  currentPageOffset: %d, endPageId: %d, endPageOffset: %d, " +
+                        "length: %d, pageSize: %d }", startPosition, currentPageId, currentPageOffset, endPageId,
+                endPageOffset, length, pageSize );
     }
 }
