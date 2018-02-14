@@ -45,7 +45,7 @@ class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations
       case _ => throw new IllegalStateException()
     }
 
-    //Go through the morels and collect the output from the map step
+    //Go through the morsels and collect the output from the map step
     //and reduce the values
     while (morselPos < morsels.length) {
       val data = morsels(morselPos)
@@ -58,14 +58,14 @@ class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations
     }
 
     //Write the reduced value to output
-    var writePos = 0
-    while (writePos < aggregations.length) {
-      output.refs(aggregations(writePos).outgoing) = reducers(writePos).result
-      writePos += 1
+    var i = 0
+    while (i < aggregations.length) {
+      output.refs(aggregations(i).outgoing) = reducers(i).result
+      i += 1
     }
-    output.validRows = writePos
 
-    //we are done
+    //we are done, we have written a single row to the output
+    output.validRows = 1
     EndOfLoop(iterationState)
   }
   override def addDependency(pipeline: Pipeline): Dependency = Eager(pipeline)
