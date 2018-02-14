@@ -33,7 +33,7 @@ class MorselExecutionContext(morsel: Morsel, longsPerRow: Int, refsPerRow: Int, 
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = ???
 
-  override def setLongAt(offset: Int, value: Long): Unit = ???
+  override def setLongAt(offset: Int, value: Long): Unit = morsel.longs(currentRow * longsPerRow + offset) = value
 
   override def getLongAt(offset: Int): Long = morsel.longs(currentRow * longsPerRow + offset)
 

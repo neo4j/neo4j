@@ -104,24 +104,43 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
           new MergeSortOperator(ordering, slots)
 
         case plans.Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
-          val (in, out) = aggregationExpression.foldLeft[(Seq[MapperOffsets], Seq[ReducerOffsets])]((Seq.empty, Seq.empty)) {
-            case ((maps, reds), (key, expression)) =>
-              val aggregator = converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator]
+          val aggregations = aggregationExpression.map {
+            case (key, expression) =>
               val currentSlot = slots.get(key).get
               //we need to make room for storing aggregation value in
               //source slot
               source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
-              val offsetIn = source.slots.getReferenceOffsetFor(key)
-              (maps:+ MapperOffsets(offsetIn, aggregator.createAggregationMapper),
-                reds:+ ReducerOffsets(offsetIn, currentSlot.offset, aggregator.createAggregationReducer))
-          }
+              AggregationOffsets(source.slots.getReferenceOffsetFor(key), currentSlot.offset,
+                                 converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator])
+          }.toArray
 
-          val mapper = new AggregationMapperOperatorNoGrouping(slots, in.toArray)
-          source = source.addOperator(mapper)
+          //add mapper to source
+          source = source.addOperator(new AggregationMapperOperatorNoGrouping(source.slots, aggregations))
+          new AggregationReduceOperatorNoGrouping(slots, aggregations)
 
-          val reducer = new AggregationReduceOperatorNoGrouping(slots, out.toArray)
-          reducer
+        case plans.Aggregation(_, groupingExpressions, aggregationExpression) =>
+          val grouping = groupingExpressions.map {
+            case (key, expression) =>
+              val currentSlot = slots(key)
+              //we need to make room for storing grouping value in source slot
+              if (currentSlot.isLongSlot) source.slots.newLong(key, currentSlot.nullable, currentSlot.typ)
+              else source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              GroupingOffsets(source.slots(key), currentSlot, converters.toCommandExpression(expression))
+          }.toArray
 
+          val aggregations = aggregationExpression.map {
+            case (key, expression) =>
+              val currentSlot = slots.get(key).get
+              //we need to make room for storing aggregation value in
+              //source slot
+              source.slots.newReference(key, currentSlot.nullable, currentSlot.typ)
+              AggregationOffsets(source.slots.getReferenceOffsetFor(key), currentSlot.offset,
+                                 converters.toCommandExpression(expression).asInstanceOf[AggregationExpressionOperator])
+          }.toArray
+
+          //add mapper to source
+          source = source.addOperator(new AggregationMapperOperator(source.slots, aggregations, grouping))
+          new AggregationReduceOperator(slots, aggregations, grouping)
 
         case plans.UnwindCollection(src, variable, collection) =>
           val offset = slots.get(variable) match {

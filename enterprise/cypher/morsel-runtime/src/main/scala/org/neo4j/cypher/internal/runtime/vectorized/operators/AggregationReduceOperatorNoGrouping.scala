@@ -23,14 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.runtime.vectorized.expressions.AggregationReducer
-
-case class ReducerOffsets(incoming: Int, outgoing: Int, aggregation: AggregationReducer)
 
 /*
 Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
-class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[ReducerOffsets]) extends Operator {
+class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends Operator {
+
+  private val reducers = aggregations.map(_.aggregation.createAggregationReducer)
 
   override def operate(message: Message, output: Morsel, context: QueryContext, state: QueryState): Continuation = {
     var iterationState: Iteration = null
@@ -52,8 +51,7 @@ class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations
       val data = morsels(morselPos)
       var i = 0
       while (i < aggregations.length) {
-        val offsets = aggregations(i)
-        offsets.aggregation.reduce(data.refs(offsets.incoming))
+        reducers(i).reduce(data.refs(aggregations(i).incoming))
         i += 1
       }
       morselPos += 1
@@ -62,8 +60,7 @@ class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations
     //Write the reduced value to output
     var writePos = 0
     while (writePos < aggregations.length) {
-        val offsets = aggregations(writePos)
-        output.refs(offsets.outgoing) = offsets.aggregation.result
+      output.refs(aggregations(writePos).outgoing) = reducers(writePos).result
       writePos += 1
     }
     output.validRows = writePos
