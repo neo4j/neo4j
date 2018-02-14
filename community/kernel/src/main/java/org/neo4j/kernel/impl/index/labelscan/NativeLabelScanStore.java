@@ -339,8 +339,11 @@ public class NativeLabelScanStore implements LabelScanStore
         if ( isDirty )
         {
             monitor.notValidIndex();
-            dropStrict();
-            instantiateTree();
+            if ( !readOnly )
+            {
+                dropStrict();
+                instantiateTree();
+            }
             needsRebuild = true;
         }
     }
@@ -420,7 +423,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public void start() throws IOException
     {
-        if ( needsRebuild )
+        if ( needsRebuild && !readOnly )
         {
             monitor.rebuilding();
             long numberOfNodes;
