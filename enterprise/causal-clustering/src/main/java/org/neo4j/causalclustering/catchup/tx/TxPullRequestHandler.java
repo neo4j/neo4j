@@ -40,6 +40,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_INVALID_REQUEST;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
@@ -74,11 +75,17 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
     {
         monitor.increment();
 
-        long firstTxId = Math.max( msg.previousTxId(), BASE_TX_ID ) + 1;
+        if ( msg.previousTxId() <= 0 )
+        {
+            log.error( "Illegal tx pull request" );
+            endInteraction( ctx, E_INVALID_REQUEST, -1 );
+            return;
+        }
+
         StoreId localStoreId = storeIdSupplier.get();
         StoreId expectedStoreId = msg.expectedStoreId();
 
-        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, firstTxId, localStoreId, expectedStoreId );
+        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, msg.previousTxId() + 1, localStoreId, expectedStoreId );
 
         if ( txCursor != null )
         {
