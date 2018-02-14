@@ -29,6 +29,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
+import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -111,7 +112,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().allNodesScan( cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // SingleNode
@@ -123,7 +124,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().singleNode( 0L, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // RelationshipLabelScan
@@ -135,7 +136,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().relationshipLabelScan( 0, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // AllRelationshipsScan
@@ -147,7 +148,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().allRelationshipsScan( cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // SingleRelationship
@@ -159,7 +160,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().singleRelationship( 0L, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // RelationshipGroups
@@ -171,7 +172,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().relationshipGroups( 0L, 0L, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // Relationships
@@ -183,7 +184,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().relationships( 0L, 0L, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeLabelScan
@@ -195,11 +196,12 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().nodeLabelScan( 0, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeLabelUnionScan
-    @Test
+    // TODO: Unignore when unionScan on DefaultNodeLabelIndexCursor is implemented
+    @Ignore
     public void shouldFailOnOpenCursorForNodeLabelUnionScanAtTXClose()
     {
         // given
@@ -214,11 +216,12 @@ public class TraceCursorTest
         {
             // ignore this, because it is actually correct but not what we want to test here
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeLabelIntersectionScan
-    @Test
+    // TODO: Unignore when intersectionScan on DefaultNodeLabelIndexCursor is implemented
+    @Ignore
     public void shouldFailOnOpenCursorForNodeLabelIntersectionScanAtTXClose()
     {
         // given
@@ -234,7 +237,7 @@ public class TraceCursorTest
             // ignore this, because it is actually correct but not what we want to test here
         }
 
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeIndexScan
@@ -242,6 +245,7 @@ public class TraceCursorTest
     public void shouldFailOnOpenCursorForNodeIndexScanAtTXClose()
     {
         // given
+
         NodeValueIndexCursor cursor = kernel.cursors().allocateNodeValueIndexCursor();
         Transaction tx = openTX();
 
@@ -252,7 +256,7 @@ public class TraceCursorTest
         }
         catch ( Exception e )
         {
-            if ( e.getMessage().contains( "IndexNotFoundKernelException" ) ) // no index for given label
+            if ( e.getClass().getSimpleName().endsWith( "IndexNotFoundKernelException" ) ) // no index for given label
             {
                 // ignore this, because it is actually correct but not what we want to test here
             }
@@ -262,7 +266,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeIndexSeek
@@ -289,7 +293,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // - - - Property cursors - - -
@@ -303,7 +307,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().nodeProperties( 0L, 0L, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // RelationshipProperties
@@ -315,7 +319,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().relationshipProperties( 0L, 0L, cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // GraphProperties
@@ -328,7 +332,7 @@ public class TraceCursorTest
         Transaction tx = openTX();
 
         tx.dataRead().graphProperties( cursor );
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // - - - Explicit index cursors - - -
@@ -358,7 +362,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeExplicitIndexQuery
@@ -386,7 +390,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // NodeExplicitIndexQuery2
@@ -414,7 +418,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // RelationshipExplicitIndexGet
@@ -442,7 +446,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // RelationshipExplicitIndexQuery
@@ -470,7 +474,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     // RelationshipExplicitIndexQuery2
@@ -498,7 +502,7 @@ public class TraceCursorTest
                 fail( e.getMessage() );
             }
         }
-        closeTXAndExpectException( tx );
+        closeTXAndExpectException( tx, cursor );
     }
 
     private Transaction openTX()
@@ -514,13 +518,17 @@ public class TraceCursorTest
         }
     }
 
-    private void closeTXAndExpectException( Transaction tx )
+    private void closeTXAndExpectException( Transaction tx, Cursor cursor )
     {
         try
         {
+
             // when
             tx.close();
 
+            if(cursor.isClosed()){
+                fail("Cursor was not even opened in the test");
+            }
             // then (not expected)
             fail( "Should have failed because of open cursor" );
         }
