@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -89,9 +91,9 @@ public class BloomProcedures
     @Procedure( name = "bloom.indexStatus", mode = READ )
     public Stream<StatusOutput> indexStatus()
     {
-        InternalIndexState nodeIndexState = provider.getState( BLOOM_NODES, NODES );
-        InternalIndexState relationshipIndexState = provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
-        return Stream.of( nodeIndexState, relationshipIndexState ).map( StatusOutput::new );
+        StatusOutput nodeIndexState = new StatusOutput( BLOOM_NODES, provider.getState( BLOOM_NODES, NODES ) );
+        StatusOutput relationshipIndexState = new StatusOutput( BLOOM_RELATIONSHIPS, provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) );
+        return Stream.of( nodeIndexState, relationshipIndexState );
     }
 
     @Description( "Query the Bloom fulltext index for nodes" )
@@ -122,6 +124,7 @@ public class BloomProcedures
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
     {
+        terms = terms.stream().flatMap( s -> Arrays.stream( s.split( "\\s+" ) ) ).collect( Collectors.toList() );
         ScoreEntityIterator resultIterator;
         if ( fuzzy )
         {
@@ -158,10 +161,12 @@ public class BloomProcedures
 
     public static class StatusOutput
     {
+        public final String name;
         public final String state;
 
-        StatusOutput( InternalIndexState internalIndexState )
+        StatusOutput( String name, InternalIndexState internalIndexState )
         {
+            this.name = name;
             switch ( internalIndexState )
             {
             case POPULATING:
