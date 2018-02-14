@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.Cardinaliti
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.util.v3_4.DummyPosition
+import org.neo4j.cypher.internal.util.v3_4.{DummyPosition, LabelId, NonEmptyList, PropertyKeyId}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll}
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -452,6 +452,55 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |+----------+----------------+------+---------+-----------+-----------+
         || +NAME    |              1 |   42 |      33 | n         | length(n) |
         |+----------+----------------+------+---------+-----------+-----------+
+        |""".stripMargin)
+  }
+
+  test("format index range seek properly") {
+    val rangeQuery = RangeQueryExpression(InequalitySeekRangeWrapper(
+      RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")(pos))))
+    )(pos))
+    val seekPlan = NodeIndexSeek(
+      "a",
+      LabelToken("Person", LabelId(0)),
+      Seq(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0))),
+      rangeQuery,
+      Set.empty)(idGen)
+    val cardinalities = new Cardinalities
+    cardinalities.set(seekPlan.id, 1.0)
+    cardinalities.set(argument.id, 1.0)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities)
+
+    renderAsTreeTable(description.create(seekPlan)) should equal(
+      """+-----------------------+----------------+-----------+------------------------------------------------+
+        || Operator              | Estimated Rows | Variables | Other                                          |
+        |+-----------------------+----------------+-----------+------------------------------------------------+
+        || +NodeIndexSeekByRange |              1 | a         | :Person(age) < SignedDecimalIntegerLiteral(12) |
+        |+-----------------------+----------------+-----------+------------------------------------------------+
+        |""".stripMargin)
+  }
+
+  test("format index range seek by bounds") {
+    val greaterThan = RangeGreaterThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("12")(pos))))
+    val lessThan = RangeLessThan(NonEmptyList(ExclusiveBound(SignedDecimalIntegerLiteral("21")(pos))))
+    val between = RangeBetween(greaterThan, lessThan)
+    val rangeQuery = RangeQueryExpression(InequalitySeekRangeWrapper(between)(pos))
+    val seekPlan = NodeIndexSeek(
+      "a",
+      LabelToken("Person", LabelId(0)),
+      Seq(PropertyKeyToken(PropertyKeyName("age")(pos), PropertyKeyId(0))),
+      rangeQuery,
+      Set.empty)(idGen)
+    val cardinalities = new Cardinalities
+    cardinalities.set(seekPlan.id, 1.0)
+    cardinalities.set(argument.id, 1.0)
+    val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities)
+
+    renderAsTreeTable(description.create(seekPlan)) should equal(
+      """+-----------------------+----------------+-----------+---------------------------------------------------------------------------------------------------+
+        || Operator              | Estimated Rows | Variables | Other                                                                                             |
+        |+-----------------------+----------------+-----------+---------------------------------------------------------------------------------------------------+
+        || +NodeIndexSeekByRange |              1 | a         | :Person(age) > SignedDecimalIntegerLiteral(12) AND :Person(age) < SignedDecimalIntegerLiteral(21) |
+        |+-----------------------+----------------+-----------+---------------------------------------------------------------------------------------------------+
         |""".stripMargin)
   }
 
