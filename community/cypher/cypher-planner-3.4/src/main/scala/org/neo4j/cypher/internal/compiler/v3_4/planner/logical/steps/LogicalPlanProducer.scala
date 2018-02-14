@@ -437,8 +437,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(LoadCSVPlan(inner, url, variableName, format, fieldTerminator.map(_.value), context.legacyCsvQuoteEscaping), solved, context)
   }
 
-  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
+  def planUnwind(inner: LogicalPlan, name: String, expression: Expression, reported: Expression, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(UnwindProjection(name, reported)))
     annotate(UnwindCollection(inner, name, expression), solved, context)
   }
 

@@ -423,4 +423,31 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     ))
   }
 
+  test("pattern comprehension in unwind with empty db") {
+    val query =
+      """
+        | unwind [(a)-->(b) | b ] as c
+        | return c
+      """.stripMargin
+
+    val result = executeWith(Configs.DefaultInterpreted + Configs.SlottedInterpreted, query)
+    result.toList should equal(List.empty)
+  }
+
+  test("pattern comprehension in unwind with hits") {
+    val node1 = createNode()
+    val node2 = createNode()
+    val node3 = createNode()
+    relate(node1, node2)
+    relate(node2, node3)
+
+    val query =
+      """
+        | unwind [(a)-->(b) | b ] as c
+        | return c
+      """.stripMargin
+
+    val result = executeWith(Configs.DefaultInterpreted + Configs.SlottedInterpreted, query)
+    result.toList should equal(List(Map("c" -> node2), Map("c" -> node3)))
+  }
 }

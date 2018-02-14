@@ -301,3 +301,34 @@ Feature: UnwindAcceptance
       | 'd'   |
     And no side effects
 
+  Scenario: Pattern comprehension in unwind with empty db
+    Given an empty graph
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c |
+    And no side effects
+
+  Scenario: Pattern comprehension in unwind with hits
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A)
+      CREATE (b:B)
+      CREATE (c:C)
+      CREATE (a)-[:T]->(b),
+             (b)-[:T]->(c)
+      """
+    When executing query:
+      """
+        UNWIND [(a)-->(b) | b ] as c
+        RETURN c
+      """
+    Then the result should be:
+      | c     |
+      | (:B)  |
+      | (:C)  |
+    And no side effects
