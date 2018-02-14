@@ -37,4 +37,6 @@ public interface PipelineWrapper
     {
         return emptyList();
     }
+
+    String name();
 }

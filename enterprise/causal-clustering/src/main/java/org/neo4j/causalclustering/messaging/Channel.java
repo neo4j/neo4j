@@ -19,9 +19,7 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import io.netty.util.concurrent.Future;
-
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 public interface Channel
 {
@@ -31,24 +29,7 @@ public interface Channel
 
     boolean isOpen();
 
-    CompletableFuture<Void> write( Object msg );
+    Future<Void> write( Object msg );
 
-    CompletableFuture<Void> writeAndFlush( Object msg );
-
-    static CompletableFuture<Void> convertNettyFuture( Future<?> nettyFuture )
-    {
-        CompletableFuture<Void> promise = new CompletableFuture<>();
-        nettyFuture.addListener( future ->
-        {
-            if ( future.isSuccess() )
-            {
-                promise.complete( null );
-            }
-            else
-            {
-                promise.completeExceptionally( future.cause() );
-            }
-        } );
-        return promise;
-    }
+    Future<Void> writeAndFlush( Object msg );
 }

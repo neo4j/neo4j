@@ -20,7 +20,8 @@
 package org.neo4j.causalclustering.messaging;
 
 import java.util.Iterator;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
@@ -64,7 +65,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
     @Override
     public void send( AdvertisedSocketAddress to, Message message, boolean block )
     {
-        CompletableFuture<Void> future;
+        Future<Void> future;
         serviceLock.readLock().lock();
         try
         {
@@ -73,9 +74,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
                 return;
             }
 
-            Channel channel = channel( to );
-
-            future = channel.writeAndFlush( message );
+            future = channel( to ).writeAndFlush( message );
         }
         finally
         {
@@ -84,7 +83,18 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( block )
         {
-            future.join();
+            try
+            {
+                future.get();
+            }
+            catch ( ExecutionException e )
+            {
+                log.error( "Exception while sending to: " + to, e );
+            }
+            catch ( InterruptedException e )
+            {
+                log.info( "Interrupted while sending", e );
+            }
         }
     }
 
@@ -94,7 +104,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( channel == null )
         {
-            channel = new ReconnectingChannel( bootstrap, destination, log, ch -> new HandshakeGate( ch, log ) );
+            channel = new ReconnectingChannel( bootstrap, eventLoopGroup.next(), destination, log );
             channel.start();
             ReconnectingChannel existingNonBlockingChannel = channels.putIfAbsent( destination, channel );
 

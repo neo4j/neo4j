@@ -46,7 +46,7 @@ public class RaftProtocolClientInstaller extends ProtocolInstaller<ProtocolInsta
     {
         clientPipelineBuilderFactory.create( channel, log )
                 .addFraming()
-                .add( new RaftMessageEncoder( new CoreReplicatedContentMarshal() ) )
+                .add( "raft_encoder", new RaftMessageEncoder( new CoreReplicatedContentMarshal() ) )
                 .install();
     }
 }

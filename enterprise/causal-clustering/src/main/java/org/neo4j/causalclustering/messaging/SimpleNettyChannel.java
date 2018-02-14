@@ -19,7 +19,7 @@
  */
 package org.neo4j.causalclustering.messaging;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import org.neo4j.logging.Log;
 
@@ -56,17 +56,17 @@ public class SimpleNettyChannel implements Channel
     }
 
     @Override
-    public CompletableFuture<Void> write( Object msg )
+    public Future<Void> write( Object msg )
     {
         checkDisposed();
-        return Channel.convertNettyFuture( channel.write( msg ) );
+        return channel.write( msg );
     }
 
     @Override
-    public CompletableFuture<Void> writeAndFlush( Object msg )
+    public Future<Void> writeAndFlush( Object msg )
     {
         checkDisposed();
-        return Channel.convertNettyFuture( channel.writeAndFlush( msg ) );
+        return channel.writeAndFlush( msg );
     }
 
     private void checkDisposed()

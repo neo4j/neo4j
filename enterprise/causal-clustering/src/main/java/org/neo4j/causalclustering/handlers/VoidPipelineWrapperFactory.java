@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.handlers;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
@@ -39,6 +38,12 @@ public class VoidPipelineWrapperFactory implements DuplexPipelineWrapperFactory
         public List<ChannelHandler> handlersFor( Channel channel )
         {
             return emptyList();
+        }
+
+        @Override
+        public String name()
+        {
+            return "void";
         }
     };
 
