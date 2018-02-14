@@ -19,32 +19,19 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.time.Duration;
-
-import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.VmPauseMonitor;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.cache.MeasureDoNothing.loggingMonitor;
-
-public class MonitorGc implements Lifecycle
+public class VmPauseMonitorComponent implements Lifecycle
 {
-    public static class Configuration
-    {
-        public static final Setting<Duration> gc_monitor_wait_time = setting( "unsupported.dbms.gc_monitor_wait_time",
-                DURATION, "100ms" );
-        public static final Setting<Duration> gc_monitor_threshold = setting("unsupported.dbms.gc_monitor_threshold",
-                DURATION, "200ms" );
-    }
-
     private final Config config;
     private final Log log;
-    private volatile MeasureDoNothing monitorGc;
+    private volatile VmPauseMonitor vmPauseMonitor;
 
-    public MonitorGc( Config config, Log log )
+    public VmPauseMonitorComponent( Config config, Log log )
     {
         this.config = config;
         this.log = log;
@@ -58,17 +45,19 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start()
     {
-        monitorGc = new MeasureDoNothing( "neo4j.PauseMonitor", loggingMonitor( log ),
-                config.get( Configuration.gc_monitor_wait_time ).toMillis(),
-                config.get( Configuration.gc_monitor_threshold ).toMillis() );
-        monitorGc.start();
+        vmPauseMonitor = new VmPauseMonitor(
+                config.get( GraphDatabaseSettings.vm_pause_monitor_measurement_duration ).toMillis(),
+                config.get( GraphDatabaseSettings.vm_pause_monitor_stall_alert_threshold ).toMillis(),
+                log, vmPauseInfo -> log.debug( "Detected VM stop-the-world pause: {}", vmPauseInfo )
+        );
+        vmPauseMonitor.start();
     }
 
     @Override
     public void stop()
     {
-        monitorGc.stopMeasuring();
-        monitorGc = null;
+        vmPauseMonitor.stop();
+        vmPauseMonitor = null;
     }
 
     @Override

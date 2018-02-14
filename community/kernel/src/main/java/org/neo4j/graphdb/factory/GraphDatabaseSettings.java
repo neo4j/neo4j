@@ -43,7 +43,6 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
-import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
@@ -617,16 +616,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> forced_kernel_id = buildSetting( "unsupported.dbms.kernel_id", STRING, NO_DEFAULT ).constraint(
             illegalValueMessage( "has to be a valid kernel identifier", matches( "[a-zA-Z0-9]*" ) ) ).build();
 
-    @SuppressWarnings( "unused" )
-    @Description( "Amount of time in ms the GC monitor thread will wait before taking another measurement." )
     @Internal
-    public static final Setting<Duration> gc_monitor_interval = MonitorGc.Configuration.gc_monitor_wait_time;
+    public static final Setting<Duration> vm_pause_monitor_measurement_duration =
+            setting( "unsupported.vm_pause_monitor.measurement_duration", DURATION, "100ms" );
 
-    @SuppressWarnings( "unused" )
-    @Description( "The amount of time in ms the monitor thread has to be blocked before logging a message it was " +
-            "blocked." )
     @Internal
-    public static final Setting<Duration> gc_monitor_block_threshold = MonitorGc.Configuration.gc_monitor_threshold;
+    public static final Setting<Duration> vm_pause_monitor_stall_alert_threshold =
+            setting( "unsupported.vm_pause_monitor.stall_alert_threshold", DURATION, "100ms" );
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold =
