@@ -60,7 +60,7 @@ After running a `mvn clean install` cd into `packaging/standalone/target` and ex
 
 in the extracted folder to start Neo4j on `localhost:7474`. On Windows you want to run
 
-  bin\neo4j console
+  bin\neo4j start
 
 instead.
 
