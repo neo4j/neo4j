@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -82,38 +83,23 @@ public class TimeZoneMappingTest
     @Test
     public void updateTimeZoneMappings() throws IOException
     {
-        String foo = "https://www.iana.org/time-zones/repository/tzdata-latest.tar.gz";
         List<String> versionsToUpgrade = new ArrayList<>();
 
-        try ( TarArchiveInputStream tar = new TarArchiveInputStream( new GZIPInputStream( new URL( foo ).openStream() ) ) )
+        readTZDBFile( null, "NEWS", line ->
         {
-            for ( ArchiveEntry entry; (entry = tar.getNextEntry()) != null; )
+            if ( line.startsWith( "Release " ) )
             {
-                if ( "NEWS".equalsIgnoreCase( entry.getName() ) )
+                String substring = line.substring( line.indexOf( ' ' ) + 1 );
+                String release = substring.substring( 0, substring.indexOf( ' ' ) );
+                if ( TimeZoneMapping.LATEST_SUPPORTED_IANA_VERSION.equals( release ) )
                 {
-                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( tar ) ) )
-                    {
-                        for ( String line; (line = reader.readLine()) != null; )
-                        {
-                            if ( line.startsWith( "Release " ) )
-                            {
-                                String substring = line.substring( line.indexOf( ' ' ) + 1 );
-                                String release = substring.substring( 0, substring.indexOf( ' ' ) );
-                                if ( !TimeZoneMapping.LATEST_SUPPORTED_IANA_VERSION.equals( release ) )
-                                {
-                                    versionsToUpgrade.add( release );
-                                }
-                                else
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    break;
+                    return false; // stop reading
                 }
+                versionsToUpgrade.add( release );
             }
-        }
+            return true; // continue reading
+        } );
+
         HashSet<String> upgradedAlready = new HashSet<>();
         StringBuilder builder = new StringBuilder();
         for ( int i = versionsToUpgrade.size(); i-- > 0; )
@@ -126,31 +112,16 @@ public class TimeZoneMappingTest
 
     private void upgradeIANATo( String release, Set<String> upgradedAlready, StringBuilder builder ) throws IOException
     {
-        String foo = "https://data.iana.org/time-zones/releases/tzdata" + release + ".tar.gz";
         Set<String> ianaSupportedTzs = new HashSet<>();
 
-        try ( TarArchiveInputStream tar = new TarArchiveInputStream( new GZIPInputStream( new URL( foo ).openStream() ) ) )
+        readTZDBFile( release, "zone1970.tab", line ->
         {
-            for ( ArchiveEntry entry; (entry = tar.getNextEntry()) != null; )
+            if ( !line.startsWith( "#" ) )
             {
-                if ( "zone1970.tab".equalsIgnoreCase( entry.getName() ) )
-                {
-                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( tar ) ) )
-                    {
-                        for ( String line; (line = reader.readLine()) != null; )
-                        {
-                            if ( line.startsWith( "#" ) )
-                            {
-                                continue;
-                            }
-                            String tz = line.split( "\\t" )[2];
-                            ianaSupportedTzs.add( tz );
-                        }
-                    }
-                    break;
-                }
+                ianaSupportedTzs.add( line.split( "\\t" )[2] );
             }
-        }
+            return true; // read all lines
+        } );
 
         // TODO assertion for removals
         Collection<String> neo4jSupportedTzs = TimeZoneMapping.supportedTimeZones();
@@ -174,6 +145,32 @@ public class TimeZoneMappingTest
             }
             // Update for the next round
             Collections.addAll( upgradedAlready, added );
+        }
+    }
+
+    private void readTZDBFile( String release, String file, Predicate<String> consumer ) throws IOException
+    {
+        String uri = release == null ? "https://data.iana.org/time-zones/tzdata-latest.tar.gz"
+                                     : "https://data.iana.org/time-zones/releases/tzdata" + release + ".tar.gz";
+        try ( TarArchiveInputStream tar = new TarArchiveInputStream( new GZIPInputStream( new URL( uri ).openStream() ) ) )
+        {
+            for ( ArchiveEntry entry; (entry = tar.getNextEntry()) != null; )
+            {
+                if ( file.equalsIgnoreCase( entry.getName() ) )
+                {
+                    try ( BufferedReader reader = new BufferedReader( new InputStreamReader( tar ) ) )
+                    {
+                        for ( String line; (line = reader.readLine()) != null; )
+                        {
+                            if ( !consumer.test( line ) )
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
 }

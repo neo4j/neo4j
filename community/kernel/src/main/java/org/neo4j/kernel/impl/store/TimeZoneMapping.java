@@ -105,7 +105,7 @@ public class TimeZoneMapping
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Time zone id file is missing." );
+            throw new RuntimeException( "Failed to read time zone id file." );
         }
     }
 }
