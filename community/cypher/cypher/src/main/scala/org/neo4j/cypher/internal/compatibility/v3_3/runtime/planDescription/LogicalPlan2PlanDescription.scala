@@ -384,11 +384,11 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
             (name, PrefixIndex(label.name, propertyKey, range.prefix))
           case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-                                   bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}")
+                                   bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}")
                                      .toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-                                   bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}")
+                                   bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}")
                                      .toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
             val greaterThanBoundsText = greaterThanBounds.bounds
