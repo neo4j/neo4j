@@ -27,6 +27,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntFunction;
@@ -36,66 +38,80 @@ import org.neo4j.causalclustering.backup.backup_stores.BackupStore;
 import org.neo4j.causalclustering.backup.backup_stores.BackupStoreWithSomeData;
 import org.neo4j.causalclustering.backup.backup_stores.BackupStoreWithSomeDataButNoTransactionLogs;
 import org.neo4j.causalclustering.backup.backup_stores.EmptyBackupStore;
-import org.neo4j.causalclustering.backup.backup_stores.NoStore;
+import org.neo4j.causalclustering.backup.cluster_load.ClusterLoad;
+import org.neo4j.causalclustering.backup.cluster_load.NoLoad;
+import org.neo4j.causalclustering.backup.cluster_load.SmallBurst;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.BackupUtil.restoreFromBackup;
 
 @RunWith( Parameterized.class )
-public class ClusterSeedingIT
+public class NewMemberSeedingIT
 {
-    private Cluster backupCluster;
     private Cluster cluster;
-    private FileSystemAbstraction fsa;
+    private DefaultFileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
     private FileCopyDetector fileCopyDetector;
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Object[][] data() throws Exception
+    @Parameterized.Parameters( name = "{0} with {1}" )
+    public static Iterable<Object[]> data() throws Exception
     {
-        return new Object[][]{
-                {new NoStore(), true },
-                {new EmptyBackupStore(), false },
-                {new BackupStoreWithSomeData(), false },
-                {new BackupStoreWithSomeDataButNoTransactionLogs(), false }
-        };
+        return combine( stores(), loads() );
+    }
+
+    private static Iterable<Object[]> combine( Iterable<BackupStore> stores, Iterable<ClusterLoad> loads )
+    {
+        ArrayList<Object[]> params = new ArrayList<>();
+        for ( BackupStore store : stores )
+        {
+            for ( ClusterLoad load : loads )
+            {
+                params.add( new Object[]{store, load} );
+            }
+        }
+        return params;
+    }
+
+    private static Iterable<ClusterLoad> loads()
+    {
+        return Arrays.asList(
+                new NoLoad(),
+                new SmallBurst()
+        );
+    }
+
+    private static Iterable<BackupStore> stores()
+    {
+        return Arrays.asList( new EmptyBackupStore(), new BackupStoreWithSomeData(),
+                        new BackupStoreWithSomeDataButNoTransactionLogs() );
     }
 
     @Parameterized.Parameter()
-    public BackupStore initialStore;
+    public BackupStore seedStore;
 
     @Parameterized.Parameter( 1 )
-    public boolean shouldStoreCopy;
+    public ClusterLoad intermediateLoad;
 
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();
-    public DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private File baseBackupDir;
 
     @Before
     public void setup() throws Exception
     {
         this.fileCopyDetector = new FileCopyDetector();
-        fsa = fileSystemRule.get();
-        backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), Standard
-                .LATEST_NAME, IpFamily.IPV4, false );
-
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
+                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), Standard.LATEST_NAME,
                 IpFamily.IPV4, false );
-
         baseBackupDir = testDir.directory( "backups" );
     }
 
@@ -109,10 +125,6 @@ public class ClusterSeedingIT
     @After
     public void after() throws Exception
     {
-        if ( backupCluster != null )
-        {
-            backupCluster.shutdown();
-        }
         if ( cluster != null )
         {
             cluster.shutdown();
@@ -120,32 +132,32 @@ public class ClusterSeedingIT
     }
 
     @Test
-    public void shouldSeedNewCluster() throws Exception
+    public void shouldSeedNewMemberToCluster() throws Exception
     {
         // given
-        backupCluster.start();
-        Optional<File> backup = initialStore.generate( baseBackupDir, backupCluster );
-        backupCluster.shutdown();
-
-        if ( backup.isPresent() )
-        {
-            for ( CoreClusterMember coreClusterMember : cluster.coreMembers() )
-            {
-                restoreFromBackup( backup.get(), fsa, coreClusterMember );
-            }
-        }
-
-        // we want the cluster to seed from backup. No instance should delete and re-copy the store.
-        cluster.coreMembers().forEach( ccm -> ccm.monitors().addMonitorListener( fileCopyDetector ) );
-
-        // when
         cluster.start();
 
+        // when
+        Optional<File> backup = seedStore.generate( baseBackupDir, cluster );
+
         // then
+        // possibly add load to cluster in between backup
+        intermediateLoad.start( cluster );
+
+        // when
+        CoreClusterMember newCoreClusterMember = cluster.addCoreMemberWithId( 3 );
         if ( backup.isPresent() )
         {
-            dataMatchesEventually( DbRepresentation.of( backup.get() ), cluster.coreMembers() );
+            restoreFromBackup( backup.get(), fsa, newCoreClusterMember );
         }
-        assertEquals( shouldStoreCopy, fileCopyDetector.hasDetectedAnyFileCopied() );
+
+        // we want the new instance to seed from backup and not delete and re-download the store
+        newCoreClusterMember.monitors().addMonitorListener( fileCopyDetector );
+        newCoreClusterMember.start();
+
+        // then
+        intermediateLoad.stop();
+        dataMatchesEventually( newCoreClusterMember, cluster.coreMembers() );
+        assertFalse( fileCopyDetector.hasDetectedAnyFileCopied() );
     }
 }

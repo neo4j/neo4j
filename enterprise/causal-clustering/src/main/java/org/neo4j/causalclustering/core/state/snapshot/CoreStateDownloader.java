@@ -77,9 +77,16 @@ public class CoreStateDownloader
             /* Extract some key properties before shutting it down. */
             boolean isEmptyStore = localDatabase.isEmpty();
 
-            if ( !isEmptyStore )
+            /*
+             *  There is no reason to try to recover if there are no transaction logs and in fact it is
+             *  also problematic for the initial transaction pull during the snapshot download because the
+             *  kernel will create a transaction log with a header where previous index points to the same
+             *  index as that written down into the metadata store. This is problematic because we have no
+             *  guarantee that there are later transactions and we need at least one transaction in
+             *  the log to figure out the Raft log index (see {@link RecoverConsensusLogIndex}).
+             */
+            if ( localDatabase.hasTxLogs() )
             {
-                /* make sure it's recovered before we start messing with catchup */
                 localDatabase.start();
                 localDatabase.stop();
             }
@@ -120,7 +127,7 @@ public class CoreStateDownloader
             else
             {
                 StoreId localStoreId = localDatabase.storeId();
-                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId, localDatabase.storeDir() );
+                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {

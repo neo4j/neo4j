@@ -204,7 +204,7 @@ public class CoreServerModule
 
         RemoteStore remoteStore = new RemoteStore(
                 logProvider, platformModule.fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
-                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), platformModule.monitors );
+                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), platformModule.monitors, localDatabase );
 
         CopiedStoreRecovery copiedStoreRecovery = platformModule.life.add(
                 new CopiedStoreRecovery( platformModule.config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache ) );
