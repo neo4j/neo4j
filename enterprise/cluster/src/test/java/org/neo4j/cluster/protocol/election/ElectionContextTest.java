@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.protocol.election;
 
-import org.junit.Test;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
+
+import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -48,6 +48,7 @@ import org.neo4j.logging.NullLogProvider;
 import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,7 +57,7 @@ public class ElectionContextTest
     @Test
     public void testElectionOkNoFailed()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
 
         baseTestForElectionOk( failed, false );
     }
@@ -64,7 +65,7 @@ public class ElectionContextTest
     @Test
     public void testElectionOkLessThanQuorumFailed()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 1 ) );
 
         baseTestForElectionOk( failed, false );
@@ -73,7 +74,7 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkMoreThanQuorumFailed()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 1 ) );
         failed.add( new InstanceId( 2 ) );
 
@@ -83,10 +84,10 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkQuorumFailedTwoInstances()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
 
@@ -100,7 +101,7 @@ public class ElectionContextTest
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
         MultiPaxosContext context = new MultiPaxosContext( new InstanceId( 1 ),
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( "coordinator" ) ),
+                Iterables.iterable( new ElectionRole( "coordinator" ) ),
                 clusterConfiguration, mock( Executor.class ), NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
@@ -116,11 +117,11 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkQuorumFailedFourInstances()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
         failed.add( new InstanceId( 3 ) );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -152,12 +153,12 @@ public class ElectionContextTest
     @Test
     public void testElectionNotOkQuorumFailedFiveInstances()
     {
-        Set<InstanceId> failed = new HashSet<InstanceId>();
+        Set<InstanceId> failed = new HashSet<>();
         failed.add( new InstanceId( 2 ) );
         failed.add( new InstanceId( 3 ) );
         failed.add( new InstanceId( 4 ) );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -188,14 +189,61 @@ public class ElectionContextTest
     }
 
     @Test
-    public void twoVotesFromSameInstanceForSameRoleShouldBeConsolidated() throws Exception
+    public void testInstanceWithLowestIdFailedIsNotConsideredTheElector()
+    {
+        // Given
+        // A cluster of 5 of which the two lowest instances are failed
+        Set<InstanceId> failed = new HashSet<>();
+        failed.add( new InstanceId( 1 ) );
+        failed.add( new InstanceId( 2 ) );
+
+        // This is the instance that must discover that it is the elector and whose state machine we'll test
+        InstanceId lowestNonFailedInstanceId = new InstanceId( 3 );
+
+        Map<InstanceId, URI> members = new HashMap<>();
+        members.put( new InstanceId( 1 ), URI.create( "server1" ) );
+        members.put( new InstanceId( 2 ), URI.create( "server2" ) );
+        members.put( lowestNonFailedInstanceId, URI.create( "server3" ) );
+        members.put( new InstanceId( 4 ), URI.create( "server4" ) );
+        members.put( new InstanceId( 5 ), URI.create( "server5" ) );
+
+        Config config = Config.defaults();
+        ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
+        when( clusterConfiguration.getMembers() ).thenReturn( members );
+        when( clusterConfiguration.getMemberIds() ).thenReturn( members.keySet() );
+
+        ClusterContext clusterContext = mock( ClusterContext.class );
+        when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
+
+        MultiPaxosContext context = new MultiPaxosContext( lowestNonFailedInstanceId, Iterables.iterable(
+                new ElectionRole( "coordinator" ) ), clusterConfiguration,
+                mock( Executor.class ), NullLogProvider.getInstance(),
+                mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
+                mock( AcceptorInstanceStore.class ), mock( Timeouts.class ),
+                mock( ElectionCredentialsProvider.class), config );
+
+        ElectionContext toTest = context.getElectionContext();
+        // Sanity check that before learning about lowest failed ids it does not consider itself the elector
+        assertFalse( toTest.isElector() );
+
+        // When
+        // The lowest numbered alive instance receives word about other failed instances
+        context.getHeartbeatContext().getFailed().addAll( failed );
+
+        // Then
+        // It should realise it is the elector (lowest instance id alive)
+        assertTrue( toTest.isElector() );
+    }
+
+    @Test
+    public void twoVotesFromSameInstanceForSameRoleShouldBeConsolidated()
     {
         // Given
         final String coordinatorRole = "coordinator";
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -230,12 +278,12 @@ public class ElectionContextTest
     }
 
     @Test
-    public void electionBeingForgottenMustIncreaseElectionId() throws Exception
+    public void electionBeingForgottenMustIncreaseElectionId()
     {
         // Given
         final String coordinatorRole = "coordinator";
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
@@ -254,12 +302,12 @@ public class ElectionContextTest
     }
 
     @Test
-    public void voteFromPreviousSuccessfulElectionMustNotBeCounted() throws Exception
+    public void voteFromPreviousSuccessfulElectionMustNotBeCounted()
     {
         // Given
         final String coordinatorRole = "coordinator";
         HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
-        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.emptySet() );
 
         Config config = mock( Config.class );
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
@@ -281,7 +329,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void instanceFailingShouldHaveItsVotesInvalidated() throws Exception
+    public void instanceFailingShouldHaveItsVotesInvalidated()
     {
         // Given
         final String role1 = "coordinator1";
@@ -294,22 +342,15 @@ public class ElectionContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
-        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        List<InstanceId> clusterMemberIds = new LinkedList<>();
         clusterMemberIds.add( failingInstance );
         clusterMemberIds.add( otherInstance );
         clusterMemberIds.add( me );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
-        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole>iterable(
+        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration,
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -333,7 +374,7 @@ public class ElectionContextTest
     }
 
     @Test
-    public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion() throws Throwable
+    public void failedElectorRejoiningMustHaveItsVersionFromVoteRequestsSetTheElectorVersion()
     {
         // Given
         final String role1 = "coordinator1";
@@ -345,7 +386,7 @@ public class ElectionContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
-        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        List<InstanceId> clusterMemberIds = new LinkedList<>();
         clusterMemberIds.add( failingInstance );
         clusterMemberIds.add( me );
         clusterMemberIds.add( forQuorum );
@@ -353,14 +394,7 @@ public class ElectionContextTest
 
         MultiPaxosContext context = new MultiPaxosContext( me, Iterables.iterable(
                 new ElectionRole( role1 ) ), clusterConfiguration,
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                }, NullLogProvider.getInstance(),
+                Runnable::run, NullLogProvider.getInstance(),
                 mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
@@ -392,7 +426,7 @@ public class ElectionContextTest
      * expected result is that it will succeed in sending election results.
      */
     @Test
-    public void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough() throws Exception
+    public void electorLeavingAndRejoiningWithNoElectionsInBetweenMustStillHaveElectionsGoThrough()
     {
         // Given
         final String role1 = "coordinator1";
@@ -404,27 +438,19 @@ public class ElectionContextTest
         when( config.get( ClusterSettings.max_acceptors ) ).thenReturn( 10 );
 
         ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
-        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        List<InstanceId> clusterMemberIds = new LinkedList<>();
         clusterMemberIds.add( leavingInstance );
         clusterMemberIds.add( me );
         clusterMemberIds.add( forQuorum );
         when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
 
         MultiPaxosContext context = new MultiPaxosContext( me,
-                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( role1 ) ), clusterConfiguration,
-                new Executor()
-                {
-                    @Override
-                    public void execute( Runnable command )
-                    {
-                        command.run();
-                    }
-                },
+                Iterables.iterable( new ElectionRole( role1 ) ), clusterConfiguration,
+                Runnable::run,
                 NullLogProvider.getInstance(), mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
                 mock( AcceptorInstanceStore.class ), mock( Timeouts.class ), mock( ElectionCredentialsProvider.class ),
                 config );
 
-        HeartbeatContext heartbeatContext = context.getHeartbeatContext();
         ClusterContext clusterContext = context.getClusterContext();
 
         clusterContext.setLastElector( leavingInstance );
@@ -448,7 +474,7 @@ public class ElectionContextTest
 
     private void baseTestForElectionOk( Set<InstanceId> failed, boolean moreThanQuorum )
     {
-        Map<InstanceId, URI> members = new HashMap<InstanceId, URI>();
+        Map<InstanceId, URI> members = new HashMap<>();
         members.put( new InstanceId( 1 ), URI.create( "server1" ) );
         members.put( new InstanceId( 2 ), URI.create( "server2" ) );
         members.put( new InstanceId( 3 ), URI.create( "server3" ) );
@@ -462,7 +488,7 @@ public class ElectionContextTest
         ClusterContext clusterContext = mock( ClusterContext.class );
         when( clusterContext.getConfiguration() ).thenReturn( clusterConfiguration );
 
-        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1), Iterables.iterable(
+        MultiPaxosContext context = new MultiPaxosContext( new InstanceId(1 ), Iterables.iterable(
                         new ElectionRole( "coordinator" ) ), clusterConfiguration,
                         mock( Executor.class ), NullLogProvider.getInstance(),
                         mock( ObjectInputStreamFactory.class ), mock( ObjectOutputStreamFactory.class ),
