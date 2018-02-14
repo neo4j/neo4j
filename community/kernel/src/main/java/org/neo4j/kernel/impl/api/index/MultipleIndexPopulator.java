@@ -33,7 +33,6 @@ import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
@@ -52,10 +51,8 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.contains;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-import static org.neo4j.kernel.impl.api.index.IndexUpdateProcessor.applyIndexUpdatesByMode;
 
 /**
  * {@link IndexPopulator} that allow population of multiple indexes during one iteration.
@@ -93,7 +90,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
-    protected final Queue queue = new LinkedBlockingQueue<>();
+    protected final Queue<IndexEntryUpdate<?>> queue = new LinkedBlockingQueue<>();
 
     // Populators are added into this list. The same thread adding populators will later call #indexAllNodes.
     // Multiple concurrent threads might fail individual populations.
@@ -372,38 +369,15 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             try ( MultipleIndexUpdater updater = newPopulatingUpdater( storeView ) )
             {
-                // TODO the generics of IndexEntryUpdate in combination with that of IndexUpdater make the IndexUpdateProcessor
-                // generics hard to make fit for all scenarios. For that reason the queue holding updates cannot quite have the generics
-                // it would have liked to have. Also this specific scenario catches the exceptions seen below inside acceptUpdate method,
-                // but they are caught here to satisfy the compiler, even though knowing that they will never be thrown.
-                // Generifying IndexUpdateProcessor with exception type doesn't work due to multiple exception types thrown.
-                try
+                do
                 {
-                    applyIndexUpdatesByMode( extractUpdatesFromQueue(),
-                            update -> storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId ) );
+                    // no need to check for null as nobody else is emptying this queue
+                    IndexEntryUpdate<?> update = queue.poll();
+                    storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
-                catch ( IOException | IndexEntryConflictException e )
-                {
-                    throw Exceptions.launderedException( e );
-                }
+                while ( !queue.isEmpty() );
             }
         }
-    }
-
-    /**
-     * Extracts {@link IndexEntryUpdate} from {@link #queue} into a {@link List}. This is done since updates can be added to this
-     * queue while we're doing this and the way we apply them requires a stable set of updates.
-     * @return a {@link List} of updates from {@link #queue}.
-     */
-    private List extractUpdatesFromQueue()
-    {
-        List updatesSnapshot = new ArrayList( queue.size() * 2 );
-        do
-        {
-            updatesSnapshot.add( queue.poll() );
-        }
-        while ( !queue.isEmpty() );
-        return updatesSnapshot;
     }
 
     private void forEachPopulation( ThrowingConsumer<IndexPopulation,Exception> action )

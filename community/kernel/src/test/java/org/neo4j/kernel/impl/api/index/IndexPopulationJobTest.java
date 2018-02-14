@@ -492,9 +492,6 @@ public class IndexPopulationJobTest
                         case CHANGED:
                             added.add( Pair.of( update.getEntityId(), update.values()[0].asObjectCopy() ) );
                             break;
-                        case REMOVED:
-                            // ignore removals
-                            break;
                         default:
                             throw new IllegalArgumentException( update.updateMode().name() );
                     }

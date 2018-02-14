@@ -427,7 +427,10 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
-            IndexUpdateProcessor.applyIndexUpdatesByMode( updates, update -> processUpdate( updaterMap, update ) );
+            for ( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate : updates )
+            {
+                processUpdate( updaterMap, indexUpdate );
+            }
         }
     }
 
