@@ -89,7 +89,7 @@ public class PreElectionIT
         Assert.assertEventually(
                 "Should be on a new term following an election",
                 () -> cluster.awaitLeader().raft().term(), not( equalTo( initialTerm ) ),
-                5,
+                6,
                 TimeUnit.MINUTES );
 
         // cleanup
