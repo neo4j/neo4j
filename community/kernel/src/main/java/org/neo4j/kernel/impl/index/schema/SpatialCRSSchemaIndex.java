@@ -33,6 +33,7 @@ import org.neo4j.gis.spatial.index.Envelope;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve2D;
 import org.neo4j.gis.spatial.index.curves.HilbertSpaceFillingCurve3D;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Pair;
@@ -71,6 +72,7 @@ public class SpatialCRSSchemaIndex
     private final CoordinateReferenceSystem crs;
     private final FileSystemAbstraction fs;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
+    private final SpaceFillingCurveConfiguration configuration;
     private final SpaceFillingCurve curve;
 
     private State state;
@@ -91,12 +93,14 @@ public class SpatialCRSSchemaIndex
             PageCache pageCache,
             FileSystemAbstraction fs,
             SchemaIndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            SpaceFillingCurveConfiguration configuration )
     {
         this.crs = crs;
         this.pageCache = pageCache;
         this.fs = fs;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+        this.configuration = configuration;
 
         // Depends on crs
         SchemaIndexProvider.Descriptor crsDescriptor =
@@ -106,11 +110,11 @@ public class SpatialCRSSchemaIndex
         indexFile = new File( indexDir.directoryForIndex( indexId ), "index-" + indexId );
         if ( crs.getDimension() == 2 )
         {
-            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), 8 );
+            curve = new HilbertSpaceFillingCurve2D( envelopeFromCRS( crs ), configuration.maxLevels() );
         }
         else if ( crs.getDimension() == 3 )
         {
-            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), 8 );
+            curve = new HilbertSpaceFillingCurve3D( envelopeFromCRS( crs ), configuration.maxLevels() );
         }
         else
         {
@@ -198,7 +202,7 @@ public class SpatialCRSSchemaIndex
     public IndexReader newReader( IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         schemaIndex.assertOpen();
-        return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor );
+        return new SpatialSchemaIndexReader<>( schemaIndex.tree, layout, samplingConfig, descriptor, configuration );
     }
 
     public ResourceIterator<File> snapshotFiles()

@@ -255,14 +255,16 @@ public abstract class SpaceFillingCurve
     /**
      * Given an envelope, find a collection of LongRange of tiles intersecting it on maxLevel and merge adjacent ones
      */
-    public List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope )
+    List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope )
     {
-        return getTilesIntersectingEnvelope( referenceEnvelope, new StandardConfiguration(), null );
+        return getTilesIntersectingEnvelope( referenceEnvelope, new StandardConfiguration() );
     }
 
-    /**
-     * Given an envelope, find a collection of LongRange of tiles intersecting it on maxLevel and merge adjacent ones
-     */
+    public List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, SpaceFillingCurveConfiguration config )
+    {
+        return getTilesIntersectingEnvelope( referenceEnvelope, config, null );
+    }
+
     List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor )
     {
         SearchEnvelope search = new SearchEnvelope( this, referenceEnvelope );

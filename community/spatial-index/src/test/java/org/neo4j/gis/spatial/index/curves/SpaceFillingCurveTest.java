@@ -461,17 +461,17 @@ public class SpaceFillingCurveTest
             log( "" );
             log( formatHeader1 );
             log( formatHeader2 );
-            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{new StandardConfiguration( 1 ), new StandardConfiguration( 2 ),
-                    new StandardConfiguration( 3 ), new StandardConfiguration( 4 ), new PartialOverlapConfiguration( 1, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 1, 0.99, 0.5 ), new PartialOverlapConfiguration( 2, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 2, 0.99, 0.5 ), new PartialOverlapConfiguration( 3, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 3, 0.99, 0.5 ), new PartialOverlapConfiguration( 4, 0.99, 0.1 ),
-                    new PartialOverlapConfiguration( 4, 0.99, 0.5 )} )
+            for ( SpaceFillingCurveConfiguration config : new SpaceFillingCurveConfiguration[]{new StandardConfiguration( 1, level ),
+                    new StandardConfiguration( 2, level ), new StandardConfiguration( 3, level ), new StandardConfiguration( 4, level ),
+                    new PartialOverlapConfiguration( 1, level, 0.99, 0.1 ), new PartialOverlapConfiguration( 1, level, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 2, level, 0.99, 0.1 ), new PartialOverlapConfiguration( 2, level, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 3, level, 0.99, 0.1 ), new PartialOverlapConfiguration( 3, level, 0.99, 0.5 ),
+                    new PartialOverlapConfiguration( 4, level, 0.99, 0.1 ), new PartialOverlapConfiguration( 4, level, 0.99, 0.5 )} )
             {
                 MonitorDoubleStats areaStats = new MonitorDoubleStats();
                 MonitorStats rangeStats = new MonitorStats();
                 MonitorStats maxDepthStats = new MonitorStats();
-                HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
+                HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, config.maxLevels() );
 
                 // For differently shaped rectangles
                 for ( double xExtent = minExtent; xExtent <= xmax; xExtent *= extensionFactor )
@@ -667,18 +667,19 @@ public class SpaceFillingCurveTest
     @Test
     public void shouldGet2DHilbertSearchTilesForCenterRangeAndTraverseToBottom()
     {
-        TraverseToBottomConfiguration configuration = new TraverseToBottomConfiguration();
         Envelope envelope = new Envelope( -8, 8, -8, 8 );
         for ( int level = 2; level <= 11; level++ )  // 12 takes 6s, 13 takes 25s, 14 takes 100s, 15 takes over 400s
         {
-            HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, level );
-            double fullTile = curve.getTileWidth( 0, level );
+            TraverseToBottomConfiguration configuration = new TraverseToBottomConfiguration( level );
+            HilbertSpaceFillingCurve2D curve = new HilbertSpaceFillingCurve2D( envelope, configuration.maxLevels() );
+            double fullTile = curve.getTileWidth( 0, configuration.maxLevels() );
             double halfTile = fullTile / 2.0;
             Envelope centerWithoutOuterRing = new Envelope( envelope.getMin( 0 ) + fullTile + halfTile, envelope.getMax( 0 ) - fullTile - halfTile,
                     envelope.getMin( 1 ) + fullTile + halfTile, envelope.getMax( 1 ) - fullTile - halfTile );
             long start = System.currentTimeMillis();
             List<SpaceFillingCurve.LongRange> result = curve.getTilesIntersectingEnvelope( centerWithoutOuterRing, configuration, null );
-            log( "Hilbert query at level " + level + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() + " tiles" );
+            log( "Hilbert query at level " + configuration.maxLevels() + " took " + (System.currentTimeMillis() - start) + "ms to produce " + result.size() +
+                    " tiles" );
             assertTiles( result, tilesNotTouchingOuterRing( curve ).toArray( new SpaceFillingCurve.LongRange[0] ) );
         }
     }

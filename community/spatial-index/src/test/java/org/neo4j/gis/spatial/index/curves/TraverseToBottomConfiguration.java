@@ -23,6 +23,13 @@ import org.neo4j.gis.spatial.index.Envelope;
 
 public class TraverseToBottomConfiguration implements SpaceFillingCurveConfiguration
 {
+    private final int maxLevels;
+
+    public TraverseToBottomConfiguration( int maxLevels )
+    {
+        this.maxLevels = maxLevels;
+    }
+
     @Override
     public boolean stopAtThisDepth( double overlap, int depth, int maxDepth )
     {
@@ -47,5 +54,11 @@ public class TraverseToBottomConfiguration implements SpaceFillingCurveConfigura
         // When traversing to bottom, we can get extremely large lists and can't estimate the length.
         // Thus, we can just as well start with a short list.
         return 10;
+    }
+
+    @Override
+    public int maxLevels()
+    {
+        return maxLevels;
     }
 }

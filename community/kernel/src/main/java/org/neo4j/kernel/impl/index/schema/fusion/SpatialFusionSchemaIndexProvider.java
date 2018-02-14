@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -56,12 +57,13 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     private final Monitor monitor;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
+    private final SpaceFillingCurveConfiguration configuration;
 
     private Map<Long,Map<CoordinateReferenceSystem,SpatialCRSSchemaIndex>> indexes = new HashMap<>();
 
     public SpatialFusionSchemaIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
-            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly,
+            SpaceFillingCurveConfiguration configuration )
     {
         super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
@@ -69,6 +71,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
+        this.configuration = configuration;
     }
 
     @Override
@@ -168,7 +171,7 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     {
         return indexMap.computeIfAbsent( crs,
                 crsKey -> new SpatialCRSSchemaIndex( descriptor, directoryStructure(), crsKey, indexId, pageCache, fs, monitor,
-                        recoveryCleanupWorkCollector ) );
+                        recoveryCleanupWorkCollector, configuration ) );
     }
 
     /**

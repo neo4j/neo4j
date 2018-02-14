@@ -827,6 +827,29 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> archive_failed_index = setting(
             "unsupported.dbms.index.archive_failed", BOOLEAN, FALSE );
 
+    @Description( "The amount of levels the spatial index goes deeper than strictly necessary, to trim down the amount of false positives." )
+    @Internal
+    public static final Setting<Integer> space_filling_curve_extra_levels = setting(
+            "unsupported.dbms.index.spatial.curve.extra_levels", INTEGER, "1" );
+
+    @Description( "In the space filling curve, the overlap threshold at level 1, that, if exceeded, stops traversing deeper. " +
+            "O indicates that this early stopping is turned off." )
+    @Internal
+    public static final Setting<Double> space_filling_curve_top_threshold = setting(
+            "unsupported.dbms.index.spatial.curve.top_threshold", DOUBLE, "0" );
+
+    @Description( "In the space filling curve, the overlap threshold at level max depth, that, if exceeded, stops traversing deeper. " +
+            "O indicates that this early stopping is turned off." )
+    @Internal
+    public static final Setting<Double> space_filling_curve_bottom_threshold = setting(
+            "unsupported.dbms.index.spatial.curve.bottom_threshold", DOUBLE, "0" );
+
+    @Description( "In the space filling curve, the overlap threshold at level max depth, that, if exceeded, stops traversing deeper. " +
+            "O indicates that this early stopping is turned off." )
+    @Internal
+    public static final Setting<Integer> space_filling_curve_max_levels = setting(
+            "unsupported.dbms.index.spatial.curve.max_levels", INTEGER, "8" );
+
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final BoltConnectorValidator boltValidator = new BoltConnectorValidator();
