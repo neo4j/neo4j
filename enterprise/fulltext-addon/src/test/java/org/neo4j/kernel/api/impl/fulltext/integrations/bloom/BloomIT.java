@@ -227,6 +227,31 @@ public class BloomIT
     }
 
     @Test
+    public void unsplitTokensShouldNotBreakFuzzyQuery() throws Exception
+    {
+        db = getDb();
+        db.execute( String.format( SET_NODE_KEYS, "\"prop\"" ) );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test that involves scoring and thus needs a longer sentence." );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "tase" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "\"integration test involves scoring needs sentence\"" ) );
+        assertTrue( result.hasNext() );
+        Map<String,Object> firstResult = result.next();
+        assertTrue( result.hasNext() );
+        Map<String,Object> secondResult = result.next();
+        assertFalse( result.hasNext() );
+        assertEquals( 0L, firstResult.get( ENTITYID ) );
+        assertEquals( 1L, secondResult.get( ENTITYID ) );
+        assertThat( (double) firstResult.get( SCORE ), greaterThan( (double) secondResult.get( SCORE ) * 10 ) );
+    }
+
+    @Test
     public void shouldBeAbleToConfigureAnalyzer() throws Exception
     {
         builder.setConfig( BloomFulltextConfig.bloom_default_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
@@ -629,8 +654,12 @@ public class BloomIT
 
         db.execute( AWAIT_POPULATION );
         Result result = db.execute( STATUS );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
-        assertEquals( "ONLINE", result.next().get( "state" ) );
+        Map<String,Object> output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomNodes", output.get( "name" ) );
+        output = result.next();
+        assertEquals( "ONLINE", output.get( "state" ) );
+        assertEquals( "bloomRelationships", output.get( "name" ) );
         assertFalse( result.hasNext() );
     }
 
