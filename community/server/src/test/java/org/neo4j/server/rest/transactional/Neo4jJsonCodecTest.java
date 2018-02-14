@@ -231,7 +231,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testGeographicPointWriting() throws IOException
     {
         //Given
-        Point value = new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() );
+        Point value = SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );
@@ -244,7 +244,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
     public void testCartesianPointWriting() throws IOException
     {
         //Given
-        Point value = new SpatialMocks.MockPoint( 123.0, 456.0, mockCartesian() );
+        Point value = SpatialMocks.mockPoint( 123.0, 456.0, mockCartesian() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );
@@ -260,7 +260,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         List<Coordinate> points = new ArrayList<>();
         points.add( new Coordinate( 1, 2 ) );
         points.add( new Coordinate( 2, 3 ) );
-        Geometry value = new SpatialMocks.MockGeometry( "LineString", points, mockCartesian() );
+        Geometry value = SpatialMocks.mockGeometry( "LineString", points, mockCartesian() );
 
         //When
         jsonCodec.writeValue( jsonGenerator, value );

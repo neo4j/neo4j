@@ -359,8 +359,8 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, 12L );
         assertCanCreateAndFind( db, LABEL1, property, (float)12. );
         assertCanCreateAndFind( db, LABEL1, property, 12. );
-        assertCanCreateAndFind( db, LABEL1, property, new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() ) );
-        assertCanCreateAndFind( db, LABEL1, property, new SpatialMocks.MockPoint( 123, 456, mockCartesian() ) );
+        assertCanCreateAndFind( db, LABEL1, property, SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) );
+        assertCanCreateAndFind( db, LABEL1, property, SpatialMocks.mockPoint( 123, 456, mockCartesian() ) );
         assertCanCreateAndFind( db, LABEL1, property, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) );
         assertCanCreateAndFind( db, LABEL1, property, Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 ) );
 
@@ -381,8 +381,8 @@ public class IndexingAcceptanceTest
         assertCanCreateAndFind( db, LABEL1, property, new Float[]{(float)19.} );
         assertCanCreateAndFind( db, LABEL1, property, new double[]{20.} );
         assertCanCreateAndFind( db, LABEL1, property, new Double[]{21.} );
-        assertCanCreateAndFind( db, LABEL1, property, new Point[]{new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() )} );
-        assertCanCreateAndFind( db, LABEL1, property, new Point[]{new SpatialMocks.MockPoint( 123, 456, mockCartesian() )} );
+        assertCanCreateAndFind( db, LABEL1, property, new Point[]{SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() )} );
+        assertCanCreateAndFind( db, LABEL1, property, new Point[]{SpatialMocks.mockPoint( 123, 456, mockCartesian() )} );
         assertCanCreateAndFind( db, LABEL1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 )} );
         assertCanCreateAndFind( db, LABEL1, property, new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, 123, 456 )} );
     }

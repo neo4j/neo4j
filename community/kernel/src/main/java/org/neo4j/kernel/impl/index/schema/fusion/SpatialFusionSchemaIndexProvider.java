@@ -123,30 +123,23 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
         // loop through all files, check if file exists, then check state
         // if any have failed, return failed, else if any are populating return populating, else online
         InternalIndexState state = InternalIndexState.ONLINE;
-        if ( !indexes.containsKey( indexId ) )
+        for ( SpatialKnownIndex index : indexesFor( indexId ).values() )
         {
-            return InternalIndexState.ONLINE;
-        }
-        for ( SpatialKnownIndex index : indexes.get( indexId ).values() )
-        {
-            if ( index.indexExists() )
+            try
             {
-                try
+                switch ( index.readState( descriptor ) )
                 {
-                    switch ( index.readState( descriptor ) )
-                    {
-                    case FAILED:
-                        return InternalIndexState.FAILED;
-                    case POPULATING:
-                        state = InternalIndexState.POPULATING;
-                    default:
-                    }
-                }
-                catch ( IOException e )
-                {
-                    monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+                case FAILED:
+                    return InternalIndexState.FAILED;
+                case POPULATING:
                     state = InternalIndexState.POPULATING;
+                default:
                 }
+            }
+            catch ( IOException e )
+            {
+                monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
+                state = InternalIndexState.POPULATING;
             }
         }
         return state;
@@ -168,18 +161,10 @@ public class SpatialFusionSchemaIndexProvider extends SchemaIndexProvider implem
     }
 
     @Override
-    public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value )
-    {
-        PointValue pointValue = (PointValue) value;
-        CoordinateReferenceSystem crs = pointValue.getCoordinateReferenceSystem();
-        return selectAndCreate( indexMap, indexId, crs );
-    }
-
-    @Override
     public SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, CoordinateReferenceSystem crs )
     {
         return indexMap.computeIfAbsent( crs,
-                k -> new SpatialKnownIndex( directoryStructure(), crs, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
+                crsKey -> new SpatialKnownIndex( directoryStructure(), crsKey, indexId, pageCache, fs, monitor, recoveryCleanupWorkCollector ) );
     }
 
     /**

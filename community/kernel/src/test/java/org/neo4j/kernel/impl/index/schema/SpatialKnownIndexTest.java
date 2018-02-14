@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,6 +47,7 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.mockito.Mockito.mock;
@@ -75,13 +77,15 @@ public class SpatialKnownIndexTest
         storeDir = new File( "store" );
         fs.deleteRecursively( storeDir );
         fs.mkdir( storeDir );
-        indexDir = new File( new File( new File( new File( new File( storeDir, "schema" ), "index" ), "spatial-1.0" ), "1" ), "1-4326" );
+
+        CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
+        String crsDir = String.format("%s-%s", crs.getTable().getTableId(), crs.getCode() );
+        indexDir = new File( new File( new File( new File( new File( storeDir, "schema" ), "index" ), "spatial-1.0" ), "1" ), crsDir );
         IndexDirectoryStructure dirStructure = IndexDirectoryStructure.directoriesByProvider( storeDir ).forProvider( SPATIAL_PROVIDER_DESCRIPTOR );
-        index = new SpatialKnownIndex( dirStructure, CoordinateReferenceSystem.WGS84, 1L, pageCacheRule.getPageCache( fs ), fs,
+        index = new SpatialKnownIndex( dirStructure, crs, 1L, pageCacheRule.getPageCache( fs ), fs,
                 SchemaIndexProvider.Monitor.EMPTY, RecoveryCleanupWorkCollector.IMMEDIATE );
         descriptor = IndexDescriptorFactory.forLabel( 42, 1337 );
         samplingConfig = mock( IndexSamplingConfig.class );
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     }
 
     @Test
@@ -91,7 +95,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
 
         // when
-        index.initIfNeeded( descriptor, samplingConfig );
+        index.init( descriptor, samplingConfig );
 
         // then
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
@@ -102,14 +106,13 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.initIfNeeded( descriptor, samplingConfig );
 
         // when
-        index.createIfNeeded();
+        index.startPopulation( descriptor, samplingConfig );
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
-        index.close( true );
+        index.finishPopulation( true );
     }
 
     @Test
@@ -136,8 +139,7 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.initIfNeeded( descriptor, samplingConfig );
-        index.createIfNeeded();
+        index.startPopulation( descriptor, samplingConfig );
 
         // when
         try
@@ -149,7 +151,7 @@ public class SpatialKnownIndexTest
         {
             // then
             assertThat( e.getMessage(), containsString( "Failed to bring index online." ) );
-            index.close( true );
+            index.finishPopulation( true );
         }
     }
 
@@ -158,9 +160,8 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.initIfNeeded( descriptor, samplingConfig );
-        index.createIfNeeded();
-        index.close( true );
+        index.startPopulation( descriptor, samplingConfig );
+        index.finishPopulation( true );
 
         // when
         index.takeOnline( descriptor, samplingConfig );
@@ -194,7 +195,7 @@ public class SpatialKnownIndexTest
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
 
         updater.close();
-        index.close( true );
+        index.finishPopulation( true );
     }
 
     @Test
@@ -202,8 +203,7 @@ public class SpatialKnownIndexTest
     {
         // given
         assertThat( fs.listFiles( storeDir ).length, equalTo( 0 ) );
-        index.initIfNeeded( descriptor, samplingConfig );
-        index.createIfNeeded();
+        index.startPopulation( descriptor, samplingConfig );
         assertThat( fs.listFiles( indexDir ).length, equalTo( 1 ) );
 
         // when
@@ -211,5 +211,19 @@ public class SpatialKnownIndexTest
 
         // then
         assertThat( fs.listFiles( indexDir ).length, equalTo( 0 ) );
+    }
+
+    @Test
+    public void shouldThrowIfFileNotExistReadingInitialState()
+    {
+        try
+        {
+            index.readState( descriptor );
+            fail( "Should throw if no index file exists." );
+        }
+        catch ( IOException e )
+        {
+            assertTrue( e instanceof NoSuchFileException );
+        }
     }
 }

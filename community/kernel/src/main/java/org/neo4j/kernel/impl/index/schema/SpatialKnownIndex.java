@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.IndexUpdate
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -116,7 +115,10 @@ public class SpatialKnownIndex
         state = State.NONE;
     }
 
-    public void initIfNeeded( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    /**
+     * Makes sure that the index is initialized
+     */
+    public void init( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( state == State.NONE )
         {
@@ -124,18 +126,29 @@ public class SpatialKnownIndex
         }
     }
 
-    public void createIfNeeded() throws IOException
+    /**
+     * Makes sure that the index is ready to populate
+     */
+    public void startPopulation( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
+        init( descriptor, samplingConfig );
         if ( state == State.INIT )
         {
             // First add to sub-index, make sure to create
             create();
         }
+        if ( state != State.POPULATING )
+        {
+            throw new IllegalStateException( "Failed to start populating index." );
+        }
     }
 
+    /**
+     * Makes sure that the index is online
+     */
     public void takeOnline( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        initIfNeeded( descriptor, samplingConfig );
+        init( descriptor, samplingConfig );
         if ( !indexExists() )
         {
             throw new IOException( "Index file does not exist." );
@@ -169,7 +182,7 @@ public class SpatialKnownIndex
                 // sub-index didn't exist, create and make it online
                 initialize( descriptor, samplingConfig );
                 create();
-                close( true );
+                finishPopulation( true );
                 online();
             }
             return newUpdater();
@@ -220,7 +233,7 @@ public class SpatialKnownIndex
 
     // POPULATING
 
-    public synchronized void close( boolean populationCompletedSuccessfully ) throws IOException
+    public synchronized void finishPopulation( boolean populationCompletedSuccessfully ) throws IOException
     {
         assert state == State.POPULATING;
         closeWriter();
@@ -233,7 +246,7 @@ public class SpatialKnownIndex
         {
             if ( populationCompletedSuccessfully )
             {
-                assertPopulatorOpen();
+                schemaIndex.assertOpen();
                 markTreeAsOnline();
                 state = State.POPULATED;
             }
@@ -449,14 +462,6 @@ public class SpatialKnownIndex
         }
     }
 
-    private void assertPopulatorOpen()
-    {
-        if ( schemaIndex.tree == null )
-        {
-            throw new IllegalStateException( "Populator has already been closed." );
-        }
-    }
-
     private void closeWriter() throws IOException
     {
         singleTreeWriter = schemaIndex.closeIfPresent( singleTreeWriter );
@@ -531,8 +536,6 @@ public class SpatialKnownIndex
 
     public interface Factory
     {
-        SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId, Value value );
-
         SpatialKnownIndex selectAndCreate( Map<CoordinateReferenceSystem,SpatialKnownIndex> indexMap, long indexId,
                 CoordinateReferenceSystem crs );
     }

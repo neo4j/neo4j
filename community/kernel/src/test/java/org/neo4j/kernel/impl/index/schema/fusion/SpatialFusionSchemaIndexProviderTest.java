@@ -118,7 +118,7 @@ public class SpatialFusionSchemaIndexProviderTest
         {
             PointValue point = (PointValue) spatialValue;
             CoordinateReferenceSystem crs = point.getCoordinateReferenceSystem();
-            SpatialKnownIndex index = provider.selectAndCreate( indexMap, 0, point );
+            SpatialKnownIndex index = provider.selectAndCreate( indexMap, 0, point.getCoordinateReferenceSystem() );
             assertSame( indexMap.get( crs ), index );
             index = provider.selectAndCreate( indexMap, 0, crs );
             assertSame( indexMap.get( crs ), index );

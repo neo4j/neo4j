@@ -83,7 +83,7 @@ public class NodeUpdatesTest
         NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
                 .existing( propertyKeyId1, Values.of( "Neo" ) )
                 .existing( propertyKeyId2, Values.of( 100L ) )
-                .existing( propertyKeyId3, Values.of( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) ) )
+                .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
                 .build();
 
         // Then
@@ -122,7 +122,7 @@ public class NodeUpdatesTest
                 NodeUpdates.forNode( nodeId, empty, labels )
                         .existing( propertyKeyId1, Values.of( "Neo" ) )
                         .existing( propertyKeyId2, Values.of( 100L ) )
-                        .existing( propertyKeyId3, Values.of( Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) ) )
+                        .existing( propertyKeyId3, Values.pointValue( CoordinateReferenceSystem.WGS84, 12.3, 45.6 ) )
                         .build();
 
         // Then

@@ -29,6 +29,15 @@ import org.neo4j.graphdb.spatial.Point;
 
 public class SpatialMocks
 {
+    public static MockPoint mockPoint( double x, double y, CRS crs )
+    {
+        return new MockPoint( x, y, crs );
+    }
+
+    public static MockGeometry mockGeometry( String geometryType, List<Coordinate> coordinates, CRS crs )
+    {
+        return new MockGeometry( geometryType, coordinates, crs );
+    }
 
     public static CRS mockWGS84()
     {
@@ -40,7 +49,7 @@ public class SpatialMocks
         return mockCRS( 7203, "cartesian", "http://spatialreference.org/ref/sr-org/7203/" );
     }
 
-    public static CRS mockCRS( final int code, final String type, final String href )
+    private static CRS mockCRS( final int code, final String type, final String href )
     {
         return new CRS()
         {
@@ -61,11 +70,11 @@ public class SpatialMocks
         };
     }
 
-    public static class MockPoint extends MockGeometry implements Point
+    private static class MockPoint extends MockGeometry implements Point
     {
         private final Coordinate coordinate;
 
-        public MockPoint( final double x, final double y, final CRS crs )
+        private MockPoint( final double x, final double y, final CRS crs )
         {
             super( "Point", new ArrayList<>(), crs );
             this.coordinate = new Coordinate( x, y );
@@ -73,13 +82,13 @@ public class SpatialMocks
         }
     }
 
-    public static class MockGeometry implements Geometry
+    private static class MockGeometry implements Geometry
     {
-        protected final String geometryType;
+        final String geometryType;
+        final List<Coordinate> coordinates;
         protected final CRS crs;
-        protected final List<Coordinate> coordinates;
 
-        public MockGeometry( String geometryType, final List<Coordinate> coordinates, final CRS crs )
+        private MockGeometry( String geometryType, final List<Coordinate> coordinates, final CRS crs )
         {
             this.geometryType = geometryType;
             this.coordinates = coordinates;

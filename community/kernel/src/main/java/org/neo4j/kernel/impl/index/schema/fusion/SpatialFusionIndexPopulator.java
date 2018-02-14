@@ -87,8 +87,8 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         }
         for ( CoordinateReferenceSystem crs : batchMap.keySet() )
         {
-            SpatialKnownIndex index = getOrCreateInitializedIndex( crs );
-            index.createIfNeeded();
+            SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
+            index.startPopulation( descriptor, samplingConfig );
             index.add( batchMap.get( crs ) );
         }
     }
@@ -116,7 +116,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).close( populationCompletedSuccessfully ), indexMap.values().toArray() );
+        forAll( entry -> ((SpatialKnownIndex) entry).finishPopulation( populationCompletedSuccessfully ), indexMap.values().toArray() );
     }
 
     @Override
@@ -131,15 +131,9 @@ class SpatialFusionIndexPopulator implements IndexPopulator
         Value[] values = update.values();
         assert values.length == 1;
         CoordinateReferenceSystem crs = ((PointValue) values[0]).getCoordinateReferenceSystem();
-        SpatialKnownIndex index = getOrCreateInitializedIndex( crs );
-        index.includeSample( update );
-    }
-
-    private SpatialKnownIndex getOrCreateInitializedIndex( CoordinateReferenceSystem crs )
-    {
         SpatialKnownIndex index = indexFactory.selectAndCreate( indexMap, indexId, crs );
-        index.initIfNeeded( descriptor, samplingConfig );
-        return index;
+        index.init( descriptor, samplingConfig );
+        index.includeSample( update );
     }
 
     @Override

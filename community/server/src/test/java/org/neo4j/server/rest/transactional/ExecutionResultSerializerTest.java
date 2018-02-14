@@ -408,9 +408,9 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         points.add( new Coordinate( 1, 2 ) );
         points.add( new Coordinate( 2, 3 ) );
         Result executionResult = mockExecutionResult(
-                map( "geom", new SpatialMocks.MockPoint( 12.3, 45.6, mockWGS84() ) ),
-                map( "geom", new SpatialMocks.MockPoint( 123, 456, mockCartesian() ) ),
-                map( "geom", new SpatialMocks.MockGeometry( "LineString", points, mockCartesian() ) ) );
+                map( "geom", SpatialMocks.mockPoint( 12.3, 45.6, mockWGS84() ) ),
+                map( "geom", SpatialMocks.mockPoint( 123, 456, mockCartesian() ) ),
+                map( "geom", SpatialMocks.mockGeometry( "LineString", points, mockCartesian() ) ) );
 
         // when
         serializer.statementResult( executionResult, false );
