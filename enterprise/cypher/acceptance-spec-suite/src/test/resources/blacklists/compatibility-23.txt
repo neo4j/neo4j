@@ -82,3 +82,5 @@ Nested unwind with longs
 Nested unwind with doubles
 Nested unwind with strings
 Nested unwind with mixed types
+Pattern comprehension in unwind with empty db
+Pattern comprehension in unwind with hits
