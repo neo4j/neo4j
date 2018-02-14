@@ -499,6 +499,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
             pageCursor.close();
             pageCursor = null;
         }
+        group.close();
         read = null;
         reset();
     }
