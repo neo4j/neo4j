@@ -19,13 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.index.storage.paged;
 
-import org.apache.lucene.store.IndexInput;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -42,20 +38,15 @@ import static org.mockito.Mockito.when;
 public class InputResourcesTest
 {
     @Test
-    public void shouldClosePagedFileEvenIfCloneFailsToClose() throws Exception
+    public void shouldClosePagedFileEvenIfCursorFailsToClose() throws Exception
     {
         // Given
         PagedFile file = mock( PagedFile.class );
-        PageCursor firstCursor = mock( PageCursor.class );
-        FailsToClosePageCursor secondCursor = new FailsToClosePageCursor();
-        FailsToClosePageCursor thirdCursor = new FailsToClosePageCursor();
-        when( file.io( anyLong(), anyInt() ) ).thenReturn( firstCursor, secondCursor, thirdCursor );
+        FailsToClosePageCursor firstCursor = new FailsToClosePageCursor();
+        when( file.io( anyLong(), anyInt() ) ).thenReturn( firstCursor );
 
         InputResources.RootInputResources resources = new InputResources.RootInputResources( file );
-
-        PagedIndexInput rootInput = new PagedIndexInput( resources, "RootInput", 0, 14, 1337 );
-        IndexInput firstFailingClone = rootInput.clone();
-        IndexInput secondFailingClone = rootInput.clone();
+        PagedIndexInput rootInput = new PagedIndexInput( resources, "RootInput", 0, 16, 1337 );
 
         // When
         try
@@ -69,9 +60,27 @@ public class InputResourcesTest
         }
 
         // Then
-        assertEquals( secondCursor.closeCalls, 1 );
-        assertEquals( thirdCursor.closeCalls, 1 );
-        verify( firstCursor ).close();
+        assertEquals( firstCursor.closeCalls, 1 );
+        verify( file ).close();
+    }
+
+    @Test
+    public void shouldCloseRootOnce() throws Exception
+    {
+        // Given
+        PagedFile file = mock( PagedFile.class );
+        CloseTrackingPageCursor cursor = new CloseTrackingPageCursor();
+        when( file.io( anyLong(), anyInt() ) ).thenReturn( cursor );
+
+        InputResources.RootInputResources resources = new InputResources.RootInputResources( file );
+
+        PagedIndexInput rootInput = new PagedIndexInput( resources, "RootInput", 0, 16, 1337 );
+
+        // When
+        rootInput.close();
+
+        // Then
+        assertEquals( cursor.closeCalls, 1 );
         verify( file ).close();
     }
 
@@ -120,11 +129,11 @@ public class InputResourcesTest
         }
     }
 
-    static class FailsToClosePageCursor extends DelegatingPageCursor
+    static class CloseTrackingPageCursor extends DelegatingPageCursor
     {
         int closeCalls;
 
-        FailsToClosePageCursor()
+        CloseTrackingPageCursor()
         {
             super( mock( PageCursor.class ) );
         }
@@ -133,6 +142,15 @@ public class InputResourcesTest
         public void close()
         {
             closeCalls++;
+        }
+    }
+
+    static class FailsToClosePageCursor extends CloseTrackingPageCursor
+    {
+        @Override
+        public void close()
+        {
+            super.close();
             throw new RuntimeException( "Emulated error to close.." );
         }
     }

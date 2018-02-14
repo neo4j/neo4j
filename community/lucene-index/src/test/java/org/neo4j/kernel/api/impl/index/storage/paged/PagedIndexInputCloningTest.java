@@ -29,9 +29,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class PagedIndexInputCloningTest
@@ -53,36 +50,6 @@ public class PagedIndexInputCloningTest
         {
             cloneCursors[i] = mock( PageCursor.class );
         }
-    }
-
-    @Test
-    public void shouldCloseCloneCursorOnRootClose() throws Exception
-    {
-        // Given
-        PagedFile pagedFile = mock( PagedFile.class );
-        when( pagedFile.pageSize() ).thenReturn( 4096 );
-        when( pagedFile.io( anyLong(), anyInt() ) ).thenReturn( rootCursor,
-                cloneCursors );
-        PagedIndexInput root =
-                new PagedIndexInput( "Root", pagedFile, 0, 4096 );
-
-        // When
-        root.clone();
-        root.close();
-
-        // Then two cursors should have been allocated
-        verify( pagedFile, times( 2 ) ).io( 0, PagedFile.PF_SHARED_READ_LOCK );
-
-        // And both should be closed
-        verify( rootCursor ).close();
-        verify( cloneCursors[0] ).close();
-
-        // And the paged file should be closed
-        verify( pagedFile, times( 1 ) ).close();
-
-        // And nothing more should be going on
-        verifyNoMoreInteractions( rootCursor );
-        verifyNoMoreInteractions( cloneCursors[0] );
     }
 
     @Test

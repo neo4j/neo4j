@@ -27,14 +27,6 @@ import org.apache.lucene.store.NRTCachingDirectory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.util.FeatureToggles;
 import java.nio.file.Files;
 
 import org.neo4j.io.pagecache.PageCache;
@@ -43,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
 import org.neo4j.logging.Log;
+import org.neo4j.util.FeatureToggles;
 
 public interface DirectoryFactory extends AutoCloseable
 {

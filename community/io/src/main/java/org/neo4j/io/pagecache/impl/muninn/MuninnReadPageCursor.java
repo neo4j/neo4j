@@ -93,6 +93,12 @@ final class MuninnReadPageCursor extends MuninnPageCursor
     @Override
     protected void releaseCursor()
     {
+        if ( cursorSets == null )
+        {
+            // If PagedFile.PF_NO_READ_CURSOR_POOL
+            return;
+        }
+
         nextCursor = cursorSets.readCursors;
         cursorSets.readCursors = this;
     }

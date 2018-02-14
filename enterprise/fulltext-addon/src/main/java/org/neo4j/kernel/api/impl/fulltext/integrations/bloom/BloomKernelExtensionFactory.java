@@ -46,7 +46,6 @@ import org.neo4j.scheduler.JobScheduler;
 @Service.Implementation( KernelExtensionFactory.class )
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
 {
-
     public static final String SERVICE_NAME = "bloom";
     public static final String BLOOM_RELATIONSHIPS = "bloomRelationships";
     public static final String BLOOM_NODES = "bloomNodes";
@@ -93,7 +92,7 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         Supplier<TransactionIdStore> transactionIdStore = dependencies::transactionIdStore;
         Supplier<NeoStoreFileListing> fileListing = dependencies::fileListing;
         PageCache pageCache = dependencies.pageCache();
-        return new BloomKernelExtension(fs, storeDir, config, db, procedures, logService, availabilityGuard,
-                scheduler, transactionIdStore, pageCache, fileListing );
+        return new BloomKernelExtension( fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler,
+                transactionIdStore, pageCache, fileListing );
     }
 }

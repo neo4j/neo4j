@@ -100,6 +100,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_READ_CURSOR_POOL;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.test.ThreadTestUtils.fork;
@@ -5991,6 +5992,23 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTrue( nofault.shouldRetry() );
             // However, we are no longer in memory, because the page we had earlier got evicted.
             verifyNoFaultReadIsNotInMemory( nofault );
+        }
+    }
+
+    @Test
+    public void shouldDisableCachingReadCursors() throws Exception
+    {
+        configureStandardPageCache();
+        File file = file( "a" );
+        generateFileWithRecords( file, recordsPerFilePage * 6, recordSize );
+        try ( PagedFile pf = pageCache.map( file, filePageSize ) )
+        {
+            PageCursor cursorA = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_READ_CURSOR_POOL );
+            cursorA.close();
+
+            PageCursor cursorB = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_READ_CURSOR_POOL );
+
+            assertTrue( "Should have gotten a different cursor object", cursorA != cursorB );
         }
     }
 }
