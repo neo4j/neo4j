@@ -4,3 +4,6 @@ Feature "MatchAcceptance": Scenario "Filter on path nodes"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to unknown procedure should fail"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to unknown procedure should fail"
+
+Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with empty db"
+Feature "UnwindAcceptance": Scenario "Pattern comprehension in unwind with hits"
