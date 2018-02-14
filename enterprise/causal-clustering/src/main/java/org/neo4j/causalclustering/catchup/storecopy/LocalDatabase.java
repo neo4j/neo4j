@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
@@ -251,5 +252,16 @@ public class LocalDatabase implements Lifecycle
     {
         availabilityGuard.fulfill( currentRequirement );
         currentRequirement = null;
+    }
+
+    public boolean hasTxLogs()
+    {
+        File[] files = storeDir.listFiles( LogFiles.FILENAME_FILTER );
+        if ( files == null )
+        {
+            throw new RuntimeException( "Files was null. Incorrect directory or I/O error?" );
+        }
+
+        return files.length > 0;
     }
 }

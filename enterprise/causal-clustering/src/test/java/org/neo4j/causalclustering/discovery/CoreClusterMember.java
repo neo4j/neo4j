@@ -68,6 +68,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
     protected CoreGraphDatabase database;
+    private final Monitors monitors = new Monitors();
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -155,7 +156,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, Config.defaults( config ),
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
@@ -231,6 +232,11 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    public Monitors monitors()
+    {
+        return monitors;
+    }
+
     public File clusterStateDirectory()
     {
         return clusterStateDir;
@@ -243,7 +249,12 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 
     public void stopCatchupServer() throws Throwable
     {
-        database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+        database.getDependencyResolver().resolveDependency( CatchupServer.class ).stop();
+    }
+
+    public Config config()
+    {
+        return Config.defaults( config );
     }
 
     int discoveryPort()

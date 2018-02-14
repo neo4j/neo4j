@@ -17,15 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering.backup.backup_stores;
 
-public enum CatchupResult
+import java.io.File;
+
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.discovery.Cluster;
+
+import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
+
+public class BackupStoreWithSomeData extends AbstractStoreGenerator
 {
-    @Deprecated // batch demarcation no longer used
-    SUCCESS_END_OF_BATCH,
-    SUCCESS_END_OF_STREAM,
-    E_STORE_ID_MISMATCH,
-    E_STORE_UNAVAILABLE,
-    E_TRANSACTION_PRUNED,
-    E_INVALID_REQUEST
+    @Override
+    CoreGraphDatabase createData( Cluster cluster ) throws Exception
+    {
+        return createEmptyNodes( cluster, 15 ).database();
+    }
+
+    @Override
+    void modify( File backup )
+    {
+        // do nothing
+    }
 }

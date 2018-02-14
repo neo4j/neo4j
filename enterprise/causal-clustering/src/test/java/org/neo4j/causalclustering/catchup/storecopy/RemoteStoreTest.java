@@ -49,6 +49,8 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class RemoteStoreTest
 {
+    private LocalDatabase localDatabase = mock( LocalDatabase.class );
+
     @Test
     public void shouldCopyStoreFilesAndPullTransactions() throws Exception
     {
@@ -61,7 +63,7 @@ public class RemoteStoreTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
+                null, storeCopyClient, txPullClient, factory( writer ), new Monitors(), localDatabase );
 
         // when
         AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
@@ -91,7 +93,7 @@ public class RemoteStoreTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
+                null, storeCopyClient, txPullClient, factory( writer ), new Monitors(), localDatabase );
 
         // when
         remoteStore.copy( localhost, wantedStoreId, new File( "destination" ) );
@@ -112,8 +114,7 @@ public class RemoteStoreTest
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
         RemoteStore remoteStore = new RemoteStore( NullLogProvider.getInstance(), mock( FileSystemAbstraction.class ),
-                null,
-                storeCopyClient, txPullClient, factory( writer ), new Monitors() );
+                null, storeCopyClient, txPullClient, factory( writer ), new Monitors(), localDatabase );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
                 .pullTransactions( any( AdvertisedSocketAddress.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );

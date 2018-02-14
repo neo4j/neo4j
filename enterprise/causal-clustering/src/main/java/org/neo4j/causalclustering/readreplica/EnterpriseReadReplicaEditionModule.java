@@ -224,7 +224,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ), new TxPullClient( catchUpClient, platformModule.monitors ),
-                new TransactionLogCatchUpFactory(), platformModule.monitors );
+                new TransactionLogCatchUpFactory(), platformModule.monitors, localDatabase );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 

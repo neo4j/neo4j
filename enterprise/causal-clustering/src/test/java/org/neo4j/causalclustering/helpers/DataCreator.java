@@ -29,12 +29,19 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 
 public class DataCreator
 {
-    private DataCreator()
+    public static CoreGraphDatabase createSomeData( Cluster cluster ) throws Exception
     {
+        return cluster.coreTx( ( db, tx ) ->
+        {
+            Node node = db.createNode( label( "boo" ) );
+            node.setProperty( "foobar", "baz_bat" );
+            tx.success();
+        } ).database();
     }
 
     public static CoreClusterMember createLabelledNodesWithProperty( Cluster cluster, int numberOfNodes,

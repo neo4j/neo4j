@@ -24,31 +24,19 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
-import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.com.ports.allocation.PortAuthority;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.causalclustering.helpers.BackupUtil.backupAddress;
+import static org.neo4j.causalclustering.helpers.BackupUtil.backupArguments;
+import static org.neo4j.causalclustering.helpers.BackupUtil.getConfig;
+import static org.neo4j.causalclustering.helpers.DataCreator.createSomeData;
 
 public class BackupCoreIT
 {
@@ -87,48 +75,5 @@ public class BackupCoreIT
             assertEquals( beforeChange, backupRepresentation );
             assertNotEquals( backupRepresentation, afterChange );
         }
-    }
-
-    static CoreGraphDatabase createSomeData( Cluster cluster ) throws Exception
-    {
-        return cluster.coreTx( ( db, tx ) ->
-        {
-            Node node = db.createNode( label( "boo" ) );
-            node.setProperty( "foobar", "baz_bat" );
-            tx.success();
-        } ).database();
-    }
-
-    static String backupAddress( GraphDatabaseFacade db )
-    {
-        InetSocketAddress inetSocketAddress = db.getDependencyResolver()
-                .resolveDependency( Config.class ).get( CausalClusteringSettings.transaction_advertised_address )
-                .socketAddress();
-
-        HostnamePort hostnamePort = db.getDependencyResolver()
-                .resolveDependency( Config.class )
-                .get( OnlineBackupSettings.online_backup_server );
-
-        return inetSocketAddress.getHostName() + ":" + hostnamePort.getPort();
-    }
-
-    static String[] backupArguments( String from, File backupsDir, String name )
-    {
-        List<String> args = new ArrayList<>();
-        args.add( "--from=" + from );
-        args.add( "--cc-report-dir=" + backupsDir );
-        args.add( "--backup-dir=" + backupsDir );
-        args.add( "--name=" + name );
-        return args.toArray( new String[args.size()] );
-    }
-
-    static Config getConfig()
-    {
-        Map<String, String> config = MapUtil.stringMap(
-                GraphDatabaseSettings.record_format.name(), Standard.LATEST_NAME,
-                OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort()
-        );
-
-        return Config.defaults( config );
     }
 }
