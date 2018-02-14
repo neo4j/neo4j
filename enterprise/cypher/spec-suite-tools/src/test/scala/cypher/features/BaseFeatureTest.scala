@@ -36,13 +36,13 @@ abstract class BaseFeatureTest {
 
   def filterScenarios(allScenarios: Seq[Scenario]): Seq[Scenario] = {
     if (featureToRun.nonEmpty) {
-      val filteredFeature = allScenarios.filter(s => s.featureName == featureToRun)
+      val filteredFeature = allScenarios.filter(s => s.featureName.contains(featureToRun))
       if (scenarioToRun.nonEmpty) {
-        filteredFeature.filter(s => s.name == scenarioToRun)
+        filteredFeature.filter(s => s.name.contains(scenarioToRun))
       } else
         filteredFeature
     } else if (scenarioToRun.nonEmpty) {
-      allScenarios.filter(s => s.name == scenarioToRun)
+      allScenarios.filter(s => s.name.contains(scenarioToRun))
     } else
       allScenarios
   }

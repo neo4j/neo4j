@@ -31,6 +31,7 @@ import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 class AcceptanceTests extends BaseFeatureTest {
 
   // these two should be empty on commit!
+  // Use a substring match, for example "UnwindAcceptance"
   override val featureToRun = ""
   override val scenarioToRun = ""
 
