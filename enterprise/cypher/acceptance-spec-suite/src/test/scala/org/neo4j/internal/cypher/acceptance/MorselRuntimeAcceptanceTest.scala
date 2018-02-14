@@ -20,6 +20,10 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+
+import scala.collection.Map
 
 class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -70,4 +74,66 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
                                                      "your own peril, not recommended to be run on production systems)")
 
   }
+
+  test("should support count with no grouping") {
+    //Given
+    createNode("prop" -> "foo")
+    createNode()
+    createNode()
+    createNode("prop" -> "foo")
+    createNode("prop" -> "foo")
+    createNode("prop" -> "foo")
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN count(n.prop)")
+
+    //Then
+    result.next().get("count(n.prop)") should equal(4)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support multiple counts with no grouping") {
+    //Given
+    relate(createNode("prop" -> "foo"),createNode())
+    relate(createNode(), createNode("prop" -> "foo"))
+    relate(createNode("prop" -> "foo"), createNode("prop" -> "foo"))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n)-->(m) RETURN count(n.prop), count(m.prop)")
+
+    //Then
+    val next = result.next()
+    next.get("count(n.prop)") should equal(2)
+    next.get("count(m.prop)") should equal(2)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support count with grouping") {
+    //Given
+    createNode("prop" -> "foo", "count" -> 1)
+    createNode("prop" -> "foo", "count" -> 1)
+    createNode("prop" -> "bar")
+    createNode("prop" -> "bar", "count" -> 1)
+    createNode()
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n.prop,count(n.count)")
+
+    //Then
+    var next = result.next()
+    next.get("n.prop") should equal("foo")
+    next.get("count(n.count)") should equal(2)
+    next = result.next()
+    next.get("n.prop") shouldBe null
+    next.get("count(n.count)") should equal(0)
+    next = result.next()
+    next.get("n.prop") should equal("bar")
+    next.get("count(n.count)") should equal(1)
+
+    result.hasNext shouldBe false
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_morsel_size -> "4")
 }

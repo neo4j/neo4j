@@ -29,9 +29,8 @@ Responsible for reducing the output of AggregationMapperOperatorNoGrouping
  */
 class AggregationReduceOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends Operator {
 
-  private val reducers = aggregations.map(_.aggregation.createAggregationReducer)
-
   override def operate(message: Message, output: Morsel, context: QueryContext, state: QueryState): Continuation = {
+    val reducers = aggregations.map(_.aggregation.createAggregationReducer)
     var iterationState: Iteration = null
     var morselPos = 0
     var morsels: Array[Morsel] = null

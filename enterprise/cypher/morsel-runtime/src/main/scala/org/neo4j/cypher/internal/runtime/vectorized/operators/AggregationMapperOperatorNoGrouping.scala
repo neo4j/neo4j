@@ -32,10 +32,9 @@ the subsequent reduce steps these local aggregations are merged into a single gl
  */
 class AggregationMapperOperatorNoGrouping(slots: SlotConfiguration, aggregations: Array[AggregationOffsets]) extends MiddleOperator {
 
-  private val aggregationMappers = aggregations.map(_.aggregation.createAggregationMapper)
 
   override def operate(iterationState: Iteration, data: Morsel, context: QueryContext, state: QueryState): Unit = {
-
+    val aggregationMappers = aggregations.map(_.aggregation.createAggregationMapper)
     val longCount = slots.numberOfLongs
     val refCount = slots.numberOfReferences
     val currentRow = new MorselExecutionContext(data, longCount, refCount, currentRow = 0)
