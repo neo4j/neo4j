@@ -106,11 +106,7 @@ public class OnlineBackupCommandCcIT
 
         Cluster cluster = startCluster( recordFormat );
         String customAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster ).database() );
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
+
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", customAddress,
@@ -127,21 +123,6 @@ public class OnlineBackupCommandCcIT
                         "--backup-dir=" + backupDir,
                         "--name=defaultport" ) );
         assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
-    }
-
-    @Test
-    public void backupCanNotBePerformedOverBackupProtocol() throws Exception
-    {
-        assumeFalse( SystemUtils.IS_OS_WINDOWS );
-
-        Cluster cluster = startCluster( recordFormat );
-        String ip = TestHelpers.backupAddressHa( clusterLeader( cluster ).database() );
-        assertEquals(
-                1,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
     }
 
     @Test
