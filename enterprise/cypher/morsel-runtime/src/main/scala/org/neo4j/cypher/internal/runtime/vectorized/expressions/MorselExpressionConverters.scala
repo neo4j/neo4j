@@ -37,6 +37,10 @@ object MorselExpressionConverters extends ExpressionConverter {
       Some(CountOperatorExpression(self.toCommandExpression(c.arguments.head)))
     case c: FunctionInvocation if c.function == functions.Avg =>
       Some(AvgOperatorExpression(self.toCommandExpression(c.arguments.head)))
+    case c: FunctionInvocation if c.function == functions.Max =>
+      Some(MaxOperatorExpression(self.toCommandExpression(c.arguments.head)))
+    case c: FunctionInvocation if c.function == functions.Min =>
+      Some(MinOperatorExpression(self.toCommandExpression(c.arguments.head)))
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => throw new CantCompileQueryException()
     case _ => None
   }
