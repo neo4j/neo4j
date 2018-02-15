@@ -307,7 +307,7 @@ public class HazelcastCoreTopologyService extends LifecycleAdapter implements Co
     @Override
     public CoreTopology coreServers()
     {
-        return this.coreTopology;
+        return coreTopology;
     }
 
     @Override
@@ -320,6 +320,12 @@ public class HazelcastCoreTopologyService extends LifecycleAdapter implements Co
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
 
         return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
+    }
+
+    @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        return readReplicaTopology;
     }
 
     @Override
