@@ -23,11 +23,22 @@ import java.util.Optional;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.logging.LogProvider;
 
 public class TopologyServiceMultiRetryStrategy extends MultiRetryStrategy<MemberId,Optional<AdvertisedSocketAddress>> implements TopologyServiceRetryStrategy
 {
-    public TopologyServiceMultiRetryStrategy( long delayInMillis, long retries )
+    public TopologyServiceMultiRetryStrategy( long delayInMillis, long retries, LogProvider logProvider )
     {
-        super( delayInMillis, retries );
+        super( delayInMillis, retries, logProvider, millis ->
+        {
+            try
+            {
+                Thread.sleep( millis );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new RuntimeException( e );
+            }
+        } );
     }
 }

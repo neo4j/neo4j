@@ -187,7 +187,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         TopologyService topologyService =
                 discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself,
-                        hostnameResolver, resolveStrategy( config ) );
+                        hostnameResolver, resolveStrategy( config, logProvider ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
@@ -380,12 +380,12 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         }
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )
     {
         long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 }
