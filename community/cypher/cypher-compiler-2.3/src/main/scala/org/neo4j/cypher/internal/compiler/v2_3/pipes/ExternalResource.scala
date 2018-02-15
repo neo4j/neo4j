@@ -22,5 +22,5 @@ package org.neo4j.cypher.internal.compiler.v2_3.pipes
 import java.net.URL
 
 trait ExternalResource {
-  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None): Iterator[Array[String]]
+  def getCsvIterator(url: URL, fieldTerminator: Option[String] = None, headers:Boolean=false): Iterator[Array[String]]
 }

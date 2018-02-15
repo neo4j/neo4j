@@ -122,7 +122,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val (_, txCounts) = executeAndTrackTxCounts(queryText)
 
     // then
-    txCounts should equal(TxCounts(commits = 3, rollbacks = 0))
+    txCounts should equal(TxCounts(commits = 2, rollbacks = 0))
   }
 
   test("should commit first tx and abort second tx when failing on second batch during periodic commit") {
