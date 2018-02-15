@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.pagecache;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Format;
@@ -29,6 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -43,6 +45,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
 
     private final JobScheduler scheduler;
     private final AvailabilityGuard availabilityGuard;
+    private final Supplier<NeoStoreFileListing> fileListing;
     private final Log log;
     private final PageCacheWarmerMonitor monitor;
     private final Config config;
@@ -50,12 +53,13 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
     private final AtomicBoolean profilingStarted;
     private volatile JobScheduler.JobHandle profileHandle;
 
-    PageCacheWarmerKernelExtension( JobScheduler scheduler, AvailabilityGuard availabilityGuard,
-                                    PageCache pageCache, FileSystemAbstraction fs, Log log,
-                                    PageCacheWarmerMonitor monitor, Config config )
+    PageCacheWarmerKernelExtension(
+            JobScheduler scheduler, AvailabilityGuard availabilityGuard, PageCache pageCache, FileSystemAbstraction fs,
+            Supplier<NeoStoreFileListing> fileListing, Log log, PageCacheWarmerMonitor monitor, Config config )
     {
         this.scheduler = scheduler;
         this.availabilityGuard = availabilityGuard;
+        this.fileListing = fileListing;
         this.log = log;
         this.monitor = monitor;
         this.config = config;
@@ -69,6 +73,7 @@ class PageCacheWarmerKernelExtension extends LifecycleAdapter
         if ( ENABLED )
         {
             scheduleTryReheat();
+            fileListing.get().registerStoreFileProvider( pageCacheWarmer );
         }
     }
 

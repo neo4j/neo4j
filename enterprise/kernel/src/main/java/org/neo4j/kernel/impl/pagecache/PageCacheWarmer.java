@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.BlockingQueue;
@@ -37,12 +38,15 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Resource;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -57,7 +61,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
  * These cacheprof files are compressed bitmaps where each raised bit indicates that the page identified by the
  * bit-index was in memory.
  */
-public class PageCacheWarmer
+public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
 {
     public static final String SUFFIX_CACHEPROF = ".cacheprof";
     public static final String SUFFIX_CACHEPROF_TMP = ".cacheprof.tmp";
@@ -91,6 +95,32 @@ public class PageCacheWarmer
         return new ThreadPoolExecutor(
                 0, IO_PARALLELISM, 10, TimeUnit.SECONDS, workQueue,
                 threadFactory, rejectionPolicy );
+    }
+
+    @Override
+    public synchronized Resource addFilesTo( Collection<StoreFileMetadata> coll ) throws IOException
+    {
+        if ( stopped )
+        {
+            return Resource.EMPTY;
+        }
+        List<PagedFile> files = pageCache.listExistingMappings();
+        try
+        {
+            for ( PagedFile file : files )
+            {
+                File profileFile = profileOutputFileFinal( file );
+                if ( fs.fileExists( profileFile ) )
+                {
+                    coll.add( new StoreFileMetadata( profileFile, 1, false ) );
+                }
+            }
+        }
+        finally
+        {
+            IOUtils.closeAll( files );
+        }
+        return Resource.EMPTY;
     }
 
     public void stop()
