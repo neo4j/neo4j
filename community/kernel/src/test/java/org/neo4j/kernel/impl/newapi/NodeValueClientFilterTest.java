@@ -48,6 +48,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     @Rule
     public final MockStore store = new MockStore( new DefaultCursors() );
     private final List<Event> events = new ArrayList<>();
+    private final DefaultCursors cursors = new DefaultCursors();
 
     @Test
     public void shouldAcceptAllNodesOnNoFilters()
@@ -135,7 +136,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     private NodeValueClientFilter initializeFilter( IndexQuery... filters )
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
-                this, new DefaultNodeCursor( null ), new DefaultPropertyCursor( null ), store, filters );
+                this, cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), store, filters );
         filter.initialize( IndexDescriptorFactory.forLabel( 11), this, null );
         return filter;
     }

@@ -103,10 +103,7 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<ExplicitIndexProgressor
             expectedSize = 0;
             read = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 

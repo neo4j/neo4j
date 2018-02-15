@@ -254,10 +254,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
             page.close();
             page = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 

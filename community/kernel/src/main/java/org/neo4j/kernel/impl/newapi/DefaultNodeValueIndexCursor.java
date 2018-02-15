@@ -200,10 +200,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.added = emptyIterator();
             this.removed = PrimitiveLongCollections.emptySet();
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 

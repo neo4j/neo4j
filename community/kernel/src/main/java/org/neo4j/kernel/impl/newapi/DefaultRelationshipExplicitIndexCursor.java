@@ -134,10 +134,7 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
             expectedSize = 0;
             read = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 

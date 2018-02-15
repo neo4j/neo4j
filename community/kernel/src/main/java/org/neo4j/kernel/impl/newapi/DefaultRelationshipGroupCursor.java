@@ -259,10 +259,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
             page.close();
             page = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 
