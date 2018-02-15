@@ -134,6 +134,36 @@ class MorselRuntimeAcceptanceTest extends ExecutionEngineFunSuite {
     result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
   }
 
+  test("should support average") {
+    //Given
+    10 to 100 by 10 foreach(i => createNode("prop" -> i))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN avg(n.prop)")
+
+    //Then
+    result.next().get("avg(n.prop)") should equal(55.0)
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
+  test("should support average with grouping") {
+    //Given
+    10 to 100 by 10 foreach(i => createNode("prop" -> i, "group" -> (if (i > 50) "FOO" else "BAR")))
+
+    //When
+    val result = graph.execute("CYPHER runtime=morsel MATCH (n) RETURN n.group, avg(n.prop)")
+
+    //Then
+    val first = result.next()
+    first.get("n.group") should equal("FOO")
+    first.get("avg(n.prop)") should equal(80.0)
+    val second = result.next()
+    second.get("n.group") should equal("BAR")
+    second.get("avg(n.prop)") should equal(30.0)
+
+    result.getExecutionPlanDescription.getArguments.get("runtime") should equal("MORSEL")
+  }
+
   //we use a ridiculously small morsel size in order to trigger as many morsel overflows as possible
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_morsel_size -> "4")
 }

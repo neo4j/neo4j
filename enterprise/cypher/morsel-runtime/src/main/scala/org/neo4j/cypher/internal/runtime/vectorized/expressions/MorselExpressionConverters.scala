@@ -34,8 +34,9 @@ object MorselExpressionConverters extends ExpressionConverter {
                                    self: ExpressionConverters): Option[Expression] = expression match {
 
     case c: FunctionInvocation if c.function == functions.Count =>
-      val inner = self.toCommandExpression(c.arguments.head)
-      Some(CountOperatorExpression(inner))
+      Some(CountOperatorExpression(self.toCommandExpression(c.arguments.head)))
+    case c: FunctionInvocation if c.function == functions.Avg =>
+      Some(AvgOperatorExpression(self.toCommandExpression(c.arguments.head)))
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => throw new CantCompileQueryException()
     case _ => None
   }

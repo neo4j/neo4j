@@ -24,39 +24,55 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQue
 import org.neo4j.cypher.internal.runtime.vectorized._
 import org.neo4j.cypher.internal.util.v3_4.symbols.CTAny
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{NumberValue, Values}
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.{LongValue, NumberValue, Values}
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 /*
-Vectorized version of the count aggregation function
+Vectorized version of the average aggregation function
  */
-case class CountOperatorExpression(anInner: Expression) extends AggregationExpressionOperatorWithInnerExpression(anInner) {
+case class AvgOperatorExpression(anInner: Expression)
+  extends AggregationExpressionOperatorWithInnerExpression(anInner) {
 
   override def expectedInnerType = CTAny
 
   override def rewrite(f: (Expression) => Expression): Expression = f(CountOperatorExpression(anInner.rewrite(f)))
 
-  override def createAggregationMapper: AggregationMapper = new CountMapper(anInner)
+  override def createAggregationMapper: AggregationMapper = new AvgMapper(anInner)
 
-  override def createAggregationReducer: AggregationReducer = new CountReducer
+  override def createAggregationReducer: AggregationReducer = new AvgReducer
 }
 
-private class CountMapper(value: Expression) extends AggregationMapper {
-  private var count: Long = 0L
+class AvgMapper(value: Expression) extends AggregationMapper {
 
-  override def result: AnyValue = Values.longValue(count)
+  private var count: Long = 0L
+  private var sum: NumberValue = Values.ZERO_INT
+
+  override def result: AnyValue = VirtualValues.list(longValue(count), sum)
+
   override def map(data: MorselExecutionContext,
-                   state: OldQueryState): Unit =  value(data, state) match {
+                   state: OldQueryState): Unit = value(data, state) match {
     case Values.NO_VALUE =>
-    case _    => count += 1
+    case number: NumberValue =>
+      count += 1
+      sum = sum.plus(number)
   }
 }
 
-private class CountReducer extends AggregationReducer {
-  private var count: Long = 0L
+class AvgReducer extends AggregationReducer {
 
-  override def result: AnyValue = Values.longValue(count)
+  private var count: Long = 0L
+  private var sum: NumberValue = longValue(0L)
+
+  override def result: AnyValue = sum.times(1.0 / count.toDouble)
+
   override def reduce(value: AnyValue): Unit = value match {
-    case l: NumberValue => count += l.longValue()
+    case l: ListValue =>
+      count += l.value(0).asInstanceOf[LongValue].longValue()
+      sum = sum.plus(l.value(1).asInstanceOf[NumberValue])
     case _ =>
   }
 }
+
+
+
