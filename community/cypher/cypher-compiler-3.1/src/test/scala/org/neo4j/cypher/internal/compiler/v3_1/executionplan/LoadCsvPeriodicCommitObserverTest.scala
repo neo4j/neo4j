@@ -53,7 +53,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("headers should not count") {
     // given
-    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any(), Matchers.eq(true))).thenReturn(Iterator(
+    when(resource.getCsvIterator(Matchers.eq(url), any(), anyBoolean(), Matchers.eq(true))).thenReturn(Iterator(
       Array("header"),
       Array("Row1"),
       Array("Row2"),
@@ -78,7 +78,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
-    when(resource.getCsvIterator(Matchers.eq(url), Matchers.any(), Matchers.anyBoolean())).
+    when(resource.getCsvIterator(Matchers.eq(url), any(), anyBoolean(), anyBoolean())).
       thenReturn(Iterator(Array("outer1"),Array("outer2"))).
       thenReturn(Iterator(Array("inner1"),Array("inner2"),Array("inner3"),Array("inner4")))
     val iterator1 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false, headers = false)
@@ -98,10 +98,10 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("if a custom separator is specified it should be passed to the wrapped resource") {
     // Given
-    resourceUnderTest.getCsvIterator(url, Some(";"), false)
+    resourceUnderTest.getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false, headers = false)
 
     // When
-    verify(resource, times(1)).getCsvIterator(url, Some(";"), false)
+    verify(resource, times(1)).getCsvIterator(url, Some(";"), false, false)
   }
 
   override protected def beforeEach() {
