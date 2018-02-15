@@ -44,10 +44,11 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
+    executeWith(Configs.Interpreted + Configs.Version3_3 - Configs.Cost2_3 - Configs.Cost3_1, query,
+      planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should useOperators("NodeLeftOuterHashJoin")
       p should not(useOperators("NodeHashJoin"))
-    }, expectPlansToFail = Configs.AllRulePlanners + Configs.BackwardsCompatibility))
+    }, expectPlansToFail = Configs.OldAndRule))
   }
 
   test("should not plan multiple joins for one hint - right outer join") {
