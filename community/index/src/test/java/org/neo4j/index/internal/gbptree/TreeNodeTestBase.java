@@ -30,6 +30,7 @@ import java.util.List;
 import org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -45,15 +46,15 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 
 public abstract class TreeNodeTestBase<KEY,VALUE>
 {
-    private static final int STABLE_GENERATION = 1;
-    private static final int UNSTABLE_GENERATION = 3;
+    static final int STABLE_GENERATION = 1;
+    static final int UNSTABLE_GENERATION = 3;
     private static final int HIGH_GENERATION = 4;
 
-    private static final int PAGE_SIZE = 512;
+    static final int PAGE_SIZE = 512;
     PageCursor cursor;
 
     private TestLayout<KEY,VALUE> layout;
-    private TreeNode<KEY,VALUE> node;
+    TreeNode<KEY,VALUE> node;
 
     @Rule
     public final RandomRule random = new RandomRule();
