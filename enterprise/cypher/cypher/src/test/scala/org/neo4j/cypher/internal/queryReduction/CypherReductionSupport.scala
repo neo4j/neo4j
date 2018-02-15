@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.queryReduction
 import org.neo4j.cypher.GraphIcing
 import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContextCreator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_4._
@@ -41,7 +42,9 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.{IDPPlannerName, PlanContext, 
 import org.neo4j.cypher.internal.queryReduction.DDmin.Oracle
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper, ValueConversion}
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.SingleThreadedExecutor
 import org.neo4j.cypher.internal.runtime.{InternalExecutionResult, NormalMode}
+import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.util.v3_4.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.{CompilerEngineDelegator, ExecutionPlan, RewindableExecutionResult}
@@ -107,38 +110,34 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-
-
   private val rewriting = PreparatoryRewriting andThen
     SemanticAnalysis(warn = true).adds(BaseContains[SemanticState])
   private val createExecPlan = ProcedureCallOrSchemaCommandExecutionPlanBuilder andThen
     If((s: CompilationState) => s.maybeExecutionPlan.isFailure)(
       CommunityRuntimeBuilder.create(None, CypherReductionSupport.config.useErrorsOverWarnings).adds(CompilationContains[ExecutionPlan]))
 
-
-
-  def evaluate(query: String): InternalExecutionResult = {
-    val parsingBaseState = queryToParsingBaseState(query)
+  def evaluate(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false): InternalExecutionResult = {
+    val parsingBaseState = queryToParsingBaseState(query, enterprise)
     val statement = parsingBaseState.statement()
-    produceResult(query, statement, parsingBaseState, None)
+    produceResult(query, statement, parsingBaseState, executeBefore, enterprise)
   }
 
-  def reduceQuery(query: String, executeBefore: Option[String] = None)(test: Oracle[Try[InternalExecutionResult]]): String = {
+  def reduceQuery(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false)(test: Oracle[Try[InternalExecutionResult]]): String = {
     val oracle: Oracle[Try[(String, InternalExecutionResult)]] = (tryTuple) => {
       val tryResult = tryTuple.map(_._2)
       test(tryResult)
     }
-    reduceQueryWithCurrentQueryText(query, executeBefore)(oracle)
+    reduceQueryWithCurrentQueryText(query, executeBefore, enterprise)(oracle)
   }
 
-  def reduceQueryWithCurrentQueryText(query: String, executeBefore: Option[String] = None)(test: Oracle[Try[(String, InternalExecutionResult)]]): String = {
-    val parsingBaseState = queryToParsingBaseState(query)
+  def reduceQueryWithCurrentQueryText(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false)(test: Oracle[Try[(String, InternalExecutionResult)]]): String = {
+    val parsingBaseState = queryToParsingBaseState(query, enterprise)
     val statement = parsingBaseState.statement()
 
     val oracle: Oracle[Statement] = (currentStatement) => {
       // Actual query
       val currentlyRunQuery = CypherReductionSupport.prettifier.asString(currentStatement)
-      val tryResults = Try((currentlyRunQuery, produceResult(query, currentStatement, parsingBaseState, executeBefore)))
+      val tryResults = Try((currentlyRunQuery, produceResult(query, currentStatement, parsingBaseState, executeBefore, enterprise)))
       val testRes = test(tryResults)
       testRes
     }
@@ -147,40 +146,41 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     CypherReductionSupport.prettifier.asString(smallerStatement)
   }
 
-  private def queryToParsingBaseState(query: String): BaseState = {
+  private def queryToParsingBaseState(query: String, enterprise: Boolean): BaseState = {
     val startState = LogicalPlanState(query, None, PlannerNameFor(IDPPlannerName.name), new Solveds, new Cardinalities)
-    val parsingContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, null, null)
+    val parsingContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, null, null, enterprise)
     CompilationPhases.parsing(CypherReductionSupport.stepSequencer).transform(startState, parsingContext)
   }
 
   private def produceResult(query: String,
                             statement: Statement,
                             parsingBaseState: BaseState,
-                            executeBefore: Option[String]): InternalExecutionResult = {
+                            executeBefore: Option[String],
+                            enterprise: Boolean): InternalExecutionResult = {
     val explicitTx = graph.beginTransaction(Transaction.Type.explicit, LoginContext.AUTH_DISABLED)
     val implicitTx = graph.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     try {
       executeBefore match {
         case None =>
         case Some(setupQuery) =>
-          val setupBS = queryToParsingBaseState(setupQuery)
+          val setupBS = queryToParsingBaseState(setupQuery, enterprise)
           val setupStm = setupBS.statement()
-          executeInTx(setupQuery, setupStm, setupBS, implicitTx)
+          executeInTx(setupQuery, setupStm, setupBS, implicitTx, enterprise)
       }
-      executeInTx(query, statement, parsingBaseState, implicitTx)
+      executeInTx(query, statement, parsingBaseState, implicitTx, enterprise)
     } finally {
       explicitTx.failure()
       explicitTx.close()
     }
   }
 
-  private def executeInTx(query: String, statement: Statement, parsingBaseState: BaseState, implicitTx: InternalTransaction): InternalExecutionResult = {
+  private def executeInTx(query: String, statement: Statement, parsingBaseState: BaseState, implicitTx: InternalTransaction, enterprise: Boolean): InternalExecutionResult = {
     val neo4jtxContext = contextFactory.newContext(EMBEDDED_CONNECTION, implicitTx, query, EMPTY_MAP)
     val txContextWrapper = TransactionalContextWrapper(neo4jtxContext)
     val planContext = TransactionBoundPlanContext(txContextWrapper, devNullLogger)
 
     var baseState = parsingBaseState.withStatement(statement)
-    val planningContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, planContext, CypherReductionSupport.queryGraphSolver)
+    val planningContext = createContext(query, CypherReductionSupport.metricsFactory, CypherReductionSupport.config, planContext, CypherReductionSupport.queryGraphSolver, enterprise)
 
 
     baseState = rewriting.transform(baseState, planningContext)
@@ -198,10 +198,15 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   private def createContext(query: String, metricsFactory: CachedMetricsFactory,
                             config: CypherCompilerConfiguration,
                             planContext: PlanContext,
-                            queryGraphSolver: IDPQueryGraphSolver) = {
-    // TODO enterpriseContext
+                            queryGraphSolver: IDPQueryGraphSolver, enterprise: Boolean) = {
     val logicalPlanIdGen = new SequentialIdGen()
+    if (enterprise) {
+      val dispatcher = new SingleThreadedExecutor(1)
+      EnterpriseRuntimeContextCreator(GeneratedQueryStructure, dispatcher).create(NO_TRACING, devNullLogger, planContext, query, Set(),
+        None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config, defaultUpdateStrategy, CompilerEngineDelegator.CLOCK, logicalPlanIdGen, null)
+    } else {
     CommunityRuntimeContextCreator.create(NO_TRACING, devNullLogger, planContext, query, Set(),
       None, WrappedMonitors(new Monitors), metricsFactory, queryGraphSolver, config = config, updateStrategy = defaultUpdateStrategy, clock = CompilerEngineDelegator.CLOCK, logicalPlanIdGen, evaluator = null)
+    }
   }
 }

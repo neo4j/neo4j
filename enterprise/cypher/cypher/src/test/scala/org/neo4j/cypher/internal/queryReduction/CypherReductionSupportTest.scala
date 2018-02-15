@@ -79,29 +79,19 @@ class CypherReductionSupportTest extends CypherFunSuite with CypherReductionSupp
     reduced should equal(s"MATCH (n)${NL}  WHERE 100 / n.name > 34${NL}RETURN ")
   }
 
-  test("test") {
-    val setup = "UNWIND [ {name:'Chicken'},{name:'Carrot'},{name:'Butter'},{name:'Pineapple'},{name:'Ham'},{name:'Sage'} ] as row CREATE (n:Ingredient) SET n.name=row.name RETURN n.name as name, ID(n) as id UNION " +
-      "UNWIND [{startName:'Chicken', endName:'Carrot', affinity:'EXCELLENT'},{startName:'Chicken', endName:'Pineapple', affinity:'GOOD'},{startName:'Pineapple', endName:'Ham', affinity:'OKISH'}," +
-      "{startName:'Carrot', endName:'Butter', affinity:'GOOD'},{startName:'Butter', endName:'Sage', affinity:'EXCELLENT'}] as row MATCH (startNode:Ingredient{name:row.startName}), (endNode:Ingredient{name:row.endName}) " +
-      "with row, startNode, endNode CREATE (startNode)-[rel:PAIRS_WITH]->(endNode) set rel.affinity=row.affinity RETURN '' as name, 0 as id ;"
-
-    val query = "MATCH (chicken:Ingredient{name:'Chicken'})-[r0:PAIRS_WITH]->(carrot:Ingredient{name:'Carrot'}) WITH r0, chicken, carrot RETURN r0,chicken,[ [ (chicken)-[r_p1:PAIRS_WITH]-(i1:Ingredient) | [ r_p1, i1, [ [ (i1)-[r_p2:PAIRS_WITH]-(i2:Ingredient) | [ r_p2, i2 ] ] ] ] ] ],carrot,[ [ (carrot)-[r_p1:PAIRS_WITH]-(i1:Ingredient) | [ r_p1, i1, [ [ (i1)-[r_p2:PAIRS_WITH]-(i2:Ingredient) | [ r_p2, i2 ] ] ] ] ] ], ID(r0)"
-
-    val reduced = reduceQueryWithCurrentQueryText(query, Some(setup)) { (tryResults: Try[(String, InternalExecutionResult)]) =>
+  test("removes unnecessary stuff from faulty query with enterprise") {
+    val setup = "CREATE (n:Label {name: 0}) RETURN n"
+    val query = s"MATCH (n:Label)-[:X]->(m:Label),(p) WHERE 100/n.name > 34 AND m.name = n.name WITH n.name AS name RETURN name, $$a ORDER BY name SKIP 1 LIMIT 5"
+    val reduced = reduceQuery(query, Some(setup), enterprise = true) { (tryResults: Try[InternalExecutionResult]) =>
       tryResults match {
-        case Success((queryText, result)) =>
-          val list = result.toList
-          println(queryText)
-          val list2 = evaluate("cypher runtime=slotted " + queryText).toList
-          if(list != list2)
+        case Failure(e:ArithmeticException) =>
+          if(e.getMessage == "/ by zero")
             Reproduced
           else
             NotReproduced
-        case Failure(e) =>
-          println(e)
-          NotReproduced
+        case _ => NotReproduced
       }
     }
-    print(reduced)
+    reduced should equal(s"MATCH (n)${NL}  WHERE 100 / n.name > 34${NL}RETURN ")
   }
 }
