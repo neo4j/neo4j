@@ -104,13 +104,15 @@ case class LoadCSVPipe(source: Pipe,
       val urlString: TextValue = urlExpression(context, state).asInstanceOf[TextValue]
       val url = getImportURL(urlString.stringValue(), state.query)
 
-      val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
-        .map(_.map(s => Values.stringOrNoValue(s)))
       format match {
         case HasHeaders =>
+          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, headers = true)
+            .map(_.map(s => Values.stringOrNoValue(s)))
           val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
           new IteratorWithHeaders(headers, context, iterator)
         case NoHeaders =>
+          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, headers = false)
+            .map(_.map(s => Values.stringOrNoValue(s)))
           new IteratorWithoutHeaders(context, iterator)
       }
     })
