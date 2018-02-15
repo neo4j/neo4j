@@ -58,7 +58,7 @@ public class BoltQueryLoggingIT
             .withConfig( GraphDatabaseSettings.log_queries, "true")
             .withConfig( new BoltConnector( "bolt" ).type, "BOLT" )
             .withConfig( new BoltConnector( "bolt" ).enabled, "true" )
-            .withConfig( new BoltConnector( "bolt" ).address, "localhost:8776" )
+            .withConfig( new BoltConnector( "bolt" ).address, "localhost:0" )
             .withConfig( new BoltConnector( "bolt" ).encryption_level, "DISABLED" );
     }
 
@@ -67,7 +67,7 @@ public class BoltQueryLoggingIT
     {
         // *** GIVEN ***
 
-        Socket socket = new Socket( "localhost", 8776 );
+        Socket socket = new Socket( "localhost", neo4j.boltURI().getPort() );
         DataInputStream dataIn = new DataInputStream( socket.getInputStream() );
         DataOutputStream dataOut = new DataOutputStream( socket.getOutputStream() );
 
@@ -119,7 +119,7 @@ public class BoltQueryLoggingIT
             assertTrue( line.contains( "ms: bolt-session\tbolt\tneo4j\tMyClient/1.0" ) );
             assertTrue( line.contains( "client/127.0.0.1:" ) );
             assertTrue( line.contains( "client/127.0.0.1:" ) );
-            assertTrue( line.contains( "server/127.0.0.1:8776" ) );
+            assertTrue( line.contains( "server/127.0.0.1:" + neo4j.boltURI().getPort() ) );
             assertTrue( line.contains( " - RETURN 1 AS num - {}" ) );
         }
 
