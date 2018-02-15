@@ -32,6 +32,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -588,7 +589,7 @@ public class KernelTransactionsTest
         return new KernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
                 mock( TransactionMonitor.class ), availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), new CanWrite(),
-                new KernelToken( storageEngine.storeReadLayer() ), new DefaultCursors(), AutoIndexing.UNSUPPORTED,
+                new KernelToken( storageEngine.storeReadLayer() ), DefaultCursors::new, AutoIndexing.UNSUPPORTED,
                 mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -601,7 +602,7 @@ public class KernelTransactionsTest
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite(), new KernelToken( storageEngine.storeReadLayer() ), new DefaultCursors(),
+                new CanWrite(), new KernelToken( storageEngine.storeReadLayer() ), DefaultCursors::new,
                         AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY );
     }
 
@@ -651,7 +652,7 @@ public class KernelTransactionsTest
                 ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-                AccessCapability accessCapability, KernelToken token, DefaultCursors cursors,
+                AccessCapability accessCapability, KernelToken token, Supplier<DefaultCursors> cursors,
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier  )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
