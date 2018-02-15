@@ -20,7 +20,7 @@
 package org.neo4j.backup;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -58,15 +58,15 @@ import static org.junit.Assume.assumeFalse;
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandIT
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
 
-    private final File backupDir = testDirectory.directory( "backups" );
+    private File backupDir;
 
     @Parameter
     public String recordFormat;
@@ -75,6 +75,12 @@ public class OnlineBackupCommandIT
     public static List<String> recordFormats()
     {
         return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
+    }
+
+    @Before
+    public void setUp()
+    {
+        backupDir = testDirectory.directory( "backups" );
     }
 
     public static DbRepresentation createSomeData( GraphDatabaseService db )
@@ -128,7 +134,7 @@ public class OnlineBackupCommandIT
         createSomeData( db );
     }
 
-    private static int runBackupToolFromOtherJvmToGetExitCode( String... args )
+    private int runBackupToolFromOtherJvmToGetExitCode( String... args )
             throws Exception
     {
         return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
@@ -143,9 +149,9 @@ public class OnlineBackupCommandIT
         allArgs.add( "backup" );
         allArgs.addAll( Arrays.asList( args ) );
 
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
+        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[0] ),
                 new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
-        return new ProcessStreamHandler( process, true ).waitForResult();
+        return new ProcessStreamHandler( process, false ).waitForResult();
     }
 
     private DbRepresentation getDbRepresentation()
