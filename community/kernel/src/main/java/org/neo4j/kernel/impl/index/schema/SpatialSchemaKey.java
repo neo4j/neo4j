@@ -41,7 +41,7 @@ class SpatialSchemaKey implements NativeSchemaKey
             Long.BYTES;  /* entityId */
 
     private long entityId;
-    private boolean entityIdIsSpecialTieBreaker;
+    private boolean compareId;
 
     long rawValueBits;
     CoordinateReferenceSystem crs;
@@ -54,15 +54,15 @@ class SpatialSchemaKey implements NativeSchemaKey
     }
 
     @Override
-    public void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker )
+    public void setCompareId( boolean entityIdIsSpecialTieBreaker )
     {
-        this.entityIdIsSpecialTieBreaker = entityIdIsSpecialTieBreaker;
+        this.compareId = entityIdIsSpecialTieBreaker;
     }
 
     @Override
-    public boolean getEntityIdIsSpecialTieBreaker()
+    public boolean getCompareId()
     {
-        return entityIdIsSpecialTieBreaker;
+        return compareId;
     }
 
     @Override
@@ -82,7 +82,7 @@ class SpatialSchemaKey implements NativeSchemaKey
     {
         extractRawBits( assertValidValue( values ) );
         this.entityId = entityId;
-        entityIdIsSpecialTieBreaker = false;
+        compareId = false;
     }
 
     @Override
@@ -109,7 +109,7 @@ class SpatialSchemaKey implements NativeSchemaKey
         Arrays.fill(limit, Double.NEGATIVE_INFINITY);
         writePoint( limit );
         entityId = Long.MIN_VALUE;
-        entityIdIsSpecialTieBreaker = true;
+        compareId = true;
     }
 
     @Override
@@ -120,14 +120,14 @@ class SpatialSchemaKey implements NativeSchemaKey
         double[] limit = {Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY};
         writePoint( limit );
         entityId = Long.MAX_VALUE;
-        entityIdIsSpecialTieBreaker = true;
+        compareId = true;
     }
 
     public void fromDerivedValue( long entityId, long derivedValue )
     {
         rawValueBits = derivedValue;
         this.entityId = entityId;
-        this.entityIdIsSpecialTieBreaker = false;
+        this.compareId = false;
     }
 
     /**
