@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -43,6 +42,7 @@ import org.neo4j.io.pagecache.tracing.DelegatingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -96,7 +96,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void ableToEvictAllPageInAPageCache() throws IOException
     {
         writeInitialDataTo( file( "a" ) );
@@ -114,7 +113,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             {
                 assertTrue( cursor.next() );
             }
-            assertEquals( 2, pageCache.evictPages( 2, 0, EvictionRunEvent.NULL ) );
+            evictAllPages( pageCache );
         }
     }
 
@@ -244,7 +243,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void trackPageModificationTransactionId() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
@@ -270,7 +268,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void pageModificationTrackingNoticeWriteFromAnotherThread() throws Exception
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
@@ -305,7 +302,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void pageModificationTracksHighestModifierTransactionId() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 0 );
@@ -343,7 +339,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void markCursorContextDirtyWhenRepositionCursorOnItsCurrentPage() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
@@ -367,7 +362,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void markCursorContextAsDirtyWhenReadingDataFromMoreRecentTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 3 );
@@ -394,7 +388,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void doNotMarkCursorContextAsDirtyWhenReadingDataFromOlderTransactions() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 23 );
@@ -421,7 +414,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void markContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionHigherThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 5 );
@@ -444,7 +436,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 4 );
         }
 
-        assertEquals( 2, pageCache.evictPages( 2, 0, EvictionRunEvent.NULL ) );
+        evictAllPages( pageCache );
 
         cursorContext.initRead();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
@@ -456,7 +448,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    @Ignore
     public void doNotMarkContextAsDirtyWhenAnyEvictedPageHaveModificationTransactionLowerThenReader() throws IOException
     {
         TestVersionContext cursorContext = new TestVersionContext( () -> 15 );
@@ -479,7 +470,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
             cursor.putLong( 4 );
         }
 
-        assertEquals( 2, pageCache.evictPages( 2, 0, EvictionRunEvent.NULL ) );
+        evictAllPages( pageCache );
 
         cursorContext.initRead();
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
@@ -615,6 +606,20 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
                     }
                 }
             }
+        }
+    }
+
+    private void evictAllPages( MuninnPageCache pageCache ) throws IOException
+    {
+        PageList pages = pageCache.pages;
+        for ( int pageId = 0; pageId < pages.getPageCount(); pageId++ )
+        {
+            pageCache.grabFreeAndExclusivelyLockedPage( PageFaultEvent.NULL );
+        }
+        for ( int pageId = 0; pageId < pages.getPageCount(); pageId++ )
+        {
+            long pageReference = pages.deref( pageId );
+            pageCache.addFreePageToFreelist( pageReference );
         }
     }
 
