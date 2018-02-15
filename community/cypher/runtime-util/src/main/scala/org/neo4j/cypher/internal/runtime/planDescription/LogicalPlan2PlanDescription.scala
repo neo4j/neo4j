@@ -395,17 +395,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             (name, PrefixIndex(label.name, propertyKey, range.prefix))
           case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-                                   bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}")
-                                     .toIndexedSeq))
+              bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
             (name, InequalityIndex(label.name, propertyKey,
-                                   bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}")
-                                     .toIndexedSeq))
+              bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
-            val greaterThanBoundsText = greaterThanBounds.bounds
-              .map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
-            val lessThanBoundsText = lessThanBounds.bounds
-              .map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
+            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound =>
+              s">${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
+            val lessThanBoundsText = lessThanBounds.bounds.map(bound =>
+              s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
           case _ => throw new InternalException("This should never happen. Missing a case?")
         }

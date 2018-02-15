@@ -257,15 +257,30 @@ public abstract class SpaceFillingCurve
      */
     public List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope )
     {
-        SearchEnvelope search = new SearchEnvelope( referenceEnvelope );
-        ArrayList<LongRange> results = new ArrayList<>();
+        return getTilesIntersectingEnvelope( referenceEnvelope, new StandardConfiguration(), null );
+    }
 
-        addTilesIntersectingEnvelopeAt( search, new SearchEnvelope( 0, this.getWidth(), nbrDim ), rootCurve(), 0, this.getValueWidth(), results );
+    /**
+     * Given an envelope, find a collection of LongRange of tiles intersecting it on maxLevel and merge adjacent ones
+     */
+    List<LongRange> getTilesIntersectingEnvelope( Envelope referenceEnvelope, SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor )
+    {
+        SearchEnvelope search = new SearchEnvelope( this, referenceEnvelope );
+        SearchEnvelope wholeExtent = new SearchEnvelope( 0, this.getWidth(), nbrDim );
+        ArrayList<LongRange> results = new ArrayList<>( config.initialRangesListCapacity() );
+
+        if ( monitor != null )
+        {
+            monitor.registerSearchArea( search.getArea() );
+        }
+
+        addTilesIntersectingEnvelopeAt( config, monitor, 0, config.maxDepth( referenceEnvelope, this.range, nbrDim, maxLevel ), search,
+                wholeExtent, rootCurve(), 0, this.getValueWidth(), results );
         return results;
     }
 
-    private void addTilesIntersectingEnvelopeAt( SearchEnvelope search, SearchEnvelope currentExtent, CurveRule curve, long left, long right,
-            ArrayList<LongRange> results )
+    private void addTilesIntersectingEnvelopeAt( SpaceFillingCurveConfiguration config, SpaceFillingCurveMonitor monitor, int depth, int maxDepth,
+            SearchEnvelope search, SearchEnvelope currentExtent, CurveRule curve, long left, long right, ArrayList<LongRange> results )
     {
         if ( right - left == 1 )
         {
@@ -282,17 +297,46 @@ public abstract class SpaceFillingCurve
                     current = new LongRange( left );
                     results.add( current );
                 }
+                if ( monitor != null )
+                {
+                    monitor.addRangeAtDepth( depth );
+                    monitor.addToCoveredArea( currentExtent.getArea() );
+                }
             }
         }
         else if ( search.intersects( currentExtent ) )
         {
-            long width = (right - left) / quadFactor;
-            for ( int i = 0; i < quadFactor; i++ )
+            double overlap = search.fractionOf( currentExtent );
+            if ( config.stopAtThisDepth( overlap, depth, maxDepth ) )
             {
-                int npoint = curve.npointForIndex( i );
+                // Note that LongRange upper bound is inclusive, hence the '-1' in several places
+                LongRange current = (results.size() > 0) ? results.get( results.size() - 1 ) : null;
+                if ( current != null && current.max == left - 1 )
+                {
+                    current.expandToMax( right - 1 );
+                }
+                else
+                {
+                    current = new LongRange( left, right - 1 );
+                    results.add( current );
+                }
+                if ( monitor != null )
+                {
+                    monitor.addRangeAtDepth( depth );
+                    monitor.addToCoveredArea( currentExtent.getArea() );
+                }
+            }
+            else
+            {
+                long width = (right - left) / quadFactor;
+                for ( int i = 0; i < quadFactor; i++ )
+                {
+                    int npoint = curve.npointForIndex( i );
 
-                SearchEnvelope quadrant = currentExtent.quadrant( bitValues( npoint ) );
-                addTilesIntersectingEnvelopeAt( search, quadrant, curve.childAt( i ), left + i * width, left + (i + 1) * width, results );
+                    SearchEnvelope quadrant = currentExtent.quadrant( bitValues( npoint ) );
+                    addTilesIntersectingEnvelopeAt( config, monitor, depth + 1, maxDepth, search, quadrant, curve.childAt( i ), left + i * width,
+                            left + (i + 1) * width, results );
+                }
             }
         }
     }
@@ -315,16 +359,17 @@ public abstract class SpaceFillingCurve
     /**
      * Given a coordinate, find the corresponding normalized coordinate
      */
-    private long[] getNormalizedCoord( double[] coord )
+    long[] getNormalizedCoord( double[] coord )
     {
         long[] normalizedCoord = new long[nbrDim];
 
         for ( int dim = 0; dim < nbrDim; dim++ )
         {
             double value = clamp( coord[dim], range.getMin( dim ), range.getMax( dim ) );
-            if ( value == range.getMax( dim ) )
+            // Avoiding awkward rounding errors
+            if ( value - range.getMin( dim ) == range.getMax( dim ) - range.getMin( dim ) )
             {
-                normalizedCoord[dim] = valueWidth - 1;
+                normalizedCoord[dim] = width - 1;
             }
             else
             {
@@ -418,81 +463,6 @@ public abstract class SpaceFillingCurve
         public String toString()
         {
             return "LongRange(" + min + "," + max + ")";
-        }
-    }
-
-    /**
-     * N-dimensional searchEnvelope
-     */
-    private class SearchEnvelope
-    {
-        long[] min;
-        long[] max;
-        int nbrDim;
-
-        private SearchEnvelope( Envelope referenceEnvelope )
-        {
-            this.min = getNormalizedCoord( referenceEnvelope.getMin() );
-            this.max = getNormalizedCoord( referenceEnvelope.getMax() );
-            this.nbrDim = referenceEnvelope.getDimension();
-        }
-
-        private SearchEnvelope( long[] min, long[] max )
-        {
-            this.min = min;
-            this.max = max;
-            this.nbrDim = min.length;
-        }
-
-        private SearchEnvelope( long min, long max, int nbrDim )
-        {
-            this.nbrDim = nbrDim;
-            this.min = new long[nbrDim];
-            this.max = new long[nbrDim];
-
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                this.min[dim] = min;
-                this.max[dim] = max;
-            }
-        }
-
-        private SearchEnvelope quadrant( int[] quadNbrs )
-        {
-            long[] newMin = new long[nbrDim];
-            long[] newMax = new long[nbrDim];
-
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                long extent = (max[dim] - min[dim]) / 2;
-                newMin[dim] = this.min[dim] + quadNbrs[dim] * extent;
-                newMax[dim] = this.min[dim] + (quadNbrs[dim] + 1) * extent;
-            }
-            return new SearchEnvelope( newMin, newMax );
-        }
-
-        private boolean contains( long[] coord )
-        {
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                if ( coord[dim] < min[dim] || coord[dim] > max[dim] )
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private boolean intersects( SearchEnvelope other )
-        {
-            for ( int dim = 0; dim < nbrDim; dim++ )
-            {
-                if ( max[dim] < other.min[dim] || other.max[dim] < min[dim] )
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     }
 }
