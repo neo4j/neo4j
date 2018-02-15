@@ -28,4 +28,6 @@ public interface CursorTracker
     void releaseCursor( Cursor cursor );
 
     void assertCursorsAreClosed();
+
+    void closeAllCursors();
 }

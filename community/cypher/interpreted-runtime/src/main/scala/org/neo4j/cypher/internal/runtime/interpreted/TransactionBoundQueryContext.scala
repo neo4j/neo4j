@@ -105,10 +105,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   //We cannot assign to value because of periodic commit
   private def writes() = transactionalContext.dataWrite
   private def reads() = transactionalContext.dataRead
-  private val nodeCursor = transactionalContext.kernelTransaction.nodeCursor()
-  private val propertyCursor = transactionalContext.kernelTransaction.propertyCursor()
-  private val nodeValueIndexCursor = transactionalContext.kernelTransaction.nodeValueIndexCursor()
-  private val nodeLabelIndexCursor = transactionalContext.kernelTransaction.nodeLabelIndexCursor()
+  private val nodeCursor = allocateAndTraceNodeCursor()
+  private val propertyCursor = allocateAndTracePropertyCursor()
+  private val nodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
+  private val nodeLabelIndexCursor = allocateAndTraceNodeLabelIndexCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
@@ -316,35 +316,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
 
       override protected def close(): Unit = nodeCursor.close()
-//    reads().nodeIndexSeek(index, nodeValueIndexCursor, IndexOrder.NONE, query:_*)
-//    nodeValueIndexCursorToIterator(nodeValueIndexCursor)
-//  }
-//
-//  private def scan(index: IndexReference) = {
-//    reads().nodeIndexScan(index, nodeValueIndexCursor, IndexOrder.NONE)
-//    new PrimitiveLongResourceIterator {
-//      private var _next: Long = fetchNext()
-//
-//      private def fetchNext() =
-//        if (nodeValueIndexCursor.next()) nodeValueIndexCursor.nodeReference()
-//        else -1L
-//
-//      override def hasNext: Boolean = _next >= 0
-//
-//      override def next(): Long = {
-//        if (!hasNext) {
-//          nodeValueIndexCursor.close()
-//          Iterator.empty.next()
-//        }
-//
-//        val current = _next
-//        _next = fetchNext()
-//        if (!hasNext) nodeValueIndexCursor.close()
-//
-//        current
-//      }
-//
-//      override def close(): Unit = nodeValueIndexCursor.close()
     }
   }
 
@@ -445,33 +416,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.nodeReference() else -1L
       override protected def close(): Unit = cursor.close()
-//    reads().nodeLabelScan(id, nodeLabelIndexCursor)
-//    nodeLabelIndexCursorToIterator(nodeLabelIndexCursor)
-//  }
-//
-//  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = {
-//    reads().nodeLabelScan(id, nodeLabelIndexCursor)
-//    new PrimitiveLongIterator {
-//      private var _next: Long = fetchNext()
-//
-//      private def fetchNext() =
-//        if (nodeLabelIndexCursor.next()) nodeLabelIndexCursor.nodeReference()
-//        else -1L
-//
-//      override def hasNext: Boolean = _next >= 0
-//
-//      override def next(): Long = {
-//        if (!hasNext) {
-//          nodeLabelIndexCursor.close()
-//          Iterator.empty.next()
-//        }
-//
-//        val current = _next
-//        _next = fetchNext()
-//        if (!hasNext) nodeLabelIndexCursor.close()
-//
-//        current
-//      }
     }
   }
 
@@ -564,6 +508,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def all: Iterator[NodeValue] = {
+      val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
       new CursorIterator[NodeValue] {
         override protected def fetchNext(): NodeValue = {
@@ -576,6 +521,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def allPrimitive: PrimitiveLongIterator = {
+      val nodeCursor = allocateAndTraceNodeCursor()
       reads().allNodesScan(nodeCursor)
       new PrimitiveCursorIterator {
         override protected def fetchNext(): Long = if (nodeCursor.next()) nodeCursor.nodeReference() else -1L
@@ -1045,9 +991,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     cursor
   }
 
-//  private def nodeCursorToIterator(nodeCursor: NodeCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
-//    private var _next: NodeValue = fetchNext()
-
   abstract class CursorIterator[T] extends Iterator[T] {
     private var _next: T = fetchNext()
 
@@ -1083,12 +1026,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
                                                            visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
       visitor.visit(relationshipId, typeId, source, target)
       true
-//  private def nodeValueIndexCursorToIterator(nodeValueIndexCursor: NodeValueIndexCursor): Iterator[NodeValue] =  new Iterator[NodeValue] {
-//    private var _next: NodeValue = fetchNext()
-//
-//    private def fetchNext() = {
-//      if (nodeValueIndexCursor.next()) fromNodeProxy(entityAccessor.newNodeProxy(nodeValueIndexCursor.nodeReference()))
-//      else null
     }
 
     private def fetchNext(): Long = if (selectionCursor.next()) selectionCursor.relationshipReference() else -1L

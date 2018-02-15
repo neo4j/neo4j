@@ -25,9 +25,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -79,7 +79,6 @@ import static org.neo4j.kernel.impl.newapi.RelationshipDirection.LOOP;
 import static org.neo4j.kernel.impl.newapi.RelationshipDirection.OUTGOING;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.util.FeatureToggles.flag;
-import static org.neo4j.util.FeatureToggles.toggle;
 
 abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
@@ -87,47 +86,41 @@ abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.SchemaRead,
         CursorTracker
 {
-    private final DefaultCursors cursors;
     final KernelTransactionImplementation ktx;
 
-    private long cursorsInUse;
-
-    private static final boolean TRACK_CURSORS = flag( Read.class, "trackCursors", true );
-    private static final boolean RECORD_CURSORS_TRACES = flag( Read.class, "recordCursorTraces", true );
-    private static final int CURSORS_TRACK_HISTORY_MAX_SIZE = 100;
+    private static boolean RECORD_CURSORS_TRACES = flag( Read.class, "recordCursorTraces", false );
+    private static final int INITIAL_MAP_SIZE = 100;
     private final Map<Cursor, StackTraceElement[]> cursorsOpenCloseCalls;
 
     Read( DefaultCursors cursors, KernelTransactionImplementation ktx )
     {
-        this.cursors = cursors;
         this.ktx = ktx;
-        this.cursorsOpenCloseCalls = RECORD_CURSORS_TRACES ? new ConcurrentHashMap<>( CURSORS_TRACK_HISTORY_MAX_SIZE ) : Collections.emptyMap();
+        this.cursorsOpenCloseCalls = new HashMap<>( INITIAL_MAP_SIZE );
+    }
+
+    public void setFlagRecordCursorsTraces( boolean b )
+    {
+        RECORD_CURSORS_TRACES = b;
     }
 
     @Override
     public void acquireCursor( Cursor cursor )
     {
         //System.out.println("ACQ "+ cursor + "@" + System.identityHashCode( cursor ));
+        StackTraceElement[] stackTrace = null;
         if ( RECORD_CURSORS_TRACES )
         {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            cursorsOpenCloseCalls.put( cursor, Arrays.copyOfRange(stackTrace, 2, stackTrace.length) );
+            stackTrace = Thread.currentThread().getStackTrace();
+            stackTrace = Arrays.copyOfRange( stackTrace, 2, stackTrace.length );
         }
-        cursorsInUse++;
+        cursorsOpenCloseCalls.put( cursor, stackTrace );
     }
 
     @Override
     public void releaseCursor( Cursor cursor )
     {
         //System.out.println("REL "+ cursor + "@" + System.identityHashCode( cursor ));
-        if ( cursorsInUse > 0 )
-        {
-            if ( RECORD_CURSORS_TRACES )
-            {
-                cursorsOpenCloseCalls.remove( cursor );
-            }
-            cursorsInUse--;
-        }
+        cursorsOpenCloseCalls.remove( cursor );  // TODO: Test this
     }
 
     @Override
@@ -516,33 +509,27 @@ abstract class Read implements TxStateHolder,
 
     public final void assertCursorsAreClosed()
     {
-        //System.out.println("AssertCursorsAreClosed with " + cursorsInUse + " open cursors");
-        if ( cursorsInUse > 0 )
+        if ( RECORD_CURSORS_TRACES && !cursorsOpenCloseCalls.isEmpty() )
         {
-            System.out.println( "Leaked cursors:" );
-            for ( Cursor c : cursorsOpenCloseCalls.keySet() )
-            {
-                System.out.println( c + "@" + System.identityHashCode( c ) );
-            }
-            long leakedCursors = cursorsInUse;
-            cursorsInUse = 0;
-            if ( TRACK_CURSORS )
-            {
-                String message = getCursorNotClosedMessage( leakedCursors );
-                throw new CursorNotClosedException( message, cursorsOpenCloseCalls );
-            }
-            cursorsOpenCloseCalls.clear();
+            String message = format( "Cursors were not correctly closed. Number of leaked cursors: %d.", cursorsOpenCloseCalls.size() );
+            throw new CursorNotClosedException( message, cursorsOpenCloseCalls );
         }
     }
 
-    private String getCursorNotClosedMessage( long leakedCursors )
+    @Override
+    public void closeAllCursors()
     {
-        String additionalInstruction = RECORD_CURSORS_TRACES ? StringUtils.EMPTY :
-                                       format(" To see cursor open/close stack traces please pass '%s' to your JVM" +
-                                                       " or enable corresponding feature toggle.",
-                                               toggle( Read.class, "recordCursorTraces", true ) );
-        return format( "Cursors were not correctly closed. Number of leaked cursors: %d.%s", leakedCursors,
-                additionalInstruction );
+        if ( !RECORD_CURSORS_TRACES )
+        {
+            Iterator<Cursor> it = cursorsOpenCloseCalls.keySet().iterator();
+            while ( it.hasNext() )
+            {
+                Cursor c = it.next();
+                it.remove(); // although close does that anyway, doing it here prevents a concurrent modification exception
+                c.close();
+            }
+            cursorsOpenCloseCalls.clear();
+        }
     }
 
     private static void explicitIndex( IndexProgressor.ExplicitClient client, ExplicitIndexHits hits )
@@ -661,7 +648,7 @@ abstract class Read implements TxStateHolder,
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             PrintStream printStream = new PrintStream( out );
             printStream.println();
-            printStream.println( "Last " + CURSORS_TRACK_HISTORY_MAX_SIZE + " cursors open/close stack traces are:" );
+            printStream.println( "Last " + openCloseTraces.size() + " cursors open/close stack traces are:" );
             int element = 0;
 
             // getting all the values

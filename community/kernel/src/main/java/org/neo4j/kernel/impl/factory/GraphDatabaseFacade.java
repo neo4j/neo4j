@@ -427,7 +427,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return () ->
         {
             Statement statement = ktx.acquireStatement();
-            NodeCursor cursor = ktx.nodeCursor();
+            NodeCursor cursor = ktx.cursors().allocateNodeCursor();
             ktx.dataRead().allNodesScan( cursor );
             return new PrefetchingResourceIterator<Node>()
             {

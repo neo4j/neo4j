@@ -621,6 +621,7 @@ public class Operations implements Write, ExplicitIndexWrite
             nodeLabelIndexCursor.close();
             nodeLabelIndexCursor = null;
         }
+        allStoreHolder.closeAllCursors();
     }
 
     public Token token()
