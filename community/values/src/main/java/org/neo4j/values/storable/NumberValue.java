@@ -103,6 +103,18 @@ public abstract class NumberValue extends ScalarValue
 
     abstract NumberValue plus( double b );
 
+    abstract NumberValue times( byte b );
+
+    abstract NumberValue times( short b );
+
+    abstract NumberValue times( int b );
+
+    abstract NumberValue times( long b );
+
+    abstract NumberValue times( float b );
+
+    abstract NumberValue times( double b );
+
     public NumberValue minus( NumberValue numberValue )
     {
         if ( numberValue instanceof IntegralValue )
@@ -128,6 +140,21 @@ public abstract class NumberValue extends ScalarValue
         else if ( numberValue instanceof FloatingPointValue )
         {
             return plus( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot add " + numberValue );
+        }
+    }
+    public NumberValue times( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return times( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return times( numberValue.doubleValue() );
         }
         else
         {

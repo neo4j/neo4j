@@ -145,4 +145,40 @@ public final class LongValue extends IntegralValue
     {
         return ValueMath.add( value, b );
     }
+
+    @Override
+    NumberValue times( byte b )
+    {
+        return ValueMath.multiply( value, b );
+    }
+
+    @Override
+    NumberValue times( short b )
+    {
+        return ValueMath.multiply( value, b );
+    }
+
+    @Override
+    NumberValue times( int b )
+    {
+        return ValueMath.multiply( value, b );
+    }
+
+    @Override
+    NumberValue times( long b )
+    {
+        return ValueMath.multiply( value, b );
+    }
+
+    @Override
+    NumberValue times( float b )
+    {
+        return ValueMath.multiply( value, b );
+    }
+
+    @Override
+    NumberValue times( double b )
+    {
+        return ValueMath.multiply( value, b );
+    }
 }

@@ -101,4 +101,39 @@ public final class ValueMath
     {
         return Values.doubleValue( a - b );
     }
+
+    /**
+     * Overflow safe multiplication of two longs
+     * <p>
+     * If the result doesn't fit in a long we widen type to use double instead. This implementation
+     * is fast for the happy path since it is using the intrinsic method addExact but will be slow when
+     * actually overflowing. We bet on overflows being rare and optimize for the happy path.
+     *
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a * b
+     */
+    public static NumberValue multiply( long a, long b )
+    {
+        try
+        {
+            return Values.longValue( Math.multiplyExact( a, b ) );
+        }
+        catch ( ArithmeticException e )
+        {
+            return Values.doubleValue( (double) a * (double) b );
+        }
+    }
+
+    /**
+     * Multiplication of two doubles
+     *
+     * @param a left-hand operand
+     * @param b right-hand operand
+     * @return a * b
+     */
+    public static NumberValue multiply( double a, double b )
+    {
+        return Values.doubleValue( a * b );
+    }
 }
