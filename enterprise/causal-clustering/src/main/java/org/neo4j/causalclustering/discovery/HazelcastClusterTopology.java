@@ -63,7 +63,7 @@ public class HazelcastClusterTopology
     private static final String REFUSE_TO_BE_LEADER_KEY = "refuseToBeLeader";
 
     // cluster-wide attributes
-    private static final String CLUSTER_UUID = "cluster_uuid";
+    private static final String CLUSTER_UUID_MAP_DB_NAME = "cluster_uuid";
     static final String SERVER_GROUPS_MULTIMAP_NAME = "groups";
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME = "read-replica-transaction-servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas"; // hz client uuid string -> boltAddress string
@@ -95,6 +95,7 @@ public class HazelcastClusterTopology
         Map<MemberId,CoreServerInfo> coreMembers = emptyMap();
         boolean canBeBootstrapped = false;
         ClusterId clusterId = null;
+        String dbName = config.get( CausalClusteringSettings.database );
 
         if ( hazelcastInstance != null )
         {
@@ -103,7 +104,7 @@ public class HazelcastClusterTopology
 
             coreMembers = toCoreMemberMap( hzMembers, log, hazelcastInstance );
 
-            clusterId = getClusterId( hazelcastInstance );
+            clusterId = getClusterId( hazelcastInstance, dbName );
         }
         else
         {
@@ -132,17 +133,20 @@ public class HazelcastClusterTopology
         return catchupAddressMap;
     }
 
-    private static ClusterId getClusterId( HazelcastInstance hazelcastInstance )
+    private static ClusterId getClusterId( HazelcastInstance hazelcastInstance, String dbName )
     {
-        IAtomicReference<UUID> uuidReference = hazelcastInstance.getAtomicReference( CLUSTER_UUID );
-        UUID uuid = uuidReference.get();
+        IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_MAP_DB_NAME );
+
+        UUID uuid = uuidPerDbCluster.get( dbName );
         return uuid != null ? new ClusterId( uuid ) : null;
     }
 
-    static boolean casClusterId( HazelcastInstance hazelcastInstance, ClusterId clusterId )
+    static boolean casClusterId( HazelcastInstance hazelcastInstance, ClusterId clusterId, String dbName )
     {
-        IAtomicReference<UUID> uuidReference = hazelcastInstance.getAtomicReference( CLUSTER_UUID );
-        return uuidReference.compareAndSet( null, clusterId.uuid() ) || uuidReference.get().equals( clusterId.uuid() );
+        //TODO: Sanity check subtle logic change here
+        IMap<String, UUID> uuidPerDbCluster = hazelcastInstance.getMap( CLUSTER_UUID_MAP_DB_NAME );
+        UUID uuid = uuidPerDbCluster.putIfAbsent( dbName, clusterId.uuid() );
+        return uuid == null || clusterId.uuid().equals( uuid );
     }
 
     private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance )
@@ -185,7 +189,11 @@ public class HazelcastClusterTopology
 
     private static boolean canBeBootstrapped( HazelcastInstance hazelcastInstance, Config config )
     {
+        //TODO: Refactor for clarity
+
         Set<Member> members = hazelcastInstance.getCluster().getMembers();
+
+        String dbName = config.get( CausalClusteringSettings.database );
 
         if ( config.get( refuse_to_be_leader ) )
         {
@@ -195,7 +203,9 @@ public class HazelcastClusterTopology
         {
             for ( Member member : members )
             {
-                if ( !member.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY ) )
+                boolean localDb = dbName.equals( member.getStringAttribute( MEMBER_DB_NAME ) );
+
+                if ( !member.getBooleanAttribute( REFUSE_TO_BE_LEADER_KEY ) && localDb )
                 {
                     return member.localMember();
                 }

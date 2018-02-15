@@ -26,6 +26,7 @@ class CoreTopologyListenerService
 {
     private final List<CoreTopologyService.Listener> listeners = new ArrayList<>();
 
+
     void addCoreTopologyListener( CoreTopologyService.Listener listener )
     {
         listeners.add( listener );
@@ -35,7 +36,9 @@ class CoreTopologyListenerService
     {
         for ( CoreTopologyService.Listener listener : listeners )
         {
-            listener.onCoreTopologyChange( coreTopology );
+            String dbName = listener.dbName();
+
+            listener.onCoreTopologyChange( coreTopology.filterTopologyByDb( dbName ) );
         }
     }
 }

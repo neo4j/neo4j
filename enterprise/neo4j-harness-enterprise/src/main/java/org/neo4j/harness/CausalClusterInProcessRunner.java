@@ -56,11 +56,11 @@ public class CausalClusterInProcessRunner
 
             CausalClusterInProcessBuilder.CausalCluster cluster =
                     CausalClusterInProcessBuilder.init()
-                        .withCores( 3 )
-                        .withReplicas( 3 )
-                        .withLogger( toOutputStream( System.out ) )
-                        .atPath( clusterPath )
-                        .build();
+                            .withCores( 3 )
+                            .withReplicas( 3 )
+                            .withLogger( toOutputStream( System.out ) )
+                            .atPath( clusterPath )
+                            .build();
 
             System.out.println( "Waiting for cluster to boot up..." );
             cluster.boot();

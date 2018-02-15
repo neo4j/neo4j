@@ -65,7 +65,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-public class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
+class HazelcastCoreTopologyService extends AbstractTopologyService implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private final Config config;
@@ -110,14 +110,14 @@ public class HazelcastCoreTopologyService extends LifecycleAdapter implements Co
     public void addCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( coreTopology );
+        listener.onCoreTopologyChange( coreServers( listener.dbName() ) );
     }
 
     @Override
-    public boolean setClusterId( ClusterId clusterId ) throws InterruptedException
+    public boolean setClusterId( ClusterId clusterId, String dbName ) throws InterruptedException
     {
         waitOnHazelcastInstanceCreation();
-        return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId );
+        return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId, dbName );
     }
 
     @Override
@@ -311,32 +311,9 @@ public class HazelcastCoreTopologyService extends LifecycleAdapter implements Co
     }
 
     @Override
-    public CoreTopology coreServers( String databaseName )
-    {
-        CoreTopology coreTopology = this.coreTopology;
-
-        Map<MemberId,CoreServerInfo> filteredCores = coreTopology.members().entrySet().stream()
-                .filter( e -> e.getValue().getDatabaseName().equals( databaseName ) )
-                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-
-        return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
-    }
-
-    @Override
     public ReadReplicaTopology readReplicas()
     {
         return readReplicaTopology;
-    }
-
-    @Override
-    public ReadReplicaTopology readReplicas( String databaseName )
-    {
-        ReadReplicaTopology readReplicaTopology = this.readReplicaTopology;
-
-        Map<MemberId,ReadReplicaInfo> filteredRRs = readReplicaTopology.members().entrySet().stream().filter(
-                e -> e.getValue().getDatabaseName().equals( databaseName ) ).collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-
-        return new ReadReplicaTopology( filteredRRs );
     }
 
     @Override

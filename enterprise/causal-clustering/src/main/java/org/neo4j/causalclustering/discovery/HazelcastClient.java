@@ -45,7 +45,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getC
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
 
-public class HazelcastClient extends LifecycleAdapter implements TopologyService
+class HazelcastClient extends AbstractTopologyService
 {
     private final Log log;
     private final ClientConnectorAddresses connectorAddresses;
@@ -102,35 +102,9 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     }
 
     @Override
-    public CoreTopology coreServers( String databaseName )
-    {
-        CoreTopology coreTopology = this.coreTopology;
-
-        Map<MemberId,CoreServerInfo> filteredCores = filterHostsByDb( coreTopology.members(), databaseName );
-
-        return new CoreTopology( coreTopology.clusterId(), coreTopology.canBeBootstrapped(), filteredCores );
-    }
-
-    @Override
     public ReadReplicaTopology readReplicas()
     {
         return rrTopology;
-    }
-
-    @Override
-    public ReadReplicaTopology readReplicas( String databaseName )
-    {
-        ReadReplicaTopology readReplicaTopology = rrTopology;
-
-        Map<MemberId,ReadReplicaInfo> filteredRRs = filterHostsByDb( readReplicaTopology.members(), databaseName );
-
-        return new ReadReplicaTopology( filteredRRs );
-    }
-
-    private <T extends DiscoveryServerInfo> Map<MemberId, T> filterHostsByDb( Map<MemberId, T> s, String dbName )
-    {
-        return s.entrySet().stream().filter(e -> e.getValue().getDatabaseName().equals( dbName ) )
-                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }
 
     @Override

@@ -33,11 +33,13 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
 {
     private final CoreTopologyService coreTopologyService;
     private final RaftMachine raftMachine;
+    private final String dbName;
 
-    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine )
+    public RaftCoreTopologyConnector( CoreTopologyService coreTopologyService, RaftMachine raftMachine, String dbName )
     {
         this.coreTopologyService = coreTopologyService;
         this.raftMachine = raftMachine;
+        this.dbName = dbName;
     }
 
     @Override
@@ -51,5 +53,11 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     {
         Set<MemberId> targetMembers = coreTopology.members().keySet();
         raftMachine.setTargetMembershipSet( targetMembers );
+    }
+
+    @Override
+    public String dbName()
+    {
+        return this.dbName;
     }
 }

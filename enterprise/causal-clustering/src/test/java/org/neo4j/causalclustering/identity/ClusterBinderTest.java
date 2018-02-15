@@ -109,7 +109,7 @@ public class ClusterBinderTest
         ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.setClusterId( previouslyBoundClusterId ) ).thenReturn( true );
+        when( topologyService.setClusterId( previouslyBoundClusterId, "default" ) ).thenReturn( true );
 
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
@@ -122,7 +122,7 @@ public class ClusterBinderTest
         binder.bindToCluster();
 
         // then
-        verify( topologyService ).setClusterId( previouslyBoundClusterId );
+        verify( topologyService ).setClusterId( previouslyBoundClusterId, "default" );
         Optional<ClusterId> clusterId = binder.get();
         assertTrue( clusterId.isPresent() );
         assertEquals( previouslyBoundClusterId, clusterId.get() );
@@ -135,7 +135,7 @@ public class ClusterBinderTest
         ClusterId previouslyBoundClusterId = new ClusterId( UUID.randomUUID() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.setClusterId( previouslyBoundClusterId ) ).thenReturn( false );
+        when( topologyService.setClusterId( previouslyBoundClusterId, "default" ) ).thenReturn( false );
 
         StubClusterIdStorage clusterIdStorage = new StubClusterIdStorage();
         clusterIdStorage.writeState( previouslyBoundClusterId );
@@ -164,7 +164,7 @@ public class ClusterBinderTest
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
         when( topologyService.coreServers( "default" ) ).thenReturn( bootstrappableTopology );
-        when( topologyService.setClusterId( any() ) ).thenReturn( true );
+        when( topologyService.setClusterId( any(), "default" ) ).thenReturn( true );
         CoreSnapshot snapshot = mock( CoreSnapshot.class );
         when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );
 
@@ -179,7 +179,7 @@ public class ClusterBinderTest
         verify( coreBootstrapper ).bootstrap( any() );
         Optional<ClusterId> clusterId = binder.get();
         assertTrue( clusterId.isPresent() );
-        verify( topologyService ).setClusterId( clusterId.get() );
+        verify( topologyService ).setClusterId( clusterId.get(), "default" );
         assertTrue( boundState.snapshot().isPresent() );
         assertEquals( boundState.snapshot().get(), snapshot );
     }

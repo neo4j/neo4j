@@ -255,9 +255,9 @@ public class CausalClusterInProcessBuilder
 
         private Map<Integer,String> distributeHostsBetweenDatabases( int nHosts, List<String> databases )
         {
-            //Max number of hosts per database is nHosts / nDatabases + 1
+            //Max number of hosts per database is (nHosts / nDatabases) or (nHosts / nDatabases) + 1
             int nDatabases = databases.size();
-            int maxCapacity = (nHosts / nDatabases) + 1;
+            int maxCapacity = ( nHosts % nDatabases == 0 ) ? (nHosts / nDatabases) : (nHosts / nDatabases) + 1;
 
             List<String> repeated =
                     databases.stream().flatMap( db -> IntStream.range( 0, maxCapacity ).mapToObj( ignored -> db ) ).collect( Collectors.toList() );

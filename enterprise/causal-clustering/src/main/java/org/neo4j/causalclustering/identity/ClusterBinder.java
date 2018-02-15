@@ -90,9 +90,9 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         {
             topology = topologyService.coreServers( dbName );
 
-            if ( topology.clusterId() != null )
+            if ( topology.clusterId( dbName ) != null )
             {
-                clusterId = topology.clusterId();
+                clusterId = topology.clusterId( dbName );
                 log.info( "Bound to cluster: " + clusterId );
             }
             else if ( topology.canBeBootstrapped() )
@@ -128,7 +128,7 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
     private void publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
     {
-        boolean success = topologyService.setClusterId( localClusterId );
+        boolean success = topologyService.setClusterId( localClusterId, dbName );
         if ( !success )
         {
             throw new BindingException( "Failed to publish: " + localClusterId );

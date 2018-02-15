@@ -37,11 +37,12 @@ public interface CoreTopologyService extends TopologyService
      *
      * @return True if the cluster ID was successfully CAS:ed, otherwise false.
      */
-    boolean setClusterId( ClusterId clusterId ) throws InterruptedException;
+    boolean setClusterId( ClusterId clusterId, String dbName ) throws InterruptedException;
 
     @FunctionalInterface
     interface Listener
     {
         void onCoreTopologyChange( CoreTopology coreTopology );
+        String dbName();
     }
 }

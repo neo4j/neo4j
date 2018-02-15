@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
@@ -49,4 +50,11 @@ public interface Topology<T extends DiscoveryServerInfo>
     {
         return Optional.ofNullable( members().get( memberId ) );
     }
+
+    default Map<MemberId, T> filterHostsByDb( Map<MemberId, T> s, String dbName ) {
+        return s.entrySet().stream().filter(e -> e.getValue().getDatabaseName().equals( dbName ) )
+                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+    }
+
+    Topology<T> filterTopologyByDb( String dbName );
 }

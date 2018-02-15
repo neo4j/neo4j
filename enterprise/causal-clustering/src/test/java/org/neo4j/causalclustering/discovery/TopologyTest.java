@@ -126,6 +126,13 @@ public class TopologyTest
         {
             return members;
         }
+
+        @Override
+        public Topology<ReadReplicaInfo> filterTopologyByDb( String dbName )
+        {
+            //TODO: Is a no-op for now, but should be changed to actually filter the topology
+            return this;
+        }
     }
 
     private Map<MemberId,ReadReplicaInfo> randomMembers( int quantity )

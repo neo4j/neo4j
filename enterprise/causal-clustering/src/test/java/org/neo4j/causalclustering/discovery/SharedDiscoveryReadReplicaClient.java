@@ -78,7 +78,7 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
         log.info( "Core topology is %s", topology );
 
         Map<MemberId,CoreServerInfo> filteredCores = filterToplogyByDb( topology, database );
-        return new CoreTopology( topology.clusterId(), topology.canBeBootstrapped(), filteredCores );
+        return new CoreTopology( topology.clusterId( database ), topology.canBeBootstrapped(), filteredCores );
     }
 
     @Override
