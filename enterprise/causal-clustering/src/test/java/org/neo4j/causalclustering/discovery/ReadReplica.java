@@ -167,6 +167,12 @@ public class ReadReplica implements ClusterMember
         return threadGroup;
     }
 
+    @Override
+    public Monitors monitors()
+    {
+        return monitors;
+    }
+
     public File storeDir()
     {
         return storeDir;
