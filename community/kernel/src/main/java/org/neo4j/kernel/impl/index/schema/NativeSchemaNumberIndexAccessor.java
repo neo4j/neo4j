@@ -135,6 +135,6 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     @Override
     public boolean isDirty()
     {
-        return tree.isDirty();
+        return tree.wasDirtyOnStartup();
     }
 }

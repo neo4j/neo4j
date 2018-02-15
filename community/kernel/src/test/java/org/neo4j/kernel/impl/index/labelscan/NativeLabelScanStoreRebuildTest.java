@@ -117,7 +117,7 @@ public class NativeLabelScanStoreRebuildTest
     }
 
     @Test
-    public void labelScanStoreIdDirtyWhenIndexIsNotClean() throws IOException
+    public void labelScanStoreIsDirtyWhenIndexIsNotClean() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         createDirtyIndex( pageCache );

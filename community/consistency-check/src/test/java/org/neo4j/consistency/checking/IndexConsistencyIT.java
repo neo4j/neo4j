@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
@@ -94,6 +95,26 @@ public class IndexConsistencyIT
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        assertThat( readReport( result ),
+                hasItem( containsString("WARN : Index was not properly shutdown and rebuild is required.") ) );
+    }
+
+    @Test
+    public void reportNotCleanNativeIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    {
+        File storeDir = db.getStoreDir();
+        someData();
+        resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        File indexesCopy = new File( storeDir, "indexesCopy" );
+        File indexSources = resolveComponent( FusionSchemaIndexProvider.class ).directoryStructure().rootDirectory();
+        copyRecursively( indexSources, indexesCopy );
+
+        db.shutdownAndKeepStore();
+
+        copyRecursively( indexesCopy, indexSources );
+
+        ConsistencyCheckService.Result result = fullConsistencyCheck();
+        assertTrue( "Expected consistency check to fail", result.isSuccessful() );
         assertThat( readReport( result ),
                 hasItem( containsString("WARN : Index was not properly shutdown and rebuild is required.") ) );
     }

@@ -973,7 +973,7 @@ public class GBPTreeTest
 
         try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.IGNORE ).build() )
         {
-            assertTrue( index.isDirty() );
+            assertTrue( index.wasDirtyOnStartup() );
         }
     }
 
@@ -990,7 +990,7 @@ public class GBPTreeTest
         }
         try ( GBPTree<MutableLong,MutableLong> index = index().build() )
         {
-            assertFalse( index.isDirty() );
+            assertFalse( index.wasDirtyOnStartup() );
         }
     }
 

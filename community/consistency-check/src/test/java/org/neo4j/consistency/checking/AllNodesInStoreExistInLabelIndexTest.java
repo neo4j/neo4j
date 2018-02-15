@@ -112,6 +112,25 @@ public class AllNodesInStoreExistInLabelIndexTest
     }
 
     @Test
+    public void reportNotCleanLabelIndexWithCorrectData() throws IOException, ConsistencyCheckIncompleteException
+    {
+        File storeDir = db.getStoreDir();
+        someData();
+        db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
+        copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+
+        db.shutdownAndKeepStore();
+
+        copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+
+        ConsistencyCheckService.Result result = fullConsistencyCheck();
+        assertTrue( "Expected consistency check to fail", result.isSuccessful() );
+        assertThat( readReport( result ),
+                hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
+    }
+
+    @Test
     public void mustReportMissingNode() throws Exception
     {
         // given

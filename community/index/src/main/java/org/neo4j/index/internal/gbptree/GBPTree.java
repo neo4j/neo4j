@@ -338,7 +338,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * True if initial tree state was dirty
      */
-    private boolean dirtyInitialState;
+    private boolean dirtyOnStartup;
 
     /**
      * State of cleanup job.
@@ -447,11 +447,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.monitor.startupState( clean );
 
             // Prepare tree for action
-            dirtyInitialState = !clean;
+            dirtyOnStartup = !clean;
             clean = false;
             bumpUnstableGeneration();
             forceState();
-            cleaning = createCleanupJob( dirtyInitialState );
+            cleaning = createCleanupJob( dirtyOnStartup );
             recoveryCleanupWorkCollector.add( cleaning );
             success = true;
         }
@@ -1302,8 +1302,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    public boolean isDirty()
+    public boolean wasDirtyOnStartup()
     {
-        return dirtyInitialState;
+        return dirtyOnStartup;
     }
 }

@@ -473,6 +473,7 @@ public class NativeLabelScanStore implements LabelScanStore
         if ( index != null )
         {
             index.close();
+            index = null;
         }
     }
 
@@ -484,6 +485,6 @@ public class NativeLabelScanStore implements LabelScanStore
 
     public boolean isDirty()
     {
-        return index == null || index.isDirty();
+        return index == null || index.wasDirtyOnStartup();
     }
 }
