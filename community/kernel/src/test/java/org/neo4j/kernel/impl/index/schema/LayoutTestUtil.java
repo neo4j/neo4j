@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -37,8 +35,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -126,12 +122,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
 
     abstract  IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues();
 
-    IndexEntryUpdate<IndexDescriptor>[] someSpatialUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( SOME_POINTS, SOME_POINTS ) );
-    }
-
-    protected IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Object[] values )
+    IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Object[] values )
     {
         @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
@@ -141,14 +132,6 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         }
         return indexEntryUpdates;
     }
-
-    private static final PointValue[] SOME_POINTS = new PointValue[]
-            {
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.5, 56.8 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, -38.5, 36.8 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 30.0, -40.0 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, -50, -25 )
-            };
 
     protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {

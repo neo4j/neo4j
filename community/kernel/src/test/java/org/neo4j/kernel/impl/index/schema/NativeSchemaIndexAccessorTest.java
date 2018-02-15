@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
+
 import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -69,7 +71,6 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
-import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.of;
 
 /**
@@ -713,7 +714,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     private static Predicate<IndexEntryUpdate<IndexDescriptor>> skipExisting( IndexEntryUpdate<IndexDescriptor>[] existing )
     {
         Set<IndexEntryUpdate<IndexDescriptor>> set = new HashSet<>( Arrays.asList( existing ) );
-        return candidate -> set.add( candidate );
+        return set::add;
     }
 
     private Object valueOf( IndexEntryUpdate<IndexDescriptor> update )
@@ -755,26 +756,6 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         NodeValueIterator client = new NodeValueIterator();
         reader.query( client, IndexOrder.NONE, query );
         return client;
-    }
-
-    private static int compare( Value value, Value other )
-    {
-        return COMPARATOR.compare( value, other );
-    }
-
-    private static Predicate<Value> lessThan( Value other )
-    {
-        return t -> compare( t, other ) < 0;
-    }
-
-    private static Predicate<Value> lessThanOrEqual( Value other )
-    {
-        return t -> compare( t, other ) <= 0;
-    }
-
-    private static Predicate<Value> greaterThan( Value other )
-    {
-        return t -> compare( t, other ) > 0;
     }
 
     private void assertEntityIdHits( long[] expected, PrimitiveLongIterator result )

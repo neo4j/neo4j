@@ -29,8 +29,8 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 public class SpatialLayoutUnique extends SpatialLayout
 {
     private static final String IDENTIFIER_NAME = "UPI";
-    public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 1;
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
     public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     SpatialLayoutUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
