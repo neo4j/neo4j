@@ -31,8 +31,7 @@ import org.neo4j.values.virtual.{ListValue, VirtualValues}
 /*
 Vectorized version of the average aggregation function
  */
-case class AvgOperatorExpression(anInner: Expression)
-  extends AggregationExpressionOperatorWithInnerExpression(anInner) {
+case class AvgOperatorExpression(anInner: Expression) extends AggregationExpressionOperatorWithInnerExpression(anInner) {
 
   override def expectedInnerType = CTAny
 
@@ -64,7 +63,7 @@ class AvgReducer extends AggregationReducer {
   private var count: Long = 0L
   private var sum: NumberValue = longValue(0L)
 
-  override def result: AnyValue = sum.times(1.0 / count.toDouble)
+  override def result: AnyValue = if (count > 0L) sum.times(1.0 / count.toDouble) else Values.NO_VALUE
 
   override def reduce(value: AnyValue): Unit = value match {
     case l: ListValue =>
