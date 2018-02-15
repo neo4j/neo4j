@@ -117,6 +117,25 @@ public class NativeLabelScanStoreRebuildTest
     }
 
     @Test
+    public void labelScanStoreIdDirtyWhenIndexIsNotClean() throws IOException
+    {
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
+        createDirtyIndex( pageCache );
+
+        Monitors monitors = new Monitors();
+        RecordingMonitor monitor = new RecordingMonitor();
+        monitors.addMonitorListener( monitor );
+
+        NativeLabelScanStore nativeLabelScanStore =
+                new NativeLabelScanStore( pageCache, storeDir, EMPTY, true, monitors, RecoveryCleanupWorkCollector.IGNORE );
+        nativeLabelScanStore.init();
+        nativeLabelScanStore.start();
+
+        assertTrue( nativeLabelScanStore.isDirty() );
+        nativeLabelScanStore.shutdown();
+    }
+
+    @Test
     public void shouldFailOnUnsortedLabelsFromFullStoreChangeStream() throws Exception
     {
         // given

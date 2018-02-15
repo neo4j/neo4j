@@ -111,6 +111,11 @@ public interface IndexAccessor extends Closeable
      */
     void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException;
 
+    /**
+     * @return true if index was not shutdown properly and its internal state is dirty, false otherwise
+     */
+    boolean isDirty();
+
     class Adapter implements IndexAccessor
     {
         @Override
@@ -179,6 +184,12 @@ public interface IndexAccessor extends Closeable
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
                 throws IndexEntryConflictException, IOException
         {
+        }
+
+        @Override
+        public boolean isDirty()
+        {
+            return false;
         }
     }
 
@@ -250,6 +261,12 @@ public interface IndexAccessor extends Closeable
                 throws IndexEntryConflictException, IOException
         {
             delegate.verifyDeferredConstraints( propertyAccessor );
+        }
+
+        @Override
+        public boolean isDirty()
+        {
+            return delegate.isDirty();
         }
     }
 }

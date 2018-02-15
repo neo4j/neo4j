@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
-
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
@@ -337,6 +336,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private boolean clean;
 
     /**
+     * True if initial tree state was dirty
+     */
+    private boolean dirtyInitialState;
+
+    /**
      * State of cleanup job.
      */
     private final CleanupJob cleaning;
@@ -443,11 +447,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.monitor.startupState( clean );
 
             // Prepare tree for action
-            boolean needsCleaning = !clean;
+            dirtyInitialState = !clean;
             clean = false;
             bumpUnstableGeneration();
             forceState();
-            cleaning = createCleanupJob( needsCleaning );
+            cleaning = createCleanupJob( dirtyInitialState );
             recoveryCleanupWorkCollector.add( cleaning );
             success = true;
         }
@@ -1296,5 +1300,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 cursor = null;
             }
         }
+    }
+
+    public boolean isDirty()
+    {
+        return dirtyInitialState;
     }
 }

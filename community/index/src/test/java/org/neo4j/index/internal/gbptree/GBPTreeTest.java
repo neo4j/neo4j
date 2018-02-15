@@ -82,7 +82,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
@@ -965,6 +964,34 @@ public class GBPTreeTest
         barrier.release();
         close.get();
         write.get();
+    }
+
+    @Test
+    public void dirtyIndexIsNotCleanOnNextStartWithoutRecovery() throws IOException
+    {
+        makeDirty();
+
+        try ( GBPTree<MutableLong, MutableLong> index = index().with( RecoveryCleanupWorkCollector.IGNORE ).build() )
+        {
+            assertTrue( index.isDirty() );
+        }
+    }
+
+    @Test
+    public void correctlyShutdownIndexIsClean() throws IOException
+    {
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = index.writer() )
+            {
+                writer.put( new MutableLong( 1L ), new MutableLong( 2L ) );
+            }
+            index.checkpoint( IOLimiter.unlimited() );
+        }
+        try ( GBPTree<MutableLong,MutableLong> index = index().build() )
+        {
+            assertFalse( index.isDirty() );
+        }
     }
 
     @Test( timeout = 5_000L )

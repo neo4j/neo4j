@@ -481,4 +481,9 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         return readOnly;
     }
+
+    public boolean isDirty()
+    {
+        return index == null || index.isDirty();
+    }
 }

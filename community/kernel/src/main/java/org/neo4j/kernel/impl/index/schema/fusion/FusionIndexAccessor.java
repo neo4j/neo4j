@@ -160,4 +160,10 @@ class FusionIndexAccessor implements IndexAccessor
         nativeAccessor.verifyDeferredConstraints( propertyAccessor );
         luceneAccessor.verifyDeferredConstraints( propertyAccessor );
     }
+
+    @Override
+    public boolean isDirty()
+    {
+        return nativeAccessor.isDirty();
+    }
 }

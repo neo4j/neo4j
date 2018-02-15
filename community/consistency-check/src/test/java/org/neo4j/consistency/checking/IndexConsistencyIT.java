@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
@@ -38,7 +39,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
@@ -50,14 +51,13 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
-import static org.neo4j.io.fs.FileUtils.copyFile;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
-public class AllNodesInStoreExistInLabelIndexTest
+public class IndexConsistencyIT
 {
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule();
@@ -66,203 +66,47 @@ public class AllNodesInStoreExistInLabelIndexTest
     public final RandomRule random = new RandomRule();
 
     private final AssertableLogProvider log = new AssertableLogProvider();
-    private static final Label[] LABEL_ALPHABET = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
-    private static final Label EXTRA_LABEL = Label.label( "extra" );
+    private static final Label[] LABELS = new Label[]{LABEL_ONE, LABEL_TWO, LABEL_THREE};
+    private static final String PROPERTY_KEY = "numericProperty";
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
     private static final int NODE_COUNT_BASELINE = 10;
 
     @Test
-    public void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
-    {
-        // given
-        someData();
-        db.shutdownAndKeepStore();
-
-        // when
-        ConsistencyCheckService.Result result = fullConsistencyCheck();
-
-        // then
-        assertTrue( "Expected consistency check to succeed", result.isSuccessful() );
-    }
-
-    @Test
-    public void reportNotCleanLabelIndex() throws IOException, ConsistencyCheckIncompleteException
+    public void reportNotCleanNativeIndex() throws IOException, ConsistencyCheckIncompleteException
     {
         File storeDir = db.getStoreDir();
         someData();
-        db.resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
-        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
-        copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy );
+        resolveComponent( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "forcedCheckpoint" ) );
+        File indexesCopy = new File( storeDir, "indexesCopy" );
+        File indexSources = resolveComponent( FusionSchemaIndexProvider.class ).directoryStructure().rootDirectory();
+        copyRecursively( indexSources, indexesCopy );
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( LABEL_ONE );
+            createNewNode( new Label[]{LABEL_ONE} );
             tx.success();
         }
 
         db.shutdownAndKeepStore();
 
-        copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+        copyRecursively( indexesCopy, indexSources );
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( "Expected consistency check to fail", result.isSuccessful() );
         assertThat( readReport( result ),
-                hasItem( containsString("WARN : Label index was not properly shutdown and rebuild is required.") ) );
+                hasItem( containsString("WARN : Index was not properly shutdown and rebuild is required.") ) );
     }
 
-    @Test
-    public void mustReportMissingNode() throws Exception
+    private <T> T resolveComponent( Class<T> clazz )
     {
-        // given
-        someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
-
-        // when
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.createNode( LABEL_ONE );
-            tx.success();
-        }
-
-        // and
-        replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
-
-        // then
-        ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
-    }
-
-    @Test
-    public void mustReportMissingLabel() throws Exception
-    {
-        // given
-        List<Pair<Long,Label[]>> nodesInStore = someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
-
-        // when
-        try ( Transaction tx = db.beginTx() )
-        {
-            addLabelToExistingNode( nodesInStore );
-            tx.success();
-        }
-
-        // and
-        replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
-
-        // then
-        ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
-    }
-
-    @Test
-    public void mustReportExtraLabelsOnExistingNode() throws Exception
-    {
-        // given
-        List<Pair<Long,Label[]>> nodesInStore = someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
-
-        // when
-        try ( Transaction tx = db.beginTx() )
-        {
-            removeLabelFromExistingNode( nodesInStore );
-            tx.success();
-        }
-
-        // and
-        replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
-
-        // then
-        ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
-    }
-
-    @Test
-    public void mustReportExtraNode() throws Exception
-    {
-        // given
-        List<Pair<Long,Label[]>> nodesInStore = someData();
-        File labelIndexFileCopy = copyLabelIndexFile();
-
-        // when
-        try ( Transaction tx = db.beginTx() )
-        {
-            removeExistingNode( nodesInStore );
-            tx.success();
-        }
-
-        // and
-        replaceLabelIndexWithCopy( labelIndexFileCopy );
-        db.shutdownAndKeepStore();
-
-        // then
-        ConsistencyCheckService.Result result = fullConsistencyCheck();
-        assertFalse( "Expected consistency check to fail", result.isSuccessful() );
+        return db.resolveDependency( clazz );
     }
 
     private List<String> readReport( ConsistencyCheckService.Result result )
             throws IOException
     {
         return Files.readAllLines( result.reportFile().toPath() );
-    }
-
-    private void removeExistingNode( List<Pair<Long,Label[]>> nodesInStore )
-    {
-        Node node;
-        Label[] labels;
-        do
-        {
-            int targetIndex = random.nextInt( nodesInStore.size() );
-            Pair<Long,Label[]> existingNode = nodesInStore.get( targetIndex );
-            node = db.getNodeById( existingNode.first() );
-            labels = existingNode.other();
-        }
-        while ( labels.length == 0 );
-        node.delete();
-    }
-
-    private void addLabelToExistingNode( List<Pair<Long,Label[]>> nodesInStore )
-    {
-        int targetIndex = random.nextInt( nodesInStore.size() );
-        Pair<Long,Label[]> existingNode = nodesInStore.get( targetIndex );
-        Node node = db.getNodeById( existingNode.first() );
-        node.addLabel( EXTRA_LABEL );
-    }
-
-    private void removeLabelFromExistingNode( List<Pair<Long,Label[]>> nodesInStore )
-    {
-        Pair<Long,Label[]> existingNode;
-        Node node;
-        do
-        {
-            int targetIndex = random.nextInt( nodesInStore.size() );
-            existingNode = nodesInStore.get( targetIndex );
-            node = db.getNodeById( existingNode.first() );
-        }
-        while ( existingNode.other().length == 0 );
-        node.removeLabel( existingNode.other()[0] );
-    }
-
-    private void replaceLabelIndexWithCopy( File labelIndexFileCopy ) throws IOException
-    {
-        db.restartDatabase( ( fs, directory ) ->
-        {
-            File storeDir = db.getStoreDir();
-            fs.deleteFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
-            fs.copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
-        } );
-    }
-
-    private File copyLabelIndexFile() throws IOException
-    {
-        File storeDir = db.getStoreDir();
-        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
-        db.restartDatabase( ( fs, directory ) ->
-                fs.copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
-        return labelIndexFileCopy;
     }
 
     List<Pair<Long,Label[]>> someData()
@@ -277,6 +121,16 @@ public class AllNodesInStoreExistInLabelIndexTest
         try ( Transaction tx = db.beginTx() )
         {
             randomModifications( existingNodes, numberOfModifications );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( LABEL_ONE ).on( PROPERTY_KEY ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
             tx.success();
         }
         return existingNodes;
@@ -307,8 +161,15 @@ public class AllNodesInStoreExistInLabelIndexTest
     private void createNewNode( List<Pair<Long,Label[]>> existingNodes )
     {
         Label[] labels = randomLabels();
-        Node node = db.createNode( labels );
+        Node node = createNewNode( labels );
         existingNodes.add( Pair.of( node.getId(), labels ) );
+    }
+
+    private Node createNewNode( Label[] labels )
+    {
+        Node node = db.createNode( labels );
+        node.setProperty( PROPERTY_KEY, random.nextInt() );
+        return node;
     }
 
     private void modifyLabelsOnExistingNode( List<Pair<Long,Label[]>> existingNodes )
@@ -338,8 +199,8 @@ public class AllNodesInStoreExistInLabelIndexTest
 
     private Label[] randomLabels()
     {
-        List<Label> labels = new ArrayList<>( 3 );
-        for ( Label label : LABEL_ALPHABET )
+        List<Label> labels = new ArrayList<>( LABELS.length );
+        for ( Label label : LABELS )
         {
             if ( random.nextBoolean() )
             {
