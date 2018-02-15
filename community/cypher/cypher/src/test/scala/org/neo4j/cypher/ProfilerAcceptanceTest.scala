@@ -351,8 +351,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = legacyProfile(query)
 
     // then
-    val expectedTxCount = 1 + // First tx used to compile the query
-                          10  // One per 10 rows of CSV file
+    val expectedTxCount = 10  // One per 10 rows of CSV file
 
     graph.txCounts-initialTxCounts should equal(TxCounts(commits = expectedTxCount))
     result.queryStatistics().containsUpdates should equal(true)

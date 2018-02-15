@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2002-2018 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
@@ -31,9 +31,11 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   val updateCounter = new UpdateCounter
   var outerLoadCSVIterator: Option[LoadCsvIterator] = None
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
-    val innerIterator = resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
+  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, headers: Boolean = false): Iterator[Array[String]] = {
+    val innerIterator = resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, headers)
     if (outerLoadCSVIterator.isEmpty) {
+      if (headers)
+        updateCounter.offsetForHeaders()
       val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
       outerLoadCSVIterator = Some(iterator)
       iterator
@@ -43,8 +45,8 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   }
 
   private def onNext() {
-    updateCounter += 1
     updateCounter.resetIfPastLimit(batchRowCount)(commitAndRestartTx())
+    updateCounter += 1
   }
 
   private def commitAndRestartTx() {
