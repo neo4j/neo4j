@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel;
 
+import java.io.File;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
-import java.util.concurrent.atomic.AtomicLong;
-
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -34,7 +35,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.pagecache.PageCacheWarmerMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.metrics.MetricsSettings;

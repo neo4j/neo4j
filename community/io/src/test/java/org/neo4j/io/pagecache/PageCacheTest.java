@@ -19,8 +19,6 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -55,6 +53,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import org.junit.Test;
 
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.pagecache.AdversarialPagedFile;

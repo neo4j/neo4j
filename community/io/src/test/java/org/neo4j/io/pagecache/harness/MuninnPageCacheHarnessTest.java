@@ -19,9 +19,12 @@
  */
 package org.neo4j.io.pagecache.harness;
 
+import org.junit.Ignore;
+
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCacheFixture;
 
+@Ignore
 public class MuninnPageCacheHarnessTest extends PageCacheHarnessTest<MuninnPageCache>
 {
     @Override

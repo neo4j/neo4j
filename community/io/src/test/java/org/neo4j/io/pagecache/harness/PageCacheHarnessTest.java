@@ -19,10 +19,10 @@
  */
 package org.neo4j.io.pagecache.harness;
 
-import org.junit.Test;
-
 import java.io.File;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;

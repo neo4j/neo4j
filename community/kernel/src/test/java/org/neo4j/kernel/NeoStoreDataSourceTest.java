@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -121,7 +121,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache ).flushAndForce( IOLimiter.unlimited() );
+        verify( pageCache ).flushAndForce( any( IOLimiter.class ) );
     }
 
     @Test
@@ -137,7 +137,7 @@ public class NeoStoreDataSourceTest
 
         ds.stop();
         ds.shutdown();
-        verify( pageCache ).flushAndForce( IOLimiter.unlimited() );
+        verify( pageCache ).flushAndForce( any( IOLimiter.class ) );
     }
 
     @Test
