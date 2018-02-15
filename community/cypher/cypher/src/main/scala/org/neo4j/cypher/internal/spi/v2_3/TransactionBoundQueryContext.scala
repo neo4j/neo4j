@@ -521,7 +521,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
-  private val tokenNameLookup = new StatementTokenNameLookup(tc.statement.readOperations())
+  private val tokenNameLookup = new SilentTokenNameLookup(tc.kernelTransaction.tokenRead())
 
   override def commitAndRestartTx() { tc.commitAndRestartTx() }
 

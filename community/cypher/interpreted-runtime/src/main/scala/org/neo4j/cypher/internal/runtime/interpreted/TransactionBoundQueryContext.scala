@@ -789,7 +789,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def edgeGetEndNode(edge: RelationshipValue) = edge.endNode()
 
-  private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
+  private lazy val tokenNameLookup = new SilentTokenNameLookup(transactionalContext.kernelTransaction.tokenRead())
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(realNode: Long,

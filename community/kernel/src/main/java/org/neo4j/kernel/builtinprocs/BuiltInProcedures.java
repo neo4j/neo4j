@@ -46,8 +46,8 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -144,7 +144,7 @@ public class BuiltInProcedures
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+            TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
             List<IndexDescriptor> indexes = asList( operations.indexesGetAll() );
             indexes.sort( Comparator.comparing( a -> a.userDescription( tokens ) ) );
@@ -233,7 +233,7 @@ public class BuiltInProcedures
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations operations = statement.readOperations();
-            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+            TokenNameLookup tokens = new SilentTokenNameLookup( tx.tokenRead() );
 
             return asList( operations.constraintsGetAll() )
                     .stream()

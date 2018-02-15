@@ -531,7 +531,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   override def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
-  private lazy val tokenNameLookup = new StatementTokenNameLookup(txContext.statement.readOperations())
+  private lazy val tokenNameLookup = new SilentTokenNameLookup(txContext.kernelTransaction.tokenRead())
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode,
