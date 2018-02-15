@@ -124,12 +124,21 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
   }
 
   def reduceQuery(query: String, executeBefore: Option[String] = None)(test: Oracle[Try[InternalExecutionResult]]): String = {
+    val oracle: Oracle[Try[(String, InternalExecutionResult)]] = (tryTuple) => {
+      val tryResult = tryTuple.map(_._2)
+      test(tryResult)
+    }
+    reduceQueryWithCurrentQueryText(query, executeBefore)(oracle)
+  }
+
+  def reduceQueryWithCurrentQueryText(query: String, executeBefore: Option[String] = None)(test: Oracle[Try[(String, InternalExecutionResult)]]): String = {
     val parsingBaseState = queryToParsingBaseState(query)
     val statement = parsingBaseState.statement()
 
     val oracle: Oracle[Statement] = (currentStatement) => {
       // Actual query
-      val tryResults = Try(produceResult(query, currentStatement, parsingBaseState, executeBefore))
+      val currentlyRunQuery = CypherReductionSupport.prettifier.asString(currentStatement)
+      val tryResults = Try((currentlyRunQuery, produceResult(query, currentStatement, parsingBaseState, executeBefore)))
       val testRes = test(tryResults)
       testRes
     }

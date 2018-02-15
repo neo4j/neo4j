@@ -160,6 +160,13 @@ object copyNodeWith {
 
       case SetPropertyItem(property, expression) =>
         SetPropertyItem(nc.ofSingle(property), nc.ofSingle(expression))(node.position)
+
+      case PatternComprehension(namedPath, pattern, predicate, projection, outerScope) =>
+        PatternComprehension(nc.ofOption(namedPath), nc.ofSingle(pattern), nc.ofOption(predicate), nc.ofSingle(projection),
+          nc.ofSeq(outerScope.toSeq).toSet)(node.position)
+
+      case RelationshipsPattern(element) =>
+        RelationshipsPattern(nc.ofSingle(element))(node.position)
     }
 
     newNode.asInstanceOf[A]

@@ -167,6 +167,12 @@ object getChildren {
 
       case SetPropertyItem(property, expression) =>
         Seq(property, expression)
+
+      case PatternComprehension(namedPath, pattern, predicate, projection, outerScope) =>
+        ofOption(namedPath) ++ Seq(pattern) ++ ofOption(predicate) ++ Seq(projection) ++ outerScope.toSeq
+
+      case RelationshipsPattern(element) =>
+        Seq(element)
     }
   }
 

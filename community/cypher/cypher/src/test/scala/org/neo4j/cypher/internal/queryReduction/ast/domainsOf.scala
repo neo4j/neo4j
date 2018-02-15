@@ -203,6 +203,16 @@ object domainsOf {
       case SetPropertyItem(property, expression) =>
         ofSingle(property, classOf[Property]) ++
         ofSingle(expression, classOf[Expression])
+
+      case PatternComprehension(namedPath, pattern, predicate, projection, outerScope) =>
+        ofOption(namedPath, classOf[LogicalVariable]) ++
+          ofSingle(pattern, classOf[RelationshipsPattern]) ++
+          ofOption(predicate, classOf[Expression]) ++
+          ofSingle(projection, classOf[Expression]) ++
+          ofSeq(outerScope.toSeq, classOf[LogicalVariable])
+
+      case RelationshipsPattern(element) =>
+        ofSingle(element, classOf[RelationshipChain])
     }
   }
 }
