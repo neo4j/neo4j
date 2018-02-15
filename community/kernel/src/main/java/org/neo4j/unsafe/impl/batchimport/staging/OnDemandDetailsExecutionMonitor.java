@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.monitoring.VmPauseMonitor;
 import org.neo4j.kernel.monitoring.VmPauseMonitor.VmPauseInfo;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
@@ -84,14 +86,15 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     private StageDetails current;
     private boolean printDetailsOnDone;
 
-    public OnDemandDetailsExecutionMonitor( PrintStream out, InputStream in, Monitor monitor )
+    public OnDemandDetailsExecutionMonitor( PrintStream out, InputStream in, Monitor monitor, JobScheduler jobScheduler )
     {
         this.out = out;
         this.in = in;
         this.monitor = monitor;
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
         this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
-        this.vmPauseMonitor = new VmPauseMonitor( 100L, 100L, NullLog.getInstance(), vmPauseTimeAccumulator );
+        this.vmPauseMonitor = new VmPauseMonitor( Duration.ofMillis( 100 ), Duration.ofMillis( 100 ),
+                NullLog.getInstance(), jobScheduler, vmPauseTimeAccumulator );
     }
 
     @Override

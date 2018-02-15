@@ -24,17 +24,20 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.VmPauseMonitor;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 public class VmPauseMonitorComponent implements Lifecycle
 {
     private final Config config;
     private final Log log;
+    private final JobScheduler jobScheduler;
     private volatile VmPauseMonitor vmPauseMonitor;
 
-    public VmPauseMonitorComponent( Config config, Log log )
+    public VmPauseMonitorComponent( Config config, Log log, JobScheduler jobScheduler )
     {
         this.config = config;
         this.log = log;
+        this.jobScheduler = jobScheduler;
     }
 
     @Override
@@ -46,9 +49,9 @@ public class VmPauseMonitorComponent implements Lifecycle
     public void start()
     {
         vmPauseMonitor = new VmPauseMonitor(
-                config.get( GraphDatabaseSettings.vm_pause_monitor_measurement_duration ).toMillis(),
-                config.get( GraphDatabaseSettings.vm_pause_monitor_stall_alert_threshold ).toMillis(),
-                log, vmPauseInfo -> log.debug( "Detected VM stop-the-world pause: {}", vmPauseInfo )
+                config.get( GraphDatabaseSettings.vm_pause_monitor_measurement_duration ),
+                config.get( GraphDatabaseSettings.vm_pause_monitor_stall_alert_threshold ),
+                log, jobScheduler, vmPauseInfo -> log.debug( "Detected VM stop-the-world pause: {}", vmPauseInfo )
         );
         vmPauseMonitor.start();
     }

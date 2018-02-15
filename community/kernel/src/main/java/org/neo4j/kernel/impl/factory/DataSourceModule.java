@@ -206,7 +206,7 @@ public class DataSourceModule
 
         dataSourceManager.register( neoStoreDataSource );
 
-        life.add( new VmPauseMonitorComponent( config, logging.getInternalLog( VmPauseMonitorComponent.class ) ) );
+        life.add( new VmPauseMonitorComponent( config, logging.getInternalLog( VmPauseMonitorComponent.class ), platformModule.jobScheduler ) );
 
         life.add( new PublishPageCacheTracerMetricsAfterStart( platformModule.tracers.pageCursorTracerSupplier ) );
 

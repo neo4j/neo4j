@@ -22,54 +22,63 @@ package org.neo4j.kernel.monitoring;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.scheduler.JobScheduler.JobHandle;
 
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 public final class VmPauseMonitor
 {
-    private final long measurementDurationnNs;
+    private final long measurementDurationNs;
     private final long stallAlertThresholdNs;
     private final Log log;
+    private final JobScheduler jobScheduler;
     private final Consumer<VmPauseInfo> listener;
-    private final Thread worker;
+    private JobHandle job;
 
-    public VmPauseMonitor( long measureIntervalMs, long stallAlertThresholdMs, Log log, Consumer<VmPauseInfo> listener )
+    public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Log log, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
     {
-        this.measurementDurationnNs = MILLISECONDS.toNanos( requirePositive( measureIntervalMs ) );
-        this.stallAlertThresholdNs = MILLISECONDS.toNanos( requirePositive( stallAlertThresholdMs ) );
+        this.measurementDurationNs = requirePositive( measureInterval.toNanos() );
+        this.stallAlertThresholdNs = requirePositive( stallAlertThreshold.toNanos() );
         this.log = requireNonNull( log );
+        this.jobScheduler = jobScheduler;
         this.listener = requireNonNull( listener );
-        this.worker = new Thread( this::run );
-        worker.setName( "VmPauseMonitor" );
-        worker.setDaemon( true );
     }
 
     public void start()
     {
         log.debug( "Starting VM pause monitor" );
-        worker.start();
+        checkState( job == null, "VM pause monitor is already started" );
+        job = jobScheduler.schedule( JobScheduler.Groups.vmPauseMonitor, this::run );
     }
 
     public void stop()
     {
         log.debug( "Stopping VM pause monitor" );
-        worker.interrupt();
+        checkState( job != null, "VM pause monitor is not started" );
+        job.cancel( true );
         try
         {
-            worker.join();
+            job.waitTermination();
         }
         catch ( InterruptedException ignore )
         {
             currentThread().interrupt();
+        }
+        catch ( ExecutionException e )
+        {
+            log.debug( "VM pause monitor job failed", e );
         }
     }
 
@@ -92,14 +101,14 @@ public final class VmPauseMonitor
     private void monitor() throws InterruptedException
     {
         GcStats lastGcStats = getGcStats();
-        long nextCheckPoint = nanoTime() + measurementDurationnNs;
+        long nextCheckPoint = nanoTime() + measurementDurationNs;
 
         while ( !currentThread().isInterrupted() )
         {
-            NANOSECONDS.sleep( measurementDurationnNs );
+            NANOSECONDS.sleep( measurementDurationNs );
             final long now = nanoTime();
             final long pauseNs = now - nextCheckPoint;
-            nextCheckPoint = now + measurementDurationnNs;
+            nextCheckPoint = now + measurementDurationNs;
 
             final GcStats gcStats = getGcStats();
             if ( pauseNs >= stallAlertThresholdNs )
@@ -121,7 +130,7 @@ public final class VmPauseMonitor
         private final long gcTime;
         private final long gcCount;
 
-        public VmPauseInfo( long pauseTime, long gcTime, long gcCount )
+        VmPauseInfo( long pauseTime, long gcTime, long gcCount )
         {
             this.pauseTime = pauseTime;
             this.gcTime = gcTime;
@@ -131,16 +140,6 @@ public final class VmPauseMonitor
         public long getPauseTime()
         {
             return pauseTime;
-        }
-
-        public long getGcTime()
-        {
-            return gcTime;
-        }
-
-        public long getGcCount()
-        {
-            return gcCount;
         }
 
         @Override

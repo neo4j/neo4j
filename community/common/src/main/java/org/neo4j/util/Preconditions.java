@@ -20,6 +20,9 @@
 
 package org.neo4j.util;
 
+/**
+ * A set of static convenience methods for checking ctor/method parameters or state.
+ */
 public final class Preconditions
 {
     private Preconditions()
@@ -27,21 +30,34 @@ public final class Preconditions
         // util class
     }
 
-    public static long requireNonNegative( long value )
-    {
-        if ( value < 0 )
-        {
-            throw new IllegalArgumentException( "Expected non-negative integer value, got " + value );
-        }
-        return value;
-    }
-
+    /**
+     * Ensures that {@code value} is greater than or equal to {@code 1} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's greater than or equal to {@code 1}
+     * @throws IllegalArgumentException if {@code value} is less than 1
+     */
     public static long requirePositive( long value )
     {
         if ( value < 1 )
         {
-            throw new IllegalArgumentException( "Expected positive integer value, got " + value );
+            throw new IllegalArgumentException( "Expected positive long value, got " + value );
         }
         return value;
+    }
+
+    /**
+     * Ensures that {@code expression} is {@code true} or throws {@link IllegalStateException} otherwise.
+     *
+     * @param expression an expression for check
+     * @param message error message for the exception
+     * @throws IllegalStateException if {@code expression} is {@code false}
+     */
+    public static void checkState( boolean expression, String message )
+    {
+        if ( !expression )
+        {
+            throw new IllegalStateException( message );
+        }
     }
 }

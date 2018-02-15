@@ -21,6 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.io.InputStream;
 
+import org.neo4j.scheduler.JobScheduler;
+
 import static org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_MONITOR;
 
 /**
@@ -33,17 +35,17 @@ public class ExecutionMonitors
         throw new AssertionError( "No instances allowed" );
     }
 
-    public static ExecutionMonitor defaultVisible()
+    public static ExecutionMonitor defaultVisible( JobScheduler jobScheduler )
     {
-        return defaultVisible( System.in );
+        return defaultVisible( System.in, jobScheduler );
     }
 
-    public static ExecutionMonitor defaultVisible( InputStream in )
+    public static ExecutionMonitor defaultVisible( InputStream in, JobScheduler jobScheduler )
     {
         ProgressRestoringMonitor monitor = new ProgressRestoringMonitor();
         return new MultiExecutionMonitor(
                 new HumanUnderstandableExecutionMonitor( System.out, NO_MONITOR, monitor ),
-                new OnDemandDetailsExecutionMonitor( System.out, in, monitor ) );
+                new OnDemandDetailsExecutionMonitor( System.out, in, monitor, jobScheduler ) );
     }
 
     private static final ExecutionMonitor INVISIBLE = new ExecutionMonitor()
