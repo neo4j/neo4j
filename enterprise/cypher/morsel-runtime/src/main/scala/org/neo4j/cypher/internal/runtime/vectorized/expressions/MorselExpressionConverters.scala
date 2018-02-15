@@ -41,6 +41,8 @@ object MorselExpressionConverters extends ExpressionConverter {
       Some(MaxOperatorExpression(self.toCommandExpression(c.arguments.head)))
     case c: FunctionInvocation if c.function == functions.Min =>
       Some(MinOperatorExpression(self.toCommandExpression(c.arguments.head)))
+    case c: FunctionInvocation if c.function == functions.Collect =>
+      Some(CollectOperatorExpression(self.toCommandExpression(c.arguments.head)))
     case _: CountStar => Some(CountStarOperatorExpression)
     case f: FunctionInvocation if f.function.isInstanceOf[AggregatingFunction] => throw new CantCompileQueryException()
     case _ => None
