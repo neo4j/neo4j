@@ -59,7 +59,7 @@ public class DefaultCursors implements CursorFactory
             @Override
             protected DefaultRelationshipTraversalCursor create()
             {
-                return new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null ), this );
+                return new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( cursor -> {} ), this );
             }
         };
 

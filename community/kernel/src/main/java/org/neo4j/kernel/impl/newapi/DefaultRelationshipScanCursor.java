@@ -157,10 +157,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
             pageCursor.close();
             pageCursor = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 

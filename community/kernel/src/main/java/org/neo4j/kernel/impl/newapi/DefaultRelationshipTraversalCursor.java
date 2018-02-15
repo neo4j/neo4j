@@ -490,10 +490,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
             pageCursor.close();
             pageCursor = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 

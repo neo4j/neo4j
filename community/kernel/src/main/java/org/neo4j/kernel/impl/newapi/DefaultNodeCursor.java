@@ -262,10 +262,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
             pageCursor.close();
             pageCursor = null;
 
-            if ( pool != null )
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 
