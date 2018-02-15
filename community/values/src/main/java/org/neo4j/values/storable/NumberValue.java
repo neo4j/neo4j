@@ -78,4 +78,60 @@ public abstract class NumberValue extends ScalarValue
     {
         return ValueGroup.NUMBER;
     }
+
+    abstract NumberValue minus( byte b );
+
+    abstract NumberValue minus( short b );
+
+    abstract NumberValue minus( int b );
+
+    abstract NumberValue minus( long b );
+
+    abstract NumberValue minus( float b );
+
+    abstract NumberValue minus( double b );
+
+    abstract NumberValue plus( byte b );
+
+    abstract NumberValue plus( short b );
+
+    abstract NumberValue plus( int b );
+
+    abstract NumberValue plus( long b );
+
+    abstract NumberValue plus( float b );
+
+    abstract NumberValue plus( double b );
+
+    public NumberValue minus( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return minus( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return minus( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot subtract " + numberValue );
+        }
+    }
+
+    public NumberValue plus( NumberValue numberValue )
+    {
+        if ( numberValue instanceof IntegralValue )
+        {
+            return plus( numberValue.longValue() );
+        }
+        else if ( numberValue instanceof FloatingPointValue )
+        {
+            return plus( numberValue.doubleValue() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot add " + numberValue );
+        }
+    }
 }

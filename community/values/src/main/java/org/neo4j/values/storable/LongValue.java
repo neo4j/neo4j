@@ -20,6 +20,7 @@
 package org.neo4j.values.storable;
 
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.utils.ValueMath;
 
 import static java.lang.String.format;
 
@@ -71,5 +72,77 @@ public final class LongValue extends IntegralValue
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapLong( this );
+    }
+
+    @Override
+    NumberValue minus( byte b )
+    {
+        return ValueMath.subtract( value, b );
+    }
+
+    @Override
+    NumberValue minus( short b )
+    {
+        return ValueMath.subtract( value, b );
+    }
+
+    @Override
+    NumberValue minus( int b )
+    {
+        return ValueMath.subtract( value, b );
+    }
+
+    @Override
+    NumberValue minus( long b )
+    {
+        return ValueMath.subtract( value, b );
+    }
+
+    @Override
+    NumberValue minus( float b )
+    {
+        return ValueMath.subtract( value, b );
+    }
+
+    @Override
+    NumberValue minus( double b )
+    {
+        return ValueMath.subtract( value, b );
+    }
+
+    @Override
+    NumberValue plus( byte b )
+    {
+        return ValueMath.add( value, b );
+    }
+
+    @Override
+    NumberValue plus( short b )
+    {
+        return ValueMath.add( value, b );
+    }
+
+    @Override
+    NumberValue plus( int b )
+    {
+        return ValueMath.add( value, b );
+    }
+
+    @Override
+    NumberValue plus( long b )
+    {
+        return ValueMath.add( value, b );
+    }
+
+    @Override
+    NumberValue plus( float b )
+    {
+        return ValueMath.add( value, b );
+    }
+
+    @Override
+    NumberValue plus( double b )
+    {
+        return ValueMath.add( value, b );
     }
 }
