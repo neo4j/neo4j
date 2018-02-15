@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -33,7 +34,14 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private long next;
     private long highMark;
     private PageCursor pageCursor;
-    Set<Long> addedRelationships;
+    private Set<Long> addedRelationships;
+
+    private final Consumer<DefaultRelationshipScanCursor> pool;
+
+    DefaultRelationshipScanCursor( Consumer<DefaultRelationshipScanCursor> pool )
+    {
+        this.pool = pool;
+    }
 
     void scan( int label, Read read )
     {
@@ -141,13 +149,16 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public void close()
     {
+        read = null;
+        reset();
+
         if ( pageCursor != null )
         {
             pageCursor.close();
             pageCursor = null;
+
+            pool.accept( this );
         }
-        read = null;
-        reset();
     }
 
     private void reset()

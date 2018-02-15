@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.function.Consumer;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -117,6 +119,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private Record buffer;
     private PageCursor pageCursor;
     private final DefaultRelationshipGroupCursor group;
+    private final Consumer<DefaultRelationshipTraversalCursor> pool;
     private GroupState groupState;
     private FilterState filterState;
     private boolean filterStore;
@@ -124,9 +127,10 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     private PrimitiveLongIterator addedRelationships;
 
-    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group )
+    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, Consumer<DefaultRelationshipTraversalCursor> pool )
     {
         this.group = group;
+        this.pool = pool;
     }
 
     /*
@@ -478,13 +482,16 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public void close()
     {
+        read = null;
+        reset();
+
         if ( pageCursor != null )
         {
             pageCursor.close();
             pageCursor = null;
+
+            pool.accept( this );
         }
-        read = null;
-        reset();
     }
 
     private void reset()

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.function.Consumer;
+
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -33,6 +35,13 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     private int expectedSize;
     private long relationship;
     private float score;
+
+    private final Consumer<DefaultRelationshipExplicitIndexCursor> pool;
+
+    DefaultRelationshipExplicitIndexCursor( Consumer<DefaultRelationshipExplicitIndexCursor> pool )
+    {
+        this.pool = pool;
+    }
 
     @Override
     public void initialize( ExplicitIndexProgressor progressor, int expectedSize )
@@ -117,11 +126,16 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     @Override
     public void close()
     {
-        super.close();
-        relationship = NO_ID;
-        score = 0;
-        expectedSize = 0;
-        read = null;
+        if ( !isClosed() )
+        {
+            super.close();
+            relationship = NO_ID;
+            score = 0;
+            expectedSize = 0;
+            read = null;
+
+            pool.accept( this );
+        }
     }
 
     @Override

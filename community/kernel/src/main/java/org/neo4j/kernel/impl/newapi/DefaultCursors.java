@@ -20,60 +20,155 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.kernel.impl.util.InstanceCache;
 
 public class DefaultCursors implements CursorFactory
 {
+    private final InstanceCache<DefaultNodeCursor> nodeCursor;
+    private final InstanceCache<DefaultRelationshipScanCursor> relationshipScanCursor;
+    private final InstanceCache<DefaultRelationshipTraversalCursor> relationshipTraversalCursor;
+    private final InstanceCache<DefaultPropertyCursor> propertyCursor;
+    private final InstanceCache<DefaultRelationshipGroupCursor> relationshipGroupCursor;
+    private final InstanceCache<DefaultNodeValueIndexCursor> nodeValueIndexCursor;
+    private final InstanceCache<DefaultNodeLabelIndexCursor> nodeLabelIndexCursor;
+    private final InstanceCache<DefaultNodeExplicitIndexCursor> nodeExplicitIndexCursor;
+    private final InstanceCache<DefaultRelationshipExplicitIndexCursor> relationshipExplicitIndexCursor;
+
+    public DefaultCursors()
+    {
+        nodeCursor = new InstanceCache<DefaultNodeCursor>()
+        {
+            @Override
+            protected DefaultNodeCursor create()
+            {
+                return new DefaultNodeCursor( this );
+            }
+        };
+
+        relationshipScanCursor = new InstanceCache<DefaultRelationshipScanCursor>()
+        {
+            @Override
+            protected DefaultRelationshipScanCursor create()
+            {
+                return new DefaultRelationshipScanCursor( this );
+            }
+        };
+
+        relationshipTraversalCursor = new InstanceCache<DefaultRelationshipTraversalCursor>()
+        {
+            @Override
+            protected DefaultRelationshipTraversalCursor create()
+            {
+                return new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( cursor -> {} ), this );
+            }
+        };
+
+        propertyCursor = new InstanceCache<DefaultPropertyCursor>()
+        {
+            @Override
+            protected DefaultPropertyCursor create()
+            {
+                return new DefaultPropertyCursor( this );
+            }
+        };
+
+        relationshipGroupCursor = new InstanceCache<DefaultRelationshipGroupCursor>()
+        {
+            @Override
+            protected DefaultRelationshipGroupCursor create()
+            {
+                return new DefaultRelationshipGroupCursor( this );
+            }
+        };
+
+        nodeValueIndexCursor = new InstanceCache<DefaultNodeValueIndexCursor>()
+        {
+            @Override
+            protected DefaultNodeValueIndexCursor create()
+            {
+                return new DefaultNodeValueIndexCursor( this );
+            }
+        };
+
+        nodeLabelIndexCursor = new InstanceCache<DefaultNodeLabelIndexCursor>()
+        {
+            @Override
+            protected DefaultNodeLabelIndexCursor create()
+            {
+                return new DefaultNodeLabelIndexCursor( this );
+            }
+        };
+
+        nodeExplicitIndexCursor = new InstanceCache<DefaultNodeExplicitIndexCursor>()
+        {
+            @Override
+            protected DefaultNodeExplicitIndexCursor create()
+            {
+                return new DefaultNodeExplicitIndexCursor( this );
+            }
+        };
+
+        relationshipExplicitIndexCursor = new InstanceCache<DefaultRelationshipExplicitIndexCursor>()
+        {
+            @Override
+            protected DefaultRelationshipExplicitIndexCursor create()
+            {
+                return new DefaultRelationshipExplicitIndexCursor( this );
+            }
+        };
+    }
+
     @Override
     public DefaultNodeCursor allocateNodeCursor()
     {
-        return new DefaultNodeCursor( );
+        return nodeCursor.get();
     }
 
     @Override
     public DefaultRelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new DefaultRelationshipScanCursor( );
+        return relationshipScanCursor.get( );
     }
 
     @Override
     public DefaultRelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return new DefaultRelationshipTraversalCursor( allocateRelationshipGroupCursor() );
+        return relationshipTraversalCursor.get();
     }
 
     @Override
     public DefaultPropertyCursor allocatePropertyCursor()
     {
-        return new DefaultPropertyCursor( );
+        return propertyCursor.get();
     }
 
     @Override
     public DefaultRelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return new DefaultRelationshipGroupCursor( );
+        return relationshipGroupCursor.get();
     }
 
     @Override
     public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor()
     {
-        return new DefaultNodeValueIndexCursor( );
+        return nodeValueIndexCursor.get();
     }
 
     @Override
     public DefaultNodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
-        return new DefaultNodeLabelIndexCursor( );
+        return nodeLabelIndexCursor.get();
     }
 
     @Override
     public DefaultNodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
     {
-        return new DefaultNodeExplicitIndexCursor( );
+        return nodeExplicitIndexCursor.get();
     }
 
     @Override
     public DefaultRelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
     {
-        return new DefaultRelationshipExplicitIndexCursor( );
+        return relationshipExplicitIndexCursor.get();
     }
 }
