@@ -275,13 +275,16 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
             //  - Return first relationship if it's not deleted
             // Subsequent relationships need to have same type and direction
 
-            read.relationshipFull( this, next, pageCursor );
-            setupFilterState();
-
-            hasChanges = hasChanges();
+            hasChanges = hasChanges(); // <- will setup filter state if needed
             txs = hasChanges ? read.txState() : null;
 
-            if ( !hasChanges || !txs.relationshipIsDeletedInThisTx( getId() ) )
+            if ( filterState == FilterState.NOT_INITIALIZED && filterStore )
+            {
+                read.relationshipFull( this, next, pageCursor );
+                setupFilterState();
+            }
+
+            if ( filterState != FilterState.NOT_INITIALIZED && (!hasChanges || !txs.relationshipIsDeletedInThisTx( getId() ) ) )
             {
                 return true;
             }
@@ -507,6 +510,12 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     protected void collectAddedTxStateSnapshot()
     {
+        if ( filterState == FilterState.NOT_INITIALIZED )
+        {
+            read.relationshipFull( this, next, pageCursor );
+            setupFilterState();
+        }
+
         NodeState nodeState = read.txState().getNodeState( originNodeReference );
         addedRelationships = hasTxStateFilter() ?
                              nodeState.getAddedRelationships( filterState.direction, filterType ) :
