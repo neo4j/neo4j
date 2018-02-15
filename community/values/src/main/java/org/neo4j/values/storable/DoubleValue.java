@@ -75,109 +75,109 @@ public final class DoubleValue extends FloatingPointValue
     }
 
     @Override
-    NumberValue minus( byte b )
+    public NumberValue minus( byte b )
     {
         return ValueMath.subtract( value, b );
     }
 
     @Override
-    NumberValue minus( short b )
+    public NumberValue minus( short b )
     {
         return ValueMath.subtract( value, b );
     }
 
     @Override
-    NumberValue minus( int b )
+    public NumberValue minus( int b )
     {
         return ValueMath.subtract( value, b );
     }
 
     @Override
-    NumberValue minus( long b )
+    public NumberValue minus( long b )
     {
         return ValueMath.subtract( value, b );
     }
 
     @Override
-    NumberValue minus( float b )
+    public NumberValue minus( float b )
     {
         return ValueMath.subtract( value, b );
     }
 
     @Override
-    NumberValue minus( double b )
+    public NumberValue minus( double b )
     {
         return ValueMath.subtract( value, b );
     }
 
     @Override
-    NumberValue plus( byte b )
+    public NumberValue plus( byte b )
     {
         return ValueMath.add( value, b );
     }
 
     @Override
-    NumberValue plus( short b )
+    public NumberValue plus( short b )
     {
         return ValueMath.add( value, b );
     }
 
     @Override
-    NumberValue plus( int b )
+    public NumberValue plus( int b )
     {
         return ValueMath.add( value, b );
     }
 
     @Override
-    NumberValue plus( long b )
+    public NumberValue plus( long b )
     {
         return ValueMath.add( value, b );
     }
 
     @Override
-    NumberValue plus( float b )
+    public NumberValue plus( float b )
     {
         return ValueMath.add( value, b );
     }
 
     @Override
-    NumberValue plus( double b )
+    public NumberValue plus( double b )
     {
         return ValueMath.add( value, b );
     }
 
     @Override
-    NumberValue times( byte b )
+    public NumberValue times( byte b )
     {
         return ValueMath.multiply( value, b );
     }
 
     @Override
-    NumberValue times( short b )
+    public NumberValue times( short b )
     {
         return ValueMath.multiply( value, b );
     }
 
     @Override
-    NumberValue times( int b )
+    public NumberValue times( int b )
     {
         return ValueMath.multiply( value, b );
     }
 
     @Override
-    NumberValue times( long b )
+    public NumberValue times( long b )
     {
         return ValueMath.multiply( value, b );
     }
 
     @Override
-    NumberValue times( float b )
+    public NumberValue times( float b )
     {
         return ValueMath.multiply( value, b );
     }
 
     @Override
-    NumberValue times( double b )
+    public NumberValue times( double b )
     {
         return ValueMath.multiply( value, b );
     }
