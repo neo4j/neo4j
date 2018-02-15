@@ -215,9 +215,15 @@ public class UserDefinedConfigurationStrategyTest
             }
 
             @Override
-            public ReadReplicaTopology readReplicas( String database )
+            public ReadReplicaTopology readReplicas()
             {
                 return readReplicaTopology;
+            }
+
+            @Override
+            public ReadReplicaTopology readReplicas( String database )
+            {
+                return readReplicas();
             }
 
             @Override

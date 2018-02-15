@@ -82,7 +82,7 @@ public class ClusterOverviewProcedureTest
 
         //TODO: Fix this
         ClusterOverviewProcedure procedure =
-                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance(), "default" );
+                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
         final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0], null );

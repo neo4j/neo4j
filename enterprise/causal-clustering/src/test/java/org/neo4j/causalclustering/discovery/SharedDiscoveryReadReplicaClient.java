@@ -82,6 +82,12 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     }
 
     @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        return sharedDiscoveryService.readReplicaTopology();
+    }
+
+    @Override
     public ReadReplicaTopology readReplicas( String database )
     {
         ReadReplicaTopology topology = sharedDiscoveryService.readReplicaTopology();

@@ -21,30 +21,11 @@ package org.neo4j.harness;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.Arrays;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.harness.internal.EnterpriseInProcessServerBuilder;
-import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.HttpConnector;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ServerSettings;
-
-import static java.util.Collections.synchronizedList;
 import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 
-/**
- * Simple main class for manual testing of the complete causal cluster stack, including server etc.
- */
-public class CausalClusterInProcessRunner
+public class ClusterOfClustersInProcessRunner
 {
 
     public static void main( String[] args )
@@ -56,16 +37,17 @@ public class CausalClusterInProcessRunner
 
             CausalClusterInProcessBuilder.CausalCluster cluster =
                     CausalClusterInProcessBuilder.init()
-                        .withCores( 3 )
-                        .withReplicas( 3 )
-                        .withLogger( toOutputStream( System.out ) )
-                        .atPath( clusterPath )
-                        .build();
+                            .withCores( 6 )
+                            .withReplicas( 4 )
+                            .withLogger( toOutputStream( System.out ) )
+                            .atPath( clusterPath )
+                            .withOptionalDatabases( Arrays.asList("foo", "bar") )
+                            .build();
 
             System.out.println( "Waiting for cluster to boot up..." );
             cluster.boot();
 
-            System.out.println( "Press ENTER to exit..." );
+            System.out.println( "Press ENTER to exit ..." );
             //noinspection ResultOfMethodCallIgnored
             System.in.read();
 

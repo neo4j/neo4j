@@ -83,6 +83,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        return readReplicaTopology;
+    }
+
+    @Override
     public ReadReplicaTopology readReplicas( String database )
     {
         return readReplicaTopology;

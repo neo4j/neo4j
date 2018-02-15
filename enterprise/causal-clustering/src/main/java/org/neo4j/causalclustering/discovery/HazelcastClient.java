@@ -112,6 +112,12 @@ public class HazelcastClient extends LifecycleAdapter implements TopologyService
     }
 
     @Override
+    public ReadReplicaTopology readReplicas()
+    {
+        return rrTopology;
+    }
+
+    @Override
     public ReadReplicaTopology readReplicas( String databaseName )
     {
         ReadReplicaTopology readReplicaTopology = rrTopology;
