@@ -51,7 +51,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
  * @param <KEY> type of {@link NativeSchemaKey}.
  * @param <VALUE> type of {@link NativeSchemaValue}.
  */
-public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
         extends NativeSchemaIndex<KEY,VALUE> implements IndexPopulator
 {
     static final byte BYTE_FAILED = 0;
@@ -240,7 +240,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         singleTreeWriter = closeIfPresent( singleTreeWriter );
     }
 
-    private static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateApply<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
     {
         private final KEY treeKey;
         private final VALUE treeValue;
@@ -262,7 +262,7 @@ public abstract class NativeSchemaIndexPopulator<KEY extends NativeSchemaKey, VA
         }
     }
 
-    private static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
+    static class IndexUpdateWork<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
             implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
     {
         private final Collection<? extends IndexEntryUpdate<?>> updates;

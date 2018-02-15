@@ -63,6 +63,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
+        this.query = query;
 
         IndexQuery firstPredicate = query[0];
         switch ( firstPredicate.type() )
@@ -81,6 +82,11 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             assert query.length == 1;
             numericRangeQuery( descriptor, (IndexQuery.NumberRangePredicate) query[0] );
             break;
+
+        case rangeGeometric:
+            assert query.length == 1;
+            geometricRangeQuery( descriptor, (IndexQuery.GeometryRangePredicate) query[0] );
+        break;
 
         case rangeString:
             assert query.length == 1;
@@ -231,7 +237,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState().indexUpdatesForRangeSeekByString(
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByString(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
@@ -245,7 +251,20 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState().indexUpdatesForRangeSeekByNumber(
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByNumber(
+                    descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
+                    predicate.toInclusive() );
+            added = changes.augment( emptyIterator() );
+            removed = removed( txState, changes );
+        }
+    }
+
+    private void geometricRangeQuery( IndexDescriptor descriptor, IndexQuery.GeometryRangePredicate predicate )
+    {
+        if ( read.hasTxStateWithChanges() )
+        {
+            TransactionState txState = read.txState();
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForRangeSeekByGeometry(
                     descriptor, predicate.from(), predicate.fromInclusive(), predicate.to(),
                     predicate.toInclusive() );
             added = changes.augment( emptyIterator() );
@@ -259,7 +278,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         if ( read.hasTxStateWithChanges() )
         {
             TransactionState txState = read.txState();
-            PrimitiveLongReadableDiffSets changes = read.txState().indexUpdatesForScan( descriptor );
+            PrimitiveLongReadableDiffSets changes = txState.indexUpdatesForScan( descriptor );
             added = changes.augment( emptyIterator() );
             removed = removed( txState, changes );
         }

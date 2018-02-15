@@ -32,20 +32,23 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropA
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUtils.forAll;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
 class FusionIndexPopulator implements IndexPopulator
 {
     private final IndexPopulator nativePopulator;
+    private final IndexPopulator spatialPopulator;
     private final IndexPopulator lucenePopulator;
     private final Selector selector;
     private final long indexId;
     private final DropAction dropAction;
 
-    FusionIndexPopulator( IndexPopulator nativePopulator, IndexPopulator lucenePopulator, Selector selector,
-            long indexId, DropAction dropAction )
+    FusionIndexPopulator( IndexPopulator nativePopulator, IndexPopulator spatialPopulator,
+            IndexPopulator lucenePopulator, Selector selector, long indexId, DropAction dropAction )
     {
         this.nativePopulator = nativePopulator;
+        this.spatialPopulator = spatialPopulator;
         this.lucenePopulator = lucenePopulator;
         this.selector = selector;
         this.indexId = indexId;
@@ -56,20 +59,14 @@ class FusionIndexPopulator implements IndexPopulator
     public void create() throws IOException
     {
         nativePopulator.create();
+        spatialPopulator.create();
         lucenePopulator.create();
     }
 
     @Override
     public void drop() throws IOException
     {
-        try
-        {
-            nativePopulator.drop();
-        }
-        finally
-        {
-            lucenePopulator.drop();
-        }
+        forAll( entries -> ((IndexPopulator) entries).drop(), nativePopulator, spatialPopulator, lucenePopulator );
         dropAction.drop( indexId );
     }
 
@@ -77,12 +74,14 @@ class FusionIndexPopulator implements IndexPopulator
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
         Collection<IndexEntryUpdate<?>> luceneBatch = new ArrayList<>();
+        Collection<IndexEntryUpdate<?>> spatialBatch = new ArrayList<>();
         Collection<IndexEntryUpdate<?>> nativeBatch = new ArrayList<>();
         for ( IndexEntryUpdate<?> update : updates )
         {
-            selector.select( nativeBatch, luceneBatch, update.values() ).add( update );
+            selector.select( nativeBatch, spatialBatch, luceneBatch, update.values() ).add( update );
         }
         lucenePopulator.add( luceneBatch );
+        spatialPopulator.add( spatialBatch );
         nativePopulator.add( nativeBatch );
     }
 
@@ -91,6 +90,7 @@ class FusionIndexPopulator implements IndexPopulator
             throws IndexEntryConflictException, IOException
     {
         nativePopulator.verifyDeferredConstraints( propertyAccessor );
+        spatialPopulator.verifyDeferredConstraints( propertyAccessor );
         lucenePopulator.verifyDeferredConstraints( propertyAccessor );
     }
 
@@ -99,44 +99,31 @@ class FusionIndexPopulator implements IndexPopulator
     {
         return new FusionIndexUpdater(
                 nativePopulator.newPopulatingUpdater( accessor ),
+                spatialPopulator.newPopulatingUpdater( accessor ),
                 lucenePopulator.newPopulatingUpdater( accessor ), selector );
     }
 
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        try
-        {
-            nativePopulator.close( populationCompletedSuccessfully );
-        }
-        finally
-        {
-            lucenePopulator.close( populationCompletedSuccessfully );
-        }
+        forAll( entries -> ((IndexPopulator) entries).close( populationCompletedSuccessfully ), nativePopulator, spatialPopulator, lucenePopulator );
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        try
-        {
-            nativePopulator.markAsFailed( failure );
-        }
-        finally
-        {
-            lucenePopulator.markAsFailed( failure );
-        }
+        forAll( entries -> ((IndexPopulator) entries).markAsFailed( failure ), nativePopulator, spatialPopulator, lucenePopulator );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        selector.select( nativePopulator, lucenePopulator, update.values() ).includeSample( update );
+        selector.select( nativePopulator, spatialPopulator, lucenePopulator, update.values() ).includeSample( update );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( nativePopulator.sampleResult(), lucenePopulator.sampleResult() );
+        return combineSamples( nativePopulator.sampleResult(), spatialPopulator.sampleResult() , lucenePopulator.sampleResult() );
     }
 }

@@ -45,7 +45,7 @@ public class Envelope
         this.max = max.clone();
         if ( !isValid() )
         {
-            throw new RuntimeException( "Invalid envelope created " + toString() );
+            throw new IllegalArgumentException( "Invalid envelope created " + toString() );
         }
     }
 

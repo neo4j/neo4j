@@ -20,14 +20,19 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.hamcrest.Matcher;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -53,6 +58,12 @@ class FusionIndexTestHelp
                     Values.floatValue( 5.6f ),
                     Values.doubleValue( 7.8 )
             };
+    private static final Value[] pointValues = new Value[]
+            {
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.Cartesian, 123.0, 456.0, 789.0 ),
+                    Values.pointValue( CoordinateReferenceSystem.WGS84, 13.2, 56.8 )
+            };
     private static final Value[] otherValues = new Value[]
             {
                     Values.booleanValue( true ),
@@ -67,6 +78,7 @@ class FusionIndexTestHelp
                     Values.doubleArray( new double[]{13.14, 15.16} ),
                     Values.charArray( new char[2] ),
                     Values.stringArray( "a", "b" ),
+                    Values.pointArray( pointValues ),
                     Values.NO_VALUE
             };
 
@@ -75,14 +87,29 @@ class FusionIndexTestHelp
         return numberValues;
     }
 
+    static Value[] valuesSupportedBySpatial()
+    {
+        return pointValues;
+    }
+
     static Value[] valuesNotSupportedByNative()
+    {
+        return ArrayUtils.addAll( pointValues, otherValues );
+    }
+
+    static Value[] valuesNotSupportedBySpatial()
+    {
+        return ArrayUtils.addAll( numberValues, otherValues );
+    }
+
+    static Value[] valuesNotSupportedByNativeOrSpatial()
     {
         return otherValues;
     }
 
     static Value[] allValues()
     {
-        return ArrayUtils.addAll( numberValues, otherValues );
+        return ArrayUtils.addAll( valuesSupportedByNative(), valuesNotSupportedByNative() );
     }
 
     static void verifyCallFail( Exception expectedFailure, Callable failingCall )
@@ -134,8 +161,8 @@ class FusionIndexTestHelp
         return IndexEntryUpdate.change( 0, indexKey, before, after );
     }
 
-    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable successfulCloseable,
-            AutoCloseable fusionCloseable ) throws Exception
+    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable, AutoCloseable... successfulCloseables )
+            throws Exception
     {
         IOException failure = new IOException( "fail" );
         doThrow( failure ).when( failingCloseable ).close();
@@ -151,7 +178,10 @@ class FusionIndexTestHelp
         }
 
         // then
-        verify( successfulCloseable, Mockito.times( 1 ) ).close();
+        for ( AutoCloseable successfulCloseable : successfulCloseables )
+        {
+            verify( successfulCloseable, Mockito.times( 1 ) ).close();
+        }
     }
 
     static void verifyFusionCloseThrowOnSingleCloseThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable )
@@ -170,14 +200,15 @@ class FusionIndexTestHelp
         }
     }
 
-    static void verifyFusionCloseThrowIfBothThrow( AutoCloseable nativeCloseable, AutoCloseable luceneCloseable,
-            AutoCloseable fusionCloseable ) throws Exception
+    static void verifyFusionCloseThrowIfAllThrow( AutoCloseable fusionCloseable, AutoCloseable... autoCloseables ) throws Exception
     {
         // given
-        IOException nativeFailure = new IOException( "native" );
-        IOException luceneFailure = new IOException( "lucene" );
-        doThrow( nativeFailure ).when( nativeCloseable ).close();
-        doThrow( luceneFailure ).when( luceneCloseable ).close();
+        IOException[] failures = new IOException[autoCloseables.length];
+        for ( int i = 0; i < autoCloseables.length; i++ )
+        {
+            failures[i] = new IOException( "unknown" );
+            doThrow( failures[i] ).when( autoCloseables[i] ).close();
+        }
 
         try
         {
@@ -188,7 +219,12 @@ class FusionIndexTestHelp
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( luceneFailure ) ) );
+            List<Matcher<? super IOException>> matchers = new ArrayList<>();
+            for ( IOException failure : failures )
+            {
+                matchers.add( sameInstance( failure ) );
+            }
+            assertThat( e, anyOf( matchers ) );
         }
     }
 }

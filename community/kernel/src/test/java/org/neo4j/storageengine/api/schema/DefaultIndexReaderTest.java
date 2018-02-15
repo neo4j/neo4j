@@ -72,7 +72,7 @@ public class DefaultIndexReaderTest
             }
 
             @Override
-            public boolean hasFullNumberPrecision( IndexQuery... predicates )
+            public boolean hasFullValuePrecision( IndexQuery... predicates )
             {
                 return false;
             }

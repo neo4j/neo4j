@@ -471,11 +471,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities)
 
     renderAsTreeTable(description.create(seekPlan)) should equal(
-      """+-----------------------+----------------+-----------+------------------------------------------------+
-        || Operator              | Estimated Rows | Variables | Other                                          |
-        |+-----------------------+----------------+-----------+------------------------------------------------+
-        || +NodeIndexSeekByRange |              1 | a         | :Person(age) < SignedDecimalIntegerLiteral(12) |
-        |+-----------------------+----------------+-----------+------------------------------------------------+
+      """+-----------------------+----------------+-----------+-------------------+
+        || Operator              | Estimated Rows | Variables | Other             |
+        |+-----------------------+----------------+-----------+-------------------+
+        || +NodeIndexSeekByRange |              1 | a         | :Person(age) < 12 |
+        |+-----------------------+----------------+-----------+-------------------+
         |""".stripMargin)
   }
 
@@ -496,11 +496,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities)
 
     renderAsTreeTable(description.create(seekPlan)) should equal(
-      """+-----------------------+----------------+-----------+---------------------------------------------------------------------------------------------------+
-        || Operator              | Estimated Rows | Variables | Other                                                                                             |
-        |+-----------------------+----------------+-----------+---------------------------------------------------------------------------------------------------+
-        || +NodeIndexSeekByRange |              1 | a         | :Person(age) > SignedDecimalIntegerLiteral(12) AND :Person(age) < SignedDecimalIntegerLiteral(21) |
-        |+-----------------------+----------------+-----------+---------------------------------------------------------------------------------------------------+
+      """+-----------------------+----------------+-----------+-----------------------------------------+
+        || Operator              | Estimated Rows | Variables | Other                                   |
+        |+-----------------------+----------------+-----------+-----------------------------------------+
+        || +NodeIndexSeekByRange |              1 | a         | :Person(age) > 12 AND :Person(age) < 21 |
+        |+-----------------------+----------------+-----------+-----------------------------------------+
         |""".stripMargin)
   }
 

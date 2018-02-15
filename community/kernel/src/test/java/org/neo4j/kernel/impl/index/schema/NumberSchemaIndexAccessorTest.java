@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.Value;
@@ -36,6 +37,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 
@@ -80,5 +82,57 @@ public abstract class NumberSchemaIndexAccessorTest<KEY extends NumberSchemaKey,
             }
             assertTrue( "found all values", i == expectedValues.length );
         }
+    }
+
+    @Test
+    public void shouldNotSeeFilteredEntries() throws Exception
+    {
+        // given
+        IndexEntryUpdate[] updates = new IndexEntryUpdate[]{IndexEntryUpdate.add( 0, indexDescriptor, layoutUtil.asValue( 0 ) ),
+                IndexEntryUpdate.add( 1, indexDescriptor, layoutUtil.asValue( 1 ) ), IndexEntryUpdate.add( 2, indexDescriptor, layoutUtil.asValue( 2 ) ),};
+        //noinspection unchecked
+        processAll( updates );
+        IndexReader reader = accessor.newReader();
+
+        // when
+        NodeValueIterator iter = new NodeValueIterator();
+        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, layoutUtil.asValue( 1 ) );
+        IndexQuery rangeQuery = layoutUtil.rangeQuery( 0, true, 2, true );
+        IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
+        reader.query( filterClient, IndexOrder.NONE, rangeQuery );
+
+        // then
+        assertTrue( iter.hasNext() );
+        assertEquals( 1, iter.next() );
+        assertFalse( iter.hasNext() );
+    }
+
+    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )
+    {
+        return new IndexProgressor.NodeValueClient()
+        {
+            @Override
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+            {
+                iter.initialize( descriptor, progressor, query );
+            }
+
+            @Override
+            public boolean acceptNode( long reference, Value... values )
+            {
+                //noinspection SimplifiableIfStatement
+                if ( values.length > 1 )
+                {
+                    return false;
+                }
+                return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
+            }
+
+            @Override
+            public boolean needsValues()
+            {
+                return true;
+            }
+        };
     }
 }

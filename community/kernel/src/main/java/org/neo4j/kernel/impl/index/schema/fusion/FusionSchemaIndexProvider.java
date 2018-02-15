@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -47,20 +48,21 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
 {
     public interface Selector
     {
-        <T> T select( T nativeInstance, T luceneInstance, Value... values );
+        <T> T select( T nativeInstance, T spatialInstance, T luceneInstance, Value... values );
     }
 
     private final SchemaIndexProvider nativeProvider;
+    private final SchemaIndexProvider spatialProvider;
     private final SchemaIndexProvider luceneProvider;
     private final Selector selector;
     private final DropAction dropAction;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider,
-            SchemaIndexProvider luceneProvider, Selector selector, SchemaIndexProvider.Descriptor descriptor,
-            int priority, IndexDirectoryStructure.Factory directoryStructure, FileSystemAbstraction fs )
+    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider spatialProvider, SchemaIndexProvider luceneProvider,
+            Selector selector, Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructure, FileSystemAbstraction fs )
     {
         super( descriptor, priority, directoryStructure );
         this.nativeProvider = nativeProvider;
+        this.spatialProvider = spatialProvider;
         this.luceneProvider = luceneProvider;
         this.selector = selector;
         this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
@@ -71,6 +73,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         return new FusionIndexPopulator(
                 nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
+                spatialProvider.getPopulator( indexId, descriptor, samplingConfig ),
                 luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
     }
 
@@ -80,6 +83,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         return new FusionIndexAccessor(
                 nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
+                spatialProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
                 luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, descriptor, dropAction );
     }
 
@@ -94,6 +98,14 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         catch ( IllegalStateException e )
         {   // Just catch
         }
+        String spatialFailure = null;
+        try
+        {
+            spatialFailure = spatialProvider.getPopulationFailure( indexId, descriptor );
+        }
+        catch ( IllegalStateException e )
+        {   // Just catch
+        }
         String luceneFailure = null;
         try
         {
@@ -103,9 +115,9 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         {   // Just catch
         }
 
-        if ( nativeFailure != null || luceneFailure != null )
+        if ( nativeFailure != null || spatialFailure != null || luceneFailure != null )
         {
-            return "native: " + nativeFailure + " lucene: " + luceneFailure;
+            return "native: " + nativeFailure + " spatial: " + spatialFailure + " lucene: " + luceneFailure;
         }
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
@@ -114,13 +126,14 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
         InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
+        InternalIndexState spatialState = spatialProvider.getInitialState( indexId, descriptor );
         InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
-        if ( nativeState == InternalIndexState.FAILED || luceneState == InternalIndexState.FAILED )
+        if ( nativeState == InternalIndexState.FAILED || spatialState == InternalIndexState.FAILED || luceneState == InternalIndexState.FAILED )
         {
             // One of the state is FAILED, the whole state must be considered FAILED
             return InternalIndexState.FAILED;
         }
-        if ( nativeState == InternalIndexState.POPULATING || luceneState == InternalIndexState.POPULATING )
+        if ( nativeState == InternalIndexState.POPULATING || spatialState == InternalIndexState.POPULATING || luceneState == InternalIndexState.POPULATING )
         {
             // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
             return InternalIndexState.POPULATING;
@@ -133,8 +146,9 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     public IndexCapability getCapability( IndexDescriptor indexDescriptor )
     {
         IndexCapability nativeCapability = nativeProvider.getCapability( indexDescriptor );
+        IndexCapability spatialCapability = spatialProvider.getCapability( indexDescriptor );
         IndexCapability luceneCapability = luceneProvider.getCapability( indexDescriptor );
-        return new UnionIndexCapability( nativeCapability, luceneCapability )
+        return new UnionIndexCapability( nativeCapability, spatialCapability, luceneCapability )
         {
             @Override
             public IndexOrder[] orderCapability( ValueGroup... valueGroups )
@@ -157,12 +171,12 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    static IndexSample combineSamples( IndexSample first, IndexSample other )
+    static IndexSample combineSamples( IndexSample... samples )
     {
-        return new IndexSample(
-                first.indexSize() + other.indexSize(),
-                first.uniqueValues() + other.uniqueValues(),
-                first.sampleSize() + other.sampleSize() );
+        long indexSize = Arrays.stream(samples).mapToLong( IndexSample::indexSize ).sum();
+        long uniqueValues = Arrays.stream(samples).mapToLong( IndexSample::uniqueValues ).sum();
+        long sampleSize = Arrays.stream(samples).mapToLong( IndexSample::sampleSize ).sum();
+        return new IndexSample( indexSize, uniqueValues, sampleSize );
     }
 
     /**

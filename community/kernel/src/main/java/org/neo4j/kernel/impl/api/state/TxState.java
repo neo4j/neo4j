@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -74,6 +75,7 @@ import org.neo4j.storageengine.api.txstate.ReadableRelationshipDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -1040,17 +1042,54 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeUpper = includeUpper;
         }
 
-        PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+    }
 
-        Collection<PrimitiveLongDiffSets> inRange =
-                sortedUpdates.subMap( selectedLower, selectedIncludeLower,
-                                      selectedUpper, selectedIncludeUpper ).values();
-        for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
+    @Override
+    public PrimitiveLongReadableDiffSets indexUpdatesForRangeSeekByGeometry( IndexDescriptor descriptor,
+                                                                PointValue lower, boolean includeLower,
+                                                                PointValue upper, boolean includeUpper )
+    {
+        TreeMap<ValueTuple, PrimitiveLongDiffSets> sortedUpdates = getSortedIndexUpdates( descriptor.schema() );
+        if ( sortedUpdates == null )
         {
-            diffs.addAll( diffForSpecificValue.getAdded().iterator() );
-            diffs.removeAll( diffForSpecificValue.getRemoved().iterator() );
+            return EmptyPrimitiveLongReadableDiffSets.INSTANCE;
         }
-        return diffs;
+
+        if ( lower == null && upper == null )
+        {
+            throw new IllegalArgumentException( "Cannot access TxState with invalid GeometryRangePredicate" );
+        }
+
+        ValueTuple selectedLower;
+        boolean selectedIncludeLower;
+
+        ValueTuple selectedUpper;
+        boolean selectedIncludeUpper;
+
+        if ( lower == null )
+        {
+            selectedLower = ValueTuple.of( Values.minPointValue( upper ) );
+            selectedIncludeLower = true;
+        }
+        else
+        {
+            selectedLower = ValueTuple.of( lower );
+            selectedIncludeLower = includeLower;
+        }
+
+        if ( upper == null )
+        {
+            selectedUpper = ValueTuple.of( Values.maxPointValue( lower ) );
+            selectedIncludeUpper = true;
+        }
+        else
+        {
+            selectedUpper = ValueTuple.of( upper );
+            selectedIncludeUpper = includeUpper;
+        }
+
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
     }
 
     @Override
@@ -1092,10 +1131,15 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
             selectedIncludeUpper = includeUpper;
         }
 
+        return indexUpdatesForRangeSeek( sortedUpdates, selectedLower, selectedIncludeLower, selectedUpper, selectedIncludeUpper );
+    }
+
+    private PrimitiveLongReadableDiffSets indexUpdatesForRangeSeek( TreeMap<ValueTuple,PrimitiveLongDiffSets> sortedUpdates, ValueTuple lower,
+            boolean includeLower, ValueTuple upper, boolean includeUpper )
+    {
         PrimitiveLongDiffSets diffs = new PrimitiveLongDiffSets();
-        Collection<PrimitiveLongDiffSets> inRange = sortedUpdates.subMap( selectedLower, selectedIncludeLower,
-                                                                          selectedUpper, selectedIncludeUpper )
-                                                                 .values();
+
+        Collection<PrimitiveLongDiffSets> inRange = sortedUpdates.subMap( lower, includeLower, upper, includeUpper ).values();
         for ( PrimitiveLongDiffSets diffForSpecificValue : inRange )
         {
             diffs.addAll( diffForSpecificValue.getAdded().iterator() );

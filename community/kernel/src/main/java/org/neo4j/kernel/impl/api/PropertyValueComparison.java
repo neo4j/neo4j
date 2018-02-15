@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.helpers.Strings;
+import org.neo4j.values.storable.PointValue;
 
 import static java.lang.String.format;
 
@@ -50,16 +51,19 @@ public class PropertyValueComparison
 
     public static final PropertyValueComparator<Object> COMPARE_STRINGS = new StringPropertyValueComparator();
 
-    static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
+    public static final PropertyValueComparator<PointValue> COMPARE_POINTS = new PointPropertyValueComparator();
+
+    public static final PropertyValueComparator<SuperType> COMPARE_SUPER_TYPE = new PropertyValueSuperTypeComparator();
 
     public enum SuperType
     {
         OTHER( 0 ),
         STRING( 1 ),
         BOOLEAN( 2 ),
+        GEOMETRY( 3 ),
 
         // Keep this last so that Double.NaN is the largest value
-        NUMBER( 3 );
+        NUMBER( 4 );
 
         public final int typeId;
 
@@ -97,6 +101,10 @@ public class PropertyValueComparison
             {
                 return STRING;
             }
+            else if ( value instanceof PointValue )
+            {
+                return GEOMETRY;
+            }
 
             return OTHER;
         }
@@ -123,6 +131,9 @@ public class PropertyValueComparison
 
                     case BOOLEAN:
                         return Boolean.compare( (Boolean) left, (Boolean) right );
+
+                    case GEOMETRY:
+                        return COMPARE_POINTS.compare( (PointValue) left, (PointValue) right );
 
                     // case OTHER:
                     default:
@@ -241,6 +252,16 @@ public class PropertyValueComparison
                         leftClazz, rightClazz
                 ) );
             }
+        }
+    }
+
+    private static class PointPropertyValueComparator extends PropertyValueComparator<PointValue>
+    {
+        @SuppressWarnings( "unchecked" )
+        @Override
+        public int compare( PointValue left, PointValue right )
+        {
+            return left.compareTo( right );
         }
     }
 

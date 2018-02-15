@@ -24,6 +24,10 @@ import java.util.List;
 
 import org.neo4j.gis.spatial.index.Envelope;
 
+/**
+ * This class is also used by Neo4j Spatial
+ */
+
 public abstract class SpaceFillingCurve
 {
 
@@ -130,6 +134,7 @@ public abstract class SpaceFillingCurve
 
     /**
      * Given a coordinate in multiple dimensions, calculate its derived key for maxLevel
+     * Needs to be public due to dependency from Neo4j Spatial
      */
     public Long derivedValueFor( double[] coord )
     {
@@ -143,6 +148,23 @@ public abstract class SpaceFillingCurve
     {
         assertValidLevel( level );
         long[] normalizedValues = getNormalizedCoord( coord );
+        return derivedValueFor( normalizedValues, level );
+    }
+
+    /**
+     * Given a normalized coordinate in multiple dimensions, calculate its derived key for maxLevel
+     */
+    public Long derivedValueFor( long[] normalizedValues )
+    {
+        return derivedValueFor( normalizedValues, maxLevel );
+    }
+
+    /**
+     * Given a normalized coordinate in multiple dimensions, calculate its derived key for given level
+     */
+    private Long derivedValueFor( long[] normalizedValues, int level )
+    {
+        assertValidLevel( level );
         long derivedValue = 0;
         long mask = 1L << (maxLevel - 1);
 
