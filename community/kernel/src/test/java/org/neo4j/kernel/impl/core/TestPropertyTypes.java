@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -595,8 +594,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertTrue( !node1.hasProperty( key ) );
     }
 
-    // TODO unignore next 2 when zone IDs are supported in the property store
-    @Ignore
+    @Test
     public void testDateTimeTypeWithZoneId()
     {
         DateTimeValue dateTime = DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, ZoneId.of( "Europe/Stockholm" ) );
@@ -608,7 +606,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         assertEquals( dateTime.asObjectCopy(), property );
     }
 
-    @Ignore
+    @Test
     public void testDateTimeArrayWithZoneOffsetAndZoneID()
     {
         ZonedDateTime[] array = new ZonedDateTime[]{DateTimeValue.datetime( 1991, 1, 1, 0, 0, 13, 37, "-01:00" ).asObjectCopy(),

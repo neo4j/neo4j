@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -85,7 +86,7 @@ public enum TemporalType
                 @Override
                 public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
                 {
-                    return valueIsInlined( firstBlock ) ? 1 : 2;
+                    return valueIsInlined( firstBlock ) ? BLOCKS_LONG_INLINED : BLOCKS_LONG_NOT_INLINED;
                 }
 
                 @Override
@@ -126,7 +127,7 @@ public enum TemporalType
                 @Override
                 public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
                 {
-                    return valueIsInlined( firstBlock ) ? 1 : 2;
+                    return valueIsInlined( firstBlock ) ? BLOCKS_LONG_INLINED : BLOCKS_LONG_NOT_INLINED;
                 }
 
                 @Override
@@ -168,7 +169,7 @@ public enum TemporalType
                 @Override
                 public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
                 {
-                    return 2;
+                    return BLOCKS_LOCAL_DATETIME;
                 }
 
                 @Override
@@ -177,10 +178,12 @@ public enum TemporalType
                     if ( dataValue instanceof LongArray )
                     {
                         LongArray numbers = (LongArray) dataValue;
-                        LocalDateTime[] dateTimes = new LocalDateTime[numbers.length() / 2];
+                        LocalDateTime[] dateTimes = new LocalDateTime[numbers.length() / BLOCKS_LOCAL_DATETIME];
                         for ( int i = 0; i < dateTimes.length; i++ )
                         {
-                            dateTimes[i] = LocalDateTime.ofInstant( Instant.ofEpochSecond( numbers.longValue( i * 2 ), numbers.longValue( i * 2 + 1 ) ), UTC );
+                            dateTimes[i] = LocalDateTime.ofInstant(
+                                    Instant.ofEpochSecond( numbers.longValue( i * BLOCKS_LOCAL_DATETIME ), numbers.longValue( i * BLOCKS_LOCAL_DATETIME + 1 ) ),
+                                    UTC );
                         }
                         return Values.localDateTimeArray( dateTimes );
                     }
@@ -204,7 +207,7 @@ public enum TemporalType
                 @Override
                 public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
                 {
-                    return 2;
+                    return BLOCKS_TIME;
                 }
 
                 @Override
@@ -244,22 +247,18 @@ public enum TemporalType
                     }
                     else
                     {
-                        throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                        int nanoOfSecond = (int) (valueBlocks[offset] >>> 33);
+                        long epochSecond = valueBlocks[1 + offset];
+                        short zoneNumber = (short) valueBlocks[2 + offset];
+                        return DateTimeValue.datetime( epochSecond, nanoOfSecond,
+                                ZoneId.of( TimeZoneMapping.map( zoneNumber ) ) );
                     }
                 }
 
                 @Override
                 public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
                 {
-                    if ( storingZoneOffset( firstBlock ) )
-                    {
-                        return 3;
-                    }
-                    else
-                    {
-                        // TODO proper number
-                        return 3;
-                    }
+                    return BLOCKS_DATETIME;
                 }
 
                 @Override
@@ -268,12 +267,12 @@ public enum TemporalType
                     if ( dataValue instanceof LongArray )
                     {
                         LongArray numbers = (LongArray) dataValue;
-                        ZonedDateTime[] dateTimes = new ZonedDateTime[numbers.length() / 3];
+                        ZonedDateTime[] dateTimes = new ZonedDateTime[numbers.length() / BLOCKS_DATETIME];
                         for ( int i = 0; i < dateTimes.length; i++ )
                         {
-                            long epochSecond = numbers.longValue( i * 3 );
-                            long nanos = numbers.longValue( i * 3 + 1 );
-                            long zoneValue = numbers.longValue( i * 3 + 2 );
+                            long epochSecond = numbers.longValue( i * BLOCKS_DATETIME );
+                            long nanos = numbers.longValue( i * BLOCKS_DATETIME + 1 );
+                            long zoneValue = numbers.longValue( i * BLOCKS_DATETIME + 2 );
                             if ( (zoneValue & 1) == 1 )
                             {
                                 short minuteOffset = (short) (zoneValue >>> 1);
@@ -282,7 +281,9 @@ public enum TemporalType
                             }
                             else
                             {
-                                throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                                short zoneNumber = (short) (zoneValue >>> 1);
+                                dateTimes[i] = ZonedDateTime.ofInstant( Instant.ofEpochSecond( epochSecond, nanos ),
+                                        ZoneId.of( TimeZoneMapping.map( zoneNumber ) ) );
                             }
                         }
                         return Values.dateTimeArray( dateTimes );
@@ -315,7 +316,7 @@ public enum TemporalType
             @Override
             public int calculateNumberOfBlocksUsedForTemporal( long firstBlock )
             {
-                return 4;
+                return BLOCKS_DURATION;
             }
 
             @Override
@@ -324,11 +325,11 @@ public enum TemporalType
                 if ( dataValue instanceof LongArray )
                 {
                     LongArray numbers = (LongArray) dataValue;
-                    DurationValue[] durations = new DurationValue[(int) (numbers.length() / 3)];
+                    DurationValue[] durations = new DurationValue[(int) (numbers.length() / BLOCKS_DURATION)];
                     for ( int i = 0; i < durations.length; i++ )
                     {
-                        durations[i] = DurationValue.duration( numbers.longValue( i * 4 ), numbers.longValue( i * 4 + 1 ), numbers.longValue( i * 4 + 2 ),
-                                numbers.longValue( i * 4 + 3 ) );
+                        durations[i] = DurationValue.duration( numbers.longValue( i * BLOCKS_DURATION ), numbers.longValue( i * BLOCKS_DURATION + 1 ),
+                                numbers.longValue( i * BLOCKS_DURATION + 2 ), numbers.longValue( i * BLOCKS_DURATION + 3 ) );
                     }
                     return Values.durationArray( durations );
                 }
@@ -338,6 +339,13 @@ public enum TemporalType
                 }
             }
         };
+
+    private static final int BLOCKS_LONG_INLINED = 1;
+    private static final int BLOCKS_LONG_NOT_INLINED = 2;
+    private static final int BLOCKS_LOCAL_DATETIME = 2;
+    private static final int BLOCKS_TIME = 2;
+    private static final int BLOCKS_DATETIME = 3;
+    private static final int BLOCKS_DURATION = 4;
 
     /**
      * Handler for header information for Temporal objects and arrays of Temporal objects
@@ -439,12 +447,12 @@ public enum TemporalType
         long[] data;
         if ( ShortArray.LONG.getRequiredBits( val ) <= 64 - 33 )
         {   // We only need one block for this value
-            data = new long[1];
+            data = new long[BLOCKS_LONG_INLINED];
             data[0] = keyAndType | temporalTypeBits | (1L << 32) | (val << 33);
         }
         else
         {   // We need two blocks for this value
-            data = new long[2];
+            data = new long[BLOCKS_LONG_NOT_INLINED];
             data[0] = keyAndType | temporalTypeBits;
             data[1] = val;
         }
@@ -459,7 +467,7 @@ public enum TemporalType
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_LOCAL_DATE_TIME.temporalType << (idBits + 4);
 
-        long[] data = new long[2];
+        long[] data = new long[BLOCKS_LOCAL_DATETIME];
         // nanoOfSecond will never require more than 30 bits
         data[0] = keyAndType | temporalTypeBits | (nanoOfSecond << 32);
         data[1] = epochSecond;
@@ -469,7 +477,19 @@ public enum TemporalType
 
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, String zoneId )
     {
-        throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+        int idBits = StandardFormatSettings.PROPERTY_TOKEN_MAXIMUM_ID_BITS;
+        short zoneNumber = TimeZoneMapping.map( zoneId );
+
+        long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
+        long temporalTypeBits = TemporalType.TEMPORAL_DATE_TIME.temporalType << (idBits + 4);
+
+        long[] data = new long[BLOCKS_DATETIME];
+        // nanoOfSecond will never require more than 30 bits
+        data[0] = keyAndType | temporalTypeBits | (nanoOfSecond << 33);
+        data[1] = epochSecond;
+        data[2] = zoneNumber;
+
+        return data;
     }
 
     public static long[] encodeDateTime( int keyId, long epochSecond, long nanoOfSecond, int secondOffset )
@@ -480,7 +500,7 @@ public enum TemporalType
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_DATE_TIME.temporalType << (idBits + 4);
 
-        long[] data = new long[3];
+        long[] data = new long[BLOCKS_DATETIME];
         // nanoOfSecond will never require more than 30 bits
         data[0] = keyAndType | temporalTypeBits | (1L << 32) | (nanoOfSecond << 33);
         data[1] = epochSecond;
@@ -497,7 +517,7 @@ public enum TemporalType
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_TIME.temporalType << (idBits + 4);
 
-        long[] data = new long[2];
+        long[] data = new long[BLOCKS_TIME];
         // Offset are always in the range +-18:00, so minuteOffset will never require more than 12 bits
         data[0] = keyAndType | temporalTypeBits | ((long) minuteOffset << 32);
         data[1] = nanoOfDay;
@@ -512,7 +532,7 @@ public enum TemporalType
         long keyAndType = keyId | (((long) (PropertyType.TEMPORAL.intValue()) << idBits));
         long temporalTypeBits = TemporalType.TEMPORAL_DURATION.temporalType << (idBits + 4);
 
-        long[] data = new long[4];
+        long[] data = new long[BLOCKS_DURATION];
         data[0] = keyAndType | temporalTypeBits | ((long) nanos << 32);
         data[1] = months;
         data[2] = days;
@@ -549,11 +569,11 @@ public enum TemporalType
 
     public static byte[] encodeLocalDateTimeArray( LocalDateTime[] dateTimes )
     {
-        long[] data = new long[dateTimes.length * 2];
+        long[] data = new long[dateTimes.length * BLOCKS_LOCAL_DATETIME];
         for ( int i = 0; i < dateTimes.length; i++ )
         {
-            data[i * 2] = dateTimes[i].toEpochSecond( UTC );
-            data[i * 2 + 1] = dateTimes[i].getNano();
+            data[i * BLOCKS_LOCAL_DATETIME] = dateTimes[i].toEpochSecond( UTC );
+            data[i * BLOCKS_LOCAL_DATETIME + 1] = dateTimes[i].getNano();
         }
         TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_LOCAL_DATE_TIME.temporalType );
         byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
@@ -563,7 +583,7 @@ public enum TemporalType
 
     public static byte[] encodeTimeArray( OffsetTime[] times )
     {
-        // TODO this sucks in terms of cache locality
+        // This way of storing sucks in terms of cache locality
         long[] data = new long[(int) (Math.ceil( times.length * 1.25 ))];
         // First all nano of days (each is a long)
         int i;
@@ -591,25 +611,27 @@ public enum TemporalType
 
     public static byte[] encodeDateTimeArray( ZonedDateTime[] dateTimes )
     {
-        // TODO we can store this in dateTimes.length * 2.25
-        long[] data = new long[dateTimes.length * 3];
+        // We could store this in dateTimes.length * 2.25 if we wanted
+        long[] data = new long[dateTimes.length * BLOCKS_DATETIME];
 
         int i;
         for ( i = 0; i < dateTimes.length; i++ )
         {
-            data[i * 3] = dateTimes[i].toEpochSecond();
-            data[i * 3 + 1] = dateTimes[i].getNano();
+            data[i * BLOCKS_DATETIME] = dateTimes[i].toEpochSecond();
+            data[i * BLOCKS_DATETIME + 1] = dateTimes[i].getNano();
             if ( dateTimes[i].getZone() instanceof ZoneOffset )
             {
                 ZoneOffset offset = (ZoneOffset) dateTimes[i].getZone();
                 int minuteOffset = offset.getTotalSeconds() / 60;
                 // Set lowest bit to 1 means offset
-                data[i * 3 + 2] = minuteOffset << 1 | 1L;
+                data[i * BLOCKS_DATETIME + 2] = minuteOffset << 1 | 1L;
             }
             else
             {
+                String timeZoneId = dateTimes[i].getZone().getId();
+                short zoneNumber = TimeZoneMapping.map( timeZoneId );
                 // Set lowest bit to 0 means zone id
-                throw new UnsupportedOperationException( "Cannot yet store DateTime with ZoneID" );
+                data[i * BLOCKS_DATETIME + 2] = zoneNumber << 1;
             }
         }
 
@@ -621,13 +643,13 @@ public enum TemporalType
 
     public static byte[] encodeDurationArray( DurationValue[] durations )
     {
-        long[] data = new long[durations.length * 4];
+        long[] data = new long[durations.length * BLOCKS_DURATION];
         for ( int i = 0; i < durations.length; i++ )
         {
-            data[i * 4] = durations[i].get( ChronoUnit.MONTHS );
-            data[i * 4 + 1] = durations[i].get( ChronoUnit.DAYS );
-            data[i * 4 + 2] = durations[i].get( ChronoUnit.SECONDS );
-            data[i * 4 + 3] = durations[i].get( ChronoUnit.NANOS );
+            data[i * BLOCKS_DURATION] = durations[i].get( ChronoUnit.MONTHS );
+            data[i * BLOCKS_DURATION + 1] = durations[i].get( ChronoUnit.DAYS );
+            data[i * BLOCKS_DURATION + 2] = durations[i].get( ChronoUnit.SECONDS );
+            data[i * BLOCKS_DURATION + 3] = durations[i].get( ChronoUnit.NANOS );
         }
         TemporalHeader header = new TemporalHeader( TemporalType.TEMPORAL_DURATION.temporalType );
         byte[] bytes = DynamicArrayStore.encodeFromNumbers( data, DynamicArrayStore.TEMPORAL_HEADER_SIZE );
