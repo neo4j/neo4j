@@ -69,7 +69,6 @@ public class ConsensusModule
     public static final String RAFT_TERM_NAME = "term";
     public static final String RAFT_VOTE_NAME = "vote";
 
-
     private final MonitoredRaftLog raftLog;
     private final RaftMachine raftMachine;
     private final RaftMembershipManager raftMembershipManager;

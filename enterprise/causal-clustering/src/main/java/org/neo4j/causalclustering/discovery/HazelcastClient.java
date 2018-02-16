@@ -59,7 +59,6 @@ class HazelcastClient extends AbstractTopologyService
     private final List<String> groups;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
-    //TODO: Work out if this is the right place to introduce the dbName and percolate down -  I think it is.
     //TODO: Work out semantics in case cluster hosts change their dbName unexpectedly
     private final String dbName;
 

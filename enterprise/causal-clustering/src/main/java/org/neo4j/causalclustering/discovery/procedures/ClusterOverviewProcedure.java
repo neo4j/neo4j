@@ -65,8 +65,6 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     private final LeaderLocator leaderLocator;
     private final Log log;
 
-    //TODO: Only inject the name, injecting the config is making it hard to test without additional mocks and the dbName is the only thing we are using the
-    // config for.
     public ClusterOverviewProcedure( TopologyService topologyService,
             LeaderLocator leaderLocator, LogProvider logProvider )
     {

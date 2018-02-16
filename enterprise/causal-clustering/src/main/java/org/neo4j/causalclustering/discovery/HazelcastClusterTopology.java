@@ -58,13 +58,13 @@ public class HazelcastClusterTopology
     static final String TRANSACTION_SERVER = "transaction_server";
     static final String RAFT_SERVER = "raft_server";
     static final String CLIENT_CONNECTOR_ADDRESSES = "client_connector_addresses";
-    static final String MEMBER_DB_NAME = "member_database_name";
+    private static final String MEMBER_DB_NAME = "member_database_name";
 
     private static final String REFUSE_TO_BE_LEADER_KEY = "refuseToBeLeader";
 
     // cluster-wide attributes
     private static final String CLUSTER_UUID_MAP_DB_NAME = "cluster_uuid";
-    static final String SERVER_GROUPS_MULTIMAP_NAME = "groups";
+    private static final String SERVER_GROUPS_MULTIMAP_NAME = "groups";
     static final String READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME = "read-replica-transaction-servers";
     static final String READ_REPLICA_BOLT_ADDRESS_MAP_NAME = "read_replicas"; // hz client uuid string -> boltAddress string
     static final String READ_REPLICA_MEMBER_ID_MAP_NAME = "read-replica-member-ids";

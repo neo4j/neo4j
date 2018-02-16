@@ -51,7 +51,8 @@ public interface Topology<T extends DiscoveryServerInfo>
         return Optional.ofNullable( members().get( memberId ) );
     }
 
-    default Map<MemberId, T> filterHostsByDb( Map<MemberId, T> s, String dbName ) {
+    default Map<MemberId, T> filterHostsByDb( Map<MemberId, T> s, String dbName )
+    {
         return s.entrySet().stream().filter(e -> e.getValue().getDatabaseName().equals( dbName ) )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
     }

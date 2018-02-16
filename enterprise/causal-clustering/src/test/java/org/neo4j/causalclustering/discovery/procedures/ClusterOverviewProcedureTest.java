@@ -74,8 +74,8 @@ public class ClusterOverviewProcedureTest
         replicaMembers.put( replica4, addressesForReadReplica( 4 ) );
         replicaMembers.put( replica5, addressesForReadReplica( 5 ) );
 
-        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( null, false, coreMembers ) );
-        when( topologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
+        when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
+        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
 
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
@@ -107,6 +107,16 @@ public class ClusterOverviewProcedureTest
         private final int boltPort;
         private final Role role;
         private final Set<String> groups;
+        private final String dbName;
+
+        IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups, String dbName )
+        {
+            this.memberId = memberId;
+            this.boltPort = boltPort;
+            this.role = role;
+            this.groups = groups;
+            this.dbName = dbName;
+        }
 
         IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups )
         {
@@ -114,12 +124,13 @@ public class ClusterOverviewProcedureTest
             this.boltPort = boltPort;
             this.role = role;
             this.groups = groups;
+            this.dbName = "default";
         }
 
         @Override
         protected boolean matchesSafely( Object[] record )
         {
-            if ( record.length != 4 )
+            if ( record.length != 5 )
             {
                 return false;
             }
@@ -142,7 +153,12 @@ public class ClusterOverviewProcedureTest
             }
 
             Set<String> recordGroups = Iterables.asSet( (List<String>) record[3] );
-            return groups.equals( recordGroups );
+            if ( !groups.equals( recordGroups ) )
+            {
+                return false;
+            }
+
+            return dbName.equals( record[4] );
         }
 
         @Override
@@ -153,6 +169,7 @@ public class ClusterOverviewProcedureTest
                     ", boltPort=" + boltPort +
                     ", role=" + role +
                     ", groups=" + groups +
+                    ", database=" + dbName +
                     '}' );
         }
     }

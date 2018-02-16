@@ -26,7 +26,6 @@ class CoreTopologyListenerService
 {
     private final List<CoreTopologyService.Listener> listeners = new ArrayList<>();
 
-
     void addCoreTopologyListener( CoreTopologyService.Listener listener )
     {
         listeners.add( listener );

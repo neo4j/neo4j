@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
@@ -33,6 +34,7 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.singletonList;
@@ -40,6 +42,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -55,11 +58,15 @@ public class ConnectToRandomCoreServerStrategyTest
         MemberId memberId3 = new MemberId( UUID.randomUUID() );
 
         TopologyService topologyService = mock( TopologyService.class );
-        when( topologyService.coreServers( "default" ) )
+        when( topologyService.coreServers( eq( "default" ) ) )
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
+        //TODO: Replace all instances of this mock with Config.defaults
+        Config config = mock( Config.class );
+        when( config.get( CausalClusteringSettings.database ) ).thenReturn( "default" );
+
         ConnectToRandomCoreServerStrategy connectionStrategy = new ConnectToRandomCoreServerStrategy();
-        connectionStrategy.inject( topologyService, null, NullLogProvider.getInstance(), null );
+        connectionStrategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
         // when
         Optional<MemberId> memberId = connectionStrategy.upstreamDatabase();

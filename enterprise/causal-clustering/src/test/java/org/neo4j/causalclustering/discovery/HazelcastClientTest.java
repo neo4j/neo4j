@@ -123,9 +123,9 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
+        when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -137,7 +137,7 @@ public class HazelcastClientTest
         // when
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers( "default" );
+        CoreTopology topology = client.coreServers();
 
         // then
         assertEquals( members.size(), topology.members().size() );
@@ -156,10 +156,10 @@ public class HazelcastClientTest
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
-        when( hazelcastInstance.getAtomicReference( anyString() ) ).thenReturn( mock( IAtomicReference.class ) );
         when( hazelcastInstance.getSet( anyString() ) ).thenReturn( new HazelcastSet() );
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
+        when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -174,7 +174,7 @@ public class HazelcastClientTest
         CoreTopology topology;
         for ( int i = 0; i < 5; i++ )
         {
-            topology = client.coreServers( "default" );
+            topology = client.coreServers();
             assertEquals( members.size(), topology.members().size() );
         }
 

@@ -40,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -163,8 +164,8 @@ public class ClusterBinderTest
         CoreTopology bootstrappableTopology = new CoreTopology( null, true, emptyMap() );
 
         CoreTopologyService topologyService = mock( CoreTopologyService.class );
-        when( topologyService.coreServers( "default" ) ).thenReturn( bootstrappableTopology );
-        when( topologyService.setClusterId( any(), "default" ) ).thenReturn( true );
+        when( topologyService.coreServers( eq("default" ) ) ).thenReturn( bootstrappableTopology );
+        when( topologyService.setClusterId( any(), eq("default" ) ) ).thenReturn( true );
         CoreSnapshot snapshot = mock( CoreSnapshot.class );
         when( coreBootstrapper.bootstrap( any() ) ).thenReturn( snapshot );
 
