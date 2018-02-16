@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropA
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfBothThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
@@ -84,6 +84,15 @@ public class FusionIndexAccessorTest
     {
         // when
         verifyFailOnSingleDropFailure( nativeAccessor, fusionIndexAccessor );
+    }
+
+    @Test
+    public void fusionIndexIsDirtyWhenNativeIndexIsDirty()
+    {
+        when( nativeAccessor.isDirty() ).thenReturn( true ).thenReturn( false );
+
+        assertTrue( fusionIndexAccessor.isDirty() );
+        assertFalse( fusionIndexAccessor.isDirty() );
     }
 
     @Test

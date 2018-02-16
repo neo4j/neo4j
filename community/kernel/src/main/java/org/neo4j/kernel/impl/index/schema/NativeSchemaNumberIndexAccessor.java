@@ -131,4 +131,10 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
             throws IndexEntryConflictException, IOException
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
+
+    @Override
+    public boolean isDirty()
+    {
+        return tree.wasDirtyOnStartup();
+    }
 }
