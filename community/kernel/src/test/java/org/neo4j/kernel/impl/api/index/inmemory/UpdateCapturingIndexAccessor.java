@@ -107,6 +107,12 @@ public class UpdateCapturingIndexAccessor implements IndexAccessor
         actual.verifyDeferredConstraints( propertyAccessor );
     }
 
+    @Override
+    public boolean isDirty()
+    {
+        return actual.isDirty();
+    }
+
     public Collection<IndexEntryUpdate<?>> snapshot()
     {
         return new ArrayList<>( updates );

@@ -120,6 +120,12 @@ public class LuceneIndexAccessor implements IndexAccessor
         luceneIndex.verifyUniqueness( propertyAccessor, descriptor.schema().getPropertyIds() );
     }
 
+    @Override
+    public boolean isDirty()
+    {
+        return luceneIndex.isValid();
+    }
+
     private class LuceneIndexUpdater implements IndexUpdater
     {
         private final boolean idempotent;

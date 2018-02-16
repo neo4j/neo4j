@@ -149,4 +149,10 @@ class FusionIndexAccessor implements IndexAccessor
         spatialAccessor.verifyDeferredConstraints( propertyAccessor );
         luceneAccessor.verifyDeferredConstraints( propertyAccessor );
     }
+
+    @Override
+    public boolean isDirty()
+    {
+        return nativeAccessor.isDirty();
+    }
 }
