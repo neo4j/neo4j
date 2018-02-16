@@ -23,7 +23,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -130,7 +130,7 @@ public class NotificationAcceptanceTest
     }
 
     //TODO unignore when supporting 3.3
-    @Ignore
+    @Disabled
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3()
     {
         // when
