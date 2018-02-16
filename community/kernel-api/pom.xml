@@ -78,8 +78,12 @@ the relevant Commercial Agreement.
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
+    <dependency>
+        <groupId>org.eclipse.collections</groupId>
+        <artifactId>eclipse-collections</artifactId>
+    </dependency>
 
-    <!-- Test dependencies -->
+      <!-- Test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-values</artifactId>
