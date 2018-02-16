@@ -196,7 +196,11 @@ public class NodeProxy implements Node
 
     private boolean innerHasRelationships( final KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
-        return getRelationshipSelectionIterator( transaction, direction, typeIds ).hasNext();
+        try ( ResourceIterator<Relationship> iterator =
+                getRelationshipSelectionIterator( transaction, direction, typeIds ) )
+        {
+            return iterator.hasNext();
+        }
     }
 
     @Override
