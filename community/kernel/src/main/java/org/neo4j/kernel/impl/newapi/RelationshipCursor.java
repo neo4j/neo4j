@@ -103,9 +103,8 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
      */
     protected boolean hasChanges()
     {
-        switch ( hasChanges )
+        if ( hasChanges == HasChanges.MAYBE )
         {
-        case MAYBE:
             boolean changes = read.hasTxStateWithChanges();
             if ( changes )
             {
@@ -117,13 +116,9 @@ abstract class RelationshipCursor extends RelationshipRecord implements Relation
                 hasChanges = HasChanges.NO;
             }
             return changes;
-        case YES:
-            return true;
-        case NO:
-            return false;
-        default:
-            throw new IllegalStateException( "Style guide, why are you making me do this" );
         }
+
+        return hasChanges == HasChanges.YES;
     }
 
     // Load transaction state using RelationshipVisitor
