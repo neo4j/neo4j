@@ -122,10 +122,14 @@ import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.cho
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
+
+    private final CatchupPollingProcess catchupPollingProcess;
+    private final LogService logService;
+
     EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
                                         final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
-        LogService logging = platformModule.logging;
+        logService = platformModule.logging;
 
         ioLimiter = new ConfigurableIOLimiter( platformModule.config );
 
@@ -142,14 +146,14 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         this.accessCapability = new ReadOnly();
 
-        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging, platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logService, platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
         lockManager = dependencies.satisfyDependency( new ReadReplicaLockManager() );
 
-        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logService ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
@@ -260,15 +264,15 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         UpstreamDatabaseStrategySelector upstreamDatabaseStrategySelector =
                 new UpstreamDatabaseStrategySelector( defaultStrategy, loader, myself, logProvider );
 
-        CatchupPollingProcess catchupProcess =
+        catchupPollingProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient, upstreamDatabaseStrategySelector,
                         timerService, config.get( CausalClusteringSettings.pull_interval ).toMillis(), batchingTxApplier, platformModule.monitors,
                         storeCopyProcess, databaseHealthSupplier, topologyService );
-        dependencies.satisfyDependencies( catchupProcess );
+        dependencies.satisfyDependencies( catchupPollingProcess );
 
         txPulling.add( batchingTxApplier );
-        txPulling.add( catchupProcess );
-        txPulling.add( new WaitForUpToDateStore( catchupProcess, logProvider ) );
+        txPulling.add( catchupPollingProcess );
+        txPulling.add( new WaitForUpToDateStore( catchupPollingProcess, logProvider ) );
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector, retryStrategy, logProvider,
@@ -311,6 +315,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
         procedures.register( new ReadReplicaRoleProcedure() );
+        procedures.register( new FreezeReadReplicaProcedure( catchupPollingProcess, logService.getInternalLog( FreezeReadReplicaProcedure.class ) ) );
+        procedures.register( new UnfreezeReadReplicaProcedure( catchupPollingProcess, logService.getInternalLog( UnfreezeReadReplicaProcedure.class ) ) );
     }
 
     private void registerRecovery( final DatabaseInfo databaseInfo, LifeSupport life, final DependencyResolver dependencyResolver )
