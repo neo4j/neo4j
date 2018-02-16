@@ -19,8 +19,6 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
-import java.util.function.IntPredicate;
-
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
@@ -60,18 +58,6 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
 
     @Override
     public boolean contains( int value )
-    {
-        return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
-    }
-
-    /**
-     * Prefer using {@link #contains(int)} - this method is identical and required by the {@link IntPredicate} interface
-     *
-     * @param value the input argument
-     * @return true if the input argument matches the predicate, otherwise false
-     */
-    @Override
-    public boolean test( int value )
     {
         return HopScotchHashingAlgorithm.get( table, monitor, DEFAULT_HASHING, value ) == valueMarker;
     }
