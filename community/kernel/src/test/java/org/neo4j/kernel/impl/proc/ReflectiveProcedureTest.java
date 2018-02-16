@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -267,6 +269,49 @@ public class ReflectiveProcedureTest
     }
 
     @Test
+    public void shouldCloseResourcesAndGiveHelpfulErrorOnMidStreamException() throws Throwable
+    {
+        // Given
+        CallableProcedure proc = compile( ProcedureThatThrowsNullMsgExceptionMidStream.class ).get( 0 );
+
+        // Expect
+        exception.expect( ProcedureException.class );
+        exception.expectMessage( "Failed to call procedure `org.neo4j.kernel.impl.proc.throwsInStream`: " +
+                "Caused by: java.lang.IndexOutOfBoundsException" );
+
+        // Expect that we get a suppressed exception from Stream.onClose (which also verifies that we actually call onClose on the first exception)
+        exception.expect( new BaseMatcher<Exception>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "a suppressed exception ExceptionDuringClose" );
+            }
+
+            @Override
+            public boolean matches( Object item )
+            {
+                Exception e = (Exception) item;
+                for ( Throwable suppressed : e.getSuppressed() )
+                {
+                    if ( suppressed instanceof ExceptionDuringClose )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        } );
+
+        // When
+        RawIterator<Object[],ProcedureException> stream = proc.apply( new BasicContext(), new Object[0] );
+        if ( stream.hasNext() )
+        {
+            stream.next();
+        }
+    }
+
+    @Test
     public void shouldSupportProcedureDeprecation() throws Throwable
     {
         // Given
@@ -441,9 +486,12 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<MyOutputRecord> throwsInStream( )
         {
-            return Stream.generate( () -> {
+            return Stream.<MyOutputRecord>generate( () -> {
                 throw new IndexOutOfBoundsException();
-            });
+            }).onClose( () ->
+            {
+                throw new ExceptionDuringClose();
+            } );
         }
     }
 
@@ -522,5 +570,9 @@ public class ReflectiveProcedureTest
     private List<CallableProcedure> compile( Class<?> clazz ) throws KernelException
     {
         return procedureCompiler.compileProcedure( clazz );
+    }
+
+    private static class ExceptionDuringClose extends RuntimeException
+    {
     }
 }
