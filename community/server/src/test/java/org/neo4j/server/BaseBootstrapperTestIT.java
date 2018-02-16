@@ -79,6 +79,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
+                "-c", "dbms.connector.https.listen_address=localhost:0",
                 "-c", "dbms.connector.http.type=HTTP",
                 "-c", "dbms.connector.http.enabled=true",
                 "-c", "dbms.connector.http.listen_address=localhost:0",
@@ -99,6 +100,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.https.listen_address", "localhost:0" );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
         properties.put( "dbms.connector.http.listen_address", "localhost:0" );
@@ -123,6 +125,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
+        properties.put( "dbms.connector.https.listen_address", "localhost:0" );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
         properties.put( "dbms.connector.http.listen_address", "localhost:0" );
