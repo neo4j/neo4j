@@ -907,7 +907,7 @@ public class MuninnPageCache implements PageCache
         return clockArm;
     }
 
-    private void addFreePageToFreelist( long pageRef )
+    void addFreePageToFreelist( long pageRef )
     {
         Object current;
         FreePage freePage = new FreePage( pageRef );
