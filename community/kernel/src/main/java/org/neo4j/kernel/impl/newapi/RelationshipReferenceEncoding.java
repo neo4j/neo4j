@@ -44,6 +44,7 @@ enum RelationshipReferenceEncoding
     /** @see #encodeNoLoopRels(int) */
     NO_LOOP_OF_TYPE( 6 );
 
+    private static final RelationshipReferenceEncoding[] ENCODINGS = RelationshipReferenceEncoding.values();
     final long id;
     final long bits;
 
@@ -59,7 +60,7 @@ enum RelationshipReferenceEncoding
         {
             return NONE;
         }
-        return RelationshipReferenceEncoding.values()[encodingId( reference )];
+        return ENCODINGS[encodingId( reference )];
     }
 
     private static int encodingId( long reference )
