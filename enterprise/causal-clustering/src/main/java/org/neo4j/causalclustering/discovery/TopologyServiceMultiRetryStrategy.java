@@ -29,16 +29,18 @@ public class TopologyServiceMultiRetryStrategy extends MultiRetryStrategy<Member
 {
     public TopologyServiceMultiRetryStrategy( long delayInMillis, long retries, LogProvider logProvider )
     {
-        super( delayInMillis, retries, logProvider, millis ->
+        super( delayInMillis, retries, logProvider, TopologyServiceMultiRetryStrategy::sleep );
+    }
+
+    private static void sleep( long durationInMillis )
+    {
+        try
         {
-            try
-            {
-                Thread.sleep( millis );
-            }
-            catch ( InterruptedException e )
-            {
-                throw new RuntimeException( e );
-            }
-        } );
+            Thread.sleep( durationInMillis );
+        }
+        catch ( InterruptedException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }
