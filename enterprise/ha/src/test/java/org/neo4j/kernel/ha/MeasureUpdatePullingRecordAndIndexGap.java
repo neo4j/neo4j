@@ -21,7 +21,7 @@ package org.neo4j.kernel.ha;
 
 import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;

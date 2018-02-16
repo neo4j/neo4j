@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -592,7 +592,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldNotFindDeletedNodeInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -610,7 +610,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldFindNodeWithOneRemovedLabelInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -629,7 +629,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldNotFindNodeWithAllRemovedLabelsInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -648,7 +648,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldNotFindNodeWithOneRemovedLabelsInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -669,7 +669,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldFindUpdatedNodeInInDisjunctionLabelScan() throws Exception
     {
         // Given
@@ -689,7 +689,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldNotFindDeletedNodeInConjunctionLabelScan() throws Exception
     {
         // Given
@@ -707,7 +707,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldNotFindNodeWithRemovedLabelInConjunctionLabelScan() throws Exception
     {
         // Given
@@ -725,7 +725,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldFindUpdatedNodeInInConjunctionLabelScan() throws Exception
     {
         // Given
@@ -745,7 +745,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
         }
     }
 
-    @Ignore
+    @Disabled
     public void shouldNotFindNodeWithJustOneUpdatedLabelInInConjunctionLabelScan() throws Exception
     {
         // Given

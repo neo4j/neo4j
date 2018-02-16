@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
@@ -29,6 +30,7 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Disabled
 public class MultiRetryStrategyTest
 {
     private static final Predicate<Integer> ALWAYS_VALID = i -> true;
