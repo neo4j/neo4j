@@ -62,7 +62,7 @@ import org.neo4j.storageengine.api.StorageStatement;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement implements TxStateHolder, Statement, AssertOpen
+public class KernelStatement extends CloseableResourceManager implements TxStateHolder, Statement, AssertOpen
 {
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
@@ -243,6 +243,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         // closing is done by KTI
         storeStatement.release();
         executingQueryList = ExecutingQueryList.EMPTY;
+        closeAllCloseableResources();
     }
 
     public KernelTransactionImplementation getTransaction()

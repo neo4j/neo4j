@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_0.spi.TokenContext
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.kernel.api.TokenNameLookup
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.{KernelException, ResourceCloseFailureException}
 
 trait ExceptionTranslationSupport {
   inner: TokenContext =>
@@ -39,6 +39,7 @@ trait ExceptionTranslationSupport {
       def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
     }), e)
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
+    case e : ResourceCloseFailureException => throw new CypherExecutionException(e.getMessage, e)
   }
 
   protected def translateIterator[A](iteratorFactory: => Iterator[A]): Iterator[A] = {

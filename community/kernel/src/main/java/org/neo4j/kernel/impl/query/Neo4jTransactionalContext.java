@@ -267,6 +267,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
         return securityContext;
     }
 
+    @Override
+    public ResourceTracker resourceTracker()
+    {
+        // We use the current statement as resourceTracker since it is attached to the KernelTransaction
+        // and is guaranteed to be cleaned up on transaction failure.
+        return statement;
+    }
+
     interface Creator {
         Neo4jTransactionalContext create(
             Supplier<Statement> statementSupplier,

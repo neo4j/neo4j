@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -131,7 +132,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         kernel.registerProcedure( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
             {
                 return RawIterator.<Object[], ProcedureException>of( new Object[]{ ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement().readOperations() } );
             }
@@ -149,7 +150,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input )
+            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
             {
                 return RawIterator.<Object[], ProcedureException>of( input );
             }

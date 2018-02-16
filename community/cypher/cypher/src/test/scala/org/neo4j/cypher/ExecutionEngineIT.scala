@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{ResourceTracker, Statement}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
@@ -699,7 +699,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
       fields :+ new FieldSignature(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
     }.asJava
 
-    override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+    override def apply(context: Context, objects: Array[AnyRef],
+                       resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
       val readOperations = statement.readOperations
       val nodes = readOperations.nodesGetAll()

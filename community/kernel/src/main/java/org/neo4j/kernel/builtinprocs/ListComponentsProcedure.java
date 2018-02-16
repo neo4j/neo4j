@@ -20,6 +20,7 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -65,7 +66,7 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input )
+    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         return asRawIterator( singletonList(

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.test_helpers.CreateTempFileTestSu
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.exceptions.ProcedureException
-import org.neo4j.kernel.api.proc
+import org.neo4j.kernel.api.{ResourceTracker, proc}
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
 import org.neo4j.procedure.Mode
@@ -180,7 +180,8 @@ class EagerizationAcceptanceTest
       builder.out("relId", Neo4jTypes.NTInteger)
       builder.mode(Mode.WRITE)
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
@@ -217,7 +218,8 @@ class EagerizationAcceptanceTest
       builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
       builder.mode(Mode.WRITE)
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
@@ -253,7 +255,8 @@ class EagerizationAcceptanceTest
       builder.in("y", Neo4jTypes.NTNode)
       builder.out("relId", Neo4jTypes.NTInteger)
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
@@ -301,7 +304,8 @@ class EagerizationAcceptanceTest
       builder.in("y", Neo4jTypes.NTNode)
       builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+        override def apply(ctx: Context, input: Array[AnyRef],
+                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
