@@ -1040,7 +1040,7 @@ public class MuninnPageCache implements PageCache
                 for ( int i = 0; i < pageCount; i++ )
                 {
                     long pageRef = pages.deref( i );
-                    while ( swapperIds.test( pages.getSwapperId( pageRef ) ) )
+                    while ( swapperIds.contains( pages.getSwapperId( pageRef ) ) )
                     {
                         if ( pages.tryEvict( pageRef, evictions ) )
                         {

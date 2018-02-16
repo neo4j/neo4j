@@ -108,12 +108,6 @@ public class Empty
         }
 
         @Override
-        public boolean test( long value )
-        {
-            return false;
-        }
-
-        @Override
         public boolean remove( long value )
         {
             return false;
@@ -151,12 +145,6 @@ public class Empty
 
         @Override
         public boolean contains( int value )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean test( int value )
         {
             return false;
         }

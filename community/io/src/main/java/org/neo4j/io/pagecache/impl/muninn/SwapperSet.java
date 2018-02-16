@@ -21,7 +21,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
-import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
@@ -151,7 +150,7 @@ final class SwapperSet
      * This is done with careful synchronisation such that allocating and freeing of ids is allowed to mostly proceed
      * concurrently.
      */
-    void vacuum( Consumer<IntPredicate> evictAllLoadedPagesCallback )
+    void vacuum( Consumer<PrimitiveIntSet> evictAllLoadedPagesCallback )
     {
         // We do this complicated locking to avoid blocking allocate() and free() as much as possible, while still only
         // allow a single thread to do vacuum at a time, and at the same time have consistent locking around the
