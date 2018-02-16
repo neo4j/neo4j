@@ -68,7 +68,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
         new ArgumentOperator
     }
 
-    Pipeline(thisOp, Seq.empty, slots, NoDependencies)()
+    Pipeline(thisOp, IndexedSeq.empty, slots, NoDependencies)()
   }
 
   override protected def build(plan: LogicalPlan, from: Pipeline): Pipeline = {
@@ -156,7 +156,7 @@ class PipelineBuilder(slotConfigurations: SlotConfigurations, converters: Expres
 
     thisOp match {
       case o: Operator =>
-        Pipeline(o, Seq.empty, slots, o.addDependency(source))()
+        Pipeline(o, IndexedSeq.empty, slots, o.addDependency(source))()
       case mo: MiddleOperator =>
         source.addOperator(mo)
     }

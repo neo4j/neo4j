@@ -21,44 +21,51 @@ package org.neo4j.cypher.internal.runtime.vectorized.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{QueryState => OldQueryState}
-import org.neo4j.cypher.internal.runtime.vectorized._
+import org.neo4j.cypher.internal.runtime.vectorized.MorselExecutionContext
 import org.neo4j.cypher.internal.util.v3_4.symbols.CTAny
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.longValue
 import org.neo4j.values.storable.{LongValue, NumberValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues.list
 
 /*
-Vectorized version of the average aggregation function
+Vectorized version of the distinct aggregation function
  */
-case class AvgOperatorExpression(anInner: Expression) extends AggregationExpressionOperatorWithInnerExpression(anInner) {
+case class DistinctOperatorExpression(expression: Expression, inner: AggregationExpressionOperator) extends AggregationExpressionOperatorWithInnerExpression(expression) {
 
   override def expectedInnerType = CTAny
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(AvgOperatorExpression(anInner.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = inner.rewrite(f) match {
+    case inner: AggregationExpressionOperator => f(DistinctOperatorExpression(expression.rewrite(f), inner))
+    case _                            => f(DistinctOperatorExpression(expression.rewrite(f), inner))
+  }
+  override def createAggregationMapper: AggregationMapper = new DistinctMapper(expression, inner.createAggregationMapper)
 
-  override def createAggregationMapper: AggregationMapper = new AvgMapper(anInner)
-
-  override def createAggregationReducer: AggregationReducer = new AvgReducer
+  override def createAggregationReducer: AggregationReducer = new DistinctReducer(inner.createAggregationReducer)
 }
 
-class AvgMapper(value: Expression) extends AggregationMapper {
+class DistinctMapper(value: Expression, inner: AggregationMapper) extends AggregationMapper {
 
-  private var count: Long = 0L
-  private var sum: NumberValue = Values.ZERO_INT
+  private val seen = scala.collection.mutable.Set[AnyValue]()
+  private var seenNull = false
 
-  override def result: AnyValue = VirtualValues.list(longValue(count), sum)
+  override def result: AnyValue = list(list(seen.toArray:_*), inner.result)
 
   override def map(data: MorselExecutionContext,
                    state: OldQueryState): Unit = value(data, state) match {
     case Values.NO_VALUE =>
-    case number: NumberValue =>
-      count += 1
-      sum = sum.plus(number)
+      if (!seenNull) {
+        seenNull = true
+        inner.map(data, state)
+      }
+    case a if !seen(a) =>
+      seen += a
+      inner.map(data, state)
   }
 }
 
-class AvgReducer extends AggregationReducer {
+class DistinctReducer(inner: AggregationReducer) extends AggregationReducer {
 
   private var count: Long = 0L
   private var sum: NumberValue = longValue(0L)
@@ -72,6 +79,10 @@ class AvgReducer extends AggregationReducer {
     case _ =>
   }
 }
+
+
+
+
 
 
 

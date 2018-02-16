@@ -36,7 +36,7 @@ case class CollectOperatorExpression(anInner: Expression) extends AggregationExp
 
   override def expectedInnerType = CTAny
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(CountOperatorExpression(anInner.rewrite(f)))
+  override def rewrite(f: (Expression) => Expression): Expression = f(CollectOperatorExpression(anInner.rewrite(f)))
 
   override def createAggregationMapper: AggregationMapper = new CollectMapper(anInner)
 
