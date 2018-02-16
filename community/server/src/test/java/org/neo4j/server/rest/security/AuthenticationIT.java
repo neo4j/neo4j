@@ -148,9 +148,7 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServer( false );
 
         // Document
-        gen.get()
-                .expectedStatus( 200 )
-                .get( dataURL() );
+        gen.get().expectedStatus( 200 ).get( dataURL() );
     }
 
     @Test
