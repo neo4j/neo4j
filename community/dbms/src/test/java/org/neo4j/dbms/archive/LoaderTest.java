@@ -20,8 +20,9 @@
 package org.neo4j.dbms.archive;
 
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Closeable;
@@ -40,7 +41,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
@@ -195,11 +195,10 @@ public class LoaderTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
     public void shouldGiveAClearErrorMessageIfTheDestinationsParentDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.directory( "subdir/the-destination" ).toPath();
         Files.createDirectories( destination.getParent() );
@@ -215,11 +214,10 @@ public class LoaderTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
     public void shouldGiveAClearErrorMessageIfTheTxLogsParentDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         Path destination = testDirectory.file( "destination" ).toPath();
         Path txLogsDrectory = testDirectory.directory( "subdir/txLogs" ).toPath();

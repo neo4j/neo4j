@@ -19,8 +19,9 @@
  */
 package org.neo4j.dbms.archive;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Closeable;
@@ -38,7 +39,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Collections.emptySet;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -115,10 +115,9 @@ public class DumperTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
     public void shouldGiveAClearErrorMessageIfTheArchivesParentDirectoryIsNotWritable() throws IOException
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         Path directory = testDirectory.directory( "a-directory" ).toPath();
         Path archive = testDirectory.file( "subdir/the-archive.dump" ).toPath();
         Files.createDirectories( archive.getParent() );

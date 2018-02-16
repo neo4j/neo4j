@@ -19,8 +19,9 @@
  */
 package org.neo4j.ssl;
 
-import org.apache.commons.lang.SystemUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.file.Files;
@@ -32,7 +33,6 @@ import javax.annotation.Resource;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assume.assumeTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,10 +43,9 @@ public class SelfSignedCertificatesIT
     public TestDirectory testDirectory;
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     public void createSelfSignedCertificateWithCorrectPermissions() throws Exception
     {
-        assumeTrue( !SystemUtils.IS_OS_WINDOWS );
-
         PkiUtils certificates = new PkiUtils();
         certificates
                 .createSelfSignedCertificate( testDirectory.file( "certificate" ), testDirectory.file( "privateKey" ),

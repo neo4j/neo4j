@@ -19,10 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
@@ -62,7 +63,6 @@ import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -138,10 +138,9 @@ public class DumpCommandTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // Can't reliably create symlinks on windows
     public void shouldHandleDatabaseSymlink() throws Exception
     {
-        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
-
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 
@@ -244,10 +243,9 @@ public class DumpCommandTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // We haven't found a way to reliably tests permissions on Windows
     public void shouldReportAHelpfulErrorIfWeDontHaveWritePermissionsForLock() throws Exception
     {
-        assumeFalse( "We haven't found a way to reliably tests permissions on Windows", SystemUtils.IS_OS_WINDOWS );
-
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               StoreLocker storeLocker = new StoreLocker( fileSystem, databaseDirectory.toFile() ) )
         {
