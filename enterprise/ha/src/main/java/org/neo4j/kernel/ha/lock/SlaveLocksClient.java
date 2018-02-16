@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,9 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongList;
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -250,20 +252,20 @@ class SlaveLocksClient implements Locks.Client
     void acquireDeferredSharedLocks( LockTracer tracer )
     {
         assertNotStopped();
-        Map<ResourceType,PrimitiveLongList> deferredLocksMap = new HashMap<>();
+        Map<ResourceType, MutableLongList> deferredLocksMap = new HashMap<>();
         List<? extends ActiveLock> activeLocks = client.activeLocks()
                         .filter( activeLock -> ActiveLock.SHARED_MODE.equals( activeLock.mode() ) )
                         .filter( this::isLabelOrRelationshipType ).collect( Collectors.toList() );
         for ( ActiveLock activeLock : activeLocks )
         {
-            Function<ResourceType,PrimitiveLongList> listCreator = resourceType -> Primitive.longList();
+            Function<ResourceType, MutableLongList> listCreator = resourceType -> new LongArrayList();
             deferredLocksMap.computeIfAbsent( activeLock.resourceType(), listCreator )
                             .add( activeLock.resourceId() );
         }
         deferredLocksMap.forEach( ( type, ids ) -> lockResourcesOnMaster( tracer, type, ids ) );
     }
 
-    private void lockResourcesOnMaster( LockTracer tracer, ResourceType type, PrimitiveLongList ids )
+    private void lockResourcesOnMaster( LockTracer tracer, ResourceType type, LongList ids )
     {
         long[] resourceIds = ids.toArray();
         try ( LockWaitEvent event = tracer.waitForLock( false, type, resourceIds ) )
