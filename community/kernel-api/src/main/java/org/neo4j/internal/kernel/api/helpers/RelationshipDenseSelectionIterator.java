@@ -66,6 +66,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
         R current = _next;
         if ( !fetchNext() )
         {
+            close();
             _next = null;
         }
 

@@ -67,6 +67,7 @@ public final class RelationshipSparseSelectionIterator<R> extends RelationshipSp
         R current = _next;
         if ( !fetchNext() )
         {
+            close();
             _next = null;
         }
         return current;

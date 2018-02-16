@@ -223,11 +223,6 @@ public class NodeProxy implements Node
         }
     }
 
-    private void assertInUnterminatedTransaction()
-    {
-        spi.assertInUnterminatedTransaction();
-    }
-
     @Override
     public void setProperty( String key, Object value )
     {
