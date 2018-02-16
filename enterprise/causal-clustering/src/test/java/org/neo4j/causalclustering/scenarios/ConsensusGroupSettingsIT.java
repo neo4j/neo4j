@@ -22,28 +22,25 @@ package org.neo4j.causalclustering.scenarios;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.test.causalclustering.ClusterRule;
-import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class ConsensusGroupSettingsIT
 {
-    private final ClusterRule clusterRule = new ClusterRule().withNumberOfCoreMembers( 5 ).withNumberOfReadReplicas( 0 )
-            .withInstanceCoreParam(CausalClusteringSettings.minimum_core_cluster_size_at_formation, value -> "5" )
-            .withInstanceCoreParam( CausalClusteringSettings.minimum_core_cluster_size_at_runtime,value -> "3" )
-            .withInstanceCoreParam( CausalClusteringSettings.leader_election_timeout, value -> "1s" );
-
-    private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 1000, SECONDS ).build();
-
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( clusterRule ).around( timeout );
+    public final ClusterRule clusterRule = new ClusterRule()
+            .withNumberOfCoreMembers( 5 )
+            .withNumberOfReadReplicas( 0 )
+            .withInstanceCoreParam( CausalClusteringSettings.minimum_core_cluster_size_at_formation, value -> "5" )
+            .withInstanceCoreParam( CausalClusteringSettings.minimum_core_cluster_size_at_runtime,value -> "3" )
+            .withInstanceCoreParam( CausalClusteringSettings.leader_election_timeout, value -> "1s" )
+            .withTimeout( 1000, SECONDS );
 
     private Cluster cluster;
 

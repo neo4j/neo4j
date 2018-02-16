@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -35,10 +36,14 @@ import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+/**
+ * Includes a {@link VerboseTimeout} rule with a long default timeout.
+ */
 public class ClusterRule extends ExternalResource
 {
     private final TestDirectory testDirectory;
@@ -55,6 +60,7 @@ public class ClusterRule extends ExternalResource
     private String recordFormat = Standard.LATEST_NAME;
     private IpFamily ipFamily = IPV4;
     private boolean useWildcard;
+    private VerboseTimeout.VerboseTimeoutBuilder timeoutBuilder = new VerboseTimeout.VerboseTimeoutBuilder() .withTimeout( 15, TimeUnit.MINUTES );
 
     public ClusterRule()
     {
@@ -64,6 +70,8 @@ public class ClusterRule extends ExternalResource
     @Override
     public Statement apply( final Statement base, final Description description )
     {
+        Statement timeoutStatement = timeoutBuilder.build().apply( base, description );
+
         Statement testMethod = new Statement()
         {
             @Override
@@ -74,7 +82,7 @@ public class ClusterRule extends ExternalResource
                 String name =
                         description.getMethodName() != null ? description.getMethodName() : description.getClassName();
                 clusterDirectory = testDirectory.directory( name );
-                base.evaluate();
+                timeoutStatement.evaluate();
             }
         };
 
@@ -212,6 +220,12 @@ public class ClusterRule extends ExternalResource
     public ClusterRule useWildcard( boolean useWildcard )
     {
         this.useWildcard = useWildcard;
+        return this;
+    }
+
+    public ClusterRule withTimeout( long timeout, TimeUnit unit )
+    {
+        this.timeoutBuilder = timeoutBuilder.withTimeout( timeout, unit );
         return this;
     }
 }
