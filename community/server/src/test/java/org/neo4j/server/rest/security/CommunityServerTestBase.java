@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.security;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.After;
 
 import java.io.IOException;
 import java.util.Base64;
@@ -33,7 +33,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
 {
     protected CommunityNeoServer server;
 
-    @AfterEach
+    @After
     public void cleanup()
     {
         if ( server != null )
