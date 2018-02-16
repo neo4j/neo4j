@@ -22,6 +22,8 @@ package org.neo4j.store.watch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
@@ -56,11 +58,9 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.index.impl.lucene.explicit.LuceneDataSource.getLuceneIndexStoreDirectory;
@@ -98,10 +98,10 @@ public class FileWatchIT
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     public void notifyAboutStoreFileDeletion() throws Exception
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
-            assumeFalse( IS_OS_WINDOWS );
 
             String fileName = DEFAULT_NAME;
             FileWatcher fileWatcher = getFileWatcher( database );
@@ -216,10 +216,10 @@ public class FileWatchIT
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     public void doNotMonitorTransactionLogFiles() throws InterruptedException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
-            assumeFalse( IS_OS_WINDOWS );
 
             FileWatcher fileWatcher = getFileWatcher( database );
             CheckPointer checkpointer = getCheckpointer( database );
@@ -245,10 +245,10 @@ public class FileWatchIT
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     public void notifyWhenWholeStoreDirectoryRemoved() throws IOException
     {
         assertTimeout( ofMillis( TEST_TIMEOUT ), () -> {
-            assumeFalse( IS_OS_WINDOWS );
 
             String fileName = DEFAULT_NAME;
             FileWatcher fileWatcher = getFileWatcher( database );

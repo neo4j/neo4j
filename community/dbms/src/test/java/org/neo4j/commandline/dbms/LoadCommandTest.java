@@ -19,9 +19,10 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.ByteArrayOutputStream;
@@ -57,7 +58,6 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -124,10 +124,9 @@ public class LoadCommandTest
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS ) // Can't reliably create symlinks on windows
     public void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
-        assumeFalse( "Can't reliably create symlinks on windows", SystemUtils.IS_OS_WINDOWS );
-
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
         Path realDatabaseDir = symDir.resolve( "foo.db" );
 

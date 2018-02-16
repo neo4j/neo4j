@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
 import org.junit.rules.ExpectedException;
@@ -44,7 +45,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
 import static org.neo4j.io.fs.FileUtils.size;
 
@@ -233,23 +233,23 @@ public class FileUtilsTest
     }
 
     @Test
+    @EnabledOnOs( OS.MAC )
     public void allMacsHaveHighIO()
     {
-        assumeTrue( SystemUtils.IS_OS_MAC );
         assertTrue( FileUtils.highIODevice( Paths.get( "." ), false ) );
     }
 
     @Test
+    @EnabledOnOs( OS.WINDOWS )
     public void windowsNeverHaveHighIO()
     {
-        assumeTrue( SystemUtils.IS_OS_WINDOWS );
         assertFalse( FileUtils.highIODevice( Paths.get( "." ), false ) );
     }
 
     @Test
+    @EnabledOnOs( OS.LINUX )
     public void onLinuxDevShmHasHighIO()
     {
-        assumeTrue( SystemUtils.IS_OS_LINUX );
         assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
     }
 

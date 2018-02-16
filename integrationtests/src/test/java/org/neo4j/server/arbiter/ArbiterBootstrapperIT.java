@@ -23,6 +23,8 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
@@ -63,7 +65,6 @@ import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -141,9 +142,9 @@ public class ArbiterBootstrapperIT
     }
 
     @Test
+    @DisabledOnOs( OS.WINDOWS )
     public void willFailJoinIfIncorrectInitialHostsSet() throws Exception
     {
-        assumeFalse( "Cannot kill processes on windows.", SystemUtils.IS_OS_WINDOWS );
         startAndAssertJoined( SHOULD_NOT_JOIN,
                 stringMap(
                         initial_hosts.name(), ":5011",
