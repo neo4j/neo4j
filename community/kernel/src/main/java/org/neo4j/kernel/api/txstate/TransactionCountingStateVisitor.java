@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.txstate;
 
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveIntVisitor;
 import org.neo4j.cursor.Cursor;
@@ -134,7 +133,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
         super.visitNodeLabelChanges( id, added, removed );
     }
 
-    private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long outgoing,
+    private void updateRelationshipsCountsFromDegrees( PrimitiveIntSet labels, int type, long outgoing,
             long incoming )
     {
         labels.visitKeys( label -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );

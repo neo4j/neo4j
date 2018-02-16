@@ -24,10 +24,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
-import org.neo4j.collection.primitive.PrimitiveIntStack;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.Cursor;
@@ -267,14 +265,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    public PrimitiveIntSet nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
     {
-        PrimitiveIntStack keys = new PrimitiveIntStack();
+        final PrimitiveIntSet keys = Primitive.intSet();
         try ( Cursor<PropertyItem> properties = nodeGetProperties( statement, node ) )
         {
             while ( properties.next() )
             {
-                keys.push( properties.get().propertyKeyId() );
+                keys.add( properties.get().propertyKeyId() );
             }
         }
 
@@ -347,15 +345,15 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+    public PrimitiveIntSet relationshipGetPropertyKeys( KernelStatement statement,
             RelationshipItem relationship )
     {
-        PrimitiveIntStack keys = new PrimitiveIntStack();
+        final PrimitiveIntSet keys = Primitive.intSet();
         try ( Cursor<PropertyItem> properties = relationshipGetProperties( statement, relationship ) )
         {
             while ( properties.next() )
             {
-                keys.push( properties.get().propertyKeyId() );
+                keys.add( properties.get().propertyKeyId() );
             }
         }
 

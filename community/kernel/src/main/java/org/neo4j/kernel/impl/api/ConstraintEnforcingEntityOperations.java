@@ -23,7 +23,6 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Iterator;
 
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
@@ -510,7 +509,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
+    public PrimitiveIntSet nodeGetPropertyKeys( KernelStatement statement, NodeItem node )
     {
         return entityReadOperations.nodeGetPropertyKeys( statement, node );
     }
@@ -535,7 +534,7 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
-    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+    public PrimitiveIntSet relationshipGetPropertyKeys( KernelStatement statement,
             RelationshipItem relationship )
     {
         return entityReadOperations.relationshipGetPropertyKeys( statement, relationship );
