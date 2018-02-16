@@ -769,6 +769,7 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
         }
+
         switch ( direction )
         {
         case OUTGOING:

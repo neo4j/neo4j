@@ -30,6 +30,9 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
  */
 public final class RelationshipSelections
 {
+    static final long UNINITIALIZED = -2L;
+    static final long NO_ID = -1L;
+
     private RelationshipSelections()
     {
         throw new UnsupportedOperationException( "Do not instantiate" );

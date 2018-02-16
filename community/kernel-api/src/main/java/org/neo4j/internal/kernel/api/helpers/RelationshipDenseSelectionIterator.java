@@ -30,25 +30,24 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
         implements ResourceIterator<R>
 {
     private RelationshipFactory<R> factory;
-    private R _next;
-    private boolean initialized;
+    private long next;
 
     public RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
     {
         this.factory = factory;
-        this.initialized = false;
+        this.next = RelationshipSelections.UNINITIALIZED;
     }
 
     @Override
     public boolean hasNext()
     {
-        if ( !initialized )
+        if ( next == RelationshipSelections.UNINITIALIZED )
         {
             fetchNext();
-            initialized = true;
+            next = relationshipCursor.relationshipReference();
         }
 
-        if ( _next == null )
+        if ( next == RelationshipSelections.NO_ID )
         {
             close();
             return false;
@@ -63,19 +62,21 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
         {
             throw new NoSuchElementException();
         }
-        R current = _next;
+        R current = factory.relationship( next,
+                                          relationshipCursor.sourceNodeReference(),
+                                          relationshipCursor.label(),
+                                          relationshipCursor.targetNodeReference() );
+
         if ( !fetchNext() )
         {
             close();
-            _next = null;
+            next = RelationshipSelections.NO_ID;
+        }
+        else
+        {
+            next = relationshipCursor.relationshipReference();
         }
 
         return current;
-    }
-
-    @Override
-    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
-    {
-        _next = factory.relationship( id, sourceNode, type, targetNode );
     }
 }

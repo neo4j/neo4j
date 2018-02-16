@@ -65,10 +65,4 @@ public final class RelationshipDenseSelectionCursor extends RelationshipDenseSel
     {
         return relationshipCursor.targetNodeReference();
     }
-
-    @Override
-    protected void setRelationship( long id, long sourceNode, int type, long targetNode )
-    {
-        // nothing to do
-    }
 }
