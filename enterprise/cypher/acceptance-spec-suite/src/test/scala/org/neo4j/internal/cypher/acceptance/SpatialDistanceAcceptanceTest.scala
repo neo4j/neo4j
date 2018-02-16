@@ -72,12 +72,35 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
   }
 
+  test("distance function should work on 3D points") {
+    val result = executeWith(pointConfig,
+      """
+        |WITH point({x: 1.2, y: 3.4, z: 5.6}) as p1, point({x: 1.2, y: 3.4, z: 6.6}) as p2
+        |RETURN distance(p1,p2) as dist
+      """.stripMargin,
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,  // TODO should rather throw error
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "p1", "p2", "dist"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(1)
+  }
+
   test("distance function should not fail if provided with points from different CRS") {
     val localConfig = pointConfig - Configs.OldAndRule
       val res = executeWith(localConfig,
         """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
         |RETURN distance(p1,p2) as dist""".stripMargin)
     res.columnAs[AnyRef]("dist").next() should be (null)
+  }
+
+  test("distance function should return null if provided with points with different dimensions") {
+    val result = executeWith(pointConfig,
+      """WITH point({x: 2.3, y: 4.5}) as p1, point({x: 1.2, y: 3.4, z: 5.6}) as p2
+        |RETURN distance(p1,p2) as dist""".stripMargin,
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners // TODO should rather throw error
+    )
+    val dist = result.columnAs[Any]("dist").next()
+    assert(dist == null)
   }
 
   test("distance function should measure distance from Copenhagen train station to Neo4j in Malmö") {
@@ -131,6 +154,11 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     result = executeWith(pointConfig,
       "RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
+  }
+
+  test("distance function should fail on wrong type") {
+    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
+    failWithError(config, "RETURN distance(1, 2) as dist", List("Type mismatch: expected Point or Geometry but was Integer"))
   }
 
   test("points with distance query and mixed crs") {

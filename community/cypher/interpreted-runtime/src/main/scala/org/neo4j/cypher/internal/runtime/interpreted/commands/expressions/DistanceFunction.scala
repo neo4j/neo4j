@@ -64,14 +64,17 @@ trait DistanceCalculator extends PartialFunction[(PointValue, PointValue), Doubl
 object CartesianCalculator extends DistanceCalculator {
   override def isDefinedAt(points: (PointValue, PointValue)): Boolean =
     points._1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode() &&
-      points._2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode()
+      points._2.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.Cartesian.getCode() &&
+      points._1.coordinate().length == points._2.coordinate().length
 
   override def apply(points: (PointValue, PointValue)): Double = {
     val p1Coordinates = points._1.coordinate()
     val p2Coordinates = points._2.coordinate()
-
-    sqrt((p2Coordinates(0) - p1Coordinates(0)) * (p2Coordinates(0) - p1Coordinates(0)) +
-      (p2Coordinates(1) - p1Coordinates(1)) * (p2Coordinates(1) - p1Coordinates(1)))
+    val sqrSum = p1Coordinates.zip(p2Coordinates).foldLeft(0.0) { (sum,pair) =>
+      val diff = pair._1 - pair._2
+      sum + diff * diff
+    }
+    sqrt(sqrSum)
   }
 
   override def boundingBox(p: PointValue, distance: Double): (PointValue, PointValue) = {

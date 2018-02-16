@@ -48,6 +48,15 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5))))
   }
 
+  test("point function should work with literal map and 3D cartesian coordinates") {
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point",
+      expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5, 6.7))))
+  }
+
   test("point function should work with literal map and geographic coordinates") {
     val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
@@ -226,6 +235,37 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
 
+  test("3D point should be assignable to node property") {
+    // Given
+    createLabeledNode("Place")
+
+    // When
+    val config = pointConfig - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
+    val result = executeWith(config, "MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))))
+  }
+
+  test("3D point should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
+    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))
+    // And CRS names should equal
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/7203/")
+  }
+
   // TODO add 3D here too
   test("inequality on cartesian points") {
     // case same point
@@ -281,7 +321,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   private def shouldCompareLike(a: String, b: String, aBiggerB: Any, aSmallerB: Any) = {
     val query =
       s"""WITH $a as a, $b as b
-        |RETURN a > b, a < b
+         |RETURN a > b, a < b
       """.stripMargin
 
     val pointConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners

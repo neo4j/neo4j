@@ -254,30 +254,31 @@ public final class ValueUtils
         return map( mapValues( map ) );
     }
 
-    public static PointValue fromMap( MapValue map )
+    public static PointValue pointFromMap( MapValue map )
     {
         if ( map.containsKey( "x" ) && map.containsKey( "y" ) )
         {
             double x = ((NumberValue) map.get( "x" )).doubleValue();
             double y = ((NumberValue) map.get( "y" )).doubleValue();
-            if ( !map.containsKey( "crs" ) )
+            double[] coordinates = map.containsKey( "z" ) ? new double[]{x, y, ((NumberValue) map.get( "z" )).doubleValue()} : new double[]{x, y};
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.Cartesian;
+            if ( map.containsKey( "crs" ) )
             {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
+                TextValue crsName = (TextValue) map.get( "crs" );
+                if ( crsName.stringValue().equals( CoordinateReferenceSystem.Cartesian.getName() ) )
+                {
+                    crs = CoordinateReferenceSystem.Cartesian;
+                }
+                else if ( crsName.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
+                {
+                    crs = CoordinateReferenceSystem.WGS84;
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unknown coordinate reference system: " + crsName.stringValue() );
+                }
             }
-
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.Cartesian, x, y );
-            }
-            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.getName() ) )
-            {
-                return Values.pointValue( CoordinateReferenceSystem.WGS84, x, y );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crs.stringValue() );
-            }
+            return Values.pointValue( crs, coordinates );
         }
         else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
         {

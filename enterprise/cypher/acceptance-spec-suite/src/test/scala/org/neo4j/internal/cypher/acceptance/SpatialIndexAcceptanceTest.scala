@@ -201,12 +201,7 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
   test("indexed point should be readable from node property") {
     // Given
-    graph.inTx {
-      graph.schema().indexFor(Label.label("Place")).on("location").create()
-    }
-    graph.inTx {
-      graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS)
-    }
+    graph.createIndex("Place", "location")
     createLabeledNode("Place")
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
@@ -228,12 +223,7 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
   test("with multiple indexed points only exact match should be returned") {
     // Given
-    graph.inTx {
-      graph.schema().indexFor(Label.label("Place")).on("location").create()
-    }
-    graph.inTx {
-      graph.schema().awaitIndexesOnline(5, TimeUnit.SECONDS)
-    }
+    graph.createIndex("Place", "location")
     createLabeledNode("Place")
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 40.7, longitude: -35.78, crs: 'WGS-84'})")
