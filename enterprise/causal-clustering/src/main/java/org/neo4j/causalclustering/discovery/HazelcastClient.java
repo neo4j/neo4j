@@ -83,15 +83,15 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.myself = myself;
         this.groups = config.get( CausalClusteringSettings.server_groups );
-        this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod );
+        this.topologyServiceRetryStrategy = resolveStrategy( refreshPeriod, logProvider );
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis )
+    private static TopologyServiceRetryStrategy resolveStrategy( long refreshPeriodMillis, LogProvider logProvider )
     {
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     @Override

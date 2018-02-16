@@ -65,7 +65,7 @@ public class ClusteringModule
 
         topologyService = discoveryServiceFactory
                 .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
-                        userLogProvider, hostnameResolver, resolveStrategy( config ) );
+                        userLogProvider, hostnameResolver, resolveStrategy( config, logProvider ) );
 
         life.add( topologyService );
 
@@ -82,13 +82,13 @@ public class ClusteringModule
                 () -> sleep( 100 ), 300_000, coreBootstrapper );
     }
 
-    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config, LogProvider logProvider )
     {
         long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         int pollingFrequencyWithinRefreshWindow = 2;
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
-        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries, logProvider );
     }
 
     public CoreTopologyService topologyService()
