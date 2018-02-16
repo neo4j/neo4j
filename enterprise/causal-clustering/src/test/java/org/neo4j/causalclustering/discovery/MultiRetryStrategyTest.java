@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
 import org.neo4j.logging.NullLogProvider;
@@ -58,12 +59,9 @@ public class MultiRetryStrategyTest
         MultiRetryStrategy<Integer,Integer> subject = new MultiRetryStrategy<>( 0, retries, NullLogProvider.getInstance(), countingSleeper );
 
         // when
-        long startTime = System.currentTimeMillis();
         Integer result = subject.apply( 3, Function.identity(), ALWAYS_VALID );
-        long endTime = System.currentTimeMillis();
 
         // then
-        long duration = endTime - startTime;
         assertEquals( 0, countingSleeper.invocationCount() );
         assertEquals( "Function identity should be used to retrieve the expected value", 3, result.intValue() );
     }
@@ -97,12 +95,12 @@ public class MultiRetryStrategyTest
         assertEquals( 1, countingSleeper.invocationCount() );
     }
 
-    private class CountingSleeper implements Consumer<Long>
+    private class CountingSleeper implements LongConsumer
     {
         private int counter;
 
         @Override
-        public void accept( Long duration )
+        public void accept( long l )
         {
             counter++;
         }

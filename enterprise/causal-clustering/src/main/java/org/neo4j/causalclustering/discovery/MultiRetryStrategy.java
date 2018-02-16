@@ -19,8 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
 import org.neo4j.logging.Log;
@@ -39,14 +39,14 @@ public class MultiRetryStrategy<INPUT, OUTPUT> implements RetryStrategy<INPUT,OU
     private final long delayInMillis;
     private final long retries;
     private final LogProvider logProvider;
-    private final Consumer<Long> sleeper;
+    private final LongConsumer sleeper;
 
     /**
      * @param delayInMillis number of milliseconds between each attempt at getting the desired result
      * @param retries the number of attempts to perform before giving up
      * @param logProvider {@see LogProvider}
      */
-    public MultiRetryStrategy( long delayInMillis, long retries, LogProvider logProvider, Consumer<Long> sleeper )
+    public MultiRetryStrategy( long delayInMillis, long retries, LogProvider logProvider, LongConsumer sleeper )
     {
         this.delayInMillis = delayInMillis;
         this.retries = retries;
