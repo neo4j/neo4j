@@ -287,7 +287,7 @@ public class Config implements DiagnosticsProvider, Configuration
         public Config build() throws InvalidSettingException
         {
             List<LoadableConfig> loadableConfigs =
-                    Optional.ofNullable( settingsClasses ).orElse( LoadableConfig.allConfigClasses() );
+                    Optional.ofNullable( settingsClasses ).orElseGet( LoadableConfig::allConfigClasses );
 
             // If reading from a file, make sure we always have a neo4j_home
             if ( configFile != null && !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
@@ -558,7 +558,7 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return a configured setting
      */
-    public Optional<?> getValue( @Nonnull String key )
+    public Optional<Object> getValue( @Nonnull String key )
     {
         return configOptions.stream()
                 .map( it -> it.asConfigValues( params ) )
@@ -566,7 +566,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 .filter( it -> it.name().equals( key ) )
                 .map( ConfigValue::value )
                 .findFirst()
-                .orElse( Optional.empty() );
+                .orElseGet( Optional::empty );
     }
 
     /**
@@ -833,7 +833,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream().map( BoltConnector::new ).filter(
-                c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) );
+                c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT == c.type.apply( params::get ) );
     }
 
     /**
@@ -875,7 +875,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 .map( Connector::new )
                 .filter( c -> c.group.groupKey.equalsIgnoreCase( "http" ) ||
                         c.group.groupKey.equalsIgnoreCase( "https" ) ||
-                        HTTP.equals( c.type.apply( params::get ) ) )
+                        HTTP == c.type.apply( params::get ) )
                 .map( c ->
                 {
                     final String name = c.group.groupKey;

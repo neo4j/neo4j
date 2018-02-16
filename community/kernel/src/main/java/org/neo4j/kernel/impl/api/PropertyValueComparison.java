@@ -27,17 +27,9 @@ import static java.lang.String.format;
 
 public class PropertyValueComparison
 {
-    static final Object LOWEST_OBJECT = new Object()
-    {
-        @Override
-        public String toString()
-        {
-            return "";
-        }
-    };
-
     private PropertyValueComparison()
     {
+        throw new AssertionError( "no instance" );
     }
 
     // DO NOT CHANGE the sort order without considering the implications for TxState and lucene!

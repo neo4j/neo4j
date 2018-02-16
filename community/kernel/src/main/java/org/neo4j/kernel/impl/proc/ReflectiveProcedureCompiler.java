@@ -271,7 +271,7 @@ class ReflectiveProcedureCompiler
         Mode mode = procedure.mode();
         if ( method.isAnnotationPresent( PerformsWrites.class ) )
         {
-            if ( !procedure.mode().equals( org.neo4j.procedure.Mode.DEFAULT ) )
+            if ( procedure.mode() != org.neo4j.procedure.Mode.DEFAULT )
             {
                 throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                         "Conflicting procedure annotation, cannot use PerformsWrites and mode" );

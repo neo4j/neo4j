@@ -130,7 +130,7 @@ public interface Locks
         /** For slave transactions, this tracks an identifier for the lock session running on the master */
         int getLockSessionId();
 
-        Stream<? extends ActiveLock> activeLocks();
+        Stream<ActiveLock> activeLocks();
 
         long activeLockCount();
     }

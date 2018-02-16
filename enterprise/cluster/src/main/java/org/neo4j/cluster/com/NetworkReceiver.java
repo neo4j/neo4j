@@ -333,16 +333,16 @@ public class NetworkReceiver
 
             final Message message = (Message) event.getMessage();
 
-            // Fix FROM header since sender cannot know it's correct IP/hostname
+            // Fix HEADER_FROM header since sender cannot know it's correct IP/hostname
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
-            URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
+            URI fromHeader = URI.create( message.getHeader( Message.HEADER_FROM ) );
             if ( remote.getAddress() instanceof Inet6Address )
             {
                 remoteAddress = wrapAddressForIPv6Uri( remoteAddress );
             }
             fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
-            message.setHeader( Message.FROM, fromHeader.toASCIIString() );
+            message.setHeader( Message.HEADER_FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );
             monitor.receivedMessage( message );

@@ -31,7 +31,7 @@ import org.neo4j.function.Factory;
  */
 public class TaskCoordinator implements Cancelable, Factory<TaskControl>
 {
-    private static final AtomicIntegerFieldUpdater<TaskCoordinator> TASKS =
+    private static final AtomicIntegerFieldUpdater<TaskCoordinator> TASKS_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater( TaskCoordinator.class, "tasks" );
     private volatile boolean cancelled;
     @SuppressWarnings( "UnusedDeclaration"/*updated through the updater*/ )
@@ -66,7 +66,7 @@ public class TaskCoordinator implements Cancelable, Factory<TaskControl>
         {
             throw new IllegalStateException( "This manager has already been cancelled." );
         }
-        TASKS.incrementAndGet( this );
+        TASKS_UPDATER.incrementAndGet( this );
         return new TaskControl()
         {
             private volatile boolean closed;
@@ -77,7 +77,7 @@ public class TaskCoordinator implements Cancelable, Factory<TaskControl>
                 if ( !closed )
                 {
                     closed = true;
-                    TASKS.decrementAndGet( TaskCoordinator.this );
+                    TASKS_UPDATER.decrementAndGet( TaskCoordinator.this );
                 }
             }
 

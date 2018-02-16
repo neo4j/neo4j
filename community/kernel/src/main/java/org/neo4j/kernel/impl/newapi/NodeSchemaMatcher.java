@@ -35,11 +35,9 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
  */
 public class NodeSchemaMatcher
 {
-    private final Read read;
 
     public NodeSchemaMatcher( Read read )
     {
-        this.read = read;
     }
 
     /**

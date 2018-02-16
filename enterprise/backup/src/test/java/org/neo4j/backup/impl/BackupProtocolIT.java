@@ -75,7 +75,7 @@ public class BackupProtocolIT
     private void shouldGatherForensicsInFullBackupRequest( boolean forensics )
     {
         // GIVEN
-        Response<Void> response = Response.EMPTY;
+        Response<Void> response = Response.empty();
         StoreId storeId = response.getStoreId();
         String host = "localhost";
         int port = PortAuthority.allocatePort();
@@ -118,7 +118,7 @@ public class BackupProtocolIT
         {
             this.receivedForensics = forensics;
             writer.close();
-            return Response.EMPTY;
+            return Response.empty();
         }
 
         @Override

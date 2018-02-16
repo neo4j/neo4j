@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +190,7 @@ public class DataFactories
         private void validateHeader( Entry[] entries )
         {
             Map<String,Entry> properties = new HashMap<>();
-            Map<Type,Entry> singletonEntries = new HashMap<>();
+            EnumMap<Type,Entry> singletonEntries = new EnumMap<>( Type.class );
             for ( Entry entry : entries )
             {
                 switch ( entry.type() )

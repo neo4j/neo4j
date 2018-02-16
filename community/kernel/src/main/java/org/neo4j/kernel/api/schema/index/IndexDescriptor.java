@@ -126,7 +126,7 @@ public class IndexDescriptor implements LabelSchemaSupplier
     @Override
     public boolean equals( Object o )
     {
-        if ( o != null && o instanceof IndexDescriptor )
+        if ( o instanceof IndexDescriptor )
         {
             IndexDescriptor that = (IndexDescriptor)o;
             return this.type() == that.type() && this.schema().equals( that.schema() );

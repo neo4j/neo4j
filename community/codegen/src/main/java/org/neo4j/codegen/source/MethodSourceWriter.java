@@ -35,29 +35,24 @@ import org.neo4j.codegen.TypeReference;
 
 class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
 {
-    private static final Runnable BOTTOM = () ->
-    {
-        throw new IllegalStateException( "Popped too many levels!" );
-    };
-    private static final Runnable LEVEL = () ->
-    {
-    };
+    private static final Runnable BOTTOM = () -> { throw new IllegalStateException( "Popped too many levels!" ); };
+    private static final Runnable LEVEL = () -> {};
     private static final String INDENTATION = "    ";
     private final StringBuilder target;
     private final ClassSourceWriter classSourceWriter;
-    private final Deque<Runnable> level = new LinkedList<>();
+    private final Deque<Runnable> levels = new LinkedList<>();
 
     MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
     {
         this.target = target;
         this.classSourceWriter = classSourceWriter;
-        this.level.push( BOTTOM );
-        this.level.push( LEVEL );
+        this.levels.push( BOTTOM );
+        this.levels.push( LEVEL );
     }
 
     private StringBuilder indent()
     {
-        for ( int level = this.level.size(); level-- > 0; )
+        for ( int level = this.levels.size(); level-- > 0; )
         {
             target.append( INDENTATION );
         }
@@ -72,7 +67,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void done()
     {
-        if ( level.size() != 1 )
+        if ( levels.size() != 1 )
         {
             throw new IllegalStateException( "unbalanced blocks!" );
         }
@@ -142,7 +137,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
-        level.push( LEVEL );
+        levels.push( LEVEL );
     }
 
     @Override
@@ -152,14 +147,14 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
         test.accept( this );
         append( " )\n" );
         indent().append( "{\n" );
-        level.push( LEVEL );
+        levels.push( LEVEL );
     }
 
     @Override
     public void beginBlock()
     {
         indent().append( "{\n" );
-        level.push( LEVEL );
+        levels.push( LEVEL );
     }
 
     @Override
@@ -168,18 +163,18 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
 
         indent().append( "try\n" );
         indent().append( "{\n" );
-        level.push( LEVEL );
+        levels.push( LEVEL );
         body.accept( block );
-        level.pop();
+        levels.pop();
         indent().append( "}\n" );
         indent().append( "catch ( " )
                 .append( exception.type().fullName() ).append( " " )
                 .append( exception.name() )
                 .append( " )\n" );
         indent().append( "{\n" );
-        level.push( LEVEL );
+        levels.push( LEVEL );
         handler.accept( block );
-        level.pop();
+        levels.pop();
         indent().append( "}\n" );
     }
 
@@ -194,7 +189,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void endBlock()
     {
-        Runnable action = level.pop();
+        Runnable action = levels.pop();
         indent().append( "}\n" );
         action.run();
     }

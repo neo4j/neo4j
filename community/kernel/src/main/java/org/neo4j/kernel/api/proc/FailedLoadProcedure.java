@@ -34,6 +34,6 @@ public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

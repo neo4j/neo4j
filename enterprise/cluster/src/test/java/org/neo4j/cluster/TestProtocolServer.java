@@ -137,7 +137,7 @@ public class TestProtocolServer
         @Override
         public boolean process( Message<? extends MessageType> message )
         {
-            message.setHeader( Message.FROM, serverUri.toASCIIString() );
+            message.setHeader( Message.HEADER_FROM, serverUri.toASCIIString() );
             messages.add( message );
             return true;
         }

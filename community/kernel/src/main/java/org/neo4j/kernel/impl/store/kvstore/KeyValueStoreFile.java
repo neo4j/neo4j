@@ -28,8 +28,8 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.buffer;
 import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.compare;
+import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.newBuffer;
 
 /**
  * Stores Key/Value pairs sorted by the key in unsigned big-endian order.
@@ -75,9 +75,9 @@ public class KeyValueStoreFile implements Closeable
      */
     public boolean scan( SearchKey search, KeyValueVisitor visitor ) throws IOException
     {
-        BigEndianByteArrayBuffer searchKey = buffer( keySize );
-        BigEndianByteArrayBuffer key = buffer( keySize );
-        BigEndianByteArrayBuffer value = buffer( valueSize );
+        BigEndianByteArrayBuffer searchKey = newBuffer( keySize );
+        BigEndianByteArrayBuffer key = newBuffer( keySize );
+        BigEndianByteArrayBuffer value = newBuffer( valueSize );
         search.searchKey( searchKey );
         int page = findPage( searchKey, pageCatalogue );
         if ( page < 0 || (page >= pageCatalogue.length / (keySize * 2)) )

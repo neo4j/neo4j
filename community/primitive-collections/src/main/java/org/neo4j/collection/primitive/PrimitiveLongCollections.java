@@ -58,6 +58,7 @@ public class PrimitiveLongCollections
 
     private PrimitiveLongCollections()
     {
+        throw new AssertionError( "no instance" );
     }
 
     public static PrimitiveLongIterator iterator( final long... items )

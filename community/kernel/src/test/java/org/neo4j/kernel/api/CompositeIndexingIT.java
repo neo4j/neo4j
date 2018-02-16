@@ -29,7 +29,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -50,7 +49,6 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.values.storable.Values;
@@ -65,8 +63,7 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
 {
-    public static final int LABEL_ID = 1;
-    private final DefaultCursors cursors = new DefaultCursors();
+    private static final int LABEL_ID = 1;
 
     @ClassRule
     public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();

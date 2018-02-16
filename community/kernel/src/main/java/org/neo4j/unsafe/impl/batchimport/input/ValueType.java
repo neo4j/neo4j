@@ -318,7 +318,7 @@ public abstract class ValueType
         return stringType;
     }
 
-    public Class<?> componentClass()
+    private Class<?> componentClass()
     {
         return classes[0];
     }

@@ -97,8 +97,8 @@ public class StateMachineProxyFactory
             if ( me != null )
             {
                 message.
-                    setHeader( Message.CONVERSATION_ID, conversationId ).
-                    setHeader( Message.CREATED_BY,me.toString() );
+                    setHeader( Message.HEADER_CONVERSATION_ID, conversationId ).
+                    setHeader( Message.HEADER_CREATED_BY,me.toString() );
             }
 
             if ( method.getReturnType().equals( Void.TYPE ) )
@@ -127,9 +127,9 @@ public class StateMachineProxyFactory
     {
         if ( !responseFutureMap.isEmpty() )
         {
-            if ( !message.hasHeader( Message.TO ) )
+            if ( !message.hasHeader( Message.HEADER_TO ) )
             {
-                String conversationId = message.getHeader( Message.CONVERSATION_ID );
+                String conversationId = message.getHeader( Message.HEADER_CONVERSATION_ID );
                 ResponseFuture future = responseFutureMap.get( conversationId );
                 if ( future != null )
                 {

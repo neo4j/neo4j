@@ -31,7 +31,7 @@ public class SpatialLayoutUnique extends SpatialLayout
     private static final String IDENTIFIER_NAME = "UPI";
     private static final int MAJOR_VERSION = 0;
     private static final int MINOR_VERSION = 1;
-    public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+    private static final long LAYOUT_IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     SpatialLayoutUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
     {
@@ -41,7 +41,7 @@ public class SpatialLayoutUnique extends SpatialLayout
     @Override
     public long identifier()
     {
-        return IDENTIFIER;
+        return LAYOUT_IDENTIFIER;
     }
 
     @Override

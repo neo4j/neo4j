@@ -39,12 +39,12 @@ public class IndexProviderStore
 
     private final long creationTime;
     private final long randomIdentifier;
-    private long version;
+    private volatile long version;
     private final long indexVersion;
 
     private final StoreChannel fileChannel;
     private final ByteBuffer buf = ByteBuffer.allocate( RECORD_SIZE * RECORD_COUNT );
-    private long lastCommittedTx;
+    private volatile long lastCommittedTx;
     private final File file;
     private final Random random;
 
@@ -154,19 +154,9 @@ public class IndexProviderStore
             throw new IllegalArgumentException( file + " already exist" );
         }
 
-        StoreChannel fileChannel = null;
-        try
+        try ( StoreChannel fileChannel = fileSystem.open( file, OpenMode.READ_WRITE ) )
         {
-            fileChannel = fileSystem.open( file, OpenMode.READ_WRITE );
-            write( fileChannel, System.currentTimeMillis(), random.nextLong(),
-                    0, 1, indexVersion );
-        }
-        finally
-        {
-            if ( fileChannel != null )
-            {
-                fileChannel.close();
-            }
+            write( fileChannel, System.currentTimeMillis(), random.nextLong(), 0, 1, indexVersion );
         }
     }
 
@@ -191,11 +181,6 @@ public class IndexProviderStore
         return creationTime;
     }
 
-    public long getRandomNumber()
-    {
-        return randomIdentifier;
-    }
-
     public long getVersion()
     {
         return version;
@@ -204,14 +189,6 @@ public class IndexProviderStore
     public long getIndexVersion()
     {
         return indexVersion;
-    }
-
-    public synchronized long incrementVersion()
-    {
-        long current = getVersion();
-        version++;
-        writeOut();
-        return current;
     }
 
     public synchronized void setVersion( long version )

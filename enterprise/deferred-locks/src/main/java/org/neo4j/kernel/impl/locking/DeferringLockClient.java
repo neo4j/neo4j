@@ -184,9 +184,9 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
-    public Stream<? extends ActiveLock> activeLocks()
+    public Stream<ActiveLock> activeLocks()
     {
-        return locks.keySet().stream();
+        return locks.keySet().stream().map( ActiveLock.class::cast );
     }
 
     @Override

@@ -26,7 +26,7 @@ import java.util.Comparator;
  */
 public class NoneStrictMath
 {
-    public static double EPSILON = 1.0E-8;
+    public static final double EPSILON = 1.0E-8;
 
     private NoneStrictMath()
     {

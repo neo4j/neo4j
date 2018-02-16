@@ -132,7 +132,7 @@ public class BuiltInDbmsProcedures
         }
     }
 
-    public class StringResult
+    public static class StringResult
     {
         public final String value;
 

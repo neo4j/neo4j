@@ -212,7 +212,7 @@ public enum ElectionState
                                 {
                                     List<InstanceId> aliveInstances = Iterables.asList( context.getAlive() );
                                     Collections.sort( aliveInstances );
-                                    outgoing.offer( message.setHeader( Message.TO,
+                                    outgoing.offer( message.setHeader( Message.HEADER_TO,
                                             context.getUriForId( firstOrNull( aliveInstances ) ).toString() ) );
                                 }
                             }
@@ -243,7 +243,7 @@ public enum ElectionState
                                     context.voted( data.getRole(), data.getInstanceId(), data.getElectionCredentials(),
                                             version );
 
-                            String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
+                            String voter = message.hasHeader( Message.HEADER_FROM ) ? message.getHeader( Message.HEADER_FROM ) : "I";
                             log.debug( voter + " voted " + data + " which i " +
                                     ( accepted ? "accepted" : "did not accept" ) );
 

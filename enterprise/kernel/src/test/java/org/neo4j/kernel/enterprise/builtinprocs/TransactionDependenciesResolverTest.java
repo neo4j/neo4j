@@ -192,7 +192,7 @@ public class TransactionDependenciesResolverTest
         }
 
         @Override
-        public Stream<? extends ActiveLock> activeLocks()
+        public Stream<ActiveLock> activeLocks()
         {
             return locks.stream();
         }

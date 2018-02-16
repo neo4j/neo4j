@@ -24,8 +24,9 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -195,7 +196,7 @@ public class SslPolicyLoader
             X509Certificate[] keyCertChain;
             File keyCertChainFile = config.get( policyConfig.public_certificate );
 
-            if ( !privateKeyFile.exists() && !keyCertChainFile.exists() && allowKeyGeneration )
+            if ( allowKeyGeneration && !privateKeyFile.exists() && !keyCertChainFile.exists() )
             {
                 log.info( format( "Generating key and self-signed certificate for SSL policy '%s'", policyName ) );
                 String hostname = config.get( default_advertised_address );
@@ -268,7 +269,7 @@ public class SslPolicyLoader
 
         for ( File crl : revocationFiles )
         {
-            try ( FileInputStream input = new FileInputStream( crl ) )
+            try ( InputStream input = Files.newInputStream( crl.toPath() ) )
             {
                 crls.addAll( (Collection<X509CRL>) certificateFactory.generateCRLs( input ) );
             }
@@ -338,7 +339,7 @@ public class SslPolicyLoader
         for ( File trustedCertFile : trustedCertFiles )
         {
             CertificateFactory certificateFactory = CertificateFactory.getInstance( "X.509" );
-            try ( FileInputStream input = new FileInputStream( trustedCertFile ) )
+            try ( InputStream input = Files.newInputStream( trustedCertFile.toPath() ) )
             {
                 while ( input.available() > 0 )
                 {

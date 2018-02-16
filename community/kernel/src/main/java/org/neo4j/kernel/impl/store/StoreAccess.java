@@ -187,25 +187,6 @@ public class StoreAccess
         return counts;
     }
 
-    protected RecordStore<?>[] allStores()
-    {
-        if ( propStore == null )
-        {
-            // for when the property store isn't available (e.g. because the contained data in very sensitive)
-            return new RecordStore<?>[]{ // no property stores
-                    nodeStore, relStore,
-                    relationshipTypeTokenStore, relationshipTypeNameStore,
-                    labelTokenStore, labelNameStore, nodeDynamicLabelStore
-            };
-        }
-        return new RecordStore<?>[]{
-                schemaStore, nodeStore, relStore, propStore, stringStore, arrayStore,
-                relationshipTypeTokenStore, propertyKeyTokenStore, labelTokenStore,
-                relationshipTypeNameStore, propertyKeyNameStore, labelNameStore,
-                nodeDynamicLabelStore
-        };
-    }
-
     private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )
     {
         return new RecordStore.Delegator<DynamicRecord>( store )

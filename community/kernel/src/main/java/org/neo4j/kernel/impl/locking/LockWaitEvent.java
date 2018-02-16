@@ -24,7 +24,5 @@ public interface LockWaitEvent extends AutoCloseable
     @Override
     void close();
 
-    LockWaitEvent NONE = () ->
-    {
-    };
+    LockWaitEvent NONE = () -> {};
 }

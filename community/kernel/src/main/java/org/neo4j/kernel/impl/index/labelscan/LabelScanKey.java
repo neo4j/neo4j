@@ -45,14 +45,14 @@ class LabelScanKey
      * @param idRange node idRange for this key.
      * @return this key instance, for convenience.
      */
-    LabelScanKey set( int labelId, long idRange )
+    final LabelScanKey set( int labelId, long idRange )
     {
         this.labelId = labelId;
         this.idRange = idRange;
         return this;
     }
 
-    void clear()
+    final void clear()
     {
         set( -1, -1 );
     }

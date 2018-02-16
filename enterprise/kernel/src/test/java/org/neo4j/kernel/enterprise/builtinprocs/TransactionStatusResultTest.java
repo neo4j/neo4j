@@ -180,7 +180,7 @@ public class TransactionStatusResultTest
         }
 
         @Override
-        public Stream<? extends ActiveLock> activeLocks()
+        public Stream<ActiveLock> activeLocks()
         {
             return Stream.of( ActiveLock.sharedLock( ResourceTypes.NODE, 3 ) );
         }

@@ -81,7 +81,7 @@ public enum AcceptorState
                             {
                                 // Optimization - explicit reject
                                 context.getLog( AcceptorState.class ).debug("Rejecting prepare from "
-                                        + message.getHeader( Message.FROM ) + " for instance "
+                                        + message.getHeader( Message.HEADER_FROM ) + " for instance "
                                         + message.getHeader( InstanceId.INSTANCE ) + " and ballot "
                                         + incomingState.getBallot() + " (i had a prepare state ballot = "
                                         + localState.getBallot() + ")" );

@@ -95,8 +95,8 @@ public class HttpConnector extends Connector
     {
         NONE( "http", 7474 ), TLS( "https", 7473 );
 
-        final String uriScheme;
-        final int defaultPort;
+        public final String uriScheme;
+        public final int defaultPort;
 
         Encryption( String uriScheme, int defaultPort )
         {

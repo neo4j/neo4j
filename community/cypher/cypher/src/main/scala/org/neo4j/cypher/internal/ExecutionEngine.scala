@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.kernel.api.security.AccessMode
-import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}

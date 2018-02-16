@@ -33,6 +33,6 @@ public class FailedLoadAggregatedFunction extends CallableUserAggregationFunctio
     public Aggregator create( Context ctx ) throws ProcedureException
     {
         throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+                signature().description().orElse( "Failed to load " + signature().name() ) );
     }
 }

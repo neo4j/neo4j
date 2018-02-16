@@ -55,7 +55,7 @@ public abstract class KernelExtensionUtil
                 {
                     result.append( separator )
                             .append( "Listing service files and kernel extensions where possible in " )
-                            .append( servicesDir ).append( ":" );
+                            .append( servicesDir ).append( ':' );
                     File[] files = servicesDir.listFiles();
                     if ( files != null )
                     {
@@ -88,7 +88,7 @@ public abstract class KernelExtensionUtil
             while ( (line = reader.readLine()) != null )
             {
                 boolean exists = tryLoadClass( line );
-                to.append( separator ).append( line ).append( " (" ).append( exists ? "exists" : "DOES NOT exist" ).append( ")" );
+                to.append( separator ).append( line ).append( " (" ).append( exists ? "exists" : "DOES NOT exist" ).append( ')' );
             }
         }
         catch ( IOException e )

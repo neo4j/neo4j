@@ -121,7 +121,7 @@ public abstract class Service
     private static final boolean printServiceLoaderStackTraces =
             flag( Service.class, "printServiceLoaderStackTraces", false );
 
-    final Set<String> keys;
+    private final Set<String> keys;
 
     /**
      * Designates that a class implements the specified service and should be
@@ -269,7 +269,7 @@ public abstract class Service
     {
         return () -> new PrefetchingIterator<T>()
         {
-            final Iterator<T> iterator = iterable.iterator();
+            private final Iterator<T> iterator = iterable.iterator();
 
             @Override
             protected T fetchNextOrNull()

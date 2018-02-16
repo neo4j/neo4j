@@ -326,7 +326,7 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws E
+    public final void writePoint( CoordinateReferenceSystem crs, double[] coordinate )
     {
         writeValue( newPoint( crs, coordinate ) );
     }

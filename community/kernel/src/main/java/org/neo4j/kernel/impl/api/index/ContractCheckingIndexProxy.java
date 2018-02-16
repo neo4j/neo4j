@@ -140,7 +140,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
             return super.drop();
         }
 
-        if ( State.STARTING.equals( state.get() ) )
+        if ( State.STARTING == state.get() )
         {
             throw new IllegalStateException( "Concurrent drop while creating index" );
         }
@@ -187,12 +187,12 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
     private void openCall( String name )
     {
         // do not open call unless we are in STARTED
-        if ( State.STARTED.equals( state.get() ) )
+        if ( State.STARTED == state.get() )
         {
             // increment openCalls for closers to see
             openCalls.incrementAndGet();
             // ensure that the previous increment actually gets seen by closers
-            if ( State.CLOSED.equals( state.get() ) )
+            if ( State.CLOSED == state.get() )
             {
                 throw new IllegalStateException( "Cannot call " + name + "() after index has been closed" );
             }
