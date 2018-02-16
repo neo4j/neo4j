@@ -241,6 +241,47 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
   }
 
+  test("3D indexed point should be readable from node property") {
+    // Given
+    graph.createIndex("Place", "location")
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
+
+    // When
+    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners,
+      "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "point")
+        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_4 - Configs.Version3_3))
+
+    // Then
+    val point = result.columnAs("point").toList.head.asInstanceOf[Point]
+    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))
+    // And CRS names should equal
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/7203/")
+  }
+
+  test("with multiple 3D indexed points only exact match should be returned") {
+    // Given
+    graph.createIndex("Place", "location")
+    createLabeledNode("Place")
+    graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
+    graph.execute("CREATE (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.601})")
+
+    val configuration = TestConfiguration(Versions(Versions.V3_3, Versions.V3_4, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default))
+    // When
+    val result = executeWith(configuration,
+      "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should useOperatorWithText("Projection", "point")
+        plan should useOperatorWithText("NodeIndexSeek", ":Place(location)")
+      }, expectPlansToFail = Configs.AbsolutelyAll - configuration))
+
+    // Then
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))))
+  }
+
   test("indexed points far apart in cartesian space - range query greaterThan") {
     // Given
     graph.createIndex("Place", "location")
