@@ -163,4 +163,10 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     {
         // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
+
+    @Override
+    public boolean isDirty()
+    {
+        return indexMap.values().stream().anyMatch( SpatialKnownIndex::wasDirtyOnStartup );
+    }
 }

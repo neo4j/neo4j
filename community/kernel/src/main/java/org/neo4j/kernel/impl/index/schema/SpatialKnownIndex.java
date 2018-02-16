@@ -218,6 +218,11 @@ public class SpatialKnownIndex
         schemaIndex.tree.checkpoint( IOLimiter.unlimited() );
     }
 
+    public boolean wasDirtyOnStartup()
+    {
+        return schemaIndex.tree.wasDirtyOnStartup();
+    }
+
     private IndexUpdater newUpdater()
     {
         schemaIndex.assertOpen();

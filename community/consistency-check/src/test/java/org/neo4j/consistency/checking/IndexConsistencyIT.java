@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -238,8 +237,7 @@ public class IndexConsistencyIT
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( db.getStoreDir(), config, NONE, log, fsa, true,
-                    new CheckConsistencyConfig( config ) );
+            return service.runFullConsistencyCheck( db.getStoreDir(), config, NONE, log, fsa, true );
         }
     }
 }
