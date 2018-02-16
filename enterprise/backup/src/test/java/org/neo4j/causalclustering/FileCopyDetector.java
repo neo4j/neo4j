@@ -17,15 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.catchup;
+package org.neo4j.causalclustering;
 
-public enum CatchupResult
+import java.io.File;
+
+import org.neo4j.causalclustering.catchup.tx.FileCopyMonitor;
+
+public class FileCopyDetector implements FileCopyMonitor
 {
-    @Deprecated // batch demarcation no longer used
-    SUCCESS_END_OF_BATCH,
-    SUCCESS_END_OF_STREAM,
-    E_STORE_ID_MISMATCH,
-    E_STORE_UNAVAILABLE,
-    E_TRANSACTION_PRUNED,
-    E_INVALID_REQUEST
+    private volatile boolean hasCopiedFile;
+
+    @Override
+    public void copyFile( File file )
+    {
+        hasCopiedFile = true;
+    }
+
+    boolean hasDetectedAnyFileCopied()
+    {
+        return hasCopiedFile;
+    }
 }

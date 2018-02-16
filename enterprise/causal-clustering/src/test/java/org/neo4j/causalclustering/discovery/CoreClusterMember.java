@@ -46,6 +46,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
@@ -70,6 +71,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     protected CoreGraphDatabase database;
     private final Config memberConfig;
     private final ThreadGroup threadGroup;
+    private final Monitors monitors = new Monitors();
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,
@@ -168,7 +170,7 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
     public void start()
     {
         database = new CoreGraphDatabase( storeDir, memberConfig,
-                GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
+                GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory );
     }
 
     @Override
@@ -249,10 +251,21 @@ public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
         return config.get(settingName);
     }
 
+    public Config config()
+    {
+        return memberConfig;
+    }
+
     @Override
     public ThreadGroup threadGroup()
     {
         return threadGroup;
+    }
+
+    @Override
+    public Monitors monitors()
+    {
+        return monitors;
     }
 
     public File clusterStateDirectory()

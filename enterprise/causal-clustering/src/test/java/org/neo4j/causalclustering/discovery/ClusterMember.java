@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public interface ClusterMember<T extends GraphDatabaseAPI>
 {
@@ -44,4 +45,6 @@ public interface ClusterMember<T extends GraphDatabaseAPI>
      * @return The intended parent thread group for this cluster member.
      */
     ThreadGroup threadGroup();
+
+    Monitors monitors();
 }
