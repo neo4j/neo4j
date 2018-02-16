@@ -23,6 +23,7 @@ import java.time._
 import java.time.temporal.TemporalAmount
 
 import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.values.storable.DurationValue
 
 import scala.collection.JavaConverters._
 
@@ -88,6 +89,7 @@ object Neo4jValueToString extends (Any => String) {
       case x: LocalDateTime => s"'${x.toString}'"
       case x: OffsetTime => s"'${x.toString}'"
       case x: ZonedDateTime => s"'${x.toString}'"
+      case x: DurationValue => s"'${x.prettyPrint}'"
       case x: TemporalAmount => s"'${x.toString}'"
 
       case other =>

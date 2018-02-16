@@ -291,18 +291,18 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
     private static TimeValue parse( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
         return new TimeValue( OffsetTime
-                .of( parseTime( matcher ), zoneOffset( parseOffset( matcher, defaultZone ) ) ) );
+                .of( parseTime( matcher ), parseOffset( matcher, defaultZone ) ) );
     }
 
-    private static ZoneId parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )
+    private static ZoneOffset parseOffset( Matcher matcher, Supplier<ZoneId> defaultZone )
     {
         ZoneOffset offset = parseOffset( matcher );
-        return offset != null ? offset : defaultZone.get();
-    }
-
-    private static ZoneOffset zoneOffset( ZoneId zoneId )
-    {
-        return zoneId instanceof ZoneOffset ? (ZoneOffset) zoneId : zoneId.getRules().getOffset( Instant.now() );
+        if ( offset == null )
+        {
+            ZoneId zoneId = defaultZone.get();
+            offset = zoneId instanceof ZoneOffset ? (ZoneOffset) zoneId : zoneId.getRules().getOffset( Instant.now() );
+        }
+        return offset;
     }
 
     abstract static class TimeBuilder<Input, Result> extends Builder<Input,Result>

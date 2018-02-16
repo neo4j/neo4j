@@ -148,13 +148,13 @@ Feature: TemporalParseAcceptance
       | '2015-07-21T21:00+18:00'        |
     And no side effects
 
-    # TODO duration parsing is pretty broken right now
   Scenario: Should parse duration from string
     Given an empty graph
     When executing query:
       """
       UNWIND [duration("P14DT16H12M"),
               duration("P5M1.5D"),
+              duration("P0.75M"),
               duration("PT0.75M"),
               duration("P2.5W"),
               duration("P12Y5M14DT16H12M70S"),
@@ -162,5 +162,12 @@ Feature: TemporalParseAcceptance
       RETURN d
       """
     Then the result should be, in order:
-      | d |
+      | d                          |
+      | 'P14DT16H12M'              |
+      | 'P5M1DT12H'                |
+      | 'P22DT19H51M49.5S'         |
+      | 'PT45S'                    |
+      | 'P17DT12H'                 |
+      | 'P12Y5M14DT16H13M10S'      |
+      | 'P2012Y2M2DT14H37M21.545S' |
     And no side effects
