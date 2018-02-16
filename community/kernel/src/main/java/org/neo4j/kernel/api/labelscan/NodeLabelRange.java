@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.api.labelscan;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongList;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
@@ -128,26 +129,26 @@ public class NodeLabelRange
         return toString( prefix, nodes, labels );
     }
 
-    public static void readBitmap( long bitmap, long labelId, PrimitiveLongList[] labelsPerNode )
+    public static void readBitmap( long bitmap, long labelId, MutableLongList[] labelsPerNode )
     {
         while ( bitmap != 0 )
         {
             int relativeNodeId = Long.numberOfTrailingZeros( bitmap );
             if ( labelsPerNode[relativeNodeId] == null )
             {
-                labelsPerNode[relativeNodeId] = Primitive.longList();
+                labelsPerNode[relativeNodeId] = new LongArrayList();
             }
             labelsPerNode[relativeNodeId].add( labelId );
             bitmap &= bitmap - 1;
         }
     }
 
-    public static long[][] convertState( PrimitiveLongList[] state )
+    public static long[][] convertState( LongList[] state )
     {
         long[][] labelIdsByNodeIndex = new long[state.length][];
         for ( int i = 0; i < state.length; i++ )
         {
-            PrimitiveLongList labelIdList = state[i];
+            final LongList labelIdList = state[i];
             if ( labelIdList != null )
             {
                 labelIdsByNodeIndex[i] = labelIdList.toArray();
