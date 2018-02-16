@@ -150,12 +150,8 @@ public class NodeProxy implements Node
     @Override
     public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
-        final int[] typeIds;
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( Statement statement = transaction.acquireStatement() )
-        {
-            typeIds = relTypeIds( types, statement );
-        }
+        int[] typeIds = relTypeIds( types, transaction.tokenRead() );
         return innerGetRelationships( transaction, direction, typeIds );
     }
 
@@ -187,12 +183,8 @@ public class NodeProxy implements Node
     @Override
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
-        final int[] typeIds;
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( Statement statement = transaction.acquireStatement() )
-        {
-            typeIds = relTypeIds( types, statement );
-        }
+        int[] typeIds = relTypeIds( types, transaction.tokenRead() );
         return innerHasRelationships( transaction, direction, typeIds );
     }
 
@@ -791,13 +783,13 @@ public class NodeProxy implements Node
         }
     }
 
-    private int[] relTypeIds( RelationshipType[] types, Statement statement )
+    private int[] relTypeIds( RelationshipType[] types, TokenRead token )
     {
         int[] ids = new int[types.length];
         int outIndex = 0;
         for ( RelationshipType type : types )
         {
-            int id = statement.readOperations().relationshipTypeGetForName( type.name() );
+            int id = token.relationshipType( type.name() );
             if ( id != NO_SUCH_RELATIONSHIP_TYPE )
             {
                 ids[outIndex++] = id;
