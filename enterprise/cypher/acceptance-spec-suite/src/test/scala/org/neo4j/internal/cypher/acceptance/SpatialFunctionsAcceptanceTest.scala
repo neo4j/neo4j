@@ -49,12 +49,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and 3D cartesian coordinates") {
-    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point",
+    val result = executeWith(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners,
+      "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian-3D'}) as point",
       expectedDifferentResults = Configs.Version3_1 + Configs.AllRulePlanners,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 2.3, 4.5, 6.7))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.3, 4.5, 6.7))))
   }
 
   test("point function should work with literal map and geographic coordinates") {
@@ -70,9 +71,31 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       "Unknown coordinate reference system: cart"))
   }
 
+  test("point function should not work with literal map of 2 coordinates and incorrect cartesian-3D crs") {
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian-3D'}) as point", List(
+      "'cartesian-3D' is not a supported coordinate reference system for points",
+      "Cannot create 3D point with 2 coordinates"))
+  }
+
+  test("point function should not work with literal map of 3 coordinates and incorrect cartesian crs") {
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'cartesian'}) as point", List(
+      "Cannot create 2D point with 3 coordinates"))
+  }
+
   test("point function should not work with literal map and incorrect geographic CRS") {
     failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points",
       "Unknown coordinate reference system: WGS84"))
+  }
+
+  test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84-3D'}) as point", List(
+      "'WGS84-3D' is not a supported coordinate reference system for points",
+      "Cannot create 3D point with 2 coordinates"))
+  }
+
+  test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'WGS84'}) as point", List(
+      "Cannot create 2D point with 3 coordinates"))
   }
 
   test("point function should work with integer arguments") {
@@ -246,7 +269,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))))
   }
 
   test("3D point should be readable from node property") {
@@ -261,9 +284,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))
+    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
     // And CRS names should equal
-    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/7203/")
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/9157/")
   }
 
   // TODO add 3D here too

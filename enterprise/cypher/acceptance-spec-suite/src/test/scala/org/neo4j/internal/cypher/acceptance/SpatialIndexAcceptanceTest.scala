@@ -257,7 +257,7 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))
+    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/7203/")
   }
@@ -279,7 +279,7 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
       }, expectPlansToFail = Configs.AbsolutelyAll - configuration))
 
     // Then
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4, 5.6))))
+    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))))
   }
 
   test("indexed points far apart in cartesian space - range query greaterThan") {
