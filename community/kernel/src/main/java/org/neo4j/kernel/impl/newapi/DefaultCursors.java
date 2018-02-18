@@ -20,155 +20,308 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.kernel.impl.util.InstanceCache;
 
 public class DefaultCursors implements CursorFactory
 {
-    private final InstanceCache<DefaultNodeCursor> nodeCursor;
-    private final InstanceCache<DefaultRelationshipScanCursor> relationshipScanCursor;
-    private final InstanceCache<DefaultRelationshipTraversalCursor> relationshipTraversalCursor;
-    private final InstanceCache<DefaultPropertyCursor> propertyCursor;
-    private final InstanceCache<DefaultRelationshipGroupCursor> relationshipGroupCursor;
-    private final InstanceCache<DefaultNodeValueIndexCursor> nodeValueIndexCursor;
-    private final InstanceCache<DefaultNodeLabelIndexCursor> nodeLabelIndexCursor;
-    private final InstanceCache<DefaultNodeExplicitIndexCursor> nodeExplicitIndexCursor;
-    private final InstanceCache<DefaultRelationshipExplicitIndexCursor> relationshipExplicitIndexCursor;
-
-    public DefaultCursors()
-    {
-        nodeCursor = new InstanceCache<DefaultNodeCursor>()
-        {
-            @Override
-            protected DefaultNodeCursor create()
-            {
-                return new DefaultNodeCursor( this );
-            }
-        };
-
-        relationshipScanCursor = new InstanceCache<DefaultRelationshipScanCursor>()
-        {
-            @Override
-            protected DefaultRelationshipScanCursor create()
-            {
-                return new DefaultRelationshipScanCursor( this );
-            }
-        };
-
-        relationshipTraversalCursor = new InstanceCache<DefaultRelationshipTraversalCursor>()
-        {
-            @Override
-            protected DefaultRelationshipTraversalCursor create()
-            {
-                return new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( cursor -> {} ), this );
-            }
-        };
-
-        propertyCursor = new InstanceCache<DefaultPropertyCursor>()
-        {
-            @Override
-            protected DefaultPropertyCursor create()
-            {
-                return new DefaultPropertyCursor( this );
-            }
-        };
-
-        relationshipGroupCursor = new InstanceCache<DefaultRelationshipGroupCursor>()
-        {
-            @Override
-            protected DefaultRelationshipGroupCursor create()
-            {
-                return new DefaultRelationshipGroupCursor( this );
-            }
-        };
-
-        nodeValueIndexCursor = new InstanceCache<DefaultNodeValueIndexCursor>()
-        {
-            @Override
-            protected DefaultNodeValueIndexCursor create()
-            {
-                return new DefaultNodeValueIndexCursor( this );
-            }
-        };
-
-        nodeLabelIndexCursor = new InstanceCache<DefaultNodeLabelIndexCursor>()
-        {
-            @Override
-            protected DefaultNodeLabelIndexCursor create()
-            {
-                return new DefaultNodeLabelIndexCursor( this );
-            }
-        };
-
-        nodeExplicitIndexCursor = new InstanceCache<DefaultNodeExplicitIndexCursor>()
-        {
-            @Override
-            protected DefaultNodeExplicitIndexCursor create()
-            {
-                return new DefaultNodeExplicitIndexCursor( this );
-            }
-        };
-
-        relationshipExplicitIndexCursor = new InstanceCache<DefaultRelationshipExplicitIndexCursor>()
-        {
-            @Override
-            protected DefaultRelationshipExplicitIndexCursor create()
-            {
-                return new DefaultRelationshipExplicitIndexCursor( this );
-            }
-        };
-    }
+    private DefaultNodeCursor nodeCursor;
+    private DefaultRelationshipScanCursor relationshipScanCursor;
+    private DefaultRelationshipTraversalCursor relationshipTraversalCursor;
+    private DefaultPropertyCursor propertyCursor;
+    private DefaultRelationshipGroupCursor relationshipGroupCursor;
+    private DefaultNodeValueIndexCursor nodeValueIndexCursor;
+    private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
+    private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
+    private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
     @Override
     public DefaultNodeCursor allocateNodeCursor()
     {
-        return nodeCursor.get();
+        if ( nodeCursor == null )
+        {
+            return new DefaultNodeCursor( this );
+        }
+
+        try
+        {
+            return nodeCursor;
+        }
+        finally
+        {
+            nodeCursor = null;
+        }
+    }
+
+    public void accept( DefaultNodeCursor cursor )
+    {
+        if ( nodeCursor != null )
+        {
+            nodeCursor.release();
+        }
+        nodeCursor = cursor;
     }
 
     @Override
     public DefaultRelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return relationshipScanCursor.get( );
+        if ( relationshipScanCursor == null )
+        {
+            return new DefaultRelationshipScanCursor( this );
+        }
+
+        try
+        {
+            return relationshipScanCursor;
+        }
+        finally
+        {
+            relationshipScanCursor = null;
+        }
+    }
+
+    public void accept( DefaultRelationshipScanCursor cursor )
+    {
+        if ( relationshipScanCursor != null )
+        {
+            relationshipScanCursor.release();
+        }
+        relationshipScanCursor = cursor;
     }
 
     @Override
     public DefaultRelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return relationshipTraversalCursor.get();
+        if ( relationshipTraversalCursor == null )
+        {
+            return new DefaultRelationshipTraversalCursor( new DefaultRelationshipGroupCursor( null ), this );
+        }
+
+        try
+        {
+            return relationshipTraversalCursor;
+        }
+        finally
+        {
+            relationshipTraversalCursor = null;
+        }
+    }
+
+    public void accept( DefaultRelationshipTraversalCursor cursor )
+    {
+        if ( relationshipTraversalCursor != null )
+        {
+            relationshipTraversalCursor.release();
+        }
+        relationshipTraversalCursor = cursor;
     }
 
     @Override
     public DefaultPropertyCursor allocatePropertyCursor()
     {
-        return propertyCursor.get();
+        if ( propertyCursor == null )
+        {
+            return new DefaultPropertyCursor( this );
+        }
+
+        try
+        {
+            return propertyCursor;
+        }
+        finally
+        {
+            propertyCursor = null;
+        }
+    }
+
+    public void accept( DefaultPropertyCursor cursor )
+    {
+        if ( propertyCursor != null )
+        {
+            propertyCursor.release();
+        }
+        propertyCursor = cursor;
     }
 
     @Override
     public DefaultRelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return relationshipGroupCursor.get();
+        if ( relationshipGroupCursor == null )
+        {
+            return new DefaultRelationshipGroupCursor( this );
+        }
+
+        try
+        {
+            return relationshipGroupCursor;
+        }
+        finally
+        {
+            relationshipGroupCursor = null;
+        }
+    }
+
+    public void accept( DefaultRelationshipGroupCursor cursor )
+    {
+        if ( relationshipGroupCursor != null )
+        {
+            relationshipGroupCursor.release();
+        }
+        relationshipGroupCursor = cursor;
     }
 
     @Override
     public DefaultNodeValueIndexCursor allocateNodeValueIndexCursor()
     {
-        return nodeValueIndexCursor.get();
+        if ( nodeValueIndexCursor == null )
+        {
+            return new DefaultNodeValueIndexCursor( this );
+        }
+
+        try
+        {
+            return nodeValueIndexCursor;
+        }
+        finally
+        {
+            nodeValueIndexCursor = null;
+        }
+    }
+
+    public void accept( DefaultNodeValueIndexCursor cursor )
+    {
+        if ( nodeValueIndexCursor != null )
+        {
+            nodeValueIndexCursor.release();
+        }
+        nodeValueIndexCursor = cursor;
     }
 
     @Override
     public DefaultNodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
-        return nodeLabelIndexCursor.get();
+        if ( nodeLabelIndexCursor == null )
+        {
+            return new DefaultNodeLabelIndexCursor( this );
+        }
+
+        try
+        {
+            return nodeLabelIndexCursor;
+        }
+        finally
+        {
+            nodeLabelIndexCursor = null;
+        }
+    }
+
+    public void accept( DefaultNodeLabelIndexCursor cursor )
+    {
+        if ( nodeLabelIndexCursor != null )
+        {
+            nodeLabelIndexCursor.release();
+        }
+        nodeLabelIndexCursor = cursor;
     }
 
     @Override
     public DefaultNodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
     {
-        return nodeExplicitIndexCursor.get();
+        if ( nodeExplicitIndexCursor == null )
+        {
+            return new DefaultNodeExplicitIndexCursor( this );
+        }
+
+        try
+        {
+            return nodeExplicitIndexCursor;
+        }
+        finally
+        {
+            nodeExplicitIndexCursor = null;
+        }
+    }
+
+    public void accept( DefaultNodeExplicitIndexCursor cursor )
+    {
+        if ( nodeExplicitIndexCursor != null )
+        {
+            nodeExplicitIndexCursor.release();
+        }
+        nodeExplicitIndexCursor = cursor;
     }
 
     @Override
     public DefaultRelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
     {
-        return relationshipExplicitIndexCursor.get();
+        if ( relationshipExplicitIndexCursor == null )
+        {
+            return new DefaultRelationshipExplicitIndexCursor( this );
+        }
+
+        try
+        {
+            return relationshipExplicitIndexCursor;
+        }
+        finally
+        {
+            relationshipExplicitIndexCursor = null;
+        }
+    }
+
+    public void accept( DefaultRelationshipExplicitIndexCursor cursor )
+    {
+        if ( relationshipExplicitIndexCursor != null )
+        {
+            relationshipExplicitIndexCursor.release();
+        }
+        relationshipExplicitIndexCursor = cursor;
+    }
+
+    public void release()
+    {
+        if ( nodeCursor != null )
+        {
+            nodeCursor.release();
+            nodeCursor = null;
+        }
+        if ( relationshipScanCursor != null )
+        {
+            relationshipScanCursor.release();
+            relationshipScanCursor = null;
+        }
+        if ( relationshipTraversalCursor != null )
+        {
+            relationshipTraversalCursor.release();
+            relationshipTraversalCursor = null;
+        }
+        if ( propertyCursor != null )
+        {
+            propertyCursor.release();
+            propertyCursor = null;
+        }
+        if ( relationshipGroupCursor != null )
+        {
+            relationshipGroupCursor.release();
+            relationshipGroupCursor = null;
+        }
+        if ( nodeValueIndexCursor != null )
+        {
+            nodeValueIndexCursor.release();
+            nodeValueIndexCursor = null;
+        }
+        if ( nodeLabelIndexCursor != null )
+        {
+            nodeLabelIndexCursor.release();
+            nodeLabelIndexCursor = null;
+        }
+        if ( nodeExplicitIndexCursor != null )
+        {
+            nodeExplicitIndexCursor.release();
+            nodeExplicitIndexCursor = null;
+        }
+        if ( relationshipExplicitIndexCursor != null )
+        {
+            relationshipExplicitIndexCursor.release();
+            relationshipExplicitIndexCursor = null;
+        }
     }
 }

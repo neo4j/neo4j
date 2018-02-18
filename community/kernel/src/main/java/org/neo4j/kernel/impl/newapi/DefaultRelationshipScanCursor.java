@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -36,9 +35,9 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     private PageCursor pageCursor;
     private Set<Long> addedRelationships;
 
-    private final Consumer<DefaultRelationshipScanCursor> pool;
+    private final DefaultCursors pool;
 
-    DefaultRelationshipScanCursor( Consumer<DefaultRelationshipScanCursor> pool )
+    DefaultRelationshipScanCursor( DefaultCursors pool )
     {
         this.pool = pool;
     }
@@ -149,13 +148,10 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public void close()
     {
-        read = null;
-        reset();
-
-        if ( pageCursor != null )
+        if ( !isClosed() )
         {
-            pageCursor.close();
-            pageCursor = null;
+            read = null;
+            reset();
 
             pool.accept( this );
         }
@@ -169,7 +165,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public boolean isClosed()
     {
-        return pageCursor == null;
+        return read == null;
     }
 
     @Override
@@ -196,6 +192,15 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         if ( !isSingle() )
         {
             addedRelationships = read.txState().addedAndRemovedRelationships().getAddedSnapshot();
+        }
+    }
+
+    public void release()
+    {
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
         }
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -44,9 +43,9 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private PrimitiveLongIterator added;
     private Set<Long> removed;
 
-    private final Consumer<DefaultNodeLabelIndexCursor> pool;
+    private final DefaultCursors pool;
 
-    DefaultNodeLabelIndexCursor( Consumer<DefaultNodeLabelIndexCursor> pool )
+    DefaultNodeLabelIndexCursor( DefaultCursors pool )
     {
         this.pool = pool;
         node = NO_ID;
@@ -179,5 +178,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     private boolean isRemoved( long reference )
     {
         return removed != null && removed.contains( reference );
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

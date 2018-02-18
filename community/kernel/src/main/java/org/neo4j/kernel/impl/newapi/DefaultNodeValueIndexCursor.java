@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -52,9 +51,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private PrimitiveLongIterator added = emptyIterator();
     private PrimitiveLongSet removed = emptySet();
     private boolean needsValues;
-    private final Consumer<DefaultNodeValueIndexCursor> pool;
+    private final DefaultCursors pool;
 
-    DefaultNodeValueIndexCursor( Consumer<DefaultNodeValueIndexCursor> pool )
+    DefaultNodeValueIndexCursor( DefaultCursors pool )
     {
         this.pool = pool;
         node = NO_ID;
@@ -311,5 +310,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         PrimitiveLongSet longSet = asSet( txState.addedAndRemovedNodes().getRemoved() );
         longSet.addAll( changes.getRemoved().iterator() );
         return longSet;
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

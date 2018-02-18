@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.function.Consumer;
-
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -36,9 +34,9 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
     private long relationship;
     private float score;
 
-    private final Consumer<DefaultRelationshipExplicitIndexCursor> pool;
+    private final DefaultCursors pool;
 
-    DefaultRelationshipExplicitIndexCursor( Consumer<DefaultRelationshipExplicitIndexCursor> pool )
+    DefaultRelationshipExplicitIndexCursor( DefaultCursors pool )
     {
         this.pool = pool;
     }
@@ -156,5 +154,10 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<ExplicitIndexPr
             return "RelationshipExplicitIndexCursor[relationship=" + relationship + ", expectedSize=" + expectedSize + ", score=" + score +
                     " ,underlying record=" + super.toString() + " ]";
         }
+    }
+
+    public void release()
+    {
+        // nothing to do
     }
 }

@@ -656,6 +656,8 @@ public class Operations implements Write, ExplicitIndexWrite
             propertyCursor.close();
             propertyCursor = null;
         }
+
+        cursors.release();
     }
 
     public Token token()

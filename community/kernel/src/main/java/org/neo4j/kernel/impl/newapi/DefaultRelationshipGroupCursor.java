@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.function.Consumer;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
@@ -46,7 +44,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
 {
     private Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
-    private final Consumer<DefaultRelationshipGroupCursor> pool;
+    private final DefaultCursors pool;
 
     private BufferedGroup bufferedGroup;
     private PageCursor page;
@@ -55,7 +53,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private final PrimitiveIntSet txTypes = Primitive.intSet();
     private PrimitiveIntIterator txTypeIterator;
 
-    DefaultRelationshipGroupCursor( Consumer<DefaultRelationshipGroupCursor> pool )
+    DefaultRelationshipGroupCursor( DefaultCursors pool )
     {
         super( NO_ID );
         this.pool = pool;
@@ -243,23 +241,17 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public void close()
     {
-        bufferedGroup = null;
-        read = null;
-        setId( NO_ID );
-        clear();
-
-        if ( edgePage != null )
+        if ( !isClosed() )
         {
-            edgePage.close();
-            edgePage = null;
-        }
+            bufferedGroup = null;
+            read = null;
+            setId( NO_ID );
+            clear();
 
-        if ( page != null )
-        {
-            page.close();
-            page = null;
-
-            pool.accept( this );
+            if ( pool != null )
+            {
+                pool.accept( this );
+            }
         }
     }
 
@@ -410,7 +402,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public boolean isClosed()
     {
-        return page == null && bufferedGroup == null;
+        return read == null && bufferedGroup == null;
     }
 
     @Override
@@ -468,6 +460,21 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     {
         assert relationshipId != NO_ID;
         return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
+    }
+
+    public void release()
+    {
+        if ( edgePage != null )
+        {
+            edgePage.close();
+            edgePage = null;
+        }
+
+        if ( page != null )
+        {
+            page.close();
+            page = null;
+        }
     }
 
     static class BufferedGroup

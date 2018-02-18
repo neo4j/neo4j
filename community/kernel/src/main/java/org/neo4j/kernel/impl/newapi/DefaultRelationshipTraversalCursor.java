@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.function.Consumer;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -119,7 +117,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     private Record buffer;
     private PageCursor pageCursor;
     private final DefaultRelationshipGroupCursor group;
-    private final Consumer<DefaultRelationshipTraversalCursor> pool;
+    private final DefaultCursors pool;
     private GroupState groupState;
     private FilterState filterState;
     private boolean filterStore;
@@ -127,7 +125,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     private PrimitiveLongIterator addedRelationships;
 
-    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, Consumer<DefaultRelationshipTraversalCursor> pool )
+    DefaultRelationshipTraversalCursor( DefaultRelationshipGroupCursor group, DefaultCursors pool )
     {
         this.group = group;
         this.pool = pool;
@@ -485,13 +483,11 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public void close()
     {
-        read = null;
-        reset();
-
-        if ( pageCursor != null )
+        if ( !isClosed() )
         {
-            pageCursor.close();
-            pageCursor = null;
+            read = null;
+            buffer = null;
+            reset();
 
             pool.accept( this );
         }
@@ -530,7 +526,18 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean isClosed()
     {
-        return pageCursor == null && !hasBufferedData();
+        return read == null && !hasBufferedData();
+    }
+
+    public void release()
+    {
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
+        }
+
+        group.release();
     }
 
     @Override

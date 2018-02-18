@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -66,9 +65,9 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
-    private final Consumer<DefaultPropertyCursor> pool;
+    private final DefaultCursors pool;
 
-    public DefaultPropertyCursor( Consumer<DefaultPropertyCursor> pool )
+    public DefaultPropertyCursor( DefaultCursors pool )
     {
         super( NO_ID );
         this.pool = pool;
@@ -233,26 +232,13 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public void close()
     {
-        propertiesState = null;
-        txStateChangedProperties = null;
-        txStateValue = null;
-        read = null;
-        clear();
-
-        if ( stringPage != null )
+        if ( !isClosed() )
         {
-            stringPage.close();
-            stringPage = null;
-        }
-        if ( arrayPage != null )
-        {
-            arrayPage.close();
-            arrayPage = null;
-        }
-        if ( page != null )
-        {
-            page.close();
-            page = null;
+            propertiesState = null;
+            txStateChangedProperties = null;
+            txStateValue = null;
+            read = null;
+            clear();
 
             pool.accept( this );
         }
@@ -558,7 +544,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public boolean isClosed()
     {
-        return page == null;
+        return read == null;
     }
 
     @Override
@@ -572,6 +558,25 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         {
             return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
                    ", underlying record=" + super.toString() + " ]";
+        }
+    }
+
+    public void release()
+    {
+        if ( stringPage != null )
+        {
+            stringPage.close();
+            stringPage = null;
+        }
+        if ( arrayPage != null )
+        {
+            arrayPage.close();
+            arrayPage = null;
+        }
+        if ( page != null )
+        {
+            page.close();
+            page = null;
         }
     }
 }
