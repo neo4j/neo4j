@@ -656,6 +656,11 @@ public class Operations implements Write, ExplicitIndexWrite
             propertyCursor.close();
             propertyCursor = null;
         }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+            relationshipCursor = null;
+        }
 
         cursors.release();
     }
