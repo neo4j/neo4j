@@ -34,11 +34,11 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
-     *
-     * @param propCommands {@link PropertyCommand} grouped by node id.
+     *  @param propCommandsByNodeId {@link PropertyCommand} grouped by node id.
+     * @param propCommandsByRelationshipId
      * @param nodeCommands {@link NodeCommand} by node id.
      */
-    void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommands,
+    void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByNodeId, PrimitiveLongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
             PrimitiveLongObjectMap<NodeCommand> nodeCommands );
 
     boolean hasUpdates();

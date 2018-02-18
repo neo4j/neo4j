@@ -68,6 +68,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -302,7 +303,7 @@ public class IndexPopulationJobTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
-                ArgumentMatchers.<Visitor<NodeUpdates,RuntimeException>>any(),
+                ArgumentMatchers.<Visitor<EntityUpdates,RuntimeException>>any(),
                 ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
                 .thenReturn(storeScan );
 
@@ -616,7 +617,7 @@ public class IndexPopulationJobTest
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider );
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, stateHolder );
         job.addPopulator( populator, indexId, new IndexMeta( descriptor, PROVIDER_DESCRIPTOR, NO_CAPABILITY ),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );

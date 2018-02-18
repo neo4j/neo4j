@@ -66,6 +66,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -274,7 +275,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             // Rebuild indexes by recreating and repopulating them
             if ( !rebuildingDescriptors.isEmpty() )
             {
-                IndexPopulationJob populationJob = newIndexPopulationJob();
+                IndexPopulationJob populationJob = newIndexPopulationJob( EntityType.NODE );
                 rebuildingDescriptors.visitEntries(
                         (PrimitiveLongObjectVisitor<RebuildingIndexDescriptor,Exception>) ( indexId, descriptor ) ->
                         {
@@ -438,15 +439,16 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     @Override
-    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( NodeUpdates nodeUpdates )
+    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, EntityType entityType )
     {
         Iterable<SchemaDescriptor> relatedIndexes =
                                             indexMapRef.getRelatedIndexes(
-                                                nodeUpdates.labelsChanged(),
-                                                nodeUpdates.labelsUnchanged(),
-                                                nodeUpdates.propertiesChanged() );
+                                                entityUpdates.entityTokensChanged(),
+                                                entityUpdates.entityTokensUnchanged(),
+                                                entityUpdates.propertiesChanged(),
+                                                entityType);
 
-        return nodeUpdates.forIndexKeys( relatedIndexes, storeView );
+        return entityUpdates.forIndexKeys( relatedIndexes, storeView );
     }
 
     /**
@@ -655,9 +657,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         return Iterators.concatResourceIterators( snapshots.iterator() );
     }
 
-    private IndexPopulationJob newIndexPopulationJob()
+    private IndexPopulationJob newIndexPopulationJob( EntityType type )
     {
-        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider );
+        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, logProvider, type );
         return new IndexPopulationJob( multiPopulator, monitor, schemaState );
     }
 
@@ -704,7 +706,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final class IndexPopulationStarter implements ThrowingFunction<IndexMap,IndexMap,IOException>
     {
         private final IndexRule[] rules;
-        private IndexPopulationJob populationJob;
+        private IndexPopulationJob nodePopulationJob;
+        private IndexPopulationJob relationshipPopulationJob;
 
         IndexPopulationStarter( IndexRule[] rules )
         {
@@ -741,10 +744,21 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 boolean flipToTentative = rule.canSupportUniqueConstraint();
                 if ( state == State.RUNNING )
                 {
-                    populationJob = populationJob == null ? newIndexPopulationJob() : populationJob;
-                    index = indexProxyCreator.createPopulatingIndexProxy(
-                            ruleId, descriptor, providerDescriptor, flipToTentative, monitor, populationJob );
-                    index.start();
+                    if ( descriptor.schema().entityType() == EntityType.NODE )
+                    {
+                        nodePopulationJob = nodePopulationJob == null ? newIndexPopulationJob( EntityType.NODE ) : nodePopulationJob;
+                        index = indexProxyCreator.createPopulatingIndexProxy( ruleId, descriptor, providerDescriptor, flipToTentative, monitor,
+                                nodePopulationJob );
+                        index.start();
+                    }
+                    else
+                    {
+                        relationshipPopulationJob =
+                                relationshipPopulationJob == null ? newIndexPopulationJob( EntityType.RELATIONSHIP ) : relationshipPopulationJob;
+                        index = indexProxyCreator.createPopulatingIndexProxy( ruleId, descriptor, providerDescriptor, flipToTentative, monitor,
+                                relationshipPopulationJob );
+                        index.start();
+                    }
                 }
                 else
                 {
@@ -758,9 +772,13 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
         void startPopulation()
         {
-            if ( populationJob != null )
+            if ( nodePopulationJob != null )
             {
-                startIndexPopulation( populationJob );
+                startIndexPopulation( nodePopulationJob );
+            }
+            if ( relationshipPopulationJob != null )
+            {
+                startIndexPopulation( relationshipPopulationJob );
             }
         }
     }

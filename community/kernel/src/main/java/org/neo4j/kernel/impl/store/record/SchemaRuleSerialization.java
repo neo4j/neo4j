@@ -365,7 +365,7 @@ public class SchemaRuleSerialization
             type = EntityType.NODE;
             break;
         case SIMPLE_REL_TYPE:
-            type = EntityType.NODE;
+            type = EntityType.RELATIONSHIP;
             break;
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown schema descriptor type '%d'.", schemaDescriptorType ) );

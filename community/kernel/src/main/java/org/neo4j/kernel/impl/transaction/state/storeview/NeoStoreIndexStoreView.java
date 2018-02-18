@@ -26,13 +26,14 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -53,6 +54,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 {
     protected final PropertyStore propertyStore;
     protected final NodeStore nodeStore;
+    protected final RelationshipStore relationshipStore;
     protected final LockService locks;
     private final CountsTracker counts;
 
@@ -61,6 +63,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         this.locks = locks;
         this.propertyStore = neoStores.getPropertyStore();
         this.nodeStore = neoStores.getNodeStore();
+        this.relationshipStore = neoStores.getRelationshipStore();
         this.counts = neoStores.getCounts();
     }
 
@@ -98,7 +101,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     @Override
     public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes(
             final int[] labelIds, IntPredicate propertyKeyIdFilter,
-            final Visitor<NodeUpdates, FAILURE> propertyUpdatesVisitor,
+            final Visitor<EntityUpdates, FAILURE> propertyUpdatesVisitor,
             final Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor,
             boolean forceStoreScan )
     {
@@ -107,7 +110,14 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public NodeUpdates nodeAsUpdates( long nodeId )
+    public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( final int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
+            final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor )
+    {
+        return new RelationshipStoreScan<>( relationshipStore, locks, propertyStore, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter );
+    }
+
+    @Override
+    public EntityUpdates nodeAsUpdates( long nodeId )
     {
         NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
         if ( !node.inUse() )
@@ -124,7 +134,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             return null; // no labels => no updates (it's not going to be in any index)
         }
-        NodeUpdates.Builder update = NodeUpdates.forNode( nodeId, labels );
+        EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId, labels );
         for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
         {
             for ( PropertyBlock property : propertyRecord )

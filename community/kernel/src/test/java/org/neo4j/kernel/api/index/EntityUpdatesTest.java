@@ -31,7 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.PropertyLoader;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.emptyIterable;
 import static org.junit.Assert.fail;
 
 @SuppressWarnings( "unchecked" )
-public class NodeUpdatesTest
+public class EntityUpdatesTest
 {
     private static final long nodeId = 0;
     private static final int labelId = 0;
@@ -65,7 +65,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdatesForEmptyNodeUpdates()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, assertNoLoading() ), emptyIterable() );
@@ -75,7 +75,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdateForMultipleExistingPropertiesAndLabels()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
                 .existing( propertyKeyId1, Values.of( "Neo" ) )
                 .existing( propertyKeyId2, Values.of( 100L ) )
                 .build();
@@ -88,7 +88,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdatesForLabelAdditionWithNoProperties()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, propertyLoader() ), emptyIterable() );
@@ -98,7 +98,7 @@ public class NodeUpdatesTest
     public void shouldGenerateUpdateForLabelAdditionWithExistingProperty()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels ).build();
 
         // Then
         assertThat(
@@ -112,8 +112,8 @@ public class NodeUpdatesTest
     public void shouldGenerateUpdatesForLabelAdditionWithExistingProperties()
     {
         // When
-        NodeUpdates updates =
-                NodeUpdates.forNode( nodeId, empty, labels )
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, empty, labels )
                         .existing( propertyKeyId1, Values.of( "Neo" ) )
                         .existing( propertyKeyId2, Values.of( 100L ) )
                         .build();
@@ -132,7 +132,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdatesForLabelRemovalWithNoProperties()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels, empty ).build();
 
         // Then
         assertThat( updates.forIndexKeys( indexes, propertyLoader() ), emptyIterable() );
@@ -142,8 +142,8 @@ public class NodeUpdatesTest
     public void shouldGenerateUpdateForLabelRemovalWithExistingProperty()
     {
         // When
-        NodeUpdates updates =
-                NodeUpdates.forNode( nodeId, labels, empty ).build();
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, labels, empty ).build();
 
         // Then
         assertThat(
@@ -157,8 +157,8 @@ public class NodeUpdatesTest
     public void shouldGenerateUpdatesForLabelRemovalWithExistingProperties()
     {
         // When
-        NodeUpdates updates =
-                NodeUpdates.forNode( nodeId, labels, empty ).build();
+        EntityUpdates updates =
+                EntityUpdates.forEntity( nodeId, labels, empty ).build();
 
         // Then
         assertThat(
@@ -174,7 +174,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdatesForPropertyAdditionWithNoLabels()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
@@ -186,7 +186,7 @@ public class NodeUpdatesTest
     public void shouldGenerateUpdatesForSinglePropertyAdditionWithLabels()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 
@@ -202,7 +202,7 @@ public class NodeUpdatesTest
     public void shouldGenerateUpdatesForMultiplePropertyAdditionWithLabels()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
                 .build();
@@ -221,7 +221,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdatesForLabelAddAndPropertyRemove()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, empty, labels )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty, labels )
                 .removed( property1.propertyKeyId(), property1.value() )
                 .removed( property2.propertyKeyId(), property2.value() )
                 .build();
@@ -234,7 +234,7 @@ public class NodeUpdatesTest
     public void shouldNotGenerateUpdatesForLabelRemoveAndPropertyAdd()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels, empty )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels, empty )
                 .added( property1.propertyKeyId(), property1.value() )
                 .added( property2.propertyKeyId(), property2.value() )
                 .build();
@@ -247,7 +247,7 @@ public class NodeUpdatesTest
     public void shouldNotLoadPropertyForLabelsAndNoPropertyChanges()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, labels ).build();
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, labels ).build();
 
         // Then
         assertThat(
@@ -259,7 +259,7 @@ public class NodeUpdatesTest
     public void shouldNotLoadPropertyForNoLabelsAndButPropertyAddition()
     {
         // When
-        NodeUpdates updates = NodeUpdates.forNode( nodeId, empty )
+        EntityUpdates updates = EntityUpdates.forEntity( nodeId, empty )
                 .added( property1.propertyKeyId(), property1.value() )
                 .build();
 

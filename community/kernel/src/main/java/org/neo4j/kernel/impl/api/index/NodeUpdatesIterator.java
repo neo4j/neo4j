@@ -23,12 +23,12 @@ import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
-class NodeUpdatesIterator implements Iterator<NodeUpdates>
+class NodeUpdatesIterator implements Iterator<EntityUpdates>
 {
 
     private final IndexStoreView storeView;
     private final PrimitiveLongIterator nodeIdIterator;
-    private NodeUpdates nextUpdate;
+    private EntityUpdates nextUpdate;
 
     NodeUpdatesIterator( IndexStoreView storeView, PrimitiveLongIterator nodeIdIterator )
     {
@@ -44,7 +44,7 @@ class NodeUpdatesIterator implements Iterator<NodeUpdates>
             while ( nodeIdIterator.hasNext() )
             {
                 long nodeId = nodeIdIterator.next();
-                NodeUpdates updates = storeView.nodeAsUpdates( nodeId );
+                EntityUpdates updates = storeView.nodeAsUpdates( nodeId );
                 if ( updates != null )
                 {
                     nextUpdate = updates;
@@ -57,9 +57,9 @@ class NodeUpdatesIterator implements Iterator<NodeUpdates>
     }
 
     @Override
-    public NodeUpdates next()
+    public EntityUpdates next()
     {
-        NodeUpdates update = null;
+        EntityUpdates update = null;
         if ( hasNext() )
         {
             update = this.nextUpdate;

@@ -25,6 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.storageengine.api.EntityType;
 
 public class IndexMapReference implements IndexMapSnapshotProvider
 {
@@ -101,10 +102,9 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Set<SchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, PrimitiveIntCollection properties, EntityType entityType )
     {
-        return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );
+        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, properties, entityType );
     }
 
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )

@@ -34,7 +34,7 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NodeUpdatesIteratorTest
+public class EntityUpdatesIteratorTest
 {
 
     @Test
@@ -50,16 +50,16 @@ public class NodeUpdatesIteratorTest
     public void iterateOverUpdatesWithNext() throws Exception
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
-        NodeUpdates nodeUpdates1 = NodeUpdates.forNode( 1 ).build();
-        NodeUpdates nodeUpdates2 = NodeUpdates.forNode( 2 ).build();
-        when( storeView.nodeAsUpdates( 1 ) ).thenReturn( nodeUpdates1 );
-        when( storeView.nodeAsUpdates( 2 ) ).thenReturn( nodeUpdates2 );
+        EntityUpdates entityUpdates1 = EntityUpdates.forEntity( 1 ).build();
+        EntityUpdates entityUpdates2 = EntityUpdates.forEntity( 2 ).build();
+        when( storeView.nodeAsUpdates( 1 ) ).thenReturn( entityUpdates1 );
+        when( storeView.nodeAsUpdates( 2 ) ).thenReturn( entityUpdates2 );
 
         PrimitiveLongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, nodeIdIterator );
 
-        assertSame( nodeUpdates1, nodeUpdatesIterator.next() );
-        assertSame( nodeUpdates2, nodeUpdatesIterator.next() );
+        assertSame( entityUpdates1, nodeUpdatesIterator.next() );
+        assertSame( entityUpdates2, nodeUpdatesIterator.next() );
         assertFalse( nodeUpdatesIterator.hasNext() );
 
         verify( storeView ).nodeAsUpdates( 1 );
@@ -70,20 +70,20 @@ public class NodeUpdatesIteratorTest
     public void iterateOverUpdatesWithHasNext()
     {
         IndexStoreView storeView = Mockito.mock( IndexStoreView.class );
-        NodeUpdates nodeUpdates1 = NodeUpdates.forNode( 1 ).build();
-        NodeUpdates nodeUpdates2 = NodeUpdates.forNode( 2 ).build();
-        when( storeView.nodeAsUpdates( 1 ) ).thenReturn( nodeUpdates1 );
-        when( storeView.nodeAsUpdates( 2 ) ).thenReturn( nodeUpdates2 );
+        EntityUpdates entityUpdates1 = EntityUpdates.forEntity( 1 ).build();
+        EntityUpdates entityUpdates2 = EntityUpdates.forEntity( 2 ).build();
+        when( storeView.nodeAsUpdates( 1 ) ).thenReturn( entityUpdates1 );
+        when( storeView.nodeAsUpdates( 2 ) ).thenReturn( entityUpdates2 );
 
-        Deque<NodeUpdates> updates = new ArrayDeque<>( Arrays.asList( nodeUpdates1, nodeUpdates2 ) );
+        Deque<EntityUpdates> updates = new ArrayDeque<>( Arrays.asList( entityUpdates1, entityUpdates2 ) );
 
         PrimitiveLongIterator nodeIdIterator = PrimitiveLongCollections.iterator( 1, 2 );
         NodeUpdatesIterator nodeUpdatesIterator = new NodeUpdatesIterator( storeView, nodeIdIterator );
 
         while ( nodeUpdatesIterator.hasNext() )
         {
-            NodeUpdates nodeUpdates = nodeUpdatesIterator.next();
-            assertSame( updates.pop(), nodeUpdates );
+            EntityUpdates entityUpdates = nodeUpdatesIterator.next();
+            assertSame( updates.pop(), entityUpdates );
         }
 
         verify( storeView ).nodeAsUpdates( 1 );

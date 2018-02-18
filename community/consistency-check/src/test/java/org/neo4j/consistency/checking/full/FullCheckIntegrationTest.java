@@ -78,9 +78,9 @@ import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -576,7 +576,7 @@ public class FullCheckIntegrationTest
             {
                 for ( long nodeId : indexedNodes )
                 {
-                    NodeUpdates updates = storeView.nodeAsUpdates( nodeId );
+                    EntityUpdates updates = storeView.nodeAsUpdates( nodeId );
                     for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( descriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );

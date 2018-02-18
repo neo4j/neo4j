@@ -105,7 +105,7 @@ object Methods {
   val unboxBoolean = method[java.lang.Boolean, Boolean]("booleanValue")
   val unboxLong = method[java.lang.Long, Long]("longValue")
   val unboxDouble = method[java.lang.Double, Double]("doubleValue")
-  val unboxNode = method[NodeProxy, Long]("getNodeId")
+  val unboxNode = method[NodeProxy, Long]("getEntityId")
   val unboxRel = method[RelationshipProxy, Long]("getRelationshipId")
   val reboxValue = method[Values, Object]("asObject", typeRef[Value])
 }

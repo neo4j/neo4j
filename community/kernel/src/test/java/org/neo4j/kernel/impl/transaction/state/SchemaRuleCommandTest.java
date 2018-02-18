@@ -89,8 +89,7 @@ public class SchemaRuleCommandTest
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier = new IndexBatchTransactionApplier( indexes,
-            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-            new PropertyPhysicalToLogicalConverter( propertyStore ) );
+            labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2( IndexProviderMap.EMPTY );
     private final IndexRule rule = IndexRule.indexRule( id, SchemaIndexDescriptorFactory.forLabel( labelId, propertyKey ),
             PROVIDER_DESCRIPTOR );

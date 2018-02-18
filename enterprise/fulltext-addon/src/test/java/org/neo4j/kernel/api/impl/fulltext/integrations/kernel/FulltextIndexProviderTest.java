@@ -25,6 +25,8 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.Statement;
@@ -51,18 +53,28 @@ public class FulltextIndexProviderTest
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule();
+    private Node node1;
+    private Node node2;
 
     @Before
     public void prepDB()
     {
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            Node node = db.createNode( label( "hej" ), label( "ha" ), label( "he" ) );
-            node.setProperty( "hej", "value" );
-            node.setProperty( "ha", "value1" );
-            node.setProperty( "he", "value2" );
-            node.setProperty( "ho", "value3" );
-            node.setProperty( "hi", "value4" );
+            node1 = db.createNode( label( "hej" ), label( "ha" ), label( "he" ) );
+            node1.setProperty( "hej", "value" );
+            node1.setProperty( "ha", "value1" );
+            node1.setProperty( "he", "value2" );
+            node1.setProperty( "ho", "value3" );
+            node1.setProperty( "hi", "value4" );
+            node2 = db.createNode();
+            Relationship rel = node1.createRelationshipTo( node2, RelationshipType.withName( "hej" ) );
+            rel.setProperty( "hej", "valuuu" );
+            rel.setProperty( "ha", "value1" );
+            rel.setProperty( "he", "value2" );
+            rel.setProperty( "ho", "value3" );
+            rel.setProperty( "hi", "value4" );
+
             transaction.success();
         }
     }
@@ -111,6 +123,31 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
+            transaction.success();
+        }
+        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            IndexDescriptor descriptor = stmt.readOperations().indexGetForSchema( fulltextIndexDescriptor.schema() );
+            assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
+            assertEquals( fulltextIndexDescriptor.schema(), descriptor.schema() );
+            assertEquals( fulltextIndexDescriptor.type(), descriptor.type() );
+            assertEquals( fulltextIndexDescriptor.identifier(), descriptor.identifier() );
+            transaction.success();
+        }
+    }
+
+
+    @Test
+    public void createAndRetainRelationshipFulltextIndex() throws Exception
+    {
+        IndexDescriptor fulltextIndexDescriptor;
+        IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels");
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -187,6 +224,73 @@ public class FulltextIndexProviderTest
             result = provider.query( fulltextIndexDescriptor, "value3" );
             assertTrue( result.hasNext() );
             assertEquals( secondNodeId, result.next() );
+            assertTrue( result.hasNext() );
+            assertEquals( 0L, result.next() );
+            assertFalse( result.hasNext() );
+            transaction.success();
+        }
+    }
+
+    @Test
+    public void createAndQueryFulltextRelationshipIndex() throws Exception
+    {
+        IndexDescriptor fulltextIndexDescriptor;
+        FulltextIndexProvider provider =
+                (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            fulltextIndexDescriptor =
+                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ), "fulltext" );
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
+            transaction.success();
+        }
+        await( fulltextIndexDescriptor );
+        long secondRelId;
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            Relationship ho = node1.createRelationshipTo( node2, RelationshipType.withName( "ho" ) );
+            secondRelId = ho.getId();
+            ho.setProperty( "hej", "villa" );
+            ho.setProperty( "ho", "value3" );
+            transaction.success();
+        }
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
+            assertTrue( result.hasNext() );
+            assertEquals( 0L, result.next() );
+            assertFalse( result.hasNext() );
+
+            result = provider.query( fulltextIndexDescriptor, "villa" );
+            assertTrue( result.hasNext() );
+            assertEquals( secondRelId, result.next() );
+            assertFalse( result.hasNext() );
+
+            result = provider.query( fulltextIndexDescriptor, "value3" );
+            assertTrue( result.hasNext() );
+            assertEquals( 0L, result.next() );
+            assertTrue( result.hasNext() );
+            assertEquals( secondRelId, result.next() );
+            assertFalse( result.hasNext() );
+            transaction.success();
+        }
+        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            PrimitiveLongIterator result = provider.query( fulltextIndexDescriptor, "valuuu" );
+            assertTrue( result.hasNext() );
+            assertEquals( 0L, result.next() );
+            assertFalse( result.hasNext() );
+
+            result = provider.query( fulltextIndexDescriptor, "villa" );
+            assertTrue( result.hasNext() );
+            assertEquals( secondRelId, result.next() );
+            assertFalse( result.hasNext() );
+
+            result = provider.query( fulltextIndexDescriptor, "value3" );
+            assertTrue( result.hasNext() );
+            assertEquals( secondRelId, result.next() );
             assertTrue( result.hasNext() );
             assertEquals( 0L, result.next() );
             assertFalse( result.hasNext() );

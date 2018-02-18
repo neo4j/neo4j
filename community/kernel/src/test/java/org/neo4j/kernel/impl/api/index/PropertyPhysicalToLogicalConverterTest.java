@@ -64,7 +64,7 @@ public class PropertyPhysicalToLogicalConverterTest
         // WHEN
         assertThat(
                 convert( none, none, change( before, after ) ),
-                equalTo( NodeUpdates.forNode( 0 ).added( key, value ).build() ) );
+                equalTo( EntityUpdates.forEntity( 0 ).added( key, value ).build() ) );
     }
 
     @Test
@@ -78,10 +78,10 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, valueAfter ) );
 
         // WHEN
-        NodeUpdates update = convert( none, none, change( before, after ) );
+        EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( 0 ).changed( key, valueBefore, valueAfter ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, valueBefore, valueAfter ).build();
         assertEquals( expected, update );
     }
 
@@ -97,7 +97,7 @@ public class PropertyPhysicalToLogicalConverterTest
         // WHEN
         assertThat(
                 convert( none, none, change( before, after ) ),
-                equalTo( NodeUpdates.forNode( 0 ).build() ) );
+                equalTo( EntityUpdates.forEntity( 0 ).build() ) );
     }
 
     @Test
@@ -110,10 +110,10 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodeUpdates update = convert( none, none, change( before, after ) );
+        EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( 0 ).removed( key, value ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0 ).removed( key, value ).build();
         assertEquals( expected, update );
     }
 
@@ -128,7 +128,7 @@ public class PropertyPhysicalToLogicalConverterTest
         // THEN
         assertThat(
                 convert( none, none, change( before, after ) ),
-                equalTo( NodeUpdates.forNode( 0 ).added( key, longString ).build() ) );
+                equalTo( EntityUpdates.forEntity( 0 ).added( key, longString ).build() ) );
     }
 
     @Test
@@ -140,10 +140,10 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longerString ) );
 
         // WHEN
-        NodeUpdates update = convert( none, none, change( before, after ) );
+        EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( 0 ).changed( key, longString, longerString ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, longString, longerString ).build();
         assertEquals( expected, update );
     }
 
@@ -156,10 +156,10 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodeUpdates update = convert( none, none, change( before, after ) );
+        EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( 0 ).removed( key, longString ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0 ).removed( key, longString ).build();
         assertEquals( expected, update );
     }
 
@@ -178,10 +178,10 @@ public class PropertyPhysicalToLogicalConverterTest
                 propertyRecord( property( key, newValue ) ) );
 
         // WHEN
-        NodeUpdates update = convert( none, none, movedFrom, movedTo );
+        EntityUpdates update = convert( none, none, movedFrom, movedTo );
 
         // THEN
-        NodeUpdates expected = NodeUpdates.forNode( 0 ).changed( key, oldValue, newValue ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, oldValue, newValue ).build();
         assertEquals( expected, update );
     }
 
@@ -238,16 +238,16 @@ public class PropertyPhysicalToLogicalConverterTest
         neoStores.close();
     }
 
-    private NodeUpdates convert( long[] labelsBefore,
+    private EntityUpdates convert( long[] labelsBefore,
             long[] labelsAfter, PropertyRecordChange change )
     {
         return convert( labelsBefore, labelsAfter, new PropertyRecordChange[] {change} );
     }
 
-    private NodeUpdates convert( long[] labelsBefore,
+    private EntityUpdates convert( long[] labelsBefore,
             long[] labelsAfter, PropertyRecordChange... changes )
     {
-        NodeUpdates.Builder updates = NodeUpdates.forNode( 0, labelsBefore, labelsAfter );
+        EntityUpdates.Builder updates = EntityUpdates.forEntity( 0, labelsBefore, labelsAfter );
         converter.convertPropertyRecord( 0, Iterables.iterable( changes ), updates );
         return updates.build();
     }

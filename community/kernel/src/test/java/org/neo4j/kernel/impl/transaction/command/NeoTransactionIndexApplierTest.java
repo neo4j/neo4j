@@ -38,9 +38,11 @@ import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.EntityType;
 
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
@@ -67,7 +69,7 @@ public class NeoTransactionIndexApplierTest
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
-        when( indexingService.convertToIndexUpdates( any() ) ).thenAnswer( o -> Iterables.empty() );
+        when( indexingService.convertToIndexUpdates( any(), EntityType.NODE ) ).thenAnswer( o -> Iterables.empty() );
     }
 
     @Test
@@ -97,8 +99,7 @@ public class NeoTransactionIndexApplierTest
     {
         PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService,
-                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                new PropertyPhysicalToLogicalConverter( propertyStore ) );
+                labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ) );
     }
 
     @Test

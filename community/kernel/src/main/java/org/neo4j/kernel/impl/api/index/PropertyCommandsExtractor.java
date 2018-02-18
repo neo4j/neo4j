@@ -36,13 +36,14 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 
 /**
  * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
- * Gathers node/property commands by node id, preparing for extraction of {@link NodeUpdates updates}.
+ * Gathers node/property commands by node id, preparing for extraction of {@link EntityUpdates updates}.
  */
-public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
+public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
     private final PrimitiveLongObjectMap<NodeCommand> nodeCommandsById = longObjectMap();
     private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = longObjectMap();
+    private final PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds = longObjectMap();
     private boolean hasUpdates;
 
     @Override
@@ -62,6 +63,7 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     {
         nodeCommandsById.clear();
         propertyCommandsByNodeIds.clear();
+        propertyCommandsByRelationshipIds.clear();
     }
 
     @Override
@@ -88,7 +90,8 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
 
     public static boolean mayResultInIndexUpdates( PropertyCommand command )
     {
-        return command.getAfter().isNodeSet();
+        return true;
+//        return command.getAfter().isNodeSet();
     }
 
     @Override
@@ -96,14 +99,27 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     {
         if ( mayResultInIndexUpdates( command ) )
         {
-            long nodeId = command.getAfter().getNodeId();
-            List<PropertyCommand> group = propertyCommandsByNodeIds.get( nodeId );
-            if ( group == null )
+            if ( command.getAfter().isNodeSet() )
             {
-                propertyCommandsByNodeIds.put( nodeId, group = new ArrayList<>() );
+                long nodeId = command.getAfter().getNodeId();
+                List<PropertyCommand> group = propertyCommandsByNodeIds.get( nodeId );
+                if ( group == null )
+                {
+                    propertyCommandsByNodeIds.put( nodeId, group = new ArrayList<>() );
+                }
+                group.add( command );
+                hasUpdates = true;
             }
-            group.add( command );
-            hasUpdates = true;
+            else {
+                long relId = command.getAfter().getRelId();
+                List<PropertyCommand> group = propertyCommandsByRelationshipIds.get( relId );
+                if ( group == null )
+                {
+                    propertyCommandsByRelationshipIds.put( relId, group = new ArrayList<>() );
+                }
+                group.add( command );
+                hasUpdates = true;
+            }
         }
         return false;
     }
@@ -121,5 +137,9 @@ public class NodePropertyCommandsExtractor extends TransactionApplier.Adapter
     public PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
     {
         return propertyCommandsByNodeIds;
+    }
+    public PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds()
+    {
+        return propertyCommandsByRelationshipIds;
     }
 }

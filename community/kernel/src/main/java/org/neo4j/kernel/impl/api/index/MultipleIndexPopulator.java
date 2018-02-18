@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -101,13 +102,15 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
     protected final Log log;
+    private EntityType type;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type )
     {
         this.storeView = storeView;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
+        this.type = type;
     }
 
     IndexPopulation addPopulator(
@@ -159,11 +162,18 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
     {
-        int[] labelIds = labelIds();
+        int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
 
-        storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
+        if ( type == EntityType.NODE )
+        {
+            storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
+        }
+        else
+        {
+            storeScan = storeView.visitRelationships( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor() );
+        }
         return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
         {
             @Override
@@ -318,7 +328,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         return IntStream.of( population.schema().getPropertyIds() );
     }
 
-    private int[] labelIds()
+    private int[] entityTokenIds()
     {
         return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
@@ -544,21 +554,21 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
     }
 
-    private class NodePopulationVisitor implements Visitor<NodeUpdates,
+    private class EntityPopulationVisitor implements Visitor<EntityUpdates,
             IndexPopulationFailedKernelException>
     {
         @Override
-        public boolean visit( NodeUpdates updates ) throws IndexPopulationFailedKernelException
+        public boolean visit( EntityUpdates updates ) throws IndexPopulationFailedKernelException
         {
             add( updates );
-            populateFromQueueBatched( updates.getNodeId() );
+            populateFromQueueBatched( updates.getEntityId() );
             return false;
         }
 
-        private void add( NodeUpdates updates )
+        private void add( EntityUpdates updates )
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
-            // NodeUpdates object. Therefore no additional properties need to be loaded.
+            // EntityUpdates object. Therefore no additional properties need to be loaded.
             for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
             {
                 indexUpdate.indexKey().onUpdate( indexUpdate );

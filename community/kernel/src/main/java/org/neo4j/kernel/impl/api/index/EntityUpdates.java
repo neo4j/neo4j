@@ -37,61 +37,60 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.NON_SCHEMA_ANY;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.SCHEMA_ALL;
-import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.Changed;
-import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.NoValue;
+import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.Changed;
+import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.NoValue;
 
 /**
  * Subclasses of this represent events related to property changes due to node addition, deletion or update.
  * This is of use in populating indexes that might be relevant to node label and property combinations.
  */
-public class NodeUpdates implements PropertyLoader.PropertyLoadSink
+public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 {
-    private final long nodeId;
+    private final long entityId;
     private static final long[] EMPTY_LONG_ARRAY = new long[0];
 
     // ASSUMPTION: these long arrays are actually sorted sets
-    private final long[] labelsBefore;
-    private final long[] labelsAfter;
+    private final long[] entityTokensBefore;
+    private final long[] entityTokensAfter;
 
     private final PrimitiveIntObjectMap<PropertyValue> knownProperties;
     private boolean hasLoadedAdditionalProperties;
 
     public static class Builder
     {
-        private NodeUpdates updates;
+        private EntityUpdates updates;
 
-        private Builder( NodeUpdates updates )
+        private Builder( EntityUpdates updates )
         {
             this.updates = updates;
         }
 
         public Builder added( int propertyKeyId, Value value )
         {
-            updates.put( propertyKeyId, NodeUpdates.after( value ) );
+            updates.put( propertyKeyId, EntityUpdates.after( value ) );
             return this;
         }
 
         public Builder removed( int propertyKeyId, Value value )
         {
-            updates.put( propertyKeyId, NodeUpdates.before( value ) );
+            updates.put( propertyKeyId, EntityUpdates.before( value ) );
             return this;
         }
 
         public Builder changed( int propertyKeyId, Value before, Value after )
         {
-            updates.put( propertyKeyId, NodeUpdates.changed( before, after ) );
+            updates.put( propertyKeyId, EntityUpdates.changed( before, after ) );
             return this;
         }
 
         public Builder existing( int propertyKeyId, Value value )
         {
-            updates.put( propertyKeyId, NodeUpdates.unchanged( value ) );
+            updates.put( propertyKeyId, EntityUpdates.unchanged( value ) );
             return this;
         }
 
-        public NodeUpdates build()
+        public EntityUpdates build()
         {
             return updates;
         }
@@ -102,42 +101,42 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         knownProperties.put( propertyKeyId, propertyValue );
     }
 
-    public static Builder forNode( long nodeId )
+    public static Builder forEntity( long entityId )
     {
-        return new Builder( new NodeUpdates( nodeId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY ) );
+        return new Builder( new EntityUpdates( entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY ) );
     }
 
-    public static Builder forNode( long nodeId, long[] labels )
+    public static Builder forEntity( long entityId, long[] entityTokenIds )
     {
-        return new Builder( new NodeUpdates( nodeId, labels, labels ) );
+        return new Builder( new EntityUpdates( entityId, entityTokenIds, entityTokenIds ) );
     }
 
-    public static Builder forNode( long nodeId, long[] labelsBefore, long[] labelsAfter )
+    public static Builder forEntity( long entityId, long[] entityTokenIdsBefore, long[] entityTokenIdsAfter )
     {
-        return new Builder( new NodeUpdates( nodeId, labelsBefore, labelsAfter ) );
+        return new Builder( new EntityUpdates( entityId, entityTokenIdsBefore, entityTokenIdsAfter ) );
     }
 
-    private NodeUpdates( long nodeId, long[] labelsBefore, long[] labelsAfter )
+    private EntityUpdates( long entityId, long[] entityTokensBefore, long[] entityTokensAfter )
     {
-        this.nodeId = nodeId;
-        this.labelsBefore = labelsBefore;
-        this.labelsAfter = labelsAfter;
+        this.entityId = entityId;
+        this.entityTokensBefore = entityTokensBefore;
+        this.entityTokensAfter = entityTokensAfter;
         this.knownProperties = Primitive.intObjectMap();
     }
 
-    public final long getNodeId()
+    public final long getEntityId()
     {
-        return nodeId;
+        return entityId;
     }
 
-    long[] labelsChanged()
+    long[] entityTokensChanged()
     {
-        return PrimitiveArrays.symmetricDifference( labelsBefore, labelsAfter );
+        return PrimitiveArrays.symmetricDifference( entityTokensBefore, entityTokensAfter );
     }
 
-    long[] labelsUnchanged()
+    long[] entityTokensUnchanged()
     {
-        return PrimitiveArrays.intersect( labelsBefore, labelsAfter );
+        return PrimitiveArrays.intersect( entityTokensBefore, entityTokensAfter );
     }
 
     PrimitiveIntCollection propertiesChanged()
@@ -220,22 +219,19 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
             int[] propertyIds = schema.getPropertyIds();
             if ( relevantBefore && !relevantAfter )
             {
-                indexUpdates.add( IndexEntryUpdate.remove(
-                        nodeId, indexKey, valuesBefore( propertyIds )
+                indexUpdates.add( IndexEntryUpdate.remove( entityId, indexKey, valuesBefore( propertyIds )
                     ) );
             }
             else if ( !relevantBefore && relevantAfter )
             {
-                indexUpdates.add( IndexEntryUpdate.add(
-                        nodeId, indexKey, valuesAfter( propertyIds )
+                indexUpdates.add( IndexEntryUpdate.add( entityId, indexKey, valuesAfter( propertyIds )
                 ) );
             }
             else if ( relevantBefore )
             {
                 if ( valuesChanged( propertyIds ) )
                 {
-                    indexUpdates.add( IndexEntryUpdate.change(
-                            nodeId, indexKey, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
+                    indexUpdates.add( IndexEntryUpdate.change( entityId, indexKey, valuesBefore( propertyIds ), valuesAfter( propertyIds ) ) );
                 }
             }
         }
@@ -245,18 +241,18 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 
     private boolean relevantBefore( SchemaDescriptor schema )
     {
-        return schema.isAffected(labelsBefore) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
+        return schema.isAffected( entityTokensBefore ) && hasPropsBefore( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
     private boolean relevantAfter( SchemaDescriptor schema )
     {
-        return schema.isAffected(labelsAfter) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
+        return schema.isAffected( entityTokensAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
     private void loadProperties( PropertyLoader propertyLoader, PrimitiveIntSet additionalPropertiesToLoad )
     {
         hasLoadedAdditionalProperties = true;
-        propertyLoader.loadProperties( nodeId, additionalPropertiesToLoad, this );
+        propertyLoader.loadProperties( entityId, additionalPropertiesToLoad, this );
 
         // loadProperties removes loaded properties from the input set, so the remaining ones were not on the node
         PrimitiveIntIterator propertiesWithNoValue = additionalPropertiesToLoad.iterator();
@@ -280,8 +276,8 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     private boolean atLeastOneRelevantChange( SchemaDescriptorSupplier indexKey )
     {
         SchemaDescriptor schema = indexKey.schema();
-        boolean labelBefore = schema.isAffected( labelsBefore );
-        boolean labelAfter = schema.isAffected( labelsAfter );
+        boolean labelBefore = schema.isAffected( entityTokensBefore );
+        boolean labelAfter = schema.isAffected( entityTokensAfter );
         if ( labelBefore && labelAfter )
         {
             for ( int propertyId : schema.getPropertyIds() )
@@ -374,9 +370,9 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     @Override
     public String toString()
     {
-        StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( "[" ).append( nodeId );
-        result.append( ", labelsBefore:" ).append( Arrays.toString( labelsBefore ) );
-        result.append( ", labelsAfter:" ).append( Arrays.toString( labelsAfter ) );
+        StringBuilder result = new StringBuilder( getClass().getSimpleName() ).append( "[" ).append( entityId );
+        result.append( ", entityTokensBefore:" ).append( Arrays.toString( entityTokensBefore ) );
+        result.append( ", entityTokensAfter:" ).append( Arrays.toString( entityTokensAfter ) );
         knownProperties.visitEntries( ( key, propertyValue ) ->
         {
             result.append( ", " );
@@ -393,9 +389,9 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
     {
         final int prime = 31;
         int result = 1;
-        result = prime * result + Arrays.hashCode( labelsBefore );
-        result = prime * result + Arrays.hashCode( labelsAfter );
-        result = prime * result + (int) (nodeId ^ (nodeId >>> 32));
+        result = prime * result + Arrays.hashCode( entityTokensBefore );
+        result = prime * result + Arrays.hashCode( entityTokensAfter );
+        result = prime * result + (int) (entityId ^ (entityId >>> 32));
 
         PrimitiveIntIterator propertyKeyIds = knownProperties.iterator();
         while ( propertyKeyIds.hasNext() )
@@ -422,10 +418,10 @@ public class NodeUpdates implements PropertyLoader.PropertyLoadSink
         {
             return false;
         }
-        NodeUpdates other = (NodeUpdates) obj;
-        return Arrays.equals( labelsBefore, other.labelsBefore ) &&
-               Arrays.equals( labelsAfter, other.labelsAfter ) &&
-               nodeId == other.nodeId &&
+        EntityUpdates other = (EntityUpdates) obj;
+        return Arrays.equals( entityTokensBefore, other.entityTokensBefore ) &&
+               Arrays.equals( entityTokensAfter, other.entityTokensAfter ) &&
+               entityId == other.entityId &&
                propertyMapEquals( knownProperties, other.knownProperties );
     }
 
