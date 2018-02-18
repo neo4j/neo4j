@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.helpers.Nodes;
+import org.neo4j.internal.kernel.api.helpers.RelationshipFactory;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -75,7 +76,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
 
-public class NodeProxy implements Node
+public class NodeProxy implements Node, RelationshipFactory<Relationship>
 {
     private final EmbeddedProxySPI spi;
     private final long nodeId;
@@ -773,11 +774,11 @@ public class NodeProxy implements Node
         switch ( direction )
         {
         case OUTGOING:
-            return outgoingIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+            return outgoingIterator( transaction.cursors(), node, typeIds, this );
         case INCOMING:
-            return incomingIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+            return incomingIterator( transaction.cursors(), node, typeIds, this );
         case BOTH:
-            return allIterator( transaction.cursors(), node, typeIds, spi::newRelationshipProxy );
+            return allIterator( transaction.cursors(), node, typeIds, this );
         default:
             throw new IllegalStateException( "Unknown direction " + direction );
         }
@@ -823,5 +824,11 @@ public class NodeProxy implements Node
         {
             throw new NotFoundException( new EntityNotFoundException( EntityType.NODE, nodeId ) );
         }
+    }
+
+    @Override
+    public Relationship relationship( long id, long startNodeId, int typeId, long endNodeId )
+    {
+        return spi.newRelationshipProxy( id, startNodeId, typeId, endNodeId );
     }
 }
