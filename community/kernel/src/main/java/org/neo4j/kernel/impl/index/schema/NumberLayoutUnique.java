@@ -57,7 +57,7 @@ class NumberLayoutUnique extends NumberLayout
         if ( comparison == 0 )
         {
             // This is a special case where we need also compare entityId to support inclusive/exclusive
-            if ( o1.getEntityIdIsSpecialTieBreaker() || o2.getEntityIdIsSpecialTieBreaker() )
+            if ( o1.getCompareId() || o2.getCompareId() )
             {
                 return Long.compare( o1.getEntityId(), o2.getEntityId() );
             }

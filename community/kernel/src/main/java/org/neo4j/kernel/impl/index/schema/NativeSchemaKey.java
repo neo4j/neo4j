@@ -34,11 +34,11 @@ interface NativeSchemaKey
      * of inclusive/exclusive bounds of range queries.
      * This is because {@link GBPTree} only support from inclusive and to exclusive.
      * <p>
-     * Note that {@code entityIdIsSpecialTieBreaker} is only an in memory state.
+     * Note that {@code compareId} is only an in memory state.
      */
-    void setEntityIdIsSpecialTieBreaker( boolean entityIdIsSpecialTieBreaker );
+    void setCompareId( boolean compareId );
 
-    boolean getEntityIdIsSpecialTieBreaker();
+    boolean getCompareId();
 
     long getEntityId();
 

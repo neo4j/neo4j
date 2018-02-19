@@ -22,22 +22,25 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
+import static org.neo4j.kernel.impl.index.schema.StringSchemaKey.ENTITY_ID_SIZE;
+
 /**
- * {@link Layout} for numbers where numbers doesn't need to be unique.
+ * {@link Layout} for strings.
  */
-abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaValue>
+abstract class StringLayout extends Layout.Adapter<StringSchemaKey,NativeSchemaValue>
 {
     @Override
-    public NumberSchemaKey newKey()
+    public StringSchemaKey newKey()
     {
-        return new NumberSchemaKey();
+        return new StringSchemaKey();
     }
 
     @Override
-    public NumberSchemaKey copyKey( NumberSchemaKey key, NumberSchemaKey into )
+    public StringSchemaKey copyKey( StringSchemaKey key, StringSchemaKey into )
     {
-        into.type = key.type;
-        into.rawValueBits = key.rawValueBits;
+        // TODO when we have reuse of byte[] take that into consideration here too
+        into.bytes = key.bytes.clone();
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
         return into;
@@ -50,9 +53,9 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public int keySize( NumberSchemaKey key )
+    public int keySize( StringSchemaKey key )
     {
-        return NumberSchemaKey.SIZE;
+        return key.size();
     }
 
     @Override
@@ -62,11 +65,10 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public void writeKey( PageCursor cursor, NumberSchemaKey key )
+    public void writeKey( PageCursor cursor, StringSchemaKey key )
     {
-        cursor.putByte( key.type );
-        cursor.putLong( key.rawValueBits );
         cursor.putLong( key.getEntityId() );
+        cursor.putBytes( key.bytes );
     }
 
     @Override
@@ -75,11 +77,17 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     }
 
     @Override
-    public void readKey( PageCursor cursor, NumberSchemaKey into, int keySize )
+    public void readKey( PageCursor cursor, StringSchemaKey into, int keySize )
     {
-        into.type = cursor.getByte();
-        into.rawValueBits = cursor.getLong();
+        // TODO consider reusing byte[] instances somehow
+        if ( keySize < ENTITY_ID_SIZE )
+        {
+            into.bytes = null;
+            return;
+        }
         into.setEntityId( cursor.getLong() );
+        into.bytes = new byte[keySize - ENTITY_ID_SIZE];
+        cursor.getBytes( into.bytes );
     }
 
     @Override
@@ -90,6 +98,12 @@ abstract class NumberLayout extends Layout.Adapter<NumberSchemaKey,NativeSchemaV
     @Override
     public boolean fixedSize()
     {
-        return true;
+        return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "%s[version:%d.%d, identifier:%d]", getClass().getSimpleName(), majorVersion(), minorVersion(), identifier() );
     }
 }

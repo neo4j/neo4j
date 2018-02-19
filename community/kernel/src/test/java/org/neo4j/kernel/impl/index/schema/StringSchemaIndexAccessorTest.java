@@ -19,25 +19,18 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
+import java.io.IOException;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+
+public abstract class StringSchemaIndexAccessorTest extends NativeSchemaIndexAccessorTest<StringSchemaKey,NativeSchemaValue>
 {
     @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
-            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    StringSchemaIndexAccessor makeAccessorWithSamplingConfig( IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return new StringSchemaIndexAccessor( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId, samplingConfig );
     }
 
-    @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
-    {
-        return new NumberUniqueLayoutTestUtil();
-    }
+    // TODO test reader unsupported index order
 }

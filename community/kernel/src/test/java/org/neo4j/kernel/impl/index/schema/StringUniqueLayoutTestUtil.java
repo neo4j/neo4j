@@ -19,25 +19,33 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+class StringUniqueLayoutTestUtil extends StringLayoutTestUtil
 {
-    @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
-            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    StringUniqueLayoutTestUtil()
     {
-        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        super( IndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    Layout<StringSchemaKey,NativeSchemaValue> createLayout()
     {
-        return new NumberUniqueLayoutTestUtil();
+        return new StringLayoutUnique();
+    }
+
+    @Override
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    {
+        return someUpdatesNoDuplicateValues();
+    }
+
+    @Override
+    protected double fractionDuplicates()
+    {
+        return 0;
     }
 }

@@ -19,25 +19,40 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 
-public class NumberUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaIndexPopulatorTest<NumberSchemaKey,NativeSchemaValue>
+/**
+ * {@link Layout} for strings that doesn't need to be unique.
+ */
+public class StringLayoutNonUnique extends StringLayout
 {
+    private static final String IDENTIFIER_NAME = "NUSI";
+    private static final int MAJOR_VERSION = 0;
+    private static final int MINOR_VERSION = 1;
+    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
+
     @Override
-    NativeSchemaIndexPopulator<NumberSchemaKey,NativeSchemaValue> createPopulator(
-            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
-            Layout<NumberSchemaKey,NativeSchemaValue> layout, IndexSamplingConfig samplingConfig )
+    public long identifier()
     {
-        return new NativeUniqueSchemaIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
+        return IDENTIFIER;
     }
 
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    public int majorVersion()
     {
-        return new NumberUniqueLayoutTestUtil();
+        return MAJOR_VERSION;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return MINOR_VERSION;
+    }
+
+    @Override
+    public int compare( StringSchemaKey o1, StringSchemaKey o2 )
+    {
+        int comparison = o1.compareValueTo( o2 );
+        return comparison != 0 ? comparison : Long.compare( o1.getEntityId(), o2.getEntityId() );
     }
 }

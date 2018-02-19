@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -92,14 +91,9 @@ class FusionIndexTestHelp
         return pointValues;
     }
 
-    static Value[] valuesNotSupportedByNative()
+    private static Value[] valuesNotSupportedByNative()
     {
         return ArrayUtils.addAll( pointValues, otherValues );
-    }
-
-    static Value[] valuesNotSupportedBySpatial()
-    {
-        return ArrayUtils.addAll( numberValues, otherValues );
     }
 
     static Value[] valuesNotSupportedByNativeOrSpatial()

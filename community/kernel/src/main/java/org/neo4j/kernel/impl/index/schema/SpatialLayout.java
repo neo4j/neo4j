@@ -54,7 +54,7 @@ abstract class SpatialLayout extends Layout.Adapter<SpatialSchemaKey,NativeSchem
     {
         into.rawValueBits = key.rawValueBits;
         into.setEntityId( key.getEntityId() );
-        into.setEntityIdIsSpecialTieBreaker( key.getEntityIdIsSpecialTieBreaker() );
+        into.setCompareId( key.getCompareId() );
         into.crs = key.crs;
         into.curve = key.curve;
         return into;

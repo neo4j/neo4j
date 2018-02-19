@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -35,13 +35,14 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeSchemaValue>
 {
+    private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
+            Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
+
     final IndexDescriptor indexDescriptor;
 
     LayoutTestUtil( IndexDescriptor indexDescriptor )
@@ -55,9 +56,7 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
 
     protected abstract double fractionDuplicates();
 
-    abstract IndexQuery rangeQuery( Number from, boolean fromInclusive, Number to, boolean toInclusive );
-
-    abstract Value asValue( Number value );
+    abstract IndexQuery rangeQuery( Object from, boolean fromInclusive, Object to, boolean toInclusive );
 
     abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
 
@@ -70,7 +69,40 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
     {
     }
 
-    abstract Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random );
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
+    {
+        double fractionDuplicates = fractionDuplicates();
+        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
+        {
+            private final Set<Object> uniqueCompareValues = new HashSet<>();
+            private final List<Value> uniqueValues = new ArrayList<>();
+            private long currentEntityId;
+
+            @Override
+            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
+            {
+                Value value;
+                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
+                        random.nextFloat() < fractionDuplicates )
+                {
+                    value = existingNonUniqueValue( random );
+                }
+                else
+                {
+                    value = newUniqueValue( random, uniqueCompareValues, uniqueValues );
+                }
+
+                return add( currentEntityId++, value );
+            }
+
+            private Value existingNonUniqueValue( RandomRule randomRule )
+            {
+                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
+            }
+        };
+    }
+
+    abstract Value newUniqueValue( RandomRule random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
 
     Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
@@ -86,22 +118,11 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         return values;
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
+    abstract IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues();
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
-    }
+    abstract  IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues();
 
-    IndexEntryUpdate<IndexDescriptor>[] someSpatialUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( SOME_POINTS, SOME_POINTS ) );
-    }
-
-    private IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Object[] values )
+    IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Object[] values )
     {
         @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
@@ -111,36 +132,6 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         }
         return indexEntryUpdates;
     }
-
-    private static final PointValue[] SOME_POINTS = new PointValue[]
-            {
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 12.5, 56.8 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, -38.5, 36.8 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, 30.0, -40.0 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS84, -50, -25 )
-            };
-
-    private static final Number[] ALL_EXTREME_VALUES = new Number[]
-            {
-                    Byte.MAX_VALUE,
-                    Byte.MIN_VALUE,
-                    Short.MAX_VALUE,
-                    Short.MIN_VALUE,
-                    Integer.MAX_VALUE,
-                    Integer.MIN_VALUE,
-                    Long.MAX_VALUE,
-                    Long.MIN_VALUE,
-                    Float.MAX_VALUE,
-                    -Float.MAX_VALUE,
-                    Double.MAX_VALUE,
-                    -Double.MAX_VALUE,
-                    Double.POSITIVE_INFINITY,
-                    Double.NEGATIVE_INFINITY,
-                    0,
-                    // These two values below coerce to the same double
-                    1234567890123456788L,
-                    1234567890123456789L
-            };
 
     protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {
@@ -152,8 +143,13 @@ abstract class LayoutTestUtil<KEY extends NativeSchemaKey, VALUE extends NativeS
         return Stream.of( updates ).map( update -> update.values()[0] ).collect( Collectors.toSet() ).size();
     }
 
-    static int countUniqueValues( Number[] updates )
+    static int countUniqueValues( Object[] updates )
     {
         return Stream.of( updates ).collect( Collectors.toSet() ).size();
+    }
+
+    void sort( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        Arrays.sort( updates, UPDATE_COMPARATOR );
     }
 }

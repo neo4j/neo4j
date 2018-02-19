@@ -19,24 +19,17 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**
- * {@link Layout} for PointValues where they don't need to be unique.
+ * {@link Layout} for strings that need to be unique.
  */
-public class SpatialLayoutUnique extends SpatialLayout
+class StringLayoutUnique extends StringLayout
 {
-    private static final String IDENTIFIER_NAME = "UPI";
+    private static final String IDENTIFIER_NAME = "USI";
     private static final int MAJOR_VERSION = 0;
     private static final int MINOR_VERSION = 1;
-    public static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
-
-    SpatialLayoutUnique( CoordinateReferenceSystem crs, SpaceFillingCurve curve )
-    {
-        super( crs, curve );
-    }
+    private static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, NativeSchemaValue.SIZE );
 
     @Override
     public long identifier()
@@ -57,7 +50,7 @@ public class SpatialLayoutUnique extends SpatialLayout
     }
 
     @Override
-    public int compare( SpatialSchemaKey o1, SpatialSchemaKey o2 )
+    public int compare( StringSchemaKey o1, StringSchemaKey o2 )
     {
         int comparison = o1.compareValueTo( o2 );
         if ( comparison == 0 )

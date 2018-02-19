@@ -29,7 +29,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class NumberConflictDetectingValueMergerTest
+public class ConflictDetectingValueMergerTest
 {
     private final ConflictDetectingValueMerger<NumberSchemaKey,NativeSchemaValue> detector = new ConflictDetectingValueMerger<>();
 
@@ -37,7 +37,7 @@ public class NumberConflictDetectingValueMergerTest
     public void shouldReportConflictOnSameValueAndDifferentEntityIds()
     {
         // given
-        Value value = Values.of( 123);
+        Value value = Values.of( 123 );
         long entityId1 = 10;
         long entityId2 = 20;
 
@@ -59,7 +59,7 @@ public class NumberConflictDetectingValueMergerTest
     public void shouldNotReportConflictOnSameValueSameEntityId()
     {
         // given
-        Value value = Values.of( 123);
+        Value value = Values.of( 123 );
         long entityId = 10;
 
         // when

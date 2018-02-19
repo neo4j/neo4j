@@ -24,16 +24,16 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
-import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
+class StringSchemaIndexReader extends NativeSchemaIndexReader<StringSchemaKey,NativeSchemaValue>
 {
-
-    NumberSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
+    StringSchemaIndexReader( GBPTree<StringSchemaKey,NativeSchemaValue> tree, Layout<StringSchemaKey,NativeSchemaValue> layout,
+            IndexSamplingConfig samplingConfig, IndexDescriptor descriptor )
     {
         super( tree, layout, samplingConfig, descriptor );
     }
@@ -46,11 +46,11 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             throw new UnsupportedOperationException();
         }
 
-        CapabilityValidator.validateQuery( NumberSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
+        CapabilityValidator.validateQuery( StringSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
-    void initializeRangeForQuery( KEY treeKeyFrom, KEY treeKeyTo, IndexQuery[] predicates )
+    void initializeRangeForQuery( StringSchemaKey treeKeyFrom, StringSchemaKey treeKeyTo, IndexQuery[] predicates )
     {
         IndexQuery predicate = predicates[0];
         switch ( predicate.type() )
@@ -64,8 +64,8 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
             treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             break;
-        case rangeNumeric:
-            NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
+        case rangeString:
+            StringRangePredicate rangePredicate = (StringRangePredicate)predicate;
             initFromForRange( rangePredicate, treeKeyFrom );
             initToForRange( rangePredicate, treeKeyTo );
             break;
@@ -74,21 +74,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         }
     }
 
-    private void initToForRange( NumberRangePredicate rangePredicate, KEY treeKeyTo )
-    {
-        Value toValue = rangePredicate.toAsValue();
-        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
-        {
-            treeKeyTo.initAsHighest();
-        }
-        else
-        {
-            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
-            treeKeyTo.setCompareId( true );
-        }
-    }
-
-    private void initFromForRange( NumberRangePredicate rangePredicate, KEY treeKeyFrom )
+    private void initFromForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyFrom )
     {
         Value fromValue = rangePredicate.fromAsValue();
         if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
@@ -102,9 +88,24 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         }
     }
 
+    private void initToForRange( StringRangePredicate rangePredicate, StringSchemaKey treeKeyTo )
+    {
+        Value toValue = rangePredicate.toAsValue();
+        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
+        {
+            treeKeyTo.initAsHighest();
+        }
+        else
+        {
+            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.setCompareId( true );
+        }
+    }
+
     @Override
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
-        return true;
+        return false;
     }
+    // todo implement
 }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class NumberNonUniqueSchemaIndexAccessorTest extends NumberSchemaIndexAccessorTest
+public class StringNonUniqueSchemaIndexAccessorTest extends StringSchemaIndexAccessorTest
 {
     @Override
-    protected LayoutTestUtil<NumberSchemaKey,NativeSchemaValue> createLayoutTestUtil()
+    protected LayoutTestUtil<StringSchemaKey,NativeSchemaValue> createLayoutTestUtil()
     {
-        return new NumberNonUniqueLayoutTestUtil();
+        return new StringNonUniqueLayoutTestUtil();
     }
 }
