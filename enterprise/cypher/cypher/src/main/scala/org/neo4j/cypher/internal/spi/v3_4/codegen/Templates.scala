@@ -308,12 +308,32 @@ object Templates {
     }
   }
 
+  def relationshipScanCursor(clazz: ClassGenerator,  fields: Fields): Unit = {
+    val methodBuilder: Builder = MethodDeclaration.method(typeRef[RelationshipScanCursor], "relationshipScanCursor")
+    using(clazz.generate(methodBuilder)) { generate =>
+      val relationshipCursor = Expression.get(generate.self(), fields.relationshipScanCursor)
+      Expression.get(generate.self(), fields.cursors)
+      val cursors = Expression.invoke(generate.self(),
+                                      methodReference(generate.owner(), typeRef[CursorFactory], "getOrLoadCursors" ))
+      using(generate.ifStatement(Expression.isNull(relationshipCursor))) { block =>
+        block.put(block.self(), fields.relationshipScanCursor,
+                  Expression.invoke(cursors, method[CursorFactory, RelationshipScanCursor]("allocateRelationshipScanCursor")))
+
+      }
+      generate.returns(relationshipCursor)
+    }
+  }
+
   def closeCursors(clazz: ClassGenerator, fields: Fields): Unit = {
     val methodBuilder: Builder = MethodDeclaration.method(typeRef[Unit], "closeCursors")
     using(clazz.generate(methodBuilder)) { generate =>
       val nodeCursor = Expression.get(generate.self(), fields.nodeCursor)
       using(generate.ifStatement(Expression.notNull(nodeCursor))) { block =>
         block.expression(Expression.invoke(nodeCursor, method[NodeCursor, Unit]("close")))
+      }
+      val relationshipCursor = Expression.get(generate.self(), fields.relationshipScanCursor)
+      using(generate.ifStatement(Expression.notNull(relationshipCursor))) { block =>
+        block.expression(Expression.invoke(relationshipCursor, method[RelationshipScanCursor, Unit]("close")))
       }
       val propertyCursor = Expression.get(generate.self(), fields.propertyCursor)
       using(generate.ifStatement(Expression.notNull(propertyCursor))) { block =>

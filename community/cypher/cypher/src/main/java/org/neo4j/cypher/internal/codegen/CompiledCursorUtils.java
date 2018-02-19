@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
@@ -119,6 +120,37 @@ public final class CompiledCursorUtils
         }
     }
 
+    /**
+     * Fetches a given property from a relationship
+     *
+     * @param read The current Read instance
+     * @param relationship The node cursor to use
+     * @param node The id of the node
+     * @param propertyCursor The property cursor to use
+     * @param prop The id of the property to find
+     * @return The value of the given property
+     * @throws EntityNotFoundException If the node cannot be find.
+     */
+    public static Value relationshipGetProperty( Read read, RelationshipScanCursor relationship, long node, PropertyCursor propertyCursor,
+            int prop ) throws EntityNotFoundException
+    {
+        if ( prop == StatementConstants.NO_SUCH_PROPERTY_KEY )
+        {
+            return Values.NO_VALUE;
+        }
+        singleRelationship( read, relationship, node );
+        relationship.properties( propertyCursor );
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == prop )
+            {
+                return propertyCursor.propertyValue();
+            }
+        }
+
+        return Values.NO_VALUE;
+    }
+
     public static RelationshipSelectionCursor nodeGetRelationships( Read read, CursorFactory cursors, NodeCursor node,
             long nodeId,
             Direction direction )
@@ -132,6 +164,15 @@ public final class CompiledCursorUtils
         if ( !nodeCursor.next() )
         {
             throw new EntityNotFoundException( EntityType.NODE, node );
+        }
+    }
+
+    private static void singleRelationship( Read read, RelationshipScanCursor relationships, long relationship ) throws EntityNotFoundException
+    {
+        read.singleRelationship( relationship, relationships );
+        if ( !relationships.next() )
+        {
+            throw new EntityNotFoundException( EntityType.NODE, relationship );
         }
     }
 }
