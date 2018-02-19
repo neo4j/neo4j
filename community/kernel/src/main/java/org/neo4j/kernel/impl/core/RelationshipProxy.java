@@ -140,23 +140,21 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             boolean deleted = transaction.dataWrite().relationshipDelete( id );
             if ( !deleted )
             {
-                throw new NotFoundException( "Unable to delete Relationship[" + id +
-                                             "] since it has already been deleted." );
+                alreadyDeleted();
             }
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
+        catch ( EntityNotFoundException e )
+        {
+            alreadyDeleted();
+        }
         catch ( AutoIndexingKernelException e )
         {
             throw new IllegalStateException( "Auto indexing encountered a failure while deleting the relationship: "
                                              + e.getMessage(), e );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Unable to delete relationship[" +
-                                         getId() + "] since it is already deleted." );
         }
     }
 
@@ -559,5 +557,11 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     private void assertInUnterminatedTransaction()
     {
         actions.assertInUnterminatedTransaction();
+    }
+
+    private void alreadyDeleted()
+    {
+        throw new NotFoundException( "Unable to delete relationship[" +
+        getId() + "] since it is already deleted." );
     }
 }

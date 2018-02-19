@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -162,8 +163,8 @@ public class Operations implements Write, ExplicitIndexWrite
         sharedRelationshipTypeLock( relationshipType );
         lockRelationshipNodes( sourceNode, targetNode );
 
-        nodeExists( sourceNode );
-        nodeExists( targetNode );
+        assertNodeExists( sourceNode );
+        assertNodeExists( targetNode );
 
         long id = statement.reserveRelationship();
         ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
@@ -181,11 +182,22 @@ public class Operations implements Write, ExplicitIndexWrite
         {
             lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             acquireExclusiveRelationshipLock( relationship );
+            assertRelationshipExists( relationship );
+
             ktx.assertOpen();
 
             autoIndexing.relationships().entityRemoved( this, relationship );
-            ktx.txState().relationshipDoDelete( relationship, relationshipCursor.getType(),
-                    relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+
+            TransactionState txState = ktx.txState();
+            if ( txState.relationshipIsAddedInThisTx( relationship ) )
+            {
+                txState.relationshipDoDeleteAddedInThisTx( relationship );
+            }
+            else
+            {
+                txState.relationshipDoDelete( relationship, relationshipCursor.getType(),
+                        relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            }
             return true;
         }
 
@@ -694,11 +706,19 @@ public class Operations implements Write, ExplicitIndexWrite
         return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
     }
 
-    private void nodeExists( long sourceNode ) throws EntityNotFoundException
+    private void assertNodeExists( long sourceNode ) throws EntityNotFoundException
     {
         if ( !allStoreHolder.nodeExists( sourceNode ) )
         {
             throw new EntityNotFoundException( EntityType.NODE, sourceNode );
+        }
+    }
+
+    private void assertRelationshipExists( long relationship ) throws EntityNotFoundException
+    {
+        if ( !allStoreHolder.relationshipExists( relationship ) )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
         }
     }
 

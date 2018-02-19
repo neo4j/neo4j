@@ -56,7 +56,7 @@ public interface Write
      * Delete a relationship
      * @param relationship the internal id of the relationship to delete
      */
-    boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException, EntityNotFoundException;;
+    boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException, EntityNotFoundException;
 
     /**
      * Add a label to a node

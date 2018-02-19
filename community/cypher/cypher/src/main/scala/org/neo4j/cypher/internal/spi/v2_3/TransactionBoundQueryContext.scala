@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.{SilentTokenNameLookup, StatementConstants}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.storable.Values
 
@@ -521,7 +522,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def relationshipEndNode(rel: Relationship) = rel.getEndNode
 
-  private val tokenNameLookup = new SilentTokenNameLookup(tc.kernelTransaction.tokenRead())
+  private val tokenNameLookup = new SilentTokenNameLookup(tc.tokenRead)
 
   override def commitAndRestartTx() { tc.commitAndRestartTx() }
 
