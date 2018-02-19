@@ -22,13 +22,11 @@ package org.neo4j.bolt.v2.messaging;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.values.AnyValue;
@@ -46,8 +44,6 @@ import static org.neo4j.values.storable.Values.pointValue;
 
 public class Neo4jPackV2Test
 {
-    private static final double DELTA = 0.0001;
-
     @Test
     public void shouldFailToPackPointWithIllegalDimensions() throws IOException
     {
@@ -64,7 +60,7 @@ public class Neo4jPackV2Test
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = neo4jPack.newPacker( output );
 
-        packer.packStructHeader( 2, Neo4jPackV2.POINT_2D );
+        packer.packStructHeader( 3, Neo4jPackV2.POINT_2D );
         packer.pack( intValue( WGS84.getCode() ) );
         packer.pack( doubleValue( 42.42 ) );
 
@@ -73,7 +69,7 @@ public class Neo4jPackV2Test
             unpack( output );
             fail( "Exception expected" );
         }
-        catch ( PackStream.Unexpected ignore )
+        catch ( IOException ignore )
         {
         }
     }
@@ -85,16 +81,17 @@ public class Neo4jPackV2Test
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = neo4jPack.newPacker( output );
 
-        packer.packStructHeader( 2, Neo4jPackV2.POINT_3D );
+        packer.packStructHeader( 4, Neo4jPackV2.POINT_3D );
         packer.pack( intValue( Cartesian.getCode() ) );
-        ((PackStream.Packer) packer).pack( 1.0, 100.1 );
+        packer.pack( doubleValue( 1.0 ) );
+        packer.pack( doubleValue( 100.1 ) );
 
         try
         {
             unpack( output );
             fail( "Exception expected" );
         }
-        catch ( PackStream.Unexpected ignore )
+        catch ( IOException ignore )
         {
         }
     }
@@ -109,73 +106,6 @@ public class Neo4jPackV2Test
     public void shouldPackAndUnpack3DPoints() throws IOException
     {
         testPackingAndUnpackingOfPoints( 3 );
-    }
-
-    @Test
-    public void shouldPackDoublePair() throws IOException
-    {
-        Neo4jPackV2 neo4jPack = new Neo4jPackV2();
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-
-        ((PackStream.Packer) packer).pack( 0.5, 42.42 );
-
-        ByteBuffer buffer = ByteBuffer.wrap( output.bytes() );
-        assertEquals( PackStream.FLOAT_64_PAIR, buffer.get() );
-        assertEquals( 0.5, buffer.getDouble(), DELTA );
-        assertEquals( 42.42, buffer.getDouble(), DELTA );
-        assertEquals( 0, buffer.remaining() );
-    }
-
-    @Test
-    public void shouldUnpackDoublePair() throws IOException
-    {
-        ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES + Double.BYTES * 2 );
-        buffer.put( PackStream.FLOAT_64_PAIR );
-        buffer.putDouble( 199.25 );
-        buffer.putDouble( 42.4242 );
-
-        Neo4jPackV2 neo4jPack = new Neo4jPackV2();
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( new PackedInputArray( buffer.array() ) );
-
-        double[] values = ((PackStream.Unpacker) unpacker).unpackDoublePair();
-        assertEquals( 199.25, values[0], DELTA );
-        assertEquals( 42.4242, values[1], DELTA );
-    }
-
-    @Test
-    public void shouldPackDoubleTriple() throws IOException
-    {
-        Neo4jPackV2 neo4jPack = new Neo4jPackV2();
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = neo4jPack.newPacker( output );
-
-        ((PackStream.Packer) packer).pack( 0.7, 25.25, 10.90 );
-
-        ByteBuffer buffer = ByteBuffer.wrap( output.bytes() );
-        assertEquals( PackStream.FLOAT_64_TRIPLE, buffer.get() );
-        assertEquals( 0.7, buffer.getDouble(), DELTA );
-        assertEquals( 25.25, buffer.getDouble(), DELTA );
-        assertEquals( 10.90, buffer.getDouble(), DELTA );
-        assertEquals( 0, buffer.remaining() );
-    }
-
-    @Test
-    public void shouldUnpackDoubleTriple() throws IOException
-    {
-        ByteBuffer buffer = ByteBuffer.allocate( Byte.BYTES + Double.BYTES * 3 );
-        buffer.put( PackStream.FLOAT_64_TRIPLE );
-        buffer.putDouble( 12.45 );
-        buffer.putDouble( 42.42 );
-        buffer.putDouble( 0.05 );
-
-        Neo4jPackV2 neo4jPack = new Neo4jPackV2();
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( new PackedInputArray( buffer.array() ) );
-
-        double[] values = ((PackStream.Unpacker) unpacker).unpackDoubleTriple();
-        assertEquals( 12.45, values[0], DELTA );
-        assertEquals( 42.42, values[1], DELTA );
-        assertEquals( 0.05, values[2], DELTA );
     }
 
     private static void testPackingAndUnpackingOfPoints( int dimension ) throws IOException
@@ -233,6 +163,6 @@ public class Neo4jPackV2Test
     private static PointValue randomPoint( int index, int dimension )
     {
         CoordinateReferenceSystem crs = index % 2 == 0 ? WGS84 : Cartesian;
-        return pointValue( crs, ThreadLocalRandom.current().doubles( dimension ).toArray() );
+        return pointValue( crs, ThreadLocalRandom.current().doubles( dimension, Double.MIN_VALUE, Double.MAX_VALUE ).toArray() );
     }
 }

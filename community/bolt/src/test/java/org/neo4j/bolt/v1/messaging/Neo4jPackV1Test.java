@@ -31,12 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
@@ -50,10 +47,8 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
@@ -262,63 +257,5 @@ public class Neo4jPackV1Test
 
         // Then
         assertThat( unpacked, equalTo( textValue ) );
-    }
-
-    @Test
-    public void shouldFailToPackDoublePair() throws IOException
-    {
-        testUnsupportedPacking( PackType.FLOAT_PAIR, packer -> packer.pack( 1.0, 2.0 ) );
-    }
-
-    @Test
-    public void shouldFailToUnpackDoublePair() throws IOException
-    {
-        testUnsupportedUnpacking( PackType.FLOAT_PAIR, PackStream.FLOAT_64_PAIR, Neo4jPackV1.UnpackerV1::unpackDoublePair );
-    }
-
-    @Test
-    public void shouldFailToPackDoubleTriple() throws IOException
-    {
-        testUnsupportedPacking( PackType.FLOAT_TRIPLE, packer -> packer.pack( 1.0, 2.0, 3.0 ) );
-    }
-
-    @Test
-    public void shouldFailToUnpackDoubleTriple() throws IOException
-    {
-        testUnsupportedUnpacking( PackType.FLOAT_TRIPLE, PackStream.FLOAT_64_TRIPLE, Neo4jPackV1.UnpackerV1::unpackDoubleTriple );
-    }
-
-    private void testUnsupportedPacking( PackType type, ThrowingConsumer<Neo4jPackV1.PackerV1,IOException> packerConsumer )
-            throws IOException
-    {
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPackV1.PackerV1 packer = (Neo4jPackV1.PackerV1) neo4jPack.newPacker( output );
-
-        try
-        {
-            packerConsumer.accept( packer );
-            fail( "Exception expected" );
-        }
-        catch ( PackStream.Unsupported e )
-        {
-            assertThat( e.getMessage(), containsString( type.toString() ) );
-        }
-    }
-
-    private void testUnsupportedUnpacking( PackType type, byte marker, ThrowingConsumer<Neo4jPackV1.UnpackerV1,IOException> unpackerConsumer )
-            throws IOException
-    {
-        PackedInputArray input = new PackedInputArray( new byte[]{marker} );
-        Neo4jPackV1.UnpackerV1 unpacker = (Neo4jPackV1.UnpackerV1) neo4jPack.newUnpacker( input );
-
-        try
-        {
-            unpackerConsumer.accept( unpacker );
-            fail( "Exception expected" );
-        }
-        catch ( PackStream.Unsupported e )
-        {
-            assertThat( e.getMessage(), containsString( type.toString() ) );
-        }
     }
 }
