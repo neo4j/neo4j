@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
@@ -36,9 +37,10 @@ import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.neo4j.util.Preconditions.checkState;
+import static org.neo4j.util.Preconditions.requireNonNegative;
 import static org.neo4j.util.Preconditions.requirePositive;
 
-public final class VmPauseMonitor
+public class VmPauseMonitor
 {
     private final long measurementDurationNs;
     private final long stallAlertThresholdNs;
@@ -50,9 +52,9 @@ public final class VmPauseMonitor
     public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Log log, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
     {
         this.measurementDurationNs = requirePositive( measureInterval.toNanos() );
-        this.stallAlertThresholdNs = requirePositive( stallAlertThreshold.toNanos() );
+        this.stallAlertThresholdNs = requireNonNegative( stallAlertThreshold.toNanos() );
         this.log = requireNonNull( log );
-        this.jobScheduler = jobScheduler;
+        this.jobScheduler = requireNonNull( jobScheduler );
         this.listener = requireNonNull( listener );
     }
 
@@ -60,7 +62,7 @@ public final class VmPauseMonitor
     {
         log.debug( "Starting VM pause monitor" );
         checkState( job == null, "VM pause monitor is already started" );
-        job = jobScheduler.schedule( JobScheduler.Groups.vmPauseMonitor, this::run );
+        job = requireNonNull( jobScheduler.schedule( JobScheduler.Groups.vmPauseMonitor, this::run ) );
     }
 
     public void stop()
@@ -80,6 +82,10 @@ public final class VmPauseMonitor
         {
             log.debug( "VM pause monitor job failed", e );
         }
+        finally
+        {
+            job = null;
+        }
     }
 
     private void run()
@@ -98,12 +104,13 @@ public final class VmPauseMonitor
         }
     }
 
-    private void monitor() throws InterruptedException
+    @VisibleForTesting
+    void monitor() throws InterruptedException
     {
         GcStats lastGcStats = getGcStats();
         long nextCheckPoint = nanoTime() + measurementDurationNs;
 
-        while ( !currentThread().isInterrupted() )
+        while ( !isStopped() )
         {
             NANOSECONDS.sleep( measurementDurationNs );
             final long now = nanoTime();
@@ -122,6 +129,13 @@ public final class VmPauseMonitor
             }
             lastGcStats = gcStats;
         }
+    }
+
+    @SuppressWarnings( "MethodMayBeStatic" )
+    @VisibleForTesting
+    boolean isStopped()
+    {
+        return currentThread().isInterrupted();
     }
 
     public static class VmPauseInfo

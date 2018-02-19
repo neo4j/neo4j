@@ -47,6 +47,22 @@ public final class Preconditions
     }
 
     /**
+     * Ensures that {@code value} is greater than or equal to {@code 0} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's greater than or equal to {@code 0}
+     * @throws IllegalArgumentException if {@code value} is less than 0
+     */
+    public static long requireNonNegative( long value )
+    {
+        if ( value < 0 )
+        {
+            throw new IllegalArgumentException( "Expected non-negative long value, got " + value );
+        }
+        return value;
+    }
+
+    /**
      * Ensures that {@code expression} is {@code true} or throws {@link IllegalStateException} otherwise.
      *
      * @param expression an expression for check
