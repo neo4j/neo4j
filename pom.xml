@@ -95,7 +95,7 @@
     <scala.java9.arg/>
     <jersey.version>1.19.3</jersey.version>
     <checkstyle.strict>true</checkstyle.strict>
-    <junit.version>5.1.0-RC1</junit.version>
+    <junit.version>5.1.0</junit.version>
   </properties>
 
   <modules>
@@ -380,7 +380,7 @@
             <dependency>
               <groupId>org.junit.platform</groupId>
               <artifactId>junit-platform-surefire-provider</artifactId>
-              <version>1.1.0-RC1</version>
+              <version>1.1.0</version>
             </dependency>
             <dependency>
               <groupId>org.junit.vintage</groupId>
@@ -414,7 +414,7 @@
             <dependency>
               <groupId>org.junit.platform</groupId>
               <artifactId>junit-platform-surefire-provider</artifactId>
-              <version>1.1.0-RC1</version>
+              <version>1.1.0</version>
             </dependency>
             <dependency>
               <groupId>org.junit.vintage</groupId>
