@@ -69,7 +69,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public void drop() throws IOException
     {
-        forAll( index -> ((SpatialKnownIndex) index).drop(), indexMap.values().toArray() );
+        forAll( SpatialKnownIndex::drop, indexMap.values() );
         indexMap.clear();
     }
 
@@ -80,9 +80,9 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public void force()
+    public void force() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).force(), indexMap.values().toArray() );
+        forAll( SpatialKnownIndex::force, indexMap.values() );
     }
 
     @Override
@@ -94,7 +94,7 @@ class SpatialFusionIndexAccessor implements IndexAccessor
     @Override
     public void close() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).close(), indexMap.values().toArray() );
+        forAll( SpatialKnownIndex::close, indexMap.values() );
     }
 
     @Override
@@ -133,9 +133,9 @@ class SpatialFusionIndexAccessor implements IndexAccessor
             }
 
             @Override
-            public void close()
+            public void close() throws Exception
             {
-                forAll( entries -> ((BoundedIterable) entries).close(), allEntriesReader.toArray() );
+                forAll( BoundedIterable::close, allEntriesReader );
             }
 
             @Override
