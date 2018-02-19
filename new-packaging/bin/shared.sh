@@ -9,7 +9,7 @@ parse_version() {
   local edition_version_extension=${filename#*-}
   local version_extension=${edition_version_extension#*-}
   version=${version_extension%-*}
-  deb_version=${version/-/.}
+  deb_version=${version/-/"~"}
   rpm_version=${version%-*}
   version_label=${version#*-}
   # if no label
