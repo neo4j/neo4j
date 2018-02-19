@@ -19,8 +19,10 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.internal.hamcrest.HamcrestArgumentMatcher;
 
 import java.time.Clock;
 import java.util.ArrayList;
@@ -28,17 +30,20 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.LongSupplier;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.test.Race;
 import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
@@ -76,19 +81,15 @@ public class PreElectionIT
         // given
         long initialTerm = cluster.awaitLeader().raft().term();
 
-        // when
-        for ( CoreClusterMember member : cluster.coreMembers() )
-        {
-            if ( Role.FOLLOWER == member.raft().currentRole() )
-            {
-                futures.add( CompletableFuture.runAsync( Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) ) ) );
-            }
-        }
+        // when a heartbeat is missed and an election is triggered on followers
+        // (NOTE: this is actually done in a loop in the then clause since race conditions lead to a heartbeat being received
+        // sometimes during election => cancelling election)
+        futures.addAll( triggerElectionOnFollowers( cluster ) );
 
         // then
         Assert.assertEventually(
                 "Should be on a new term following an election",
-                () -> cluster.awaitLeader().raft().term(), not( equalTo( initialTerm ) ),
+                () -> termNumberHasChanged( cluster, initialTerm, () -> futures.addAll( triggerElectionOnFollowers( cluster ) ) ), Matchers.equalTo( true ),
                 5,
                 TimeUnit.MINUTES );
 
@@ -159,5 +160,35 @@ public class PreElectionIT
     private String firstServerRefusesToBeLeader( int id )
     {
         return id == 0 ? "true" : "false";
+    }
+
+    private Collection<CompletableFuture<Void>> triggerElectionOnFollowers( Cluster cluster )
+    {
+        Collection<CompletableFuture<Void>> futures = new ArrayList<>(  );
+        for ( CoreClusterMember member : cluster.coreMembers() )
+        {
+            if ( Role.FOLLOWER == member.raft().currentRole() )
+            {
+                Runnable election = Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) );
+                futures.add( CompletableFuture.runAsync( election ) );
+            }
+        }
+        return futures;
+    }
+
+    private boolean termNumberHasChanged( Cluster cluster, long initialTerm, Runnable triggerElectionOnFollowers )
+    {
+        try
+        {
+            triggerElectionOnFollowers.run();
+            ThrowingSupplier<Long,TimeoutException> termSupplier = () -> cluster.awaitLeader().raft().term();
+            Assert.assertEventually( "Brief check for desired condition before repeating action", termSupplier, not( equalTo( initialTerm ) ), 5, TimeUnit.SECONDS );
+            return true;
+        }
+        catch ( TimeoutException | InterruptedException | AssertionError e )
+        {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
