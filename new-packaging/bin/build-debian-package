@@ -57,7 +57,7 @@ done
 DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < src/debian/changelog > ${package_directory}/debian/changelog
 DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < src/debian/NEWS.Debian > ${package_directory}/debian/NEWS.Debian
 [[ ${package_name} = "neo4j" ]] && replaces="neo4j-enterprise" || replaces="neo4j"
-PACKAGE_NAME=${package_name} REPLACES=${replaces} envsubst '${PACKAGE_NAME} ${REPLACES}' < src/debian/control > ${package_directory}/debian/control
+PACKAGE_NAME=${package_name} REPLACES=${replaces} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${REPLACES} ${VERSION}' < src/debian/control > ${package_directory}/debian/control
 PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${PACKAGE_NAME} ${VERSION}' < src/debian/files > ${package_directory}/debian/files
 PACKAGE_NAME=${package_name} envsubst '${PACKAGE_NAME}' < src/debian/package.lintian-overrides > ${package_directory}/debian/${package_name}.lintian-overrides
 
