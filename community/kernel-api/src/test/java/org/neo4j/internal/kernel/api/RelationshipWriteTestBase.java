@@ -352,7 +352,6 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         }
     }
 
-
     @Test
     public void shouldUpdatePropertyToRelationshipInTransaction() throws Exception
     {
@@ -368,7 +367,6 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
             tx.success();
         }
-
 
         // When
         try ( Transaction tx = session.beginTransaction() )

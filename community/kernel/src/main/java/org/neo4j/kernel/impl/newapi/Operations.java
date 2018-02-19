@@ -623,7 +623,6 @@ public class Operations implements Write, ExplicitIndexWrite
         return existingValue;
     }
 
-
     public CursorFactory cursors()
     {
         return cursors;
