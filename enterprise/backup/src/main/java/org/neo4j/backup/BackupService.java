@@ -187,7 +187,7 @@ class BackupService
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
 
-        Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
+        Map<String,String> temporaryDbConfig = getTemporaryDbConfig( config );
         config = config.with( temporaryDbConfig );
         try ( PageCache pageCache = createPageCache( new DefaultFileSystemAbstraction(), config ) )
         {
@@ -212,12 +212,13 @@ class BackupService
         }
     }
 
-    private Map<String,String> getTemporaryDbConfig()
+    private Map<String,String> getTemporaryDbConfig( Config userConfig )
     {
         Map<String,String> tempDbConfig = new HashMap<>();
         tempDbConfig.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+
         // In case someone deleted the logical log from a full backup
-        tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
+        tempDbConfig.put( GraphDatabaseSettings.keep_logical_logs.name(), "1 txs" );
         return tempDbConfig;
     }
 
