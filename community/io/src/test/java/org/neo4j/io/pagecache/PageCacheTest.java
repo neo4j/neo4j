@@ -4142,7 +4142,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         };
     }
 
-    @Test( timeout = SHORT_TIMEOUT_MILLIS )
+    @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
     public void fileMappedWithDeleteOnCloseMustNotLeakDirtyPages() throws Exception
     {
         configureStandardPageCache();
