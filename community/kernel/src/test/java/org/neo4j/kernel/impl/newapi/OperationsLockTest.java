@@ -70,6 +70,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory.uniqueForLabel;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class OperationsLockTest
 {
@@ -270,7 +271,7 @@ public class OperationsLockTest
         Value value = Values.of( 9 );
         when( propertyCursor.next() ).thenReturn( true );
         when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
-        when( propertyCursor.propertyValue() ).thenReturn( Values.NO_VALUE );
+        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
 
         // when
         operations.nodeSetProperty( 123, propertyKeyId, value );
@@ -278,6 +279,25 @@ public class OperationsLockTest
         // then
         order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
         order.verify( txState ).nodeDoAddProperty( 123, propertyKeyId, value );
+    }
+
+    @Test
+    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
+    {
+        // given
+        when( relationshipCursor.next() ).thenReturn( true );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+        when( propertyCursor.next() ).thenReturn( true );
+        when( propertyCursor.propertyKey() ).thenReturn( propertyKeyId );
+        when( propertyCursor.propertyValue() ).thenReturn( NO_VALUE );
+
+        // when
+        operations.relationshipSetProperty( 123, propertyKeyId, value );
+
+        // then
+        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
+        order.verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
     }
 
     @Test
@@ -297,6 +317,24 @@ public class OperationsLockTest
         // then
         verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 123 );
         verify( txState ).nodeDoAddProperty( 123, propertyKeyId, value );
+    }
+
+    @Test
+    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
+    {
+        // given
+        when( relationshipCursor.next() ).thenReturn( true );
+        when( transaction.hasTxStateWithChanges() ).thenReturn( true );
+        txState.relationshipDoCreate( 123, 42, 43, 45 );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+
+        // when
+        operations.relationshipSetProperty( 123, propertyKeyId, value );
+
+        // then
+        verify( locks, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123 );
+        verify( txState ).relationshipDoReplaceProperty( 123, propertyKeyId, NO_VALUE, value );
     }
 
     @Test

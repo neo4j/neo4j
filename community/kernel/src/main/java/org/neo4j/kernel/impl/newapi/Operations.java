@@ -435,6 +435,7 @@ public class Operations implements Write, ExplicitIndexWrite
     @Override
     public Value relationshipSetProperty( long relationship, int propertyKey, Value value ) throws KernelException
     {
+        acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
         singleRelationship( relationship );
         Value existingValue = readRelationshipProperty( propertyKey );
