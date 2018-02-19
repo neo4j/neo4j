@@ -444,7 +444,6 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
     // Then
     val plan = result.executionPlanDescription()
-    println(plan)
     plan should useOperatorWithText("Projection", "point")
     plan should useOperatorWithText("Filter", "distance")
     plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", if (inclusiveRange) "<= " else "<")

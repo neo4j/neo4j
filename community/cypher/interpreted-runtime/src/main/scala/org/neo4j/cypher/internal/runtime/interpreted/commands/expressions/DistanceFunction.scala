@@ -84,7 +84,7 @@ object CartesianCalculator extends DistanceCalculator {
 
 object HaversinCalculator extends DistanceCalculator {
 
-  private val EARTH_RADIUS_METERS = 6378140.0
+  val EARTH_RADIUS_METERS = 6378140.0
 
   override def isDefinedAt(points: (PointValue, PointValue)): Boolean =
     points._1.getCoordinateReferenceSystem.getCode() == CoordinateReferenceSystem.WGS84.getCode() &&
@@ -102,11 +102,46 @@ object HaversinCalculator extends DistanceCalculator {
     EARTH_RADIUS_METERS * greatCircleDistance
   }
 
+  // http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
   override def boundingBox(p: PointValue, distance: Double): (PointValue, PointValue) = {
-    val coordinates = p.coordinate()
-    val dx = 180.0 / Math.pow(2.0 * Math.PI, 2) * distance / EARTH_RADIUS_METERS
-    val min = Values.pointValue(p.getCoordinateReferenceSystem, coordinates(0) - dx, coordinates(1) - dx)
-    val max = Values.pointValue(p.getCoordinateReferenceSystem, coordinates(0) + dx, coordinates(1) + dx)
-    (min, max)
+    if (distance == 0.0) {
+      return (p, p)
+    }
+
+    val lat = toRadians(p.coordinate()(1))
+    val lon = toRadians(p.coordinate()(0))
+    val r = distance / EARTH_RADIUS_METERS
+
+    val lat_min = lat - r
+    val lat_max = lat + r
+
+    // If your query circle includes one of the poles
+    if (lat_max > PI / 2) {
+      val bottomLeft = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(-PI), toDegrees(lat_min))
+      val topRight = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(PI), toDegrees(PI / 2))
+      return (bottomLeft, topRight)
+    } else if (lat_min < -PI / 2) {
+      val bottomLeft = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(-PI), toDegrees(-PI / 2))
+      val topRight = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(PI), toDegrees(lat_max))
+      return (bottomLeft, topRight)
+    }
+
+    val lat_T = asin(sin(lat)/cos(r))
+    val delta_lon = asin(sin(r)/cos(lat))
+    val lon_min = lon - delta_lon
+    val lon_max = lon + delta_lon
+
+    // Large rectangle covering all longitudes
+    // TODO implement two rectangle solution
+    if(lon_min < -PI || lon_max > PI) {
+      val bottomLeft = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(-PI), toDegrees(lat_min))
+      val topRight = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(PI), toDegrees(lat_max))
+      return (bottomLeft, topRight)
+    }
+
+    val bottomLeft = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(lon_min), toDegrees(lat_min))
+    val topRight = Values.pointValue(p.getCoordinateReferenceSystem, toDegrees(lon_max), toDegrees(lat_max))
+
+    (bottomLeft, topRight)
   }
 }
