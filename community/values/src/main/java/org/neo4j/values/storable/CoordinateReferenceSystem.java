@@ -263,7 +263,7 @@ public class CoordinateReferenceSystem implements CRS
 
     private static class CartesianCalculator implements Calculator
     {
-        int dimension = 0;
+        int dimension;
 
         CartesianCalculator( int dimension )
         {
@@ -299,7 +299,7 @@ public class CoordinateReferenceSystem implements CRS
     {
         private static final double EARTH_RADIUS_METERS = 6378140.0;
         private static final double EXTENSION_FACTOR = 1.0001;
-        int dimension = 0;
+        int dimension;
 
         GeographicCalculator( int dimension )
         {
