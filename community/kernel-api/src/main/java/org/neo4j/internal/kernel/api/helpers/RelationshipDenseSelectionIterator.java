@@ -32,7 +32,7 @@ public final class RelationshipDenseSelectionIterator<R> extends RelationshipDen
     private RelationshipFactory<R> factory;
     private long next;
 
-    public RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
+    RelationshipDenseSelectionIterator( RelationshipFactory<R> factory )
     {
         this.factory = factory;
         this.next = RelationshipSelections.UNINITIALIZED;
