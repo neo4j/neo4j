@@ -826,19 +826,17 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, ByteBuffer buf )
     {
-        if ( buf.getClass() == UnsafeUtil.directByteBufferClass )
+        if ( buf.getClass() == UnsafeUtil.directByteBufferClass && buf.isDirect() && !buf.isReadOnly() )
         {
-            // Here we expect that the read-only direct ByteBuffer is implemented with a different class than the
-            // writable direct ByteBuffer.
-            assert isDirectWritableByteBuffer( buf ) : "Unexpected direct byte buffer class hierarchy.";
+            // We expect that the mutable direct byte buffer is implemented with a class that is distinct from the
+            // non-mutable (read-only) and non-direct (on-heap) byte buffers. By comparing class object instances,
+            // we also implicitly assume that the classes are loaded by the same class loader, which should be
+            // trivially true in almost all practical cases.
+            // If our expectations are not met, then the additional isDirect and !isReadOnly checks will send all
+            // calls to the byte-wise-copy fallback.
             return copyToDirectByteBuffer( sourceOffset, buf );
         }
         return copyToByteBufferByteWise( sourceOffset, buf );
-    }
-
-    private boolean isDirectWritableByteBuffer( ByteBuffer buf )
-    {
-        return buf.isDirect() && !buf.isReadOnly();
     }
 
     private int copyToDirectByteBuffer( int sourceOffset, ByteBuffer buf )
