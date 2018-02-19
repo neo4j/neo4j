@@ -242,6 +242,15 @@ public class Operations implements Write, ExplicitIndexWrite
         }
     }
 
+    private void singleRelationship( long relationship ) throws EntityNotFoundException
+    {
+        allStoreHolder.singleRelationship( relationship, relationshipCursor);
+        if ( !relationshipCursor.next() )
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
+        }
+    }
+
     /**
      * Fetch the property values for all properties in schema for a given node. Return these as an exact predicate
      * array.
@@ -424,10 +433,28 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
+    public Value relationshipSetProperty( long relationship, int propertyKey, Value value ) throws KernelException
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        singleRelationship( relationship );
+        Value existingValue = readRelationshipProperty( propertyKey );
+        if ( existingValue == NO_VALUE )
+        {
+            autoIndexing.relationships().propertyAdded( this, relationship, propertyKey, value );
+            ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, NO_VALUE, value );
+            return NO_VALUE;
+        }
+        else
+        {
+            if ( propertyHasChanged( existingValue, value ) )
+            {
+                autoIndexing.relationships().propertyChanged( this, relationship, propertyKey, existingValue, value );
+
+                ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
+            }
+
+            return existingValue;
+        }
     }
 
     @Override
@@ -555,6 +582,24 @@ public class Operations implements Write, ExplicitIndexWrite
         }
         return existingValue;
     }
+
+    private Value readRelationshipProperty( int propertyKey )
+    {
+        relationshipCursor.properties( propertyCursor );
+
+        //Find out if the property had a value
+        Value existingValue = NO_VALUE;
+        while ( propertyCursor.next() )
+        {
+            if ( propertyCursor.propertyKey() == propertyKey )
+            {
+                existingValue = propertyCursor.propertyValue();
+                break;
+            }
+        }
+        return existingValue;
+    }
+
 
     public CursorFactory cursors()
     {

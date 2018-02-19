@@ -99,7 +99,7 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipSetProperty( long relationship, int propertyKey, Value value );
+    Value relationshipSetProperty( long relationship, int propertyKey, Value value ) throws KernelException;
 
     /**
      * Remove a property from a relationship

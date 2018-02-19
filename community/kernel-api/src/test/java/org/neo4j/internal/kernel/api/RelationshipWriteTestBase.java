@@ -30,9 +30,14 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -180,6 +185,105 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
         {
             assertEquals( 0, graphDb.getNodeById( n1 ).getDegree() );
+        }
+    }
+
+    @Test
+    public void shouldAddPropertyToRelationship() throws Exception
+    {
+        // Given
+        long  relationshipId;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
+
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
+        }
+    }
+
+    @Test
+    public void shouldUpdatePropertyToRelationship() throws Exception
+    {
+        // Given
+        long  relationshipId;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            Relationship r = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            r.setProperty( propertyKey, 42  );
+            relationshipId = r.getId();
+
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ),
+                    equalTo( intValue( 42 ) ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( "hello" ) );
+        }
+    }
+
+    @Test
+    public void shouldUpdatePropertyToRelationshipInTransaction() throws Exception
+    {
+        // Given
+        long  relationshipId;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            relationshipId = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) ).getId();
+
+            tx.success();
+        }
+
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "hello" ) ), equalTo( NO_VALUE ) );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, stringValue( "world" ) ), equalTo( stringValue( "hello" ) ) );
+            assertThat( tx.dataWrite().relationshipSetProperty( relationshipId, token, intValue( 1337 ) ), equalTo( stringValue( "world" ) ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertThat( graphDb.getRelationshipById( relationshipId ).getProperty( "prop" ), equalTo( 1337 ) );
         }
     }
 }

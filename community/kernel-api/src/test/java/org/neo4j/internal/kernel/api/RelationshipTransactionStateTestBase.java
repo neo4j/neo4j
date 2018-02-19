@@ -37,6 +37,8 @@ import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCount;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.computeKey;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
@@ -311,6 +313,50 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     {
         traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
     }
+
+    @Test
+    public void shouldSeeNewRelationshipPropertyInTransaction() throws Exception
+    {
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            String propKey1 = "prop1";
+            String propKey2 = "prop2";
+            long n1 = tx.dataWrite().nodeCreate();
+            long n2 = tx.dataWrite().nodeCreate();
+            int label = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            long r = tx.dataWrite().relationshipCreate( n1, label, n2 );
+            int prop1 = session.token().propertyKeyGetOrCreateForName( propKey1 );
+            int prop2 = session.token().propertyKeyGetOrCreateForName( propKey2 );
+            assertEquals( tx.dataWrite().relationshipSetProperty( r, prop1, stringValue( "hello" ) ), NO_VALUE );
+            assertEquals( tx.dataWrite().relationshipSetProperty( r, prop2, stringValue( "world" ) ), NO_VALUE );
+
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipTraversalCursor relationship = cursors.allocateRelationshipTraversalCursor();
+                  PropertyCursor property = cursors.allocatePropertyCursor() )
+            {
+                tx.dataRead().singleNode( n1, node );
+                assertTrue( "should access node", node.next() );
+                node.allRelationships( relationship );
+
+                assertTrue( "should access relationship", relationship.next() );
+
+                relationship.properties( property );
+                assertTrue( property.next() );
+                //First property
+                assertEquals( prop1, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "hello" ) );
+                //second property
+                assertTrue( property.next() );
+                assertEquals( prop2, property.propertyKey() );
+                assertEquals( property.propertyValue(), stringValue( "world" ) );
+
+                assertFalse( "should only find two properties", property.next() );
+                assertFalse( "should only find one relationship", relationship.next() );
+            }
+            tx.success();
+        }
+    }
+
 
     private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
