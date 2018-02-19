@@ -33,7 +33,7 @@ case object CostMorselTestConfig extends TestConfig(Some("cost-morsel.txt"),"CYP
 case object CostCompiledTestConfig extends TestConfig(Some("cost-compiled.txt"),
   "CYPHER planner=cost runtime=compiled debug=generate_java_source")
 
-case object CostTestConfig extends TestConfig(Some("cost.txt"),"CYPHER planner=cost")
+case object CostInterpretedTestConfig extends TestConfig(Some("cost-interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
 
 case object Compatibility33TestConfig extends TestConfig(Some("compatibility-33.txt"),"CYPHER 3.3")
 
