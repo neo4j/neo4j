@@ -80,8 +80,10 @@ case object PlanUpdates
 
       //CREATE ()
       case p: CreateNodePattern => context.logicalPlanProducer.planCreateNode(source, p, context)
+
       //CREATE (a)-[:R]->(b)
       case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p, context)
+
       //MERGE ()
       case p: MergeNodePattern =>
         planMerge(source, p.matchGraph, Seq(p.createNodePattern), Seq.empty, p.onCreate,
@@ -91,42 +93,56 @@ case object PlanUpdates
       case p: MergeRelationshipPattern =>
         planMerge(source, p.matchGraph, p.createNodePatterns, p.createRelPatterns, p.onCreate,
           p.onMatch, first, context, solveds, cardinalities, p)
+
       //SET n:Foo:Bar
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern, context)
+
       //SET n.prop = 42
       case pattern: SetNodePropertyPattern =>
         context.logicalPlanProducer.planSetNodeProperty(source, pattern, context)
+
       //SET r.prop = 42
       case pattern: SetRelationshipPropertyPattern =>
         context.logicalPlanProducer.planSetRelationshipProperty(source, pattern, context)
+
+      //SET x.prop = 42
       case pattern: SetPropertyPattern =>
         context.logicalPlanProducer.planSetProperty(source, pattern, context)
+
       //SET n.prop += {}
       case pattern: SetNodePropertiesFromMapPattern =>
         context.logicalPlanProducer.planSetNodePropertiesFromMap(source, pattern, context)
-      //SET r.prop = 42
+
+      //SET r.prop += {}
       case pattern: SetRelationshipPropertiesFromMapPattern =>
         context.logicalPlanProducer.planSetRelationshipPropertiesFromMap(source, pattern, context)
+
       //REMOVE n:Foo:Bar
       case pattern: RemoveLabelPattern => context.logicalPlanProducer.planRemoveLabel(source, pattern, context)
+
       //DELETE a
       case p: DeleteExpression =>
         val delete = p.expression match {
           //DELETE user
           case Variable(n) if context.semanticTable.isNode(n) =>
             context.logicalPlanProducer.planDeleteNode(source, p, context)
+
           //DELETE rel
           case Variable(r) if context.semanticTable.isRelationship(r) =>
             context.logicalPlanProducer.planDeleteRelationship(source, p, context)
+
           //DELETE path
           case PathExpression(e) =>
             context.logicalPlanProducer.planDeletePath(source, p, context)
+
           //DELETE users[{i}]
           case ContainerIndex(Variable(n), indexExpr) if context.semanticTable.isNodeCollection(n) =>
             context.logicalPlanProducer.planDeleteNode(source, p, context)
+
           //DELETE rels[{i}]
           case ContainerIndex(Variable(r), indexExpr) if context.semanticTable.isRelationshipCollection(r) =>
             context.logicalPlanProducer.planDeleteRelationship(source, p, context)
+
           //DELETE expr
           case expr =>
             context.logicalPlanProducer.planDeleteExpression(source, p, context)
@@ -221,7 +237,8 @@ case object PlanUpdates
       val mergeReadPart = ctx.strategy.plan(matchGraph, ctx, solveds, cardinalities)
       if (solveds.get(mergeReadPart.id).queryGraph != matchGraph)
         throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${solveds.get(mergeReadPart.id).queryGraph}\n not equal to \n$matchGraph")
-      producer.planOptional(mergeReadPart, matchGraph.argumentIds, ctx)
+      val activeReadPart = producer.planActiveRead(mergeReadPart, ctx)
+      producer.planOptional(activeReadPart, matchGraph.argumentIds, ctx)
     }
 
     //        apply
