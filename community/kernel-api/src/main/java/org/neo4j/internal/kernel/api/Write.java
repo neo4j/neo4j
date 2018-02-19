@@ -103,11 +103,11 @@ public interface Write
 
     /**
      * Remove a property from a relationship
-     * @param node the internal relationship id
+     * @param relationship the internal relationship id
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipRemoveProperty( long node, int propertyKey );
+    Value relationshipRemoveProperty( long relationship, int propertyKey ) throws KernelException;
 
     /**
      * Set a property on the graph

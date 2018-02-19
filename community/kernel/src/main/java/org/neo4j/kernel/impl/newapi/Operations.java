@@ -459,10 +459,21 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public Value relationshipRemoveProperty( long node, int propertyKey )
+    public Value relationshipRemoveProperty( long relationship, int propertyKey ) throws KernelException
     {
+        acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
-        throw new UnsupportedOperationException();
+        singleRelationship( relationship );
+        Value existingValue = readRelationshipProperty( propertyKey );
+
+        if ( existingValue != NO_VALUE )
+        {
+            //no existing value, we just add it
+            autoIndexing.relationships().propertyRemoved( this, relationship, propertyKey);
+            ktx.txState().relationshipDoRemoveProperty( relationship, propertyKey, existingValue);
+        }
+
+        return existingValue;
     }
 
     @Override

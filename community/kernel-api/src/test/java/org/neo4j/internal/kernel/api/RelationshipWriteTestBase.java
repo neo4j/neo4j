@@ -254,6 +254,106 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
+    public void shouldRemovePropertyFromRelationship() throws Exception
+    {
+        // Given
+        long  relationshipId;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            relationshipId = proxy.getId();
+            proxy.setProperty( propertyKey, 42 );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
+                    equalTo( intValue( 42 ) ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertFalse( graphDb.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
+        }
+    }
+
+    @Test
+    public void shouldRemoveNonExistingPropertyFromRelationship() throws Exception
+    {
+        // Given
+        long  relationshipId;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            relationshipId = proxy.getId();
+            tx.success();
+        }
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
+                    equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertFalse( graphDb.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
+        }
+    }
+
+    @Test
+    public void shouldRemovePropertyFromRelationshipTwice() throws Exception
+    {
+        // Given
+        long  relationshipId;
+        String propertyKey = "prop";
+        try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
+        {
+            Node node1 = graphDb.createNode();
+            Node node2 = graphDb.createNode();
+
+            Relationship proxy = node1.createRelationshipTo( node2, RelationshipType.withName( "R" ) );
+            relationshipId = proxy.getId();
+            proxy.setProperty( propertyKey, 42 );
+            tx.success();
+        }
+
+        // When
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            int token = session.token().propertyKeyGetOrCreateForName( propertyKey );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
+                    equalTo( intValue( 42 ) ) );
+            assertThat( tx.dataWrite().relationshipRemoveProperty( relationshipId, token ),
+                    equalTo( NO_VALUE ) );
+            tx.success();
+        }
+
+        // Then
+        try ( org.neo4j.graphdb.Transaction ignore = graphDb.beginTx() )
+        {
+            assertFalse( graphDb.getRelationshipById( relationshipId ).hasProperty( "prop" ) );
+        }
+    }
+
+
+    @Test
     public void shouldUpdatePropertyToRelationshipInTransaction() throws Exception
     {
         // Given
