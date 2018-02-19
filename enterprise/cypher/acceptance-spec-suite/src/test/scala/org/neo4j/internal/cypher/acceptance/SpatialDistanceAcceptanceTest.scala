@@ -133,93 +133,208 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     result.toList should equal(List(Map("dist" -> null)))
   }
 
-  test("distance function should fail on wrong type") {
-    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
-    failWithError(config, "RETURN distance(1, 2) as dist", List("Type mismatch: expected Point or Geometry but was Integer"))
-  }
-
   test("points with distance query and mixed crs") {
     // Given
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 56.7, x: 12.78, crs: 'cartesian'})")
     graph.execute("CREATE (p:Place) SET p.location = point({y: 55.7, x: 11.78, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 50.7, x: 12.78, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 56.7, x: 10.78, crs: 'cartesian'})")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 50.7, longitude: 12.78, crs: 'WGS-84'})")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
+    // When
     val query =
-      """CYPHER MATCH (p:Place)
+      """MATCH (p:Place)
         |WHERE distance(p.location, point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})) < 1000
         |RETURN p.location as point
       """.stripMargin
-    // When
     val result = executeWith(distanceConfig, query)
 
     // Then
-    val plan = result.executionPlanDescription()
-    plan should useOperatorWithText("Projection", "point")
-    plan should useOperatorWithText("Filter", "distance")
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 11.78, 55.7))))
+
+    // And when
+    val query2 =
+      """MATCH (p:Place)
+        |WHERE distance(p.location, point({y: 55.7, x: 11.78, crs: 'cartesian'})) < 1
+        |RETURN p.location as point
+      """.stripMargin
+    // When
+    val result2 = executeWith(distanceConfig, query2)
+
+    // Then
+    result2.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 11.78, 55.7))))
   }
 
   test("indexed points with distance query and points within bbox") {
     // Given
     graph.createIndex("Place", "location")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: -10, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: 10, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: -10, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: 10, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: 0, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: 0, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: -10, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 10, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
-    graph.execute("CREATE (p:Place) SET p.location = point({y: 9.99, x: 0, crs: 'cartesian'})")
-    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+    setupPointsBothCRS()
 
-    // <=
+    // <= cartesian
     {
       val query =
-        s"""CYPHER MATCH (p:Place)
+        s"""MATCH (p:Place)
            |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
            |RETURN p.location as point
         """.stripMargin
-      // When
-      val result = executeWith(distanceConfig, query)
 
       // Then
-      val plan = result.executionPlanDescription()
-      plan should useOperatorWithText("Projection", "point")
-      plan should useOperatorWithText("Filter", "distance")
-      plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", "<= ")
-      result.toList.toSet should equal(Set(
+      val expected = Set(
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 10, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 10)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -10, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, -10)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
-      ))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
     }
-    // <
+    // < cartesian
     {
       val query =
-        s"""CYPHER MATCH (p:Place)
-           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) < 10
+        s"""MATCH (p:Place)
+           |WHERE distance(p.location, point({y: 0, x: 0, crs: 'cartesian'})) < 10
            |RETURN p.location as point
         """.stripMargin
-      // When
-      val result = executeWith(distanceConfig, query)
 
       // Then
-      val plan = result.executionPlanDescription()
-      plan should useOperatorWithText("Projection", "point")
-      plan should useOperatorWithText("Filter", "distance")
-      plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", "< ")
-      result.toList.toSet should equal(Set(
+      val expected = Set(
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
         Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
-      ))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = false)
     }
+    // <= geographic
+    {
+      val query =
+        s"""WITH distance(point({latitude: 0, longitude: 0, crs: 'WGS-84'}), point({latitude: 10, longitude: 0, crs: 'WGS-84'})) as d
+           |MATCH (p:Place)
+           |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) <= 	d
+           |RETURN p.location as point
+        """.stripMargin
+
+      // Then
+      val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 0))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
+    }
+    // < geographic
+    {
+      val query =
+        s"""WITH distance(point({latitude: 0, longitude: 0, crs: 'WGS-84'}), point({latitude: 0, longitude: 10, crs: 'WGS-84'})) as d
+           |MATCH (p:Place)
+           |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) < d
+           |RETURN p.location as point
+        """.stripMargin
+
+      // Then
+      val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 0))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = false)
+    }
+  }
+
+  test("doughnut shape query uses the index") {
+    // Given
+    graph.createIndex("Place", "location")
+    setupPointsBothCRS()
+
+    // <= cartesian
+    {
+      val query =
+        s"""MATCH (p:Place)
+           |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10 and distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) > 5
+           |RETURN p.location as point
+        """.stripMargin
+
+      // Then
+      val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -10, 0)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, -10)),
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
+    }
+    // < cartesian
+    {
+      val query =
+        s"""MATCH (p:Place)
+           |WHERE distance(p.location, point({y: 0, x: 0, crs: 'cartesian'})) < 10 and distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) > 5
+           |RETURN p.location as point
+        """.stripMargin
+
+      // Then
+      val expected = Set(
+        Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+      )
+      expectResultsAndIndexUsage(query, expected, inclusiveRange = false)
+    }
+        // <= geographic
+        {
+          val query =
+            s"""WITH distance(point({latitude: 0, longitude: 0, crs: 'WGS-84'}), point({latitude: 10, longitude: 0, crs: 'WGS-84'})) as d
+               |MATCH (p:Place)
+               |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) <= 	d and distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) > d / 2
+               |RETURN p.location as point
+            """.stripMargin
+
+          // Then
+          val expected = Set(
+            Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 10, 0)),
+            Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 10)),
+            Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, -10, 0)),
+            Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -10))
+          )
+          expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
+        }
+        // < geographic
+        {
+          val query =
+            s"""WITH distance(point({latitude: 0, longitude: 0, crs: 'WGS-84'}), point({latitude: 0, longitude: 10, crs: 'WGS-84'})) as d
+               |MATCH (p:Place)
+               |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) < d and distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) > d / 2
+               |RETURN p.location as point
+            """.stripMargin
+
+          // Then
+          val expected = Set.empty
+          expectResultsAndIndexUsage(query, expected, inclusiveRange = false)
+        }
+  }
+
+  test("projecting distance into variable still uses index") {
+    // Given
+    graph.createIndex("Place", "location")
+    setupPointsBothCRS()
+
+    val query =
+      s"""MATCH (p:Place)
+         |WITH distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) as d, p
+         |WHERE d <= 10 and d > 5
+         |RETURN p.location as point
+        """.stripMargin
+
+    // Then
+    val expected = Set(
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 10, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 10)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -10, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, -10)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)),
+      Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 9.99))
+    )
+    expectResultsAndIndexUsage(query, expected, inclusiveRange = true)
   }
 
   test("invalid location with index") {
@@ -229,7 +344,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
     val query =
-      s"""CYPHER MATCH (p:Place)
+      s"""MATCH (p:Place)
          |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
          |RETURN p.location as point
         """.stripMargin
@@ -250,7 +365,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
     val query =
-      s"""CYPHER MATCH (p:Place)
+      s"""MATCH (p:Place)
          |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
          |RETURN p.location as point
         """.stripMargin
@@ -265,14 +380,14 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     result.toList.toSet should equal(Set.empty)
   }
 
-  test("no error for distance with no point") {
+  test("no error for distance with no point when using parameters") {
     // Given
     graph.createIndex("Place", "location")
     graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
     val query =
-      """CYPHER MATCH (p:Place)
+      """MATCH (p:Place)
          |WHERE distance(p.location, $poi) <= 10
          |RETURN p.location as point
         """.stripMargin
@@ -289,5 +404,50 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
 
     // Then
     resultNoIndex.toList shouldBe empty
+  }
+
+  // TODO should we really have different behavior with and without parameters?
+  test("distance function should fail on wrong type when not using parameters") {
+    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
+    failWithError(config, "RETURN distance(1, 2) as dist", List("Type mismatch: expected Point or Geometry but was Integer"))
+  }
+
+  private def setupPointsBothCRS(): Unit = {
+    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: -10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: 10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: -10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: 10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: -10, x: 0, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 10, x: 0, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: -10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 10, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 9.99, x: 0, crs: 'cartesian'})")
+
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: -10, longitude: -10, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: -10, longitude: 10, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 10, longitude: -10, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 10, longitude: 10, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: -10, longitude: 0, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 10, longitude: 0, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 0, longitude: -10, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 0, longitude: 10, crs: 'WGS-84'})")
+    graph.execute("CREATE (p:Place) SET p.location = point({latitude: 0, longitude: 0, crs: 'WGS-84'})")
+
+    // Create enough points so that an index seek gets planned
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+    Range(11, 89).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({latitude: $i, longitude: $i, crs: 'WGS-84'})"))
+  }
+
+  private def expectResultsAndIndexUsage(query: String, expectedResults: Set[_ <: Any], inclusiveRange: Boolean) = {
+    val result = executeWith(distanceConfig, query)
+
+    // Then
+    val plan = result.executionPlanDescription()
+    println(plan)
+    plan should useOperatorWithText("Projection", "point")
+    plan should useOperatorWithText("Filter", "distance")
+    plan should useOperatorWithText("NodeIndexSeekByRange", ":Place(location)", "distance", if (inclusiveRange) "<= " else "<")
+    result.toList.toSet should equal(expectedResults)
   }
 }
