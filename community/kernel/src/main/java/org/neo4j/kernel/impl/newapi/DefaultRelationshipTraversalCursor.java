@@ -183,7 +183,7 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
 
     /*
      * Grouped traversal of non-dense node. Same type and direction as first read relationship. Store relationships are
-     * all assumed to be of wanted relationship type and direction iff filterStore == true.
+     * all assumed to be of wanted relationship type and direction iff filterStore == false.
      */
     void filtered( long nodeReference, long reference, Read read, boolean filterStore )
     {
