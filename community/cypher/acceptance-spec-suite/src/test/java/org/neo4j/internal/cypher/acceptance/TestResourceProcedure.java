@@ -34,7 +34,7 @@ import org.neo4j.procedure.UserFunction;
 
 public class TestResourceProcedure
 {
-    public static abstract class SimulateFailureBaseException extends RuntimeException
+    abstract static class SimulateFailureBaseException extends RuntimeException
     {
     }
 

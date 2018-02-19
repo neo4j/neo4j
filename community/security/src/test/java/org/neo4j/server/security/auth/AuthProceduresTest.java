@@ -24,6 +24,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -35,6 +37,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private final ResourceTracker<AutoCloseable> resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldFailWhenDeprecatedChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
@@ -49,7 +53,10 @@ public class AuthProceduresTest extends KernelIntegrationTest
 
         // When
         dbmsOperations()
-                .procedureCallDbms( procedureName( "dbms", "changePassword" ), inputArray, AnonymousContext.none() );
+                .procedureCallDbms( procedureName( "dbms", "changePassword" ),
+                                    inputArray,
+                                    AnonymousContext.none(),
+                                    resourceTracker );
     }
 
     @Test
@@ -64,7 +71,10 @@ public class AuthProceduresTest extends KernelIntegrationTest
         exception.expectMessage( "Anonymous cannot change password" );
 
         // When
-        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ), inputArray, AnonymousContext.none() );
+        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ),
+                                            inputArray,
+                                            AnonymousContext.none(),
+                                            resourceTracker );
     }
 
     @Override

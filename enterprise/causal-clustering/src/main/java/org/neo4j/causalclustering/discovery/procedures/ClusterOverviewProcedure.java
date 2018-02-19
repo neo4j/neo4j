@@ -36,6 +36,7 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaAddresses;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -70,7 +71,8 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply(
+            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         List<ReadWriteEndPoint> endpoints = new ArrayList<>();
         CoreTopology coreTopology = discoveryService.coreServers();
