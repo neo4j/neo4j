@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
+import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.NodeItem;
@@ -987,7 +988,7 @@ public class NeoStoresTest
             final int relType1, final int relType2 ) throws IOException
     {
         assertTrue( nodeExists( node ) );
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         PropertyReceiver<StorageProperty> receiver = newPropertyReceiver( props );
         propertyLoader.nodeLoadProperties( node, receiver );
         int count = 0;
@@ -1068,7 +1069,7 @@ public class NeoStoresTest
         return count;
     }
 
-    private PropertyReceiver<StorageProperty> newPropertyReceiver( final Map<Integer,Pair<StorageProperty,Long>> props )
+    private PropertyReceiver<StorageProperty> newPropertyReceiver( final ArrayMap<Integer,Pair<StorageProperty,Long>> props )
     {
         return ( property, propertyRecordId ) -> props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
     }
@@ -1079,7 +1080,7 @@ public class NeoStoresTest
             throws IOException, RuntimeException
     {
         assertTrue( nodeExists( node ) );
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1166,7 +1167,7 @@ public class NeoStoresTest
             StorageProperty prop2, StorageProperty prop3, long firstNode, long secondNode,
             int relType ) throws IOException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1228,7 +1229,7 @@ public class NeoStoresTest
             StorageProperty prop2, StorageProperty prop3,
             long firstNode, long secondNode, int relType ) throws IOException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1302,7 +1303,7 @@ public class NeoStoresTest
             StorageProperty prop3, long firstNode, long secondNode, int relType )
             throws Exception
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1363,7 +1364,7 @@ public class NeoStoresTest
             StorageProperty prop3, long firstNode, long secondNode, int relType )
             throws Exception
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.relLoadProperties( rel, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1429,7 +1430,7 @@ public class NeoStoresTest
             StorageProperty prop2, StorageProperty prop3 )
             throws IOException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -1475,7 +1476,7 @@ public class NeoStoresTest
             StorageProperty prop2, StorageProperty prop3 )
             throws IOException
     {
-        Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
+        ArrayMap<Integer,Pair<StorageProperty,Long>> props = new ArrayMap<>();
         propertyLoader.nodeLoadProperties( node, newPropertyReceiver( props ) );
         int count = 0;
         for ( int keyId : props.keySet() )

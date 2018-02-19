@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.locking.community;
 
 import java.time.Clock;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import java.util.Map;
 
 import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -32,6 +30,7 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockType;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
+import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.Logger;
 
 import static java.lang.Thread.currentThread;
@@ -69,7 +68,7 @@ class RWLock
 {
     private final LockResource resource; // the resource this RWLock locks
     private final LinkedList<LockRequest> waitingThreadList = new LinkedList<>();
-    private final Map<Object, TxLockElement> txLockElementMap = new HashMap<>();
+    private final ArrayMap<Object,TxLockElement> txLockElementMap = new ArrayMap<>( (byte) 5, false, true );
     private final RagManager ragManager;
     private final Clock clock;
     private final long lockAcquisitionTimeoutMillis;

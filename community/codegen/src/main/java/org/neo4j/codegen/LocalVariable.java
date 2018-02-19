@@ -21,14 +21,22 @@ package org.neo4j.codegen;
 
 public class LocalVariable extends Expression
 {
+    private final TypeReference type;
     private final String name;
     private final int index;
 
     LocalVariable( TypeReference type, String name, int index )
     {
         super( type );
+        this.type = type;
         this.name = name;
         this.index = index;
+    }
+
+    @Override
+    public TypeReference type()
+    {
+        return type;
     }
 
     public String name()

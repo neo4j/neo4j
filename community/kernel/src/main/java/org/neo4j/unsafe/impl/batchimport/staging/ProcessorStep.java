@@ -46,6 +46,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     private TaskExecutor<Sender> executor;
     // max processors for this step, zero means unlimited, or rather config.maxNumberOfProcessors()
     private final int maxProcessors;
+    private final Configuration config;
 
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
@@ -55,6 +56,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             StatsProvider... additionalStatsProviders )
     {
         super( control, name, config, additionalStatsProviders );
+        this.config = config;
         this.maxProcessors = maxProcessors;
     }
 

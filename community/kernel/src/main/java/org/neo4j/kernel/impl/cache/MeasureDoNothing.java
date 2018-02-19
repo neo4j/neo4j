@@ -21,10 +21,6 @@ package org.neo4j.kernel.impl.cache;
 
 import org.neo4j.logging.Log;
 
-/**
- * @deprecated Remove this nonsense and use standard beans for getting GC measurements
- */
-@Deprecated
 public class MeasureDoNothing extends Thread
 {
     public interface Monitor
