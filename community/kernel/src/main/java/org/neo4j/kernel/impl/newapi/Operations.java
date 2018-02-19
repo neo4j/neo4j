@@ -537,8 +537,19 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws KernelException
     {
-        throw new UnsupportedOperationException(  );
+        ktx.assertOpen();
+        allStoreHolder.singleRelationship( relationship, relationshipCursor );
+        if ( relationshipCursor.next() )
+        {
+            ktx.explicitIndexTxState().relationshipChanges( indexName ).addRelationship( relationship, key, value,
+                    relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() ) ;
+        }
+        else
+        {
+            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationship );
+        }
     }
 
     @Override
