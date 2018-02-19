@@ -37,11 +37,11 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class CorsFilter implements Filter
 {
-    private static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
-    private static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
-    private static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
-    private static final String ACCESS_CONTROL_REQUEST_METHOD = "access-control-request-method";
-    private static final String ACCESS_CONTROL_REQUEST_HEADERS = "access-control-request-headers";
+    public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
+    public static final String ACCESS_CONTROL_ALLOW_METHODS = "Access-Control-Allow-Methods";
+    public static final String ACCESS_CONTROL_ALLOW_HEADERS = "Access-Control-Allow-Headers";
+    public static final String ACCESS_CONTROL_REQUEST_METHOD = "Access-Control-Request-Method";
+    public static final String ACCESS_CONTROL_REQUEST_HEADERS = "Access-Control-Request-Headers";
 
     @Override
     public void init( FilterConfig filterConfig ) throws ServletException

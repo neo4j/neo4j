@@ -31,6 +31,11 @@ import static com.sun.jersey.api.client.ClientResponse.Status.UNAUTHORIZED;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_HEADERS;
+import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_METHODS;
+import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_ORIGIN;
+import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_REQUEST_HEADERS;
+import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_REQUEST_METHOD;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class AuthorizationCorsIT extends CommunityServerTestBase
@@ -86,6 +91,34 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
         assertThat( response.content().toString(), containsString( "Neo.ClientError.Security.Unauthorized" ) );
     }
 
+    @Test
+    public void shouldAddCorsMethodsHeader() throws Exception
+    {
+        startServer( false );
+
+        HTTP.Builder requestBuilder = requestWithHeaders( "authDisabled", "authDisabled" )
+                .withHeaders( ACCESS_CONTROL_REQUEST_METHOD, "POST, GET, DELETE" );
+        HTTP.Response response = runQuery( requestBuilder );
+
+        assertEquals( OK.getStatusCode(), response.status() );
+        assertCorsHeaderPresent( response );
+        assertEquals( "POST, GET, DELETE", response.header( ACCESS_CONTROL_ALLOW_METHODS ) );
+    }
+
+    @Test
+    public void shouldAddCorsRequestHeaders() throws Exception
+    {
+        startServer( false );
+
+        HTTP.Builder requestBuilder = requestWithHeaders( "authDisabled", "authDisabled" )
+                .withHeaders( ACCESS_CONTROL_REQUEST_HEADERS, "Accept, X-Not-Accept" );
+        HTTP.Response response = runQuery( requestBuilder );
+
+        assertEquals( OK.getStatusCode(), response.status() );
+        assertCorsHeaderPresent( response );
+        assertEquals( "Accept, X-Not-Accept", response.header( ACCESS_CONTROL_ALLOW_HEADERS ) );
+    }
+
     private HTTP.Response changePassword( String username, String oldPassword, String newPassword )
     {
         HTTP.RawPayload passwordChange = quotedJson( "{'password': '" + newPassword + "'}" );
@@ -94,8 +127,13 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
 
     private HTTP.Response runQuery( String username, String password )
     {
+        return runQuery( requestWithHeaders( username, password ) );
+    }
+
+    private HTTP.Response runQuery( HTTP.Builder requestBuilder )
+    {
         HTTP.RawPayload statements = quotedJson( "{'statements': [{'statement': 'RETURN 42'}]}" );
-        return requestWithHeaders( username, password ).POST( txCommitURL(), statements );
+        return requestBuilder.POST( txCommitURL(), statements );
     }
 
     private HTTP.Builder requestWithHeaders( String username, String password )
@@ -109,6 +147,6 @@ public class AuthorizationCorsIT extends CommunityServerTestBase
 
     private static void assertCorsHeaderPresent( HTTP.Response response )
     {
-        assertEquals( "*", response.header( "Access-Control-Allow-Origin" ) );
+        assertEquals( "*", response.header( ACCESS_CONTROL_ALLOW_ORIGIN ) );
     }
 }
