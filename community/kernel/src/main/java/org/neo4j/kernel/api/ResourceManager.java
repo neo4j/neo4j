@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ResourceManager<T extends AutoCloseable> extends ResourceTracker<T>
+public interface ResourceManager extends ResourceTracker
 {
     /**
      * Closes and unregisters all the registered resources

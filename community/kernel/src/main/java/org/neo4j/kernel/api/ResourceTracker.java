@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ResourceTracker<T extends AutoCloseable>
+public interface ResourceTracker
 {
     /**
      * Register a closeable resource that needs to be closed on statement cleanup.
@@ -27,10 +27,10 @@ public interface ResourceTracker<T extends AutoCloseable>
      * If the given resource can be closed elsewhere, e.g. by exhausting an iterator,
      * the close() method of the resource should be idempotent.
      */
-    void registerCloseableResource( T closeableResource );
+    void registerCloseableResource( AutoCloseable closeableResource );
 
     /**
      * @see #registerCloseableResource
      */
-    void unregisterCloseableResource( T closeableResource );
+    void unregisterCloseableResource( AutoCloseable closeableResource );
 }

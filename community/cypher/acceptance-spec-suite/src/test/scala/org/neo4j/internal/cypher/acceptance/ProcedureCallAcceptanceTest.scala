@@ -42,7 +42,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] =
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](input)
       }
   }
@@ -54,7 +54,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] =
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](Array(value))
       }
     }
@@ -75,7 +75,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] =
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.empty()
       }
     }
@@ -84,7 +84,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
     registerProcedure("dbms.return_nothing") { builder =>
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] =
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.empty()
       }
     }

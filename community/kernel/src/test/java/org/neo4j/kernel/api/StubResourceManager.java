@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api;
 
-public class StubResourceManager implements ResourceManager<AutoCloseable>
+public class StubResourceManager implements ResourceManager
 {
     @Override
     public void registerCloseableResource( AutoCloseable closeable )

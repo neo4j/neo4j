@@ -38,7 +38,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private final ResourceTracker<AutoCloseable> resourceTracker = new StubResourceManager();
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldFailWhenDeprecatedChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable

@@ -26,7 +26,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.ResourceManager;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 
-public class CloseableResourceManager implements ResourceManager<AutoCloseable>
+public class CloseableResourceManager implements ResourceManager
 {
     private Collection<AutoCloseable> closeableResources;
 

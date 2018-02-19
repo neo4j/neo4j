@@ -88,9 +88,9 @@ public class TestResourceProcedure
         }
     }
 
-    public static ComponentRegistry.Provider<Counters> countersProvider(Counters counters1)
+    public static ComponentRegistry.Provider<Counters> countersProvider( Counters counters )
     {
-        return context -> counters1;
+        return context -> counters;
     }
 
     public class Output
@@ -137,8 +137,7 @@ public class TestResourceProcedure
                 {
                     throw new SimulateFailureException();
                 }
-                step++;
-                return new Output(step);
+                return new Output(step++);
             }
         };
         Iterable<Output> failingIterable = () -> failingIterator;

@@ -181,7 +181,7 @@ class EagerizationAcceptanceTest
       builder.mode(Mode.WRITE)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
@@ -219,7 +219,7 @@ class EagerizationAcceptanceTest
       builder.mode(Mode.WRITE)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
@@ -256,7 +256,7 @@ class EagerizationAcceptanceTest
       builder.out("relId", Neo4jTypes.NTInteger)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {
@@ -305,7 +305,7 @@ class EagerizationAcceptanceTest
       builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef],
-                           resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
+                           resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
           val statement = transaction.acquireStatement()
           try {

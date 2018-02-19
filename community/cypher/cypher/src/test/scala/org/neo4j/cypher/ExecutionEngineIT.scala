@@ -700,7 +700,7 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }.asJava
 
     override def apply(context: Context, objects: Array[AnyRef],
-                       resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
+                       resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
       val readOperations = statement.readOperations
       val nodes = readOperations.nodesGetAll()

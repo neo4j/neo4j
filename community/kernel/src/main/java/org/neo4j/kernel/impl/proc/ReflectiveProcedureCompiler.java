@@ -469,20 +469,10 @@ public class ReflectiveProcedureCompiler
 
         private ProcedureException newProcedureException( Throwable throwable )
         {
-            ProcedureException procedureException;
-
-            if ( throwable instanceof Status.HasStatus )
-            {
-                procedureException = new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                        throwable.getMessage() );
-            }
-            else
-            {
-                procedureException = new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                        "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
-            }
-
-            return procedureException;
+            return throwable instanceof Status.HasStatus ?
+                   new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() ) :
+                   new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                           "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
         }
     }
 

@@ -64,5 +64,5 @@ case class TransactionalContextWrapperv3_1(tc: TransactionalContext) extends Que
 
   def securityContext: SecurityContext = tc.securityContext
 
-  def resourceTracker: ResourceTracker[_<:AutoCloseable] = tc.resourceTracker
+  def resourceTracker: ResourceTracker = tc.resourceTracker
 }

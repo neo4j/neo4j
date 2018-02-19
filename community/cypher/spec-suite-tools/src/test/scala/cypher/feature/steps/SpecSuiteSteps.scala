@@ -202,7 +202,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     val kernelSignature = asKernelSignature(parsedSignature)
     val kernelProcedure = new BasicProcedure(kernelSignature) {
       override def apply(ctx: Context, input: Array[AnyRef],
-                         resourceTracker: ResourceTracker[_<:AutoCloseable]): RawIterator[Array[AnyRef], ProcedureException] = {
+                         resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
         val scalaIterator = tableValues
           .filter { row => input.indices.forall { index => row(index) == input(index) } }
           .map { row => row.drop(input.length).clone() }
