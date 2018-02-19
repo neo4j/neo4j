@@ -43,8 +43,10 @@ import java.util.stream.Stream;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.RoleInfo;
+import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
-import org.neo4j.causalclustering.discovery.procedures.Role;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -62,9 +64,9 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.causalclustering.discovery.procedures.Role.FOLLOWER;
-import static org.neo4j.causalclustering.discovery.procedures.Role.LEADER;
-import static org.neo4j.causalclustering.discovery.procedures.Role.READ_REPLICA;
+import static org.neo4j.causalclustering.discovery.RoleInfo.FOLLOWER;
+import static org.neo4j.causalclustering.discovery.RoleInfo.LEADER;
+import static org.neo4j.causalclustering.discovery.RoleInfo.READ_REPLICA;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureName;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -311,7 +313,7 @@ public class ClusterOverviewIT
         ).collect( toList() ) );
     }
 
-    private Matcher<List<MemberInfo>> containsRole( Role expectedRole, long expectedCount )
+    private Matcher<List<MemberInfo>> containsRole( RoleInfo expectedRole, long expectedCount )
     {
         return new FeatureMatcher<List<MemberInfo>,Long>( equalTo( expectedCount ), expectedRole.name(), "count" )
         {
@@ -323,7 +325,7 @@ public class ClusterOverviewIT
         };
     }
 
-    private Matcher<List<MemberInfo>> doesNotContainRole( Role unexpectedRole )
+    private Matcher<List<MemberInfo>> doesNotContainRole( RoleInfo unexpectedRole )
     {
        return containsRole( unexpectedRole, 0 );
     }
@@ -345,7 +347,7 @@ public class ClusterOverviewIT
                 Object[] row = itr.next();
                 List<String> addresses = (List<String>) row[1];
                 infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ),
-                        Role.valueOf( (String) row[2] ) ) );
+                        RoleInfo.valueOf( (String) row[2] ) ) );
             }
         }
 
@@ -355,9 +357,9 @@ public class ClusterOverviewIT
     private static class MemberInfo
     {
         private final String[] addresses;
-        private final Role role;
+        private final RoleInfo role;
 
-        MemberInfo( String[] addresses, Role role )
+        MemberInfo( String[] addresses, RoleInfo role )
         {
             this.addresses = addresses;
             this.role = role;

@@ -343,7 +343,7 @@ public class Cluster
                 .filter( member -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
-        return coreTopologyService.coreServers( "default" ).members().size();
+        return coreTopologyService.localCoreServers().members().size();
     }
 
     /**

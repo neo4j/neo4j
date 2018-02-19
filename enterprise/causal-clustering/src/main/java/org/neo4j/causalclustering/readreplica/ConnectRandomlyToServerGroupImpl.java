@@ -48,7 +48,7 @@ class ConnectRandomlyToServerGroupImpl
 
     public Optional<MemberId> upstreamDatabase()
     {
-        Map<MemberId, ReadReplicaInfo> replicas = topologyService.readReplicas( dbName ).members();
+        Map<MemberId, ReadReplicaInfo> replicas = topologyService.localReadReplicas().members();
 
         List<MemberId> choices = groups.stream()
                 .flatMap( group -> replicas.entrySet().stream().filter( isMyGroupAndNotMe( group ) ) )

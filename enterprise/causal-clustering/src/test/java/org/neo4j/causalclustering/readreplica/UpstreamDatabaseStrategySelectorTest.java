@@ -77,11 +77,11 @@ public class UpstreamDatabaseStrategySelectorTest
         // given
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
+        when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
-        Config config = mock( Config.class );
-        when( config.get( CausalClusteringSettings.database ) ).thenReturn( "default" );
+        //TODO: Replace with Config.defaults
+        Config config = Config.defaults();
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
         defaultStrategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
@@ -101,7 +101,7 @@ public class UpstreamDatabaseStrategySelectorTest
         // given
         TopologyService topologyService = mock( TopologyService.class );
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        when( topologyService.coreServers( "default" ) ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
+        when( topologyService.localCoreServers() ).thenReturn( new CoreTopology( new ClusterId( UUID.randomUUID() ), false,
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy shouldNotUse = new ConnectToRandomCoreServerStrategy();

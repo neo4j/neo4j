@@ -42,6 +42,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     private final Map<MemberId,ReadReplicaInfo> readReplicaInfoMap = new HashMap<>();
     private final List<SharedDiscoveryCoreClient> coreClients = new ArrayList<>();
 
+    private Map<MemberId,RoleInfo> roleMap = new HashMap<>();
+
     private final Lock lock = new ReentrantLock();
     private final Condition enoughMembers = lock.newCondition();
     private ClusterId clusterId;
@@ -68,6 +70,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     void waitForClusterFormation() throws InterruptedException
     {
+
         lock.lock();
         try
         {
@@ -214,5 +217,17 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
         }
 
         return success;
+    }
+
+    void refreshRoles( Map<MemberId,RoleInfo> roleMap )
+    {
+        //TODO: Check if this also needs locking. Seems like no? Is anything actually done with this in another thread?
+        //TODO: Update to include the concept of terms a la hazelcast impl
+        this.roleMap = roleMap;
+    }
+
+    Map<MemberId,RoleInfo> getRoleMap()
+    {
+        return roleMap;
     }
 }

@@ -23,6 +23,7 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
 import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
+import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
@@ -74,29 +76,32 @@ public class ClusterOverviewProcedureTest
         replicaMembers.put( replica4, addressesForReadReplica( 4 ) );
         replicaMembers.put( replica5, addressesForReadReplica( 5 ) );
 
-        when( topologyService.coreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
-        when( topologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
+        Map<MemberId,RoleInfo> roleMap = new HashMap<>();
+        roleMap.put( theLeader, RoleInfo.LEADER );
+        roleMap.put( follower1, RoleInfo.FOLLOWER );
+        roleMap.put( follower2, RoleInfo.FOLLOWER );
 
-        LeaderLocator leaderLocator = mock( LeaderLocator.class );
-        when( leaderLocator.getLeader() ).thenReturn( theLeader );
+        when( topologyService.allCoreServers() ).thenReturn( new CoreTopology( null, false, coreMembers ) );
+        when( topologyService.allReadReplicas() ).thenReturn( new ReadReplicaTopology( replicaMembers ) );
+        when( topologyService.allCoreRoles() ).thenReturn( roleMap );
 
         //TODO: Fix this
         ClusterOverviewProcedure procedure =
-                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+                new ClusterOverviewProcedure( topologyService, NullLogProvider.getInstance() );
 
         // when
         final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0], null );
 
-        assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, Role.LEADER, asSet( "core", "core0" ) ) );
+        assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, RoleInfo.LEADER, asSet( "core", "core0" ) ) );
         assertThat( members.next(),
-                new IsRecord( follower1.getUuid(), 5001, Role.FOLLOWER, asSet( "core", "core1" ) ) );
+                new IsRecord( follower1.getUuid(), 5001, RoleInfo.FOLLOWER, asSet( "core", "core1" ) ) );
         assertThat( members.next(),
-                new IsRecord( follower2.getUuid(), 5002, Role.FOLLOWER, asSet( "core", "core2" ) ) );
+                new IsRecord( follower2.getUuid(), 5002, RoleInfo.FOLLOWER, asSet( "core", "core2" ) ) );
 
         assertThat( members.next(),
-                new IsRecord( replica4.getUuid(), 6004, Role.READ_REPLICA, asSet( "replica", "replica4" ) ) );
+                new IsRecord( replica4.getUuid(), 6004, RoleInfo.READ_REPLICA, asSet( "replica", "replica4" ) ) );
         assertThat( members.next(),
-                new IsRecord( replica5.getUuid(), 6005, Role.READ_REPLICA, asSet( "replica", "replica5" ) ) );
+                new IsRecord( replica5.getUuid(), 6005, RoleInfo.READ_REPLICA, asSet( "replica", "replica5" ) ) );
 
         assertFalse( members.hasNext() );
     }
@@ -105,11 +110,11 @@ public class ClusterOverviewProcedureTest
     {
         private final UUID memberId;
         private final int boltPort;
-        private final Role role;
+        private final RoleInfo role;
         private final Set<String> groups;
         private final String dbName;
 
-        IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups, String dbName )
+        IsRecord( UUID memberId, int boltPort, RoleInfo role, Set<String> groups, String dbName )
         {
             this.memberId = memberId;
             this.boltPort = boltPort;
@@ -118,7 +123,7 @@ public class ClusterOverviewProcedureTest
             this.dbName = dbName;
         }
 
-        IsRecord( UUID memberId, int boltPort, Role role, Set<String> groups )
+        IsRecord( UUID memberId, int boltPort, RoleInfo role, Set<String> groups )
         {
             this.memberId = memberId;
             this.boltPort = boltPort;

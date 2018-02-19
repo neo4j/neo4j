@@ -50,7 +50,7 @@ public class CoreTopology implements Topology<CoreServerInfo>
         return coreMembers;
     }
 
-    public ClusterId clusterId( String dbName )
+    public ClusterId clusterId()
     {
         return clusterId;
     }
@@ -76,6 +76,6 @@ public class CoreTopology implements Topology<CoreServerInfo>
     {
         Map<MemberId, CoreServerInfo> filteredMembers = filterHostsByDb( members(), dbName );
 
-        return new CoreTopology( clusterId( dbName ), canBeBootstrapped(), filteredMembers );
+        return new CoreTopology( clusterId(), canBeBootstrapped(), filteredMembers );
     }
 }

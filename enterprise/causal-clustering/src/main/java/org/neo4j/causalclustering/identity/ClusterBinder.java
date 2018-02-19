@@ -26,14 +26,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.CoreBootstrapper;
 import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshot;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -88,11 +86,11 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
 
         do
         {
-            topology = topologyService.coreServers( dbName );
+            topology = topologyService.localCoreServers();
 
-            if ( topology.clusterId( dbName ) != null )
+            if ( topology.clusterId() != null )
             {
-                clusterId = topology.clusterId( dbName );
+                clusterId = topology.clusterId();
                 log.info( "Bound to cluster: " + clusterId );
             }
             else if ( topology.canBeBootstrapped() )

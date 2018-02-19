@@ -80,8 +80,8 @@ public class GetServersProcedureV1RoutingTest
         coreMembers.put( member( 2 ), addressesForCore( 2 ) );
 
         final CoreTopology clusterTopology = new CoreTopology( clusterId, false, coreMembers );
-        when( coreTopologyService.coreServers( "default" ) ).thenReturn( clusterTopology );
-        when( coreTopologyService.readReplicas( "default" ) ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
+        when( coreTopologyService.localCoreServers() ).thenReturn( clusterTopology );
+        when( coreTopologyService.localReadReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         final LegacyGetServersProcedure proc =
                 new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );

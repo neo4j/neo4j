@@ -86,7 +86,7 @@ public class ReadReplicaStartupProcessTest
         when( pageCache.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
-        when( topologyService.coreServers( "default" ) ).thenReturn( clusterTopology );
+        when( topologyService.allCoreServers() ).thenReturn( clusterTopology );
         when( clusterTopology.members() ).thenReturn( members );
         when( topologyService.findCatchupAddress( memberId ) ).thenReturn( Optional.of( fromAddress ) );
     }
@@ -201,7 +201,7 @@ public class ReadReplicaStartupProcessTest
         @Override
         public Optional<MemberId> upstreamDatabase()
         {
-            CoreTopology coreTopology = topologyService.coreServers( "default" );
+            CoreTopology coreTopology = topologyService.allCoreServers();
             return Optional.ofNullable( coreTopology.members().keySet().iterator().next() );
         }
     }

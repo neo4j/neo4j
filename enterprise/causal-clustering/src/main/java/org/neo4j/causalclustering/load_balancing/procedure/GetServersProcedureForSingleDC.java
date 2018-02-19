@@ -122,12 +122,12 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
             return Optional.empty();
         }
 
-        return topologyService.coreServers( dbName ).find( leader ).map( extractBoltAddress() );
+        return topologyService.localCoreServers().find( leader ).map( extractBoltAddress() );
     }
 
     private List<Endpoint> routeEndpoints()
     {
-        Stream<AdvertisedSocketAddress> routers = topologyService.coreServers( this.dbName )
+        Stream<AdvertisedSocketAddress> routers = topologyService.localCoreServers()
                 .members().values().stream().map( extractBoltAddress() );
         List<Endpoint> routeEndpoints = routers.map( Endpoint::route ).collect( toList() );
         Collections.shuffle( routeEndpoints );
@@ -141,7 +141,7 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
 
     private List<Endpoint> readEndpoints()
     {
-        List<AdvertisedSocketAddress> readReplicas = topologyService.readReplicas( this.dbName ).allMemberInfo().stream()
+        List<AdvertisedSocketAddress> readReplicas = topologyService.localReadReplicas().allMemberInfo().stream()
                 .map( extractBoltAddress() ).collect( toList() );
         boolean addFollowers = readReplicas.isEmpty() || config.get( cluster_allow_reads_on_followers );
         Stream<AdvertisedSocketAddress> readCore = addFollowers ? coreReadEndPoints() : Stream.empty();
@@ -154,8 +154,8 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
     private Stream<AdvertisedSocketAddress> coreReadEndPoints()
     {
         Optional<AdvertisedSocketAddress> leader = leaderBoltAddress();
-        Collection<CoreServerInfo> coreServerInfo = topologyService.coreServers( this.dbName ).members().values();
-        Stream<AdvertisedSocketAddress> boltAddresses = topologyService.coreServers( this.dbName )
+        Collection<CoreServerInfo> coreServerInfo = topologyService.localCoreServers().members().values();
+        Stream<AdvertisedSocketAddress> boltAddresses = topologyService.localCoreServers()
                 .members().values().stream().map( extractBoltAddress() );
 
         // if the leader is present and it is not alone filter it out from the read end points

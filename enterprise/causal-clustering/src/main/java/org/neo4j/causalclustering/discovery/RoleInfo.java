@@ -17,25 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery.procedures;
+package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.core.consensus.RaftMachine;
-import org.neo4j.causalclustering.discovery.RoleInfo;
-
-public class CoreRoleProcedure extends RoleProcedure
+public enum RoleInfo
 {
-    //TODO: Decide whether this should take a topologyService rather than a RaftMachine in order to be consistent with CoreOverviewProcedure. Probably yes?
-    private final RaftMachine raft;
-
-    public CoreRoleProcedure( RaftMachine raft )
-    {
-        super();
-        this.raft = raft;
-    }
+    LEADER,
+    FOLLOWER,
+    READ_REPLICA,
+    UNKNOWN;
 
     @Override
-    RoleInfo role()
+    public String toString()
     {
-        return raft.isLeader() ? RoleInfo.LEADER : RoleInfo.FOLLOWER;
+        switch ( this )
+        {
+            case LEADER:
+                return "LEADER";
+            case FOLLOWER:
+                return "FOLLOWER";
+            case READ_REPLICA:
+                return "READ REPLICA";
+            default:
+                return "UNKNOWN";
+        }
     }
 }

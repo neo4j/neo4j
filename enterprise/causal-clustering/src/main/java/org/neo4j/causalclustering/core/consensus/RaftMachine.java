@@ -215,6 +215,7 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
     {
         for ( Listener<MemberId> listener : leaderListeners )
         {
+            //TODO: Update to pass leader and term, probably creating a leader-term pair/immutable struct
             listener.receive( outcome.getLeader() );
         }
     }
@@ -247,6 +248,8 @@ public class RaftMachine implements LeaderLocator, CoreMetaData
         {
             return true;
         }
+
+        //TODO: Add logic for handling leader step-down with no replacement
 
         return false;
     }

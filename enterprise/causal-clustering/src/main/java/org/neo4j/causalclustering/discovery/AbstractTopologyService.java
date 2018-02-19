@@ -19,24 +19,23 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public abstract class AbstractTopologyService extends LifecycleAdapter implements TopologyService
 {
 
     @Override
-    public CoreTopology coreServers( String database )
+    public CoreTopology localCoreServers()
     {
-        return coreServers().filterTopologyByDb( database );
+        //TODO: The filterTopologyByDb method is not going to return a new ClusterId for the filtered topology.
+        // Even though the map for this exists in hazelcast. Perhaps we need to do the filtering in the Concrete
+        // *CoreTopologyService classes and make lookups accordingly.
+        return allCoreServers().filterTopologyByDb( localDBName() );
     }
 
     @Override
-    public ReadReplicaTopology readReplicas( String database )
+    public ReadReplicaTopology localReadReplicas()
     {
-        return readReplicas().filterTopologyByDb( database );
+        return allReadReplicas().filterTopologyByDb( localDBName() );
     }
 }

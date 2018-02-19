@@ -85,7 +85,7 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
     private Set<ServerInfo> possibleServers()
     {
         Stream<Map.Entry<MemberId, ? extends DiscoveryServerInfo>> infoMap =
-                Stream.of( topologyService.readReplicas( dbName ), topologyService.coreServers( dbName ) )
+                Stream.of( topologyService.localReadReplicas(), topologyService.localCoreServers() )
                         .map( Topology::members )
                         .map( Map::entrySet )
                         .flatMap( Set::stream );

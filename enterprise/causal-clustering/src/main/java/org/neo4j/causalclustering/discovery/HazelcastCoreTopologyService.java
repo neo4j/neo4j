@@ -20,10 +20,13 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.hazelcast.config.InterfacesConfig;
@@ -45,7 +48,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -78,10 +80,13 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     private final LogProvider logProvider;
     private final HostnameResolver hostnameResolver;
     private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
+    private final String localDBName;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
 
+    private volatile MemberId localLeader;
+    private volatile long term;
     private volatile HazelcastInstance hazelcastInstance;
     private volatile ReadReplicaTopology readReplicaTopology = ReadReplicaTopology.EMPTY;
     private volatile CoreTopology coreTopology = CoreTopology.EMPTY;
@@ -104,13 +109,16 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
         this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
+        this.term = -1L;
+        this.localDBName = config.get( CausalClusteringSettings.database );
     }
 
     @Override
     public void addCoreTopologyListener( Listener listener )
     {
+        //TODO: Should be synchronised?
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( coreServers( listener.dbName() ) );
+        listener.onCoreTopologyChange( localCoreServers() );
     }
 
     @Override
@@ -118,6 +126,30 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     {
         waitOnHazelcastInstanceCreation();
         return HazelcastClusterTopology.casClusterId( hazelcastInstance, clusterId, dbName );
+    }
+
+    @Override
+    public void setLeader( MemberId memberId, String dbName, long term )
+    {
+        if ( this.term < term )
+        {
+            localLeader = memberId;
+            this.term = term;
+        }
+    }
+
+    @Override
+    public Map<MemberId,RoleInfo> allCoreRoles() throws InterruptedException
+    {
+        waitOnHazelcastInstanceCreation();
+
+        return HazelcastClusterTopology.getCoreRoles( hazelcastInstance, allCoreServers().members().keySet() );
+    }
+
+    @Override
+    public String localDBName()
+    {
+        return localDBName;
     }
 
     @Override
@@ -305,13 +337,13 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
     }
 
     @Override
-    public CoreTopology coreServers()
+    public CoreTopology allCoreServers()
     {
         return coreTopology;
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
     }
@@ -327,10 +359,20 @@ class HazelcastCoreTopologyService extends AbstractTopologyService implements Co
         return Optional.ofNullable( catchupAddressMap.get( memberId ) );
     }
 
+    private void refreshRoles() throws InterruptedException
+    {
+        if ( localLeader != null && localLeader.equals( myself ) )
+        {
+            waitOnHazelcastInstanceCreation();
+            HazelcastClusterTopology.casLeaders( hazelcastInstance, localLeader, term, localDBName );
+        }
+    }
+
     private synchronized void refreshTopology() throws InterruptedException
     {
         refreshCoreTopology();
         refreshReadReplicaTopology();
+        refreshRoles();
         catchupAddressMap = extractCatchupAddressesMap( coreTopology, readReplicaTopology );
     }
 

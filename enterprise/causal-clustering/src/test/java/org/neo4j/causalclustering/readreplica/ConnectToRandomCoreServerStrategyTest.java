@@ -58,7 +58,7 @@ public class ConnectToRandomCoreServerStrategyTest
         MemberId memberId3 = new MemberId( UUID.randomUUID() );
 
         TopologyService topologyService = mock( TopologyService.class );
-        when( topologyService.coreServers( eq( "default" ) ) )
+        when( topologyService.localCoreServers() )
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
         //TODO: Replace all instances of this mock with Config.defaults

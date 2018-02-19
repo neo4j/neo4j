@@ -24,22 +24,33 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.nio.Address;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.AssertableLogProvider;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -58,6 +69,23 @@ public class HazelcastClusterTopologyTest
 {
     private static final Set<String> GROUPS = asSet( "group1", "group2", "group3" );
 
+    private static final List<String> DB_NAMES = Arrays.asList( "foo", "bar", "baz" );
+    private static final String DEFAULT_DB_NAME = "default";
+
+    private static final IntFunction<HashMap<String, String>> DEFAULT_SETTINGS_GENERATOR = i -> {
+        HashMap<String, String> settings = new HashMap<>();
+        settings.put( CausalClusteringSettings.transaction_advertised_address.name(), "tx:" + (i + 1) );
+        settings.put( CausalClusteringSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
+        settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
+        settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+
+        return settings;
+    };
+
     private final HazelcastInstance hzInstance = mock( HazelcastInstance.class );
 
     @Before
@@ -69,79 +97,133 @@ public class HazelcastClusterTopologyTest
         when( hzInstance.getMultiMap( anyString() ) ).thenReturn( (MultiMap) serverGroupsMMap );
     }
 
+
+    private static List<Config> generateConfigs( int numConfigs )
+    {
+        return generateConfigs( numConfigs, DEFAULT_SETTINGS_GENERATOR );
+    }
+
+    private static List<Config> generateConfigs( int numConfigs, IntFunction<HashMap<String, String>> generator )
+    {
+        return IntStream.range(0, numConfigs).mapToObj( generator ).map( Config::defaults ).collect( Collectors.toList() );
+    }
+
     @Test
     public void shouldCollectMembersAsAMap() throws Exception
     {
         // given
+        int numMembers = 5;
         Set<Member> hazelcastMembers = new HashSet<>();
         List<MemberId> coreMembers = new ArrayList<>();
-        for ( int i = 0; i < 5; i++ )
+
+        List<Config> configs = generateConfigs( numMembers );
+
+        for( int i = 0; i < configs.size(); i++ )
         {
-            MemberId memberId = new MemberId( UUID.randomUUID() );
-            coreMembers.add( memberId );
-            Config config = Config.defaults();
-            HashMap<String, String> settings = new HashMap<>();
-            settings.put( CausalClusteringSettings.transaction_advertised_address.name(), "tx:" + (i + 1) );
-            settings.put( CausalClusteringSettings.raft_advertised_address.name(), "raft:" + (i + 1) );
-            settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
-            settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-            settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
-            settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
-            settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
-            settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
+            MemberId mId = new MemberId( UUID.randomUUID() );
+            coreMembers.add( mId );
 
-            config.augment( settings );
-            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
+            Config c = configs.get( i );
+            Map<String, Object> attributes = buildMemberAttributesForCore( mId, c ).getAttributes();
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
-
         }
 
         // when
         Map<MemberId,CoreServerInfo> coreMemberMap = toCoreMemberMap( hazelcastMembers, NullLog.getInstance(), hzInstance );
 
         // then
-        for ( int i = 0; i < 5; i++ )
+        for ( int i = 0; i < numMembers; i++ )
         {
             CoreServerInfo coreServerInfo = coreMemberMap.get( coreMembers.get( i ) );
             assertEquals( new AdvertisedSocketAddress( "tx", i + 1 ), coreServerInfo.getCatchupServer() );
             assertEquals( new AdvertisedSocketAddress( "raft", i + 1 ), coreServerInfo.getRaftServer() );
             assertEquals( new AdvertisedSocketAddress( "bolt", i + 1 ), coreServerInfo.connectors().boltAddress() );
+            assertEquals( coreServerInfo.getDatabaseName(), DEFAULT_DB_NAME );
             assertEquals( coreServerInfo.groups(), GROUPS );
         }
+    }
+
+    @Test
+    public void shouldBuildMemberAttributedWithSpecifiedDBNames() throws Exception
+    {
+        //given
+        int numMembers = 10;
+        Set<Member> hazelcastMembers = new HashSet<>();
+        List<MemberId> coreMembers = new ArrayList<>();
+
+        Map<Integer, String> dbNames = CausalClusteringTestHelpers.distributeDatabaseNamesToHostNums( numMembers, DB_NAMES );
+        IntFunction<HashMap<String, String>> generator = i -> {
+            HashMap<String, String> settings =  DEFAULT_SETTINGS_GENERATOR.apply( i );
+            settings.put( CausalClusteringSettings.database.name(), dbNames.get( i ) );
+            return settings;
+        };
+
+        List<Config> configs = generateConfigs( numMembers, generator );
+
+        for( int i = 0; i < configs.size(); i++ )
+        {
+            MemberId mId = new MemberId( UUID.randomUUID() );
+            coreMembers.add( mId );
+
+            Config c = configs.get( i );
+            Map<String, Object> attributes = buildMemberAttributesForCore( mId, c ).getAttributes();
+            hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
+        }
+
+        // when
+        Map<MemberId,CoreServerInfo> coreMemberMap = toCoreMemberMap( hazelcastMembers, NullLog.getInstance(), hzInstance );
+
+        // then
+        for ( int i = 0; i < numMembers; i++ )
+        {
+            CoreServerInfo coreServerInfo = coreMemberMap.get( coreMembers.get( i ) );
+            String expectedDBName = dbNames.get( i );
+            assertEquals( expectedDBName, coreServerInfo.getDatabaseName() );
+        }
+
     }
 
     @Test
     public void shouldLogAndExcludeMembersWithMissingAttributes() throws Exception
     {
         // given
+        int numMembers = 4;
         Set<Member> hazelcastMembers = new HashSet<>();
         List<MemberId> coreMembers = new ArrayList<>();
-        for ( int i = 0; i < 4; i++ )
+
+        IntFunction<HashMap<String, String>> generator = i -> {
+            HashMap<String, String> settings =  DEFAULT_SETTINGS_GENERATOR.apply( i );
+            settings.remove( CausalClusteringSettings.transaction_advertised_address.name() );
+            settings.remove( CausalClusteringSettings.raft_advertised_address.name() );
+            return settings;
+        };
+
+        List<Config> configs = generateConfigs( numMembers, generator );
+
+        for ( int i = 0; i < configs.size(); i++ )
         {
             MemberId memberId = new MemberId( UUID.randomUUID() );
             coreMembers.add( memberId );
-            Config config = Config.defaults();
-            HashMap<String, String> settings = new HashMap<>();
-            settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
-            settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-            settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:" + (i + 1) );
-            settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
-            settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
-            settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:" + (i + 1) );
-
-            config.augment( settings );
-            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, config ).getAttributes();
+            Config c = configs.get( i );
+            Map<String, Object> attributes = buildMemberAttributesForCore( memberId, c ).getAttributes();
             if ( i == 2 )
             {
                 attributes.remove( HazelcastClusterTopology.RAFT_SERVER );
             }
             hazelcastMembers.add( new MemberImpl( new Address( "localhost", i ), null, attributes, false ) );
         }
+
         // when
-        Map<MemberId,CoreServerInfo> map = toCoreMemberMap( hazelcastMembers, NullLog.getInstance(), hzInstance );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( this.getClass() );
+        Map<MemberId,CoreServerInfo> map = toCoreMemberMap( hazelcastMembers, log, hzInstance );
 
         // then
         assertThat( map.keySet(), hasItems( coreMembers.get( 0 ), coreMembers.get( 1 ), coreMembers.get( 3 ) ) );
         assertThat( map.keySet(), not( hasItems( coreMembers.get( 2 ) ) ) );
+        logProvider.assertExactly( inLog( this.getClass() )
+                .warn( equalTo("Incomplete member attributes supplied from Hazelcast"),
+                        CoreMatchers.instanceOf( IllegalArgumentException.class )) );
+
     }
 }

@@ -19,6 +19,12 @@
  */
 package org.neo4j.causalclustering.helpers;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -33,5 +39,24 @@ public class CausalClusteringTestHelpers
                 .resolveDependency( Config.class )
                 .get( CausalClusteringSettings.transaction_advertised_address );
         return String.format( "%s:%s", hostnamePort.getHostname(), hostnamePort.getPort() );
+    }
+
+    public static Map<Integer, String> distributeDatabaseNamesToHostNums( int nHosts, List<String> databaseNames )
+    {
+        //Max number of hosts per database is (nHosts / nDatabases) or (nHosts / nDatabases) + 1
+        int nDatabases = databaseNames.size();
+        int maxCapacity = (nHosts % nDatabases == 0) ? (nHosts / nDatabases) : (nHosts / nDatabases) + 1;
+
+        List<String> repeated = databaseNames.stream()
+                .flatMap( db -> IntStream.range( 0, maxCapacity ).mapToObj( ignored -> db ) )
+                .collect( Collectors.toList() );
+
+        Map<Integer,String> mapping = new HashMap<>( nHosts );
+
+        for ( int hostId = 0; hostId < nHosts; hostId++ )
+        {
+            mapping.put( hostId, repeated.get( hostId ) );
+        }
+        return mapping;
     }
 }

@@ -21,7 +21,6 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -32,13 +31,17 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface TopologyService extends Lifecycle
 {
-    CoreTopology coreServers();
+    String localDBName();
 
-    CoreTopology coreServers( String database );
+    CoreTopology allCoreServers();
 
-    ReadReplicaTopology readReplicas();
+    CoreTopology localCoreServers();
 
-    ReadReplicaTopology readReplicas( String database );
+    ReadReplicaTopology allReadReplicas();
+
+    ReadReplicaTopology localReadReplicas();
 
     Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream );
+
+    Map<MemberId,RoleInfo> allCoreRoles() throws InterruptedException;
 }

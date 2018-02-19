@@ -30,7 +30,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.management.CausalClustering;
 
 import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 
@@ -40,14 +39,16 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     private final ReadReplicaInfo addresses;
     private final MemberId memberId;
     private final Log log;
+    private final String dbName;
 
     SharedDiscoveryReadReplicaClient( SharedDiscoveryService sharedDiscoveryService, Config config, MemberId memberId,
             LogProvider logProvider )
     {
         this.sharedDiscoveryService = sharedDiscoveryService;
+        this.dbName = config.get( CausalClusteringSettings.database );
         this.addresses = new ReadReplicaInfo( ClientConnectorAddresses.extractFromConfig( config ),
                 socketAddress( config.get( CausalClusteringSettings.transaction_advertised_address ).toString(),
-                        AdvertisedSocketAddress::new ), config.get( CausalClusteringSettings.database ) );
+                        AdvertisedSocketAddress::new ), dbName );
         this.memberId = memberId;
         this.log = logProvider.getLog( getClass() );
     }
@@ -66,34 +67,34 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     }
 
     @Override
-    public CoreTopology coreServers()
+    public CoreTopology allCoreServers()
     {
         return sharedDiscoveryService.coreTopology( null );
     }
 
     @Override
-    public CoreTopology coreServers( String database )
+    public CoreTopology localCoreServers()
     {
         CoreTopology topology = sharedDiscoveryService.coreTopology( null );
         log.info( "Core topology is %s", topology );
 
-        Map<MemberId,CoreServerInfo> filteredCores = filterToplogyByDb( topology, database );
-        return new CoreTopology( topology.clusterId( database ), topology.canBeBootstrapped(), filteredCores );
+        Map<MemberId,CoreServerInfo> filteredCores = filterToplogyByDb( topology, dbName );
+        return new CoreTopology( topology.clusterId(), topology.canBeBootstrapped(), filteredCores );
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public ReadReplicaTopology allReadReplicas()
     {
         return sharedDiscoveryService.readReplicaTopology();
     }
 
     @Override
-    public ReadReplicaTopology readReplicas( String database )
+    public ReadReplicaTopology localReadReplicas()
     {
         ReadReplicaTopology topology = sharedDiscoveryService.readReplicaTopology();
         log.info( "Read replica topology is %s", topology );
 
-        Map<MemberId,ReadReplicaInfo> filteredRRs = filterToplogyByDb( topology, database );
+        Map<MemberId,ReadReplicaInfo> filteredRRs = filterToplogyByDb( topology, dbName );
         return new ReadReplicaTopology( filteredRRs );
     }
 
@@ -112,5 +113,17 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
                 .orElseGet( () -> sharedDiscoveryService.readReplicaTopology()
                         .find( upstream )
                         .map( ReadReplicaInfo::getCatchupServer ) );
+    }
+
+    @Override
+    public String localDBName()
+    {
+        return dbName;
+    }
+
+    @Override
+    public Map<MemberId,RoleInfo> allCoreRoles()
+    {
+        return sharedDiscoveryService.getRoleMap();
     }
 }

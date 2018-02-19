@@ -19,7 +19,10 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -40,6 +43,9 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     private final Set<Listener> listeners = new LinkedHashSet<>();
     private final Log log;
     private final boolean refusesToBeLeader;
+    private final String dbName;
+    private final Map<String, MemberId> leaderMap;
+    private long term;
 
     private CoreTopology coreTopology;
     private ReadReplicaTopology readReplicaTopology;
@@ -51,6 +57,9 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
         this.coreServerInfo = extractCoreServerInfo( config );
         this.log = logProvider.getLog( getClass() );
         this.refusesToBeLeader = config.get( CausalClusteringSettings.refuse_to_be_leader );
+        this.leaderMap = new HashMap<>();
+        this.term = -1L;
+        this.dbName = config.get( CausalClusteringSettings.database );
     }
 
     @Override
@@ -61,10 +70,56 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    //TODO: Update logic here
+    //TODO: Update logic here to account for dbName in the clusterIds
     public boolean setClusterId( ClusterId clusterId, String dbName )
     {
         return sharedDiscoveryService.casClusterId( clusterId );
+    }
+
+    @Override
+    public Map<MemberId,RoleInfo> allCoreRoles()
+    {
+        return sharedDiscoveryService.getRoleMap();
+    }
+
+    @Override
+    public void setLeader( MemberId memberId, String dbName, long term )
+    {
+
+        //TODO: Actually do more than just dump the existing implementation from hz into here.
+        //  need to think about how SharedDiscoveryService implements the ClusterOfCluster concept in its
+        // own limited way - because the interfaces are forcing pollution and are making the current features
+        // hard to write tests for
+        MemberId previousLeaderId = leaderMap.get( dbName );
+
+        //Only want a node to update Hazelcast if it suspects it is the new leader, in order to cut down on
+        // potential for issues with erroneous overwrites. Also completely override the entire role map each
+        // update, to avoid stale information.
+        boolean suspectAmLeader = member.equals( memberId );
+        boolean isUpdate = !Optional.ofNullable( previousLeaderId ).equals( Optional.ofNullable( memberId ) );
+
+        if ( suspectAmLeader && isUpdate )
+        {
+            leaderMap.put( dbName, memberId );
+
+            Set<MemberId> allLeaders = new HashSet<>( leaderMap.values() );
+            Map<MemberId,RoleInfo> roleMap = new HashMap<>();
+
+            CoreTopology t = coreTopology;
+            for ( MemberId m : t.members().keySet() )
+            {
+                if ( allLeaders.contains( m ) )
+                {
+                    roleMap.put( m, RoleInfo.LEADER );
+                }
+                else
+                {
+                    roleMap.put( m, RoleInfo.FOLLOWER );
+                }
+            }
+
+            sharedDiscoveryService.refreshRoles( roleMap );
+        }
     }
 
     @Override
@@ -84,15 +139,15 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public ReadReplicaTopology readReplicas()
+    public ReadReplicaTopology allReadReplicas()
     {
         return readReplicaTopology;
     }
 
     @Override
-    public ReadReplicaTopology readReplicas( String database )
+    public ReadReplicaTopology localReadReplicas()
     {
-        return readReplicaTopology;
+        return readReplicaTopology.filterTopologyByDb( dbName );
     }
 
     @Override
@@ -105,15 +160,21 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public CoreTopology coreServers()
+    public CoreTopology allCoreServers()
     {
         return this.coreTopology;
     }
 
     @Override
-    public CoreTopology coreServers( String database )
+    public CoreTopology localCoreServers()
     {
-        return coreTopology;
+        return coreTopology.filterTopologyByDb( dbName );
+    }
+
+    @Override
+    public String localDBName()
+    {
+        return null;
     }
 
     synchronized void onCoreTopologyChange( CoreTopology coreTopology )

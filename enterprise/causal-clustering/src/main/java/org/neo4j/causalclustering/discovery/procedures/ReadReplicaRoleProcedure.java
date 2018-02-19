@@ -19,6 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery.procedures;
 
+import org.neo4j.causalclustering.discovery.RoleInfo;
+
 public class ReadReplicaRoleProcedure extends RoleProcedure
 {
     public ReadReplicaRoleProcedure()
@@ -27,8 +29,8 @@ public class ReadReplicaRoleProcedure extends RoleProcedure
     }
 
     @Override
-    Role role()
+    RoleInfo role()
     {
-        return Role.READ_REPLICA;
+        return RoleInfo.READ_REPLICA;
     }
 }

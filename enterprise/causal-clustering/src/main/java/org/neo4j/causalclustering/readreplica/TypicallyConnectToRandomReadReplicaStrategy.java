@@ -40,11 +40,11 @@ public class TypicallyConnectToRandomReadReplicaStrategy extends UpstreamDatabas
     {
         if ( counter.shouldReturnCoreMemberId() )
         {
-            return topologyService.coreServers( dbName ).anyCoreMemberId();
+            return topologyService.localCoreServers().anyCoreMemberId();
         }
         else
         {
-            return topologyService.readReplicas( dbName ).anyReadReplicaMemberId();
+            return topologyService.localReadReplicas().anyReadReplicaMemberId();
         }
     }
 

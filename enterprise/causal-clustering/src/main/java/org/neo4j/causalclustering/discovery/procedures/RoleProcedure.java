@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.discovery.procedures;
 
+import org.neo4j.causalclustering.discovery.RoleInfo;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -50,5 +51,5 @@ abstract class RoleProcedure extends CallableProcedure.BasicProcedure
         return RawIterator.<Object[],ProcedureException>of( new Object[]{role().name()} );
     }
 
-    abstract Role role();
+    abstract RoleInfo role();
 }

@@ -68,6 +68,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -78,6 +79,7 @@ import org.neo4j.test.OnDemandJobScheduler;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -86,6 +88,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLIENT_CONNECTOR_ADDRESSES;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_DB_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.MEMBER_UUID;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.RAFT_SERVER;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.TRANSACTION_SERVER;
@@ -95,10 +98,9 @@ public class HazelcastClientTest
 {
     private MemberId myself = new MemberId( UUID.randomUUID() );
     private TopologyServiceRetryStrategy topologyServiceRetryStrategy = new TopologyServiceNoRetriesStrategy();
-
-    private Config config()
-    {
+    private static final java.util.function.Supplier<HashMap<String, String>> DEFAULT_SETTINGS = () -> {
         HashMap<String, String> settings = new HashMap<>();
+
         settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
         settings.put( new BoltConnector( "bolt" ).advertised_address.name(), "bolt:3001" );
@@ -106,18 +108,34 @@ public class HazelcastClientTest
         settings.put( new BoltConnector( "http" ).type.name(), "HTTP" );
         settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
         settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:3001" );
+        return settings;
+    };
 
-        return Config.defaults( settings );
+    private Config config(HashMap<String, String> settings)
+    {
+        HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
+        defaults.putAll( settings );
+        return Config.defaults( defaults );
     }
 
-    @Test
-    public void shouldReturnTopologyUsingHazelcastMembers()
+    private Config config(String key, String value)
     {
-        // given
-        HazelcastConnector connector = mock( HazelcastConnector.class );
-        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        HashMap<String, String> defaults = DEFAULT_SETTINGS.get();
+        defaults.put(key, value);
+        return Config.defaults( defaults );
+    }
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+    private Config config()
+    {
+
+        return Config.defaults( DEFAULT_SETTINGS.get() );
+    }
+
+    private HazelcastClient hzClient(OnDemandJobScheduler jobScheduler, com.hazelcast.core.Cluster cluster, Config config)
+    {
+        HazelcastConnector connector = mock( HazelcastConnector.class );
+
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config, myself,
                 topologyServiceRetryStrategy );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
@@ -127,20 +145,76 @@ public class HazelcastClientTest
         when( hazelcastInstance.getMultiMap( anyString() ) ).thenReturn( new HazelcastMultiMap() );
         when( hazelcastInstance.getMap( anyString() ) ).thenReturn( new HazelcastMap() );
 
-        com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
         when( hazelcastInstance.getExecutorService( anyString() ) ).thenReturn( new StubExecutorService() );
 
-        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
+        return client;
+    }
+
+    private HazelcastClient startedClientWithMembers(Set<Member> members, Config config)
+    {
+        OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+        com.hazelcast.core.Cluster cluster = mock( Cluster.class );
+
         when( cluster.getMembers() ).thenReturn( members );
 
-        // when
+        HazelcastClient client = hzClient( jobScheduler, cluster, config );
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers();
+
+        return client;
+    }
+
+    @Test
+    public void shouldReturnTopologyUsingHazelcastMembers()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
+        HazelcastClient client = startedClientWithMembers( members, config() );
+
+        // when
+        CoreTopology topology = client.localCoreServers();
 
         // then
         assertEquals( members.size(), topology.members().size() );
+    }
+
+
+    @Test
+    public void localAndAllTopologiesShouldMatchForSingleDBName()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1 ), makeMember( 2 ) );
+        HazelcastClient client = startedClientWithMembers( members, config() );
+
+        // then
+        String message = "Different local and global topologies reported despite single, default database name.";
+        assertEquals(message, client.allCoreServers(), client.localCoreServers() );
+    }
+
+    @Test
+    public void localAndAllTopologiesShouldDifferForMultipleDBNames()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1, "foo" ), makeMember( 2, "bar" ) );
+        HazelcastClient client = startedClientWithMembers( members, config( CausalClusteringSettings.database.name(), "foo" ) );
+
+        // then
+        String message = "Identical local and global topologies reported despite multiple, distinct database names.";
+        assertNotEquals(message, client.allCoreServers(), client.localCoreServers() );
+        assertEquals( 1, client.localCoreServers().members().size() );
+    }
+
+    @Test
+    public void allTopologyShouldContainAllMembers()
+    {
+        // given
+        Set<Member> members = asSet( makeMember( 1, "foo" ), makeMember( 2, "bar" ) );
+        HazelcastClient client = startedClientWithMembers( members, config( CausalClusteringSettings.database.name(), "foo" ) );
+
+        // then
+        String message = "Global topology should contain all Hazelcast Members despite different db names.";
+        assertEquals(message, members.size(), client.allCoreServers().members().size() );
     }
 
     @Test
@@ -174,7 +248,7 @@ public class HazelcastClientTest
         CoreTopology topology;
         for ( int i = 0; i < 5; i++ )
         {
-            topology = client.coreServers();
+            topology = client.allCoreServers();
             assertEquals( members.size(), topology.members().size() );
         }
 
@@ -210,7 +284,7 @@ public class HazelcastClientTest
         // when
         client.start();
         jobScheduler.runJob();
-        CoreTopology topology = client.coreServers( "default" );
+        CoreTopology topology = client.allCoreServers();
 
         assertEquals( 0, topology.members().size() );
     }
@@ -340,12 +414,18 @@ public class HazelcastClientTest
 
     private Member makeMember( int id )
     {
+        return makeMember( id, CausalClusteringSettings.database.getDefaultValue() );
+    }
+
+    private Member makeMember( int id, String databaseName )
+    {
         Member member = mock( Member.class );
         when( member.getStringAttribute( MEMBER_UUID ) ).thenReturn( UUID.randomUUID().toString() );
         when( member.getStringAttribute( TRANSACTION_SERVER ) ).thenReturn( format( "host%d:%d", id, 7000 + id ) );
         when( member.getStringAttribute( RAFT_SERVER ) ).thenReturn( format( "host%d:%d", id, 6000 + id ) );
         when( member.getStringAttribute( CLIENT_CONNECTOR_ADDRESSES ) )
                 .thenReturn( format( "bolt://host%d:%d,http://host%d:%d", id, 5000 + id, id, 5000 + id ) );
+        when( member.getStringAttribute( MEMBER_DB_NAME ) ).thenReturn( databaseName );
         return member;
     }
 
