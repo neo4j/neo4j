@@ -89,6 +89,8 @@ public interface BoltConnection
      */
     boolean processNextBatch();
 
+    void handleSchedulingError( Throwable t );
+
     /**
      * Interrupt and (possibly) stop the current running job, but continue processing next jobs
      */

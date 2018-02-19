@@ -137,6 +137,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
 
         return new BoltResultHandle()
         {
+
             @Override
             public BoltResult start() throws KernelException
             {
@@ -149,14 +150,22 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
                 }
                 catch ( KernelException e )
                 {
+                    transactionalContext.close( false );
                     onFail.apply();
                     throw new QueryExecutionKernelException( e );
                 }
                 catch ( Throwable e )
                 {
+                    transactionalContext.close( false );
                     onFail.apply();
                     throw e;
                 }
+            }
+
+            @Override
+            public void close( boolean success )
+            {
+                transactionalContext.close( success );
             }
 
             @Override
@@ -164,6 +173,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
             {
                 transactionalContext.terminate();
             }
+
         };
     }
 }

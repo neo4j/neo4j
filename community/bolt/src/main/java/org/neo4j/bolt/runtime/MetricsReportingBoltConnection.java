@@ -19,66 +19,37 @@
  */
 package org.neo4j.bolt.runtime;
 
-import io.netty.channel.Channel;
-
-import java.net.SocketAddress;
 import java.time.Clock;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.kernel.impl.logging.LogService;
 
-public class MetricsReportingBoltConnection implements BoltConnection
+public class MetricsReportingBoltConnection extends DefaultBoltConnection
 {
-    private final BoltConnection delegate;
     private final BoltConnectionMetricsMonitor metricsMonitor;
-    private Clock clock;
+    private final Clock clock;
 
-    public MetricsReportingBoltConnection( BoltConnection delegate, BoltConnectionMetricsMonitor metricsMonitor, Clock clock )
+    public MetricsReportingBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+            BoltConnectionQueueMonitor queueMonitor, BoltConnectionMetricsMonitor metricsMonitor, Clock clock )
     {
-        this.delegate = delegate;
+        this( channel, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
+    }
+
+    public MetricsReportingBoltConnection( BoltChannel channel, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+            BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, BoltConnectionMetricsMonitor metricsMonitor,
+            Clock clock )
+    {
+        super( channel, machine, logService, listener, queueMonitor, maxBatchSize );
         this.metricsMonitor = metricsMonitor;
         this.clock = clock;
     }
 
     @Override
-    public String id()
-    {
-        return delegate.id();
-    }
-
-    @Override
-    public SocketAddress localAddress()
-    {
-        return delegate.localAddress();
-    }
-
-    @Override
-    public SocketAddress remoteAddress()
-    {
-        return delegate.remoteAddress();
-    }
-
-    @Override
-    public Channel channel()
-    {
-        return delegate.channel();
-    }
-
-    @Override
-    public String principal()
-    {
-        return delegate.principal();
-    }
-
-    @Override
-    public boolean hasPendingJobs()
-    {
-        return delegate.hasPendingJobs();
-    }
-
-    @Override
     public void start()
     {
-        delegate.start();
+        super.start();
         metricsMonitor.connectionOpened();
     }
 
@@ -87,7 +58,7 @@ public class MetricsReportingBoltConnection implements BoltConnection
     {
         metricsMonitor.messageReceived();
         long queuedAt = clock.millis();
-        delegate.enqueue( machine ->
+        super.enqueue( machine ->
         {
             long queueTime = clock.millis() - queuedAt;
             metricsMonitor.messageProcessingStarted( queueTime );
@@ -111,7 +82,7 @@ public class MetricsReportingBoltConnection implements BoltConnection
 
         try
         {
-            boolean continueProcessing = delegate.processNextBatch();
+            boolean continueProcessing = super.processNextBatch();
 
             if ( !continueProcessing )
             {
@@ -124,18 +95,6 @@ public class MetricsReportingBoltConnection implements BoltConnection
         {
             metricsMonitor.connectionWaiting();
         }
-    }
-
-    @Override
-    public void interrupt()
-    {
-        delegate.interrupt();
-    }
-
-    @Override
-    public void stop()
-    {
-        delegate.stop();
     }
 
 }

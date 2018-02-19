@@ -20,12 +20,14 @@
 package org.neo4j.bolt.runtime;
 
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -43,11 +45,12 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
     private final int maxPoolSize;
     private final Duration keepAlive;
     private final int queueSize;
+    private final ExecutorService forkJoinPool;
 
     private ExecutorService threadPool;
 
     public ExecutorBoltScheduler( ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService, int corePoolSize, int maxPoolSize,
-            Duration keepAlive, int queueSize )
+            Duration keepAlive, int queueSize, ExecutorService forkJoinPool )
     {
         this.executorFactory = executorFactory;
         this.scheduler = scheduler;
@@ -56,6 +59,7 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
         this.maxPoolSize = maxPoolSize;
         this.keepAlive = keepAlive;
         this.queueSize = queueSize;
+        this.forkJoinPool = forkJoinPool;
     }
 
     boolean isRegistered( BoltConnection connection )
@@ -117,8 +121,16 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
 
     private void handleSubmission( BoltConnection connection )
     {
-        activeWorkItems.computeIfAbsent( connection.id(), key -> CompletableFuture.supplyAsync( connection::processNextBatch, threadPool ).whenCompleteAsync(
-                ( result, error ) -> handleCompletion( connection, result, error ), threadPool ) );
+        try
+        {
+            activeWorkItems.computeIfAbsent( connection.id(),
+                    key -> CompletableFuture.supplyAsync( connection::processNextBatch, threadPool ).whenCompleteAsync(
+                            ( result, error ) -> handleCompletion( connection, result, error ), forkJoinPool ) );
+        }
+        catch ( RejectedExecutionException ex )
+        {
+            connection.handleSchedulingError( ex );
+        }
     }
 
     private void handleCompletion( BoltConnection connection, Object shouldContinueScheduling, Throwable error )
@@ -127,14 +139,21 @@ public class ExecutorBoltScheduler implements BoltScheduler, BoltConnectionLifet
 
         if ( error != null )
         {
-            log.error( String.format( "Unexpected error during job scheduling for session '%s'.", connection.id() ), error );
-            connection.stop();
+            if ( ExceptionUtils.hasCause( error, RejectedExecutionException.class ) )
+            {
+                connection.handleSchedulingError( error );
+            }
+            else
+            {
+                log.error( String.format( "Unexpected error during job scheduling for session '%s'.", connection.id() ), error );
+                connection.stop();
+            }
         }
         else
         {
             if ( (Boolean)shouldContinueScheduling && connection.hasPendingJobs() )
             {
-                previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), threadPool );
+                previousFuture.thenAcceptAsync( ignore -> handleSubmission( connection ), forkJoinPool );
             }
         }
     }

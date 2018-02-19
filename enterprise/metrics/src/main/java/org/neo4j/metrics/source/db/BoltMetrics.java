@@ -116,11 +116,19 @@ public class BoltMetrics extends LifecycleAdapter
     @Override
     public void stop()
     {
+        registry.remove( SESSIONS_STARTED );
+        registry.remove( CONNECTIONS_OPENED );
+        registry.remove( CONNECTIONS_CLOSED );
+        registry.remove( CONNECTIONS_IDLE );
+        registry.remove( CONNECTIONS_RUNNING );
         registry.remove( MESSAGES_RECIEVED );
         registry.remove( MESSAGES_STARTED );
         registry.remove( MESSAGES_DONE );
+        registry.remove( MESSAGES_FAILED );
         registry.remove( TOTAL_QUEUE_TIME );
         registry.remove( TOTAL_PROCESSING_TIME );
+        registry.remove( QUEUE_TIME );
+        registry.remove( PROCESSING_TIME );
         monitors.removeMonitorListener( boltMonitor );
     }
 

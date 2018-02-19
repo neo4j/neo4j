@@ -34,7 +34,6 @@ import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
-import org.neo4j.bolt.runtime.MetricsReportingBoltConnectionFactory;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltProtocolHandlerFactory;
@@ -182,9 +181,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
             Dependencies dependencies, LogService logService, Clock clock )
     {
-        return new MetricsReportingBoltConnectionFactory( dependencies.monitors(),
-                new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
-                        new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ) ), clock );
+        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, logService, clock,
+                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ) ), dependencies.monitors() );
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,

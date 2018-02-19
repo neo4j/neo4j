@@ -77,6 +77,8 @@ public class DefaultBoltConnectionTest
         boltChannel = BoltChannel.open( connector, handlerContext, messageLogger );
         stateMachine = mock( BoltStateMachine.class ); // MachineRoom.newMachineWithOwner( BoltStateMachine.State.READY, "neo4j" );
         when( stateMachine.owner() ).thenReturn( "neo4j" );
+        when( stateMachine.shouldStickOnThread() ).thenReturn( false );
+        when( stateMachine.hasOpenStatement() ).thenReturn( false );
     }
 
     @Test
@@ -250,14 +252,14 @@ public class DefaultBoltConnectionTest
     }
 
     @Test
-    public void stopShouldCloseStateMachineInFirstProcessNextBatch()
+    public void stopShouldCloseStateMachine()
     {
         BoltConnection connection = newConnection();
 
         connection.stop();
 
         verify( stateMachine ).terminate();
-        verify( stateMachine, never() ).close();
+        verify( stateMachine ).close();
 
         connection.processNextBatch();
 

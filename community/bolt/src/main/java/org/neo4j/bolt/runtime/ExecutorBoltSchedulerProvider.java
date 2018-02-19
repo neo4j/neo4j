@@ -20,6 +20,8 @@
 package org.neo4j.bolt.runtime;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.kernel.configuration.Config;
@@ -35,6 +37,8 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     private final LogService logService;
     private final ConcurrentHashMap<String, BoltScheduler> boltSchedulers;
 
+    private ExecutorService forkJoinThreadPool;
+
     public ExecutorBoltSchedulerProvider( Config config, ExecutorFactory executorFactory, JobScheduler scheduler, LogService logService )
     {
         this.config = config;
@@ -47,12 +51,13 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     @Override
     public void start() throws Throwable
     {
+        forkJoinThreadPool = new ForkJoinPool();
         config.enabledBoltConnectors().forEach( connector ->
         {
             BoltScheduler boltScheduler =
                     new ExecutorBoltScheduler( executorFactory, scheduler, logService, config.get( connector.thread_pool_core_size ),
                             config.get( connector.thread_pool_max_size ), config.get( connector.thread_pool_keep_alive ),
-                            config.get( connector.thread_pool_queue_size ) );
+                            config.get( connector.thread_pool_queue_size ), forkJoinThreadPool );
             boltScheduler.start();
             boltSchedulers.put( connector.key(), boltScheduler );
         } );
@@ -63,6 +68,9 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
     {
         boltSchedulers.values().forEach( s -> s.stop() );
         boltSchedulers.clear();
+
+        forkJoinThreadPool.shutdown();
+        forkJoinThreadPool = null;
     }
 
     @Override

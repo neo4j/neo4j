@@ -20,11 +20,13 @@
 package org.neo4j.bolt.runtime;
 
 import io.netty.channel.Channel;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.bolt.BoltChannel;
@@ -33,13 +35,17 @@ import org.neo4j.bolt.v1.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.v1.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Job;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class DefaultBoltConnection implements BoltConnection
 {
-    private static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltKernelExtension.class, "max_batch_size", 100 );
+    protected static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltKernelExtension.class, "max_batch_size", 100 );
 
     private final String id;
 
@@ -130,20 +136,52 @@ public class DefaultBoltConnection implements BoltConnection
     @Override
     public boolean processNextBatch()
     {
+        return processNextBatch( maxBatchSize );
+    }
+
+    private boolean processNextBatch( int batchCount )
+    {
         try
         {
-            if ( !queue.isEmpty() )
+            boolean waitForMessage = false;
+            boolean loop = false;
+            do
             {
-                queue.drainTo( batch, maxBatchSize );
-                notifyDrained( batch );
-
-                for ( int i = 0; !shouldClose.get() && i < batch.size(); i++ )
+                if ( !shouldClose.get() )
                 {
-                    Job current = batch.get( i );
+                    if ( waitForMessage || !queue.isEmpty() )
+                    {
+                        queue.drainTo( batch, batchCount );
+                        if ( batch.size() == 0 )
+                        {
+                            while ( true )
+                            {
+                                Job nextJob = queue.poll( 10, SECONDS );
+                                if ( nextJob != null )
+                                {
+                                    batch.add( nextJob );
 
-                    current.perform( machine );
+                                    break;
+                                }
+                            }
+                        }
+                        notifyDrained( batch );
+
+                        while ( batch.size() > 0 )
+                        {
+                            Job current = batch.remove( 0 );
+
+                            current.perform( machine );
+                        }
+
+                        loop = machine.shouldStickOnThread();
+                        waitForMessage = loop;
+                    }
                 }
             }
+            while ( loop );
+
+            assert !machine.hasOpenStatement();
         }
         catch ( BoltConnectionAuthFatality ex )
         {
@@ -162,8 +200,6 @@ public class DefaultBoltConnection implements BoltConnection
         }
         finally
         {
-            batch.clear();
-
             if ( shouldClose.get() )
             {
                 close();
@@ -171,6 +207,24 @@ public class DefaultBoltConnection implements BoltConnection
         }
 
         return !closed.get();
+    }
+
+    @Override
+    public void handleSchedulingError( Throwable t )
+    {
+        Neo4jError error;
+        if ( ExceptionUtils.hasCause( t, RejectedExecutionException.class ) )
+        {
+            error = Neo4jError.from( Status.Request.NoThreadsAvailable, Status.Request.NoThreadsAvailable.code().description() );
+        }
+        else
+        {
+            error = Neo4jError.fatalFrom( t );
+        }
+
+        userLog.error( String.format( "Unexpected error during scheduling of bolt session '%s'.", id() ), t );
+        machine.markFailed( error );
+        processNextBatch( 1 );
     }
 
     @Override
@@ -188,10 +242,7 @@ public class DefaultBoltConnection implements BoltConnection
 
             if ( !hasPendingJobs() )
             {
-                enqueue( mach ->
-                {
-
-                } );
+                processNextBatch( 0 );
             }
         }
     }
@@ -246,5 +297,4 @@ public class DefaultBoltConnection implements BoltConnection
             queueMonitor.drained( this, jobs );
         }
     }
-
 }

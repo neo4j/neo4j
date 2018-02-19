@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,12 +42,12 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -61,7 +62,7 @@ public class ExecutorBoltSchedulerTest
     private final ExecutorFactory executorFactory = mock( ExecutorFactory.class );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final ExecutorBoltScheduler boltScheduler =
-            new ExecutorBoltScheduler( executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0 );
+            new ExecutorBoltScheduler( executorFactory, jobScheduler, logService, 0, 10, Duration.ofMinutes( 1 ), 0, ForkJoinPool.commonPool() );
 
     @Before
     public void setup()
@@ -127,7 +128,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         AtomicBoolean exitCondition = new AtomicBoolean();
         BoltConnection connection = newConnection( id );
-        doAnswer( inv -> awaitExit( exitCondition ) ).when( connection ).processNextBatch();
+        when( connection.processNextBatch() ).thenAnswer( inv -> awaitExit( exitCondition ) );
 
         boltScheduler.start();
         boltScheduler.created( connection );
@@ -146,7 +147,7 @@ public class ExecutorBoltSchedulerTest
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         AtomicBoolean exitCondition = new AtomicBoolean();
-        doAnswer( inv -> awaitExit( exitCondition ) ).when( connection ).processNextBatch();
+        when( connection.processNextBatch() ).thenAnswer( inv -> awaitExit( exitCondition ) );
 
         boltScheduler.start();
         boltScheduler.created( connection );
@@ -203,23 +204,27 @@ public class ExecutorBoltSchedulerTest
     @Test
     public void destroyedShouldCancelActiveWorkItem() throws Throwable
     {
+        AtomicInteger processNextBatchCount = new AtomicInteger();
         String id = UUID.randomUUID().toString();
         BoltConnection connection = newConnection( id );
         AtomicBoolean exitCondition = new AtomicBoolean();
-        doAnswer( inv -> awaitExit( exitCondition ) ).when( connection ).processNextBatch();
+        when( connection.processNextBatch() ).thenAnswer( inv -> {
+            processNextBatchCount.incrementAndGet();
+            return awaitExit( exitCondition );
+        } );
 
         boltScheduler.start();
         boltScheduler.created( connection );
         boltScheduler.enqueued( connection, machine -> nothing() );
 
-        Predicates.await( () -> boltScheduler.isActive( connection ), 1, MINUTES );
+        Predicates.await( () -> processNextBatchCount.get() > 0, 1, MINUTES );
 
         boltScheduler.closed( connection );
 
         Predicates.await( () -> !boltScheduler.isActive( connection ), 1, MINUTES );
 
         assertFalse( boltScheduler.isActive( connection ) );
-        verify( connection ).processNextBatch();
+        assertEquals( 1,processNextBatchCount.get() );
     }
 
     private BoltConnection newConnection( String id )

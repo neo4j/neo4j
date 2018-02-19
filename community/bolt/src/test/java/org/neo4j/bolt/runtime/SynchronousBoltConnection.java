@@ -102,6 +102,12 @@ public class SynchronousBoltConnection implements BoltConnection
     }
 
     @Override
+    public void handleSchedulingError( Throwable t )
+    {
+
+    }
+
+    @Override
     public void interrupt()
     {
         machine.interrupt();
