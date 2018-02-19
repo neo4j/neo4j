@@ -24,18 +24,17 @@ import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.spatial.Point
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.Interpreted + Configs.Morsel - Configs.Version2_3
-
-  val expectedToFail = TestConfiguration(Versions(Versions.Default, V3_1), Planners.all, Runtimes.Default)
+  val pointConfig = Configs.Interpreted - Configs.Version2_3
+  val distanceAndEqualityConfig = Configs.Interpreted - Configs.OldAndRule
+  val indexConfig = Configs.Interpreted - Configs.BackwardsCompatibility - Configs.AllRulePlanners
 
   test("point function should work with literal map") {
-    val result = executeWith(expectedToSucceed, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
+    val result = executeWith(pointConfig, "RETURN point({latitude: 12.78, longitude: 56.7}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -43,7 +42,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and cartesian coordinates") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cartesian'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -51,7 +50,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with literal map and geographic coordinates") {
-    val result = executeWith(expectedToSucceed, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
+    val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
       expectPlansToFail = Configs.AllRulePlanners))
 
@@ -59,15 +58,17 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should not work with literal map and incorrect cartesian CRS") {
-    failWithError(expectedToFail, "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points"))
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point", List("'cart' is not a supported coordinate reference system for points",
+      "Unknown coordinate reference system: cart"))
   }
 
   test("point function should not work with literal map and incorrect geographic CRS") {
-    failWithError(expectedToFail, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points"))
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point", List("'WGS84' is not a supported coordinate reference system for points",
+      "Unknown coordinate reference system: WGS84"))
   }
 
   test("point function should work with integer arguments") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2, y: 4}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2, y: 4}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -75,27 +76,28 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
+    failWithError(pointConfig, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
       params = "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
   }
 
   test("should fail properly if missing geographic longitude") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
+    failWithError(pointConfig, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
       params = "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
   }
 
   test("should fail properly if missing geographic latitude") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
+    failWithError(pointConfig, "RETURN point({params}) as point", List("A point must contain either 'x' and 'y' or 'latitude' and 'longitude'"),
       params = "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
   }
 
   test("should fail properly if unknown coordinate system") {
-    failWithError(expectedToFail, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points"),
+    failWithError(pointConfig, "RETURN point({params}) as point", List("'WGS-1337' is not a supported coordinate reference system for points",
+      "Unknown coordinate reference system: WGS-1337"),
       params = "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
   }
 
   test("should default to Cartesian if missing cartesian CRS") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2.3, y: 4.5}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -103,7 +105,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should default to WGS84 if missing geographic CRS") {
-    val result = executeWith(expectedToSucceed, "RETURN point({longitude: 2.3, latitude: 4.5}) as point",
+    val result = executeWith(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -111,7 +113,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should allow Geographic CRS with x/y coordinates") {
-    val result = executeWith(expectedToSucceed, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point",
+    val result = executeWith(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84'}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -119,12 +121,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("should not allow Cartesian CRS with latitude/longitude coordinates") {
-    failWithError(expectedToFail, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point",
-      List("'cartesian' is not a supported coordinate reference system for geographic points"))
+    failWithError(pointConfig, "RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point",
+      List("'cartesian' is not a supported coordinate reference system for geographic points",
+        "Geographic points does not support coordinate reference system: cartesian"))
   }
 
   test("point function should work with previous map") {
-    val result = executeWith(expectedToSucceed, "WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point",
+    val result = executeWith(pointConfig, "WITH {latitude: 12.78, longitude: 56.7} as data RETURN point(data) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -132,7 +135,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should work on co-located points") {
-    val result = executeWith(expectedToSucceed, "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist",
+    val result = executeWith(pointConfig, "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point", "dist"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -140,7 +143,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should work on nearby cartesian points") {
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(pointConfig,
       """
         |WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({x: 1.1, y: 5.4, crs: 'cartesian'}) as p2
         |RETURN distance(p1,p2) as dist
@@ -152,7 +155,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should work on nearby points") {
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(pointConfig,
       """
         |WITH point({longitude: 12.78, latitude: 56.7}) as p1, point({latitude: 56.71, longitude: 12.79}) as p2
         |RETURN distance(p1,p2) as dist
@@ -164,7 +167,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should work on distant points") {
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(pointConfig,
       """
         |WITH point({latitude: 56.7, longitude: 12.78}) as p1, point({longitude: -51.9, latitude: -16.7}) as p2
         |RETURN distance(p1,p2) as dist
@@ -175,19 +178,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     Math.round(result.columnAs("dist").next().asInstanceOf[Double]) should equal(10116214)
   }
 
-  // Fails with TestFailException or java.lang.IllegalArgumentException depending on TestConfiguration
-  test("distance function should fail if provided with points from different CRS") {
-    try {
-      failWithError(expectedToFail,
+  test("distance function should not fail if provided with points from different CRS") {
+    val localConfig = pointConfig - Configs.OldAndRule
+      val res = executeWith(localConfig,
         """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
-        |RETURN distance(p1,p2) as dist""".stripMargin, List("Invalid points passed to distance(p1, p2)"))
-    } catch {
-      case e: Throwable => assert(e.getMessage.contains("Invalid points passed to distance(p1, p2)"))
-    }
+        |RETURN distance(p1,p2) as dist""".stripMargin)
+    res.columnAs[AnyRef]("dist").next() should be (null)
   }
 
   test("distance function should measure distance from Copenhagen train station to Neo4j in Malmö") {
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(pointConfig,
       """
         |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1, point({latitude: 55.611784, longitude: 12.994341}) as p2
         |RETURN distance(p1,p2) as dist
@@ -199,12 +199,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should work with two null inputs") {
-    val result = executeWith(expectedToSucceed, "RETURN distance(null, null) as dist")
+    val result = executeWith(pointConfig, "RETURN distance(null, null) as dist")
     result.toList should equal(List(Map("dist" -> null)))
   }
 
   test("distance function should return null with lhs null input") {
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(pointConfig,
       """
         |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
         |RETURN distance(null, p1) as dist
@@ -213,7 +213,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should return null with rhs null input") {
-    val result = executeWith(expectedToSucceed,
+    val result = executeWith(pointConfig,
       """
         |WITH point({latitude: 55.672874, longitude: 12.564590}) as p1
         |RETURN distance(p1, null) as dist
@@ -222,19 +222,19 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("distance function should return null if a point is null") {
-    var result = executeWith(expectedToSucceed,
+    var result = executeWith(pointConfig,
       "RETURN distance(point({latitude:3,longitude:7}),point({latitude:null, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWith(expectedToSucceed,
+    result = executeWith(pointConfig,
       "RETURN distance(point({latitude:3,longitude:null}),point({latitude:7, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWith(expectedToSucceed,
+    result = executeWith(pointConfig,
       "RETURN distance(point({x:3,y:7}),point({x:null, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWith(expectedToSucceed,
+    result = executeWith(pointConfig,
       "RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
   }
@@ -249,7 +249,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWith(expectedToSucceed - Configs.Morsel, "MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point",
+    val result = executeWith(pointConfig - Configs.Morsel, "MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -262,7 +262,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     val r = relate(createNode(), createNode(), "PASS_THROUGH", Map("latitude" -> 12.78, "longitude" -> 56.7))
 
     // When
-    val result = executeWith(expectedToSucceed, "MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point",
+    val result = executeWith(pointConfig, "MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -275,7 +275,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWith(expectedToSucceed - Configs.Morsel, "MATCH (p:Place) RETURN point(p) as point",
+    val result = executeWith(pointConfig - Configs.Morsel, "MATCH (p:Place) RETURN point(p) as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -284,21 +284,21 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should work with null input") {
-    val result = executeWith(expectedToSucceed, "RETURN point(null) as p")
+    val result = executeWith(pointConfig, "RETURN point(null) as p")
     result.toList should equal(List(Map("p" -> null)))
   }
 
   test("point function should return null if the map that backs it up contains a null") {
-    var result = executeWith(expectedToSucceed, "RETURN point({latitude:null, longitude:3}) as pt;")
+    var result = executeWith(pointConfig, "RETURN point({latitude:null, longitude:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWith(expectedToSucceed, "RETURN point({latitude:3, longitude:null}) as pt;")
+    result = executeWith(pointConfig, "RETURN point({latitude:3, longitude:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWith(expectedToSucceed, "RETURN point({x:null, y:3}) as pt;")
+    result = executeWith(pointConfig, "RETURN point({x:null, y:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWith(expectedToSucceed, "RETURN point({x:3, y:null}) as pt;")
+    result = executeWith(pointConfig, "RETURN point({x:3, y:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
   }
 
@@ -312,8 +312,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
-    val result = executeWith(config, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
+    val result = executeWith(distanceAndEqualityConfig, "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -350,7 +349,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
-    val result = executeWith(expectedToSucceed - Configs.AllRulePlanners,
+    val localConfig = pointConfig - Configs.AllRulePlanners
+    val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
@@ -398,7 +398,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: -100000})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({x: 0, y: 0}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location > point({x: 0, y: 0}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -416,7 +416,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: -100000})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location < point({x: 0, y: 0}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location < point({x: 0, y: 0}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -435,7 +435,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({x: 100000, y: -100000})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({x: 0, y: 0}) AND p.location < point({x: 200000, y: 200000}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location > point({x: 0, y: 0}) AND p.location < point({x: 200000, y: 200000}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -453,7 +453,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: -10.78, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location > point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -469,7 +469,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.700001, longitude: 12.7800001, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(distanceAndEqualityConfig, "CYPHER MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -484,7 +484,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.700001, longitude: 12.7800001, crs: 'WGS-84'})")
 
     // When matching in merge
-    val result = innerExecuteDeprecated("MERGE (p:Place {location: point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) }) RETURN p.location as point", Map.empty)
+    val result = executeWith(distanceAndEqualityConfig, "MERGE (p:Place {location: point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) }) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -492,7 +492,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
 
     //  And when creating in merge
-    val result2 = innerExecuteDeprecated("MERGE (p:Place {location: point({latitude: 156.7, longitude: 112.78, crs: 'WGS-84'}) }) RETURN p.location as point", Map.empty)
+    val result2 = executeWith(distanceAndEqualityConfig, "MERGE (p:Place {location: point({latitude: 156.7, longitude: 112.78, crs: 'WGS-84'}) }) RETURN p.location as point")
 
     // Then
     val plan2 = result2.executionPlanDescription()
@@ -509,7 +509,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location > point({latitude: 56.0, longitude: 12.0, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -527,7 +527,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location >= point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location >= point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -545,7 +545,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location > point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location > point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -564,7 +564,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location >= point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location >= point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -583,7 +583,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
     // When
-    val result = innerExecuteDeprecated("CYPHER runtime=slotted MATCH (p:Place) WHERE p.location >= point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'}) AND p.location < point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point", Map.empty)
+    val result = executeWith(indexConfig, "CYPHER MATCH (p:Place) WHERE p.location >= point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'}) AND p.location < point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // Then
     val plan = result.executionPlanDescription()
@@ -601,12 +601,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 56.7, longitude: 10.78, crs: 'WGS-84'})")
 
     val query =
-      """CYPHER runtime=slotted MATCH (p:Place)
+      """CYPHER MATCH (p:Place)
         |WHERE distance(p.location, point({latitude: 55.7, longitude: 11.78, crs: 'WGS-84'})) < 1000
         |RETURN p.location as point
       """.stripMargin
     // When
-    val result = innerExecuteDeprecated(query, Map.empty)
+    val result = executeWith(distanceAndEqualityConfig, query)
 
     // Then
     val plan = result.executionPlanDescription()
@@ -633,12 +633,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // <=
     {
       val query =
-        s"""CYPHER runtime=slotted MATCH (p:Place)
+        s"""CYPHER MATCH (p:Place)
            |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
            |RETURN p.location as point
         """.stripMargin
       // When
-      val result = innerExecuteDeprecated(query, Map.empty)
+      val result = executeWith(distanceAndEqualityConfig, query)
 
       // Then
       val plan = result.executionPlanDescription()
@@ -657,12 +657,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // <
     {
       val query =
-        s"""CYPHER runtime=slotted MATCH (p:Place)
+        s"""CYPHER MATCH (p:Place)
            |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) < 10
            |RETURN p.location as point
         """.stripMargin
       // When
-      val result = innerExecuteDeprecated(query, Map.empty)
+      val result = executeWith(distanceAndEqualityConfig, query)
 
       // Then
       val plan = result.executionPlanDescription()
@@ -683,12 +683,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
     val query =
-      s"""CYPHER runtime=slotted MATCH (p:Place)
+      s"""CYPHER MATCH (p:Place)
          |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
          |RETURN p.location as point
         """.stripMargin
     // When
-    val result = innerExecuteDeprecated(query, Map.empty)
+    val result = executeWith(distanceAndEqualityConfig, query)
 
     // Then
     val plan = result.executionPlanDescription()
@@ -704,12 +704,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
     val query =
-      s"""CYPHER runtime=slotted MATCH (p:Place)
+      s"""CYPHER MATCH (p:Place)
          |WHERE distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= 10
          |RETURN p.location as point
         """.stripMargin
     // When
-    val result = innerExecuteDeprecated(query, Map.empty)
+    val result = executeWith(distanceAndEqualityConfig, query)
 
     // Then
     val plan = result.executionPlanDescription()
@@ -726,12 +726,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
 
     val query =
-      """CYPHER runtime=slotted MATCH (p:Place)
+      """CYPHER MATCH (p:Place)
          |WHERE distance(p.location, $poi) <= 10
          |RETURN p.location as point
         """.stripMargin
     // When
-    val result = innerExecuteDeprecated(query, Map("poi" -> 5))
+    val result = executeWith(distanceAndEqualityConfig, query, params = Map("poi" -> 5))
 
     // Then
     result.toList shouldBe empty
@@ -739,7 +739,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     // And given
     graph.execute(s"DROP INDEX ON :Place(location)")
     // when
-    val resultNoIndex = innerExecuteDeprecated(query,  Map("poi" -> 5))
+    val resultNoIndex = executeWith(distanceAndEqualityConfig, query,  params = Map("poi" -> 5))
 
     // Then
     resultNoIndex.toList shouldBe empty
@@ -750,7 +750,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val query =
       """
         |UNWIND [1,2,3] as num
@@ -759,7 +758,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         |MATCH (place:Place) SET place.location = points
         |RETURN points
       """.stripMargin
-    val result = executeWith(config, query,
+    val result = executeWith(distanceAndEqualityConfig, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -828,7 +827,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     createLabeledNode("Place")
 
     // When
-    val config = expectedToSucceed - Configs.Cost3_1 - Configs.AllRulePlanners - Configs.Morsel
     val query =
       """
         |WITH [point({x: 1, y: 2}), point({latitude: 1, longitude: 2})] as points
@@ -837,6 +835,6 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
       """.stripMargin
 
     // Then
-    failWithError(config + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
+    failWithError(distanceAndEqualityConfig + Configs.Procs, query, Seq("Collections containing point values with different CRS can not be stored in properties."))
   }
 }
