@@ -41,7 +41,8 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint],
                               argumentIds: Set[String],
-                              context: LogicalPlanningContext): (Seq[Expression], Seq[Expression]) => LogicalPlan
+                              context: LogicalPlanningContext)
+                             (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan
 
   protected def findIndexesForLabel(labelId: Int, context: LogicalPlanningContext): Iterator[IndexDescriptor]
 
@@ -176,6 +177,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       val keyName = seekable.propertyKeyName
       IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, hints, argumentIds, solvesPredicate = true)
 
+    // The planned index seek will almost satisfy the predicate, but with the possibility of some false positives.
+    // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
+    // but not mark it as solved, since the planner will still need to solve it with a Filter.
     case predicate@AsDistanceSeekable(seekable) =>
       val queryExpression = seekable.asQueryExpression
       val keyName = seekable.propertyKeyName

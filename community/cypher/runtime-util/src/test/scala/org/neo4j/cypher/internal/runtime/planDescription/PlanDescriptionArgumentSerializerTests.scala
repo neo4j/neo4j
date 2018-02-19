@@ -73,4 +73,9 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     )
   }
 
+  test("should serialize point distance index seeks") {
+    serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = false)) should equal(":L(location) WHERE distance(_,p) < 300")
+    serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = true)) should equal(":L(location) WHERE distance(_,p) <= 300")
+  }
+
 }

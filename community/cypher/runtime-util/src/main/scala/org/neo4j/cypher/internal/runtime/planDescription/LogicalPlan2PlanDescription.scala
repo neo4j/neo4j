@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalit
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyName, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v3_4.functions.Point
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -406,8 +407,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
               s"<${bound.inequalitySignSuffix} ${bound.endPoint.asCanonicalStringVal}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
           case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
+            val funcName = Point.name
             val poi = point match {
-              case FunctionInvocation(Namespace(List()), FunctionName("point"), _, Seq(MapExpression(args))) =>
+              case FunctionInvocation(Namespace(List()), FunctionName(funcName), _, Seq(MapExpression(args))) =>
                 s"point(${args.map(_._1.name).mkString(",")})"
               case _ => point.toString
             }

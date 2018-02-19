@@ -236,8 +236,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       indexSeekByPrefixRange(index, prefix)
     case range: InequalitySeekRange[Any] =>
       indexSeekByPrefixRange(index, range)
-    case range: PointDistanceRange[Any] =>
-      val distance: Double = range.distance match {
+    case range: PointDistanceRange[_] =>
+      val distance = range.distance match {
         case n:NumberValue => n.doubleValue()
         case n:Number => n.doubleValue()
         case _ =>
