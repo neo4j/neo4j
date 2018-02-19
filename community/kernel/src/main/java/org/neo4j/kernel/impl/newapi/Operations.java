@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
@@ -42,7 +43,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -171,7 +171,7 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
+    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException, EntityNotFoundException
     {
         ktx.assertOpen();
 
@@ -360,7 +360,8 @@ public class Operations implements Write, ExplicitIndexWrite
 
     @Override
     public Value nodeSetProperty( long node, int propertyKey, Value value )
-            throws KernelException
+            throws EntityNotFoundException, ConstraintValidationException, AutoIndexingKernelException
+
     {
         acquireExclusiveNodeLock( node );
         ktx.assertOpen();
@@ -433,7 +434,8 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public Value relationshipSetProperty( long relationship, int propertyKey, Value value ) throws KernelException
+    public Value relationshipSetProperty( long relationship, int propertyKey, Value value )
+            throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();
@@ -459,7 +461,8 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public Value relationshipRemoveProperty( long relationship, int propertyKey ) throws KernelException
+    public Value relationshipRemoveProperty( long relationship, int propertyKey )
+            throws EntityNotFoundException, AutoIndexingKernelException
     {
         acquireExclusiveRelationshipLock( relationship );
         ktx.assertOpen();

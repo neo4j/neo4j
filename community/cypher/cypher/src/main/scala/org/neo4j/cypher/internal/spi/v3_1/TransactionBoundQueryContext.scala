@@ -44,8 +44,10 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.{IndexQuery, InternalIndexState}
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
@@ -53,7 +55,6 @@ import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -110,7 +111,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   override def getLabelsForNode(node: Long) = try {
     JavaConversionSupport.asScala(txContext.statement.readOperations().nodeGetLabels(node))
   } catch {
-    case e: exceptions.EntityNotFoundException =>
+    case e: api.exceptions.EntityNotFoundException =>
       if (nodeOps.isDeletedInThisTx(node))
         throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction", e)
       else
@@ -297,20 +298,20 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       try {
         txContext.statement.dataWriteOperations().nodeDelete(obj.getId)
       } catch {
-        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
       JavaConversionSupport.asScalaENFXSafe(txContext.statement.readOperations().nodeGetPropertyKeys(id))
     } catch {
-      case _: exceptions.EntityNotFoundException => Iterator.empty
+      case _: api.exceptions.EntityNotFoundException => Iterator.empty
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       txContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case e: exceptions.EntityNotFoundException =>
+      case e: api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
         else
@@ -320,14 +321,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       txContext.statement.readOperations().nodeHasProperty(id, propertyKey)
     } catch {
-      case _: exceptions.EntityNotFoundException => false
+      case _: api.exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
         txContext.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -335,7 +336,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       try {
         txContext.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value) )
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -372,20 +373,20 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       try {
         txContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
       } catch {
-        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
     override def propertyKeyIds(id: Long): Iterator[Int] = try {
       JavaConversionSupport.asScalaENFXSafe(txContext.statement.readOperations().relationshipGetPropertyKeys(id))
     } catch {
-      case _: exceptions.EntityNotFoundException => Iterator.empty
+      case _: api.exceptions.EntityNotFoundException => Iterator.empty
     }
 
     override def getProperty(id: Long, propertyKeyId: Int): Any = try {
       txContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
     } catch {
-      case e: exceptions.EntityNotFoundException =>
+      case e: api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
         else
@@ -395,14 +396,14 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
       txContext.statement.readOperations().relationshipHasProperty(id, propertyKey)
     } catch {
-      case _: exceptions.EntityNotFoundException => false
+      case _: api.exceptions.EntityNotFoundException => false
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int): Unit = {
       try {
         txContext.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -410,7 +411,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
       try {
         txContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value) )
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -419,7 +420,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
         txContext.statement.readOperations().relationshipCursorById(id)
         entityAccessor.newRelationshipProxy(id)
       } catch {
-        case e: exceptions.EntityNotFoundException =>
+        case e: api.exceptions.EntityNotFoundException =>
           throw new EntityNotFoundException(s"Relationship with id $id", e)
       }
 
@@ -706,7 +707,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     try {
       txContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
     } catch {
-      case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
+      case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }
   }
 

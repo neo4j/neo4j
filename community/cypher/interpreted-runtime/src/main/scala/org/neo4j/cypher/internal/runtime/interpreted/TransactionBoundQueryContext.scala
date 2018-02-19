@@ -41,10 +41,12 @@ import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
@@ -52,7 +54,6 @@ import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.guard.TerminationGuard
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations
@@ -505,7 +506,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       try {
         writes().nodeDelete(id)
       } catch {
-        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
@@ -559,7 +560,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       try {
         writes().nodeRemoveProperty(id, propertyKeyId)
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -567,7 +568,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       try {
         writes().nodeSetProperty(id, propertyKeyId, value)
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -633,7 +634,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       try {
         writes().relationshipDelete(id)
       } catch {
-        case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
+        case _: api.exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
     }
 
@@ -687,7 +688,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       try {
         writes().relationshipRemoveProperty(id, propertyKeyId)
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -695,7 +696,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       try {
         writes().relationshipSetProperty(id, propertyKeyId, value)
       } catch {
-        case _: exceptions.EntityNotFoundException => //ignore
+        case _: api.exceptions.EntityNotFoundException => //ignore
       }
     }
 
@@ -1059,7 +1060,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     try {
       transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node)
     } catch {
-      case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
+      case _: api.exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }
   }
 

@@ -38,16 +38,14 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
@@ -154,6 +152,11 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalStateException( "Auto indexing encountered a failure while deleting the relationship: "
                                              + e.getMessage(), e );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( "Unable to delete relationship[" +
+                                         getId() + "] since it is already deleted." );
         }
     }
 
@@ -431,11 +434,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         try ( Statement ignore = transaction.acquireStatement() )
         {
             transaction.dataWrite().relationshipSetProperty( id, propertyKeyId, Values.of( value, false ) );
-        }
-        catch ( ConstraintValidationException e )
-        {
-            throw new ConstraintViolationException(
-                    e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
         }
         catch ( IllegalArgumentException e )
         {
