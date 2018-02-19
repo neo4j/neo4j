@@ -81,7 +81,9 @@ public class PreElectionIT
         // given
         long initialTerm = cluster.awaitLeader().raft().term();
 
-        // when
+        // when a heartbeat is missed and an election is triggered on followers
+        // (NOTE: this is actually done in a loop in the then clause since race conditions lead to a heartbeat being received
+        // sometimes during election => cancelling election)
         futures.addAll( triggerElectionOnFollowers( cluster ) );
 
         // then
@@ -96,61 +98,6 @@ public class PreElectionIT
         {
             future.cancel( false );
         }
-    }
-
-    private Collection<CompletableFuture<Void>> triggerElectionOnFollowers( Cluster cluster )
-    {
-        Race.ThrowingRunnable sleep = () -> Thread.sleep( (long) (1000 + ( Math.random() * 1000) ) );
-
-        Collection<CompletableFuture<Void>> futures = new ArrayList<>(  );
-        for ( CoreClusterMember member : cluster.coreMembers() )
-        {
-            if ( Role.FOLLOWER == member.raft().currentRole() )
-            {
-                System.out.printf( "Triggering election on %s\n", member.id() );
-                Runnable election = Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) );
-                futures.add( CompletableFuture.runAsync( chain( sleep, election::run ) ) );
-                // Basically followers are getting heartbeats during election process and are saying that they are not participating in election.
-                // Need to have a loop that causes election over and over as it is unpredictable
-            }
-        }
-        return futures;
-    }
-
-    private boolean termNumberHasChanged( Cluster cluster, long initialTerm, Runnable triggerElectionOnFollowers )
-    {
-        try
-        {
-            triggerElectionOnFollowers.run();
-            ThrowingSupplier<Long,TimeoutException> termSupplier = () -> cluster.awaitLeader().raft().term();
-            System.out.printf( "The term being probed is: %s\n", termSupplier.get() );
-            Assert.assertEventually( "Quick burst", termSupplier, not( equalTo( initialTerm ) ), 5, TimeUnit.SECONDS );
-            System.out.printf( "Exiting true with term: %s\n", termSupplier.get() );
-            return true;
-        }
-        catch ( TimeoutException | InterruptedException | AssertionError e )
-        {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private Runnable chain( Race.ThrowingRunnable... throwingRunnables )
-    {
-        return () ->
-        {
-            for ( Race.ThrowingRunnable runnable : throwingRunnables )
-            {
-                try
-                {
-                    runnable.run();
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
-            }
-        };
     }
 
     @Test
@@ -213,5 +160,35 @@ public class PreElectionIT
     private String firstServerRefusesToBeLeader( int id )
     {
         return id == 0 ? "true" : "false";
+    }
+
+    private Collection<CompletableFuture<Void>> triggerElectionOnFollowers( Cluster cluster )
+    {
+        Collection<CompletableFuture<Void>> futures = new ArrayList<>(  );
+        for ( CoreClusterMember member : cluster.coreMembers() )
+        {
+            if ( Role.FOLLOWER == member.raft().currentRole() )
+            {
+                Runnable election = Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) );
+                futures.add( CompletableFuture.runAsync( election ) );
+            }
+        }
+        return futures;
+    }
+
+    private boolean termNumberHasChanged( Cluster cluster, long initialTerm, Runnable triggerElectionOnFollowers )
+    {
+        try
+        {
+            triggerElectionOnFollowers.run();
+            ThrowingSupplier<Long,TimeoutException> termSupplier = () -> cluster.awaitLeader().raft().term();
+            Assert.assertEventually( "Brief check for desired condition before repeating action", termSupplier, not( equalTo( initialTerm ) ), 5, TimeUnit.SECONDS );
+            return true;
+        }
+        catch ( TimeoutException | InterruptedException | AssertionError e )
+        {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
