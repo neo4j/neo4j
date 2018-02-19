@@ -720,6 +720,11 @@ public class Operations implements Write, ExplicitIndexWrite
         return nodeCursor;
     }
 
+    public DefaultRelationshipScanCursor relationshipCursor()
+    {
+        return relationshipCursor;
+    }
+
     public DefaultPropertyCursor propertyCursor()
     {
         return propertyCursor;

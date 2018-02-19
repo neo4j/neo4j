@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Session;
@@ -574,6 +575,12 @@ public class ConstraintIndexCreatorTest
 
             @Override
             public NodeCursor nodeCursor()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public RelationshipScanCursor relationshipCursor()
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }
