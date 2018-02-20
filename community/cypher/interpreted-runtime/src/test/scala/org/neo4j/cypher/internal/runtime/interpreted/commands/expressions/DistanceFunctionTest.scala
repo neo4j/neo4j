@@ -12,7 +12,7 @@ class DistanceFunctionTest extends CypherFunSuite {
     val northPole = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 90)
 
     val points =
-      for (x <- -180.0 to 180.0 by 36.0; y <- -90.0 to 90.0 by 30.0) yield {
+      for (x <- -180.0 to 180.0 by 36.0; y <- -75.0 to 75.0 by 30.0) yield {
         Values.pointValue(CoordinateReferenceSystem.WGS84, x, y)
       }
     val distances = Seq(1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0)
@@ -39,7 +39,6 @@ class DistanceFunctionTest extends CypherFunSuite {
         }
         val southPoleIncluded = HaversinCalculator(point, southPole) <= distance
         val northPoleIncluded = HaversinCalculator(point, northPole) <= distance
-
 
         // Test that values slightly further apart are not in the bounding box
         val delta = 1.0
@@ -88,6 +87,22 @@ class DistanceFunctionTest extends CypherFunSuite {
     val farEast = Values.pointValue(CoordinateReferenceSystem.WGS84, 179.99, 0)
 
     HaversinCalculator((farEast, farWest)) should be < HaversinCalculator.EARTH_RADIUS_METERS
+  }
+
+  test("bounding box including the north pole should be extended to all longitudes") {
+    val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 90.0)
+    val (bottomLeft, topRight) = HaversinCalculator.boundingBox(farNorth, 100.0)
+    bottomLeft.coordinate()(0) should be(-180)
+    topRight.coordinate()(0) should be(180)
+    topRight.coordinate()(1) should be(90)
+  }
+
+  test("bounding box including the south pole should be extended to all longitudes") {
+    val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90.0)
+    val (bottomLeft, topRight) = HaversinCalculator.boundingBox(farSouth, 100.0)
+    bottomLeft.coordinate()(0) should be(-180)
+    bottomLeft.coordinate()(1) should be(-90)
+    topRight.coordinate()(0) should be(180)
   }
 
   test("distance should account for poles") {
