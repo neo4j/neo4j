@@ -193,6 +193,11 @@ public class DefaultBoltConnection implements BoltConnection
             shouldClose.set( true );
             log.error( String.format( "Protocol breach detected in bolt session '%s'.", id() ), ex );
         }
+        catch ( InterruptedException ex )
+        {
+            shouldClose.set( true );
+            log.info( "Bolt session '%s' is interrupted probably due to server shutdown.", id() );
+        }
         catch ( Throwable t )
         {
             shouldClose.set( true );
