@@ -23,9 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -33,8 +30,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.test.Race;
-import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -64,38 +59,6 @@ public class PreElectionIT
                 .withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, this::firstServerRefusesToBeLeader )
                 .withSharedCoreParam( CausalClusteringSettings.multi_dc_license, "true" );
         clusterRule.startCluster();
-    }
-
-    @Test
-    public void shouldStartAnElectionIfAllServersHaveTimedOutOnHeartbeats() throws Exception
-    {
-        Cluster cluster = clusterRule.startCluster();
-        Collection<CompletableFuture<Void>> futures = new ArrayList<>( cluster.coreMembers().size() );
-
-        // given
-        long initialTerm = cluster.awaitLeader().raft().term();
-
-        // when
-        for ( CoreClusterMember member : cluster.coreMembers() )
-        {
-            if ( Role.FOLLOWER == member.raft().currentRole() )
-            {
-                futures.add( CompletableFuture.runAsync( Race.throwing( () -> member.raft().triggerElection( Clock.systemUTC() ) ) ) );
-            }
-        }
-
-        // then
-        Assert.assertEventually(
-                "Should be on a new term following an election",
-                () -> cluster.awaitLeader().raft().term(), not( equalTo( initialTerm ) ),
-                5,
-                TimeUnit.MINUTES );
-
-        // cleanup
-        for ( CompletableFuture<Void> future : futures )
-        {
-            future.cancel( false );
-        }
     }
 
     @Test
