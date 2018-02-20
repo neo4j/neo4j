@@ -53,6 +53,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def entityAccessor: EmbeddedProxySPI = inner.entityAccessor
 
+  override def withActiveRead: QueryContext = inner.withActiveRead
+
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
 
@@ -297,6 +299,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def cursors: CursorFactory = inner.cursors
 
   override def dataRead: Read = inner.dataRead
+
+  override def stableDataRead: Read = inner.stableDataRead
 
   override def tokenRead: TokenRead = inner.tokenRead
 

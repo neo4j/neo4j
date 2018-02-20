@@ -25,9 +25,10 @@ import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 case class ActiveReadPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
 
   override def createResults(state: QueryState): Iterator[ExecutionContext] = {
-    val sourceResult = source.createResults(state)
+    val activeState = state.withQueryContext(state.query.withActiveRead)
+    val sourceResult = source.createResults(activeState)
 
-    val decoratedState = state.decorator.decorate(this, state)
+    state.decorator.decorate(this, state)
     state.decorator.decorate(this, sourceResult)
   }
 
