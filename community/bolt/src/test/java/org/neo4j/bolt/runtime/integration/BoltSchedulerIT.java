@@ -116,7 +116,7 @@ public class BoltSchedulerIT
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), BoltConnector.ConnectorType.BOLT.name() );
             settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_core_size.name(), "5" );
-            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_max_size.name(), "20" );
+            settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).thread_pool_max_size.name(), "100" );
         };
     }
 
