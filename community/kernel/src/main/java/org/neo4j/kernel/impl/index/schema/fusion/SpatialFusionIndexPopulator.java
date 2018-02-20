@@ -73,7 +73,7 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void drop() throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).drop(), indexMap.values().toArray() );
+        forAll( SpatialKnownIndex::drop, indexMap.values() );
         indexMap.clear();
     }
 
@@ -116,13 +116,13 @@ class SpatialFusionIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully ) throws IOException
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).finishPopulation( populationCompletedSuccessfully ), indexMap.values().toArray() );
+        forAll( spatialKnownIndex -> spatialKnownIndex.finishPopulation( populationCompletedSuccessfully ), indexMap.values() );
     }
 
     @Override
     public void markAsFailed( String failure )
     {
-        forAll( entry -> ((SpatialKnownIndex) entry).markAsFailed( failure ), indexMap.values().toArray() );
+        forAll( spatialKnownIndex -> spatialKnownIndex.markAsFailed( failure ), indexMap.values() );
     }
 
     @Override

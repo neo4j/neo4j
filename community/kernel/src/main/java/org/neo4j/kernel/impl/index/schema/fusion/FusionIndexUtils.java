@@ -20,57 +20,66 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Collection;
+
+import org.neo4j.function.ThrowingConsumer;
 
 /**
  * Utility methods for working with multiple sub-components within the Fusion Index system
  */
 public abstract class FusionIndexUtils
 {
-    public interface ActionAble
-    {
-        void doIt( Object obj ) throws Exception;
-    }
-
     /**
      * Method for calling a lambda function on many objects when it is expected that the function might
-     * throw an exception. The method will catch all exceptions from all calls, and throw the first exception
-     * at the end. This is equivalent to have a set of nested try{}finally{} blocks to ensure all calls are made,
-     * but is generalized to any number of calls.
+     * throw an exception. First exception will be thrown and subsequent will be suppressed.
      *
      * For example, in FusionIndexAccessor:
      * <pre>
      *    public void drop() throws IOException
      *    {
-     *        forAll( ( accessor ) -> ((IndexAccessor) accessor).drop(), nativeAccessor, spatialAccessor, luceneAccessor );
+     *        forAll( IndexAccessor::drop, nativeAccessor, spatialAccessor, luceneAccessor );
      *        dropAction.drop( indexId );
      *    }
      * </pre>
      *
-     * @param actionable lambda function to call on each object passed
+     * @param consumer lambda function to call on each object passed
      * @param subjects varargs array of objects to call the function on
      * @param <E> the type of exception anticipated, inferred from the lambda
-     * @throws E
+     * @throws E if consumption fails with this exception
      */
-    public static <E extends Exception> void forAll( ActionAble actionable, Object... subjects ) throws E
+    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, Collection<T> subjects ) throws E
     {
-        List<E> error = Arrays.stream( subjects ).map( accessor ->
+        E exception = null;
+        for ( T subject : subjects )
         {
             try
             {
-                actionable.doIt( accessor );
-                return null;
+                consumer.accept( subject );
             }
             catch ( Throwable t )
             {
-                return (E) t;
+                E e = (E) t;
+                if ( exception == null )
+                {
+                    exception = e;
+                }
+                else
+                {
+                    exception.addSuppressed( e );
+                }
             }
-        } ).filter( Objects::nonNull ).collect( Collectors.toList() );
-        if ( !error.isEmpty() )
-        {
-            throw error.get(0);
         }
+        if ( exception != null )
+        {
+            throw exception;
+        }
+    }
+
+    /**
+     * See {@link FusionIndexUtils#forAll(ThrowingConsumer, Collection)}
+     */
+    public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T... subjects ) throws E
+    {
+        forAll( consumer, Arrays.asList( subjects ) );
     }
 }
