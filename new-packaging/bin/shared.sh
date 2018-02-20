@@ -9,7 +9,10 @@ parse_version() {
   local edition_version_extension=${filename#*-}
   local version_extension=${edition_version_extension#*-}
   version=${version_extension%-*}
-  deb_version=${version/-/"~"}
+  # Need the 1: prefix to make sure that newer debian packages are in
+  # fact considered newer, to overrule bad version numbers in old
+  # versions.
+  deb_version=1:${version/-/"~"}
   rpm_version=${version%-*}
   version_label=${version#*-}
   # if no label
