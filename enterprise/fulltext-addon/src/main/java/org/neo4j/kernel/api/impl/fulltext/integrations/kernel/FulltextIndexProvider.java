@@ -19,53 +19,55 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
-import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextProviderImpl;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.logging.Log;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.EntityType;
 
-public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor>
+class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> implements FulltextAccessor
 {
     private final FulltextFactory factory;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
+    private final LabelTokenHolder labelTokenHolder;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
+    private final Map<String,FulltextIndexAccessor> accessorsByName;
 
-    protected FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory,
-            FileSystemAbstraction fileSystem, String analyzerClassName, PropertyKeyTokenHolder propertyKeyTokenHolder, LogService logging,
-            AvailabilityGuard availabilityGuard, GraphDatabaseService db, JobScheduler scheduler, Supplier<TransactionIdStore> transactionIdStore,
-            File storeDir ) throws IOException
+    FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory, FileSystemAbstraction fileSystem,
+            String analyzerClassName, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+            RelationshipTypeTokenHolder relationshipTypeTokenHolder ) throws IOException
     {
         super( descriptor, priority, directoryStructureFactory );
-        Log log = logging.getInternalLog( FulltextProviderImpl.class );
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         factory = new FulltextFactory( fileSystem, directoryStructure().rootDirectory(), analyzerClassName );
-        accessors = new HashMap<FulltextIndexDescriptor,FulltextIndexAccessor>();
+        accessors = new HashMap<>();
+        accessorsByName = new HashMap<>();
     }
 
     public PrimitiveLongIterator query( IndexDescriptor descriptor, String query ) throws IOException
@@ -101,6 +103,7 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
 
         FulltextIndexAccessor fulltextIndexAccessor = new FulltextIndexAccessor( fulltextIndex, descriptor );
         accessors.put( descriptor, fulltextIndexAccessor );
+        accessorsByName.put( descriptor.identifier(), fulltextIndexAccessor );
         return fulltextIndexAccessor;
     }
 
@@ -134,5 +137,32 @@ public class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor
     {
         //TODO store migration
         return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    @Override
+    public Stream<String> propertyKeyStrings( IndexDescriptor descriptor )
+    {
+        return Arrays.stream( descriptor.schema().getPropertyIds() ).mapToObj( id -> propertyKeyTokenHolder.getTokenByIdOrNull( id ).name() );
+    }
+
+    @Override
+    public IndexDescriptor indexDescriptorFor( String name, EntityType type, String[] entityTokens, String... properties )
+    {
+        int[] entityTokenIds;
+        if ( type== EntityType.NODE )
+        {
+            entityTokenIds = Arrays.stream( entityTokens ).mapToInt( labelTokenHolder::getOrCreateId ).toArray();
+        }
+        else {
+            entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
+        }
+        int[] propertyIds = Arrays.stream(properties).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
+        return indexDescriptorFor( new NonSchemaSchemaDescriptor( entityTokenIds, type, propertyIds ), name );
+    }
+
+    @Override
+    public PrimitiveLongIterator query( String indexName, String queryString ) throws IOException
+    {
+        return accessorsByName.get( indexName ).query( queryString );
     }
 }

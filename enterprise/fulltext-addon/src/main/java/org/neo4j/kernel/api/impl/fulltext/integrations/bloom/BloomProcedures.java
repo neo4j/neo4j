@@ -29,7 +29,9 @@ import java.util.stream.StreamSupport;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -38,8 +40,6 @@ import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.RELATIONSHIPS;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_RELATIONSHIPS;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
 
@@ -48,8 +48,17 @@ import static org.neo4j.procedure.Mode.SCHEMA;
  */
 public class BloomProcedures
 {
+    public static final String BLOOM_RELATIONSHIPS = "bloomRelationships";
+    public static final String BLOOM_NODES = "bloomNodes";
+
     @Context
     public FulltextProvider provider;
+
+    @Context
+    public FulltextAccessor accessor;
+
+    @Context
+    public ReadOperations readOperations;
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "bloom.awaitPopulation", mode = READ )
@@ -62,7 +71,7 @@ public class BloomProcedures
     @Procedure( name = "bloom.getIndexedNodePropertyKeys", mode = READ )
     public Stream<PropertyOutput> getIndexedNodePropertyKeys() throws Exception
     {
-        return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
+        return accessor.propertyKeyStrings(readOperations.indexGetForName( BLOOM_NODES )).map( PropertyOutput::new );
     }
 
     @Description( "Returns the relationship property keys indexed by the Bloom fulltext index add-on" )
@@ -123,17 +132,18 @@ public class BloomProcedures
 
     private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
     {
-        PrimitiveLongIterator primitiveLongIterator;
-        if ( fuzzy )
-        {
-            primitiveLongIterator = indexReader.fuzzyQuery( terms, matchAll );
-        }
-        else
-        {
-            primitiveLongIterator = indexReader.query( terms, matchAll );
-        }
-        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
+        return null;
+//        PrimitiveLongIterator primitiveLongIterator;
+////        if ( fuzzy )
+////        {
+////            primitiveLongIterator = indexReader.fuzzyQuery( terms, matchAll );
+////        }
+////        else
+////        {
+////            primitiveLongIterator = indexReader.query( terms, matchAll );
+////        }
+//        Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
+//        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
     }
 
     public static class EntityOutput

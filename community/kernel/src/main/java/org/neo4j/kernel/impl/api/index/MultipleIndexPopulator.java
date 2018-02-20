@@ -33,6 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
@@ -62,12 +63,12 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  *
  * There are two ways data is fed to this multi-populator:
  * <ul>
- * <li>{@link #indexAllNodes()}, which is a blocking call and will scan the entire store and
+ * <li>{@link #indexAllEntities()}, which is a blocking call and will scan the entire store and
  * and generate updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
  * same thread instantiating this instance.</li>
  * <li>{@link #queue(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
- * {@link #indexAllNodes()} and incorporated into that data stream. Calls to this method may come from any number
+ * {@link #indexAllEntities()} and incorporated into that data stream. Calls to this method may come from any number
  * of concurrent threads.</li>
  * </ul>
  *
@@ -77,7 +78,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, long, IndexMeta, FlippableIndexProxy,
  * FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
- * <li>Call to {@link #indexAllNodes()} (blocking call).</li>
+ * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queue(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterPopulation()} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
@@ -94,7 +95,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     // to have fast #size() method since it might be drained in batches
     protected final Queue<IndexEntryUpdate<?>> queue = new LinkedBlockingQueue<>();
 
-    // Populators are added into this list. The same thread adding populators will later call #indexAllNodes.
+    // Populators are added into this list. The same thread adding populators will later call #indexAllEntities.
     // Multiple concurrent threads might fail individual populations.
     // Failed populations are removed from this list while iterating over it.
     final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
@@ -160,11 +161,19 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
 
-    public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
+    public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
     {
         int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
-        IntPredicate propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
+        IntPredicate propertyKeyIdFilter;
+        if ( propertyKeyIds.length == 0 )
+        {
+            propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
+        }
+        else
+        {
+            propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
+        }
 
         if ( type == EntityType.NODE )
         {
@@ -320,6 +329,11 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] propertyKeyIds()
     {
+        if ( populations.stream().anyMatch( indexPopulation -> indexPopulation.schema().getEntityTokenIds().length == 0 ) )
+        {
+            //No token is any token
+            return new int[0];
+        }
         return populations.stream().flatMapToInt( this::propertyKeyIds ).distinct().toArray();
     }
 

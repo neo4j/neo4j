@@ -567,6 +567,19 @@ public class OperationsFacade
     }
 
     @Override
+    public IndexDescriptor indexGetForName( String name)
+            throws SchemaRuleNotFoundException
+    {
+        statement.assertOpen();
+        IndexDescriptor indexDescriptor = schemaRead().indexGetForName( statement, name );
+        if ( indexDescriptor == null )
+        {
+            throw new SchemaRuleNotFoundException( SchemaRule.Kind.INDEX_RULE, name );
+        }
+        return indexDescriptor;
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         statement.assertOpen();

@@ -226,10 +226,13 @@ public interface ReadOperations
     //== SCHEMA OPERATIONS ======================
     //===========================================
 
-    /** Returns the index rule for the given LabelSchemaDescriptor.
+    /** Returns the index rule for the given SchemaDescriptor.
      * @param descriptor*/
-    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
-            throws SchemaRuleNotFoundException;
+    IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor ) throws SchemaRuleNotFoundException;
+
+    /** Returns the index rule for the given index name.
+     * @param name*/
+    IndexDescriptor indexGetForName( String name ) throws SchemaRuleNotFoundException;
 
     /** Get all indexes for a label. */
     Iterator<IndexDescriptor> indexesGetForLabel( int labelId );

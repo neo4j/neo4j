@@ -21,22 +21,18 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
 import java.io.File;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
-import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
@@ -66,8 +62,9 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
 
         FulltextIndexProvider provider =
                 new FulltextIndexProvider( DESCRIPTOR, PRIORITY, subProviderDirectoryStructure( context.storeDir() ), dependencies.fileSystem(), analyzer,
-                        dependencies.propertyKeyTokenHolder(), dependencies.logService(), dependencies.availabilityGuard(), dependencies.db(),
-                        dependencies.scheduler(), dependencies::transactionIdStore, context.storeDir() );
+                        dependencies.propertyKeyTokenHolder(), dependencies.labelTokenHolder(), dependencies.relationshipTypeTokenHolder() );
+        dependencies.procedures().registerComponent( FulltextAccessor.class, procContext -> provider, true );
+
         return provider;
     }
 
@@ -81,14 +78,10 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
 
         PropertyKeyTokenHolder propertyKeyTokenHolder();
 
+        LabelTokenHolder labelTokenHolder();
+
+        RelationshipTypeTokenHolder relationshipTypeTokenHolder();
+
         Procedures procedures();
-
-        LogService logService();
-
-        AvailabilityGuard availabilityGuard();
-
-        JobScheduler scheduler();
-
-        TransactionIdStore transactionIdStore();
     }
 }

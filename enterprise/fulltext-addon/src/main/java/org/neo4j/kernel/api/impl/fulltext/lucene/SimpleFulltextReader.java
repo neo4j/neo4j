@@ -59,19 +59,6 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         this.analyzer = analyzer;
     }
 
-    @Override
-    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
-    {
-        String query = terms.stream().map( QueryParser::escape ).collect( joining( " " ) );
-        return innerQuery( query, matchAll );
-    }
-
-    @Override
-    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
-    {
-        String query = terms.stream().map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
-        return innerQuery( query, matchAll );
-    }
 
     @Override
     public void close()
@@ -98,17 +85,10 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         return new FulltextIndexConfiguration( indexSearcher.doc( docs.scoreDocs[0].doc ) );
     }
 
-    private PrimitiveLongIterator innerQuery( String queryString, boolean matchAll )
+    @Override
+    public PrimitiveLongIterator query( String queryString )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
-        if ( matchAll )
-        {
-            multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.AND );
-        }
-        else
-        {
-            multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
-        }
         Query query;
         try
         {

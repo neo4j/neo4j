@@ -190,6 +190,12 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
+    public IndexDescriptor indexGetForName( String name )
+    {
+        return schemaCache.indexDescriptorForName( name );
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetForLabel( int labelId )
     {
         return schemaCache.indexDescriptorsForLabel( labelId );

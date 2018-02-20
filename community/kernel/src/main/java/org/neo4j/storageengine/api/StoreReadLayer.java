@@ -148,6 +148,9 @@ public interface StoreReadLayer
      */
     IndexDescriptor indexGetForSchema( SchemaDescriptor descriptor );
 
+    //TODO javadoc
+    IndexDescriptor indexGetForName( String name );
+
     /**
      * Returns state of a stored index.
      *

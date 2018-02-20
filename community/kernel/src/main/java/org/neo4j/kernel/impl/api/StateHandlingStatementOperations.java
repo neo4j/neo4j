@@ -755,6 +755,14 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public IndexDescriptor indexGetForName( KernelStatement state, String name )
+    {
+        IndexDescriptor schemaIndexDescriptor = storeLayer.indexGetForName( name );
+        //TODO state?
+        return schemaIndexDescriptor;
+    }
+
+    @Override
     public InternalIndexState indexGetState( KernelStatement state, IndexDescriptor descriptor )
             throws IndexNotFoundKernelException
     {

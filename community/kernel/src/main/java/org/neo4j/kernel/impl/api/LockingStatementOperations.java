@@ -175,6 +175,15 @@ public class LockingStatementOperations implements
     }
 
     @Override
+    public IndexDescriptor indexGetForName( KernelStatement state, String name )
+    {
+        state.assertOpen();
+        IndexDescriptor indexDescriptor = schemaReadDelegate.indexGetForName( state, name );
+        sharedLabelLock( state, indexDescriptor.schema().keyId() );
+        return indexDescriptor;
+    }
+
+    @Override
     public Iterator<IndexDescriptor> indexesGetAll( KernelStatement state )
     {
         state.assertOpen();

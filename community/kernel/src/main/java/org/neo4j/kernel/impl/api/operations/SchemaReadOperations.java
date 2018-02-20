@@ -35,9 +35,14 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 public interface SchemaReadOperations
 {
     /**
-     * Returns the descriptor for the given labelId and propertyKey.
+     * Returns the descriptor for the given schema.
      */
     IndexDescriptor indexGetForSchema( KernelStatement state, SchemaDescriptor descriptor );
+
+    /**
+     * Returns the descriptor for the given index name.
+     */
+    IndexDescriptor indexGetForName( KernelStatement state, String name );
 
     /**
      * Get all indexes for a label.

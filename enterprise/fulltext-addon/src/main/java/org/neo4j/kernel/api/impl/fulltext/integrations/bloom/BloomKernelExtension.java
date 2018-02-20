@@ -75,23 +75,23 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void start() throws IOException, KernelException
     {
-        if ( config.get( BloomFulltextConfig.bloom_enabled ) )
-        {
-            String analyzer = config.get( BloomFulltextConfig.bloom_default_analyzer );
-
-            Log log = logService.getInternalLog( FulltextProviderImpl.class );
-            provider = new FulltextProviderImpl( db, log, availabilityGuard, scheduler, transactionIdStore.get(),
-                    fileSystem, storeDir, analyzer );
-            provider.openIndex( BLOOM_NODES, NODES );
-            provider.openIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
-            provider.registerTransactionEventHandler();
+//        if ( config.get( BloomFulltextConfig.bloom_enabled ) )
+//        {
+//            String analyzer = config.get( BloomFulltextConfig.bloom_default_analyzer );
+//
+//            Log log = logService.getInternalLog( FulltextProviderImpl.class );
+//            provider = new FulltextProviderImpl( db, log, availabilityGuard, scheduler, transactionIdStore.get(),
+//                    fileSystem, storeDir, analyzer );
+//            provider.openIndex( BLOOM_NODES, NODES );
+//            provider.openIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
+//            provider.registerTransactionEventHandler();
 
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
-        }
-        else
-        {
-            procedures.registerComponent( FulltextProvider.class, context -> FulltextProvider.NULL_PROVIDER, true );
-        }
+//        }
+//        else
+//        {
+//            procedures.registerComponent( FulltextProvider.class, context -> FulltextProvider.NULL_PROVIDER, true );
+//        }
     }
 
     @Override

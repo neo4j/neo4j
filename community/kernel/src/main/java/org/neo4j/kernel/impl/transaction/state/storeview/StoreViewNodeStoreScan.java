@@ -79,7 +79,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     public void process( NodeRecord node ) throws FAILURE
     {
         long[] labels = parseLabelsField( node ).get( this.nodeStore );
-        if ( labels.length == 0 )
+        if ( labels.length == 0 && labelIds.length != 0 )
         {
             // This node has no labels at all
             return;

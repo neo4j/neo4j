@@ -100,9 +100,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
-    public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
+    public StoreScan<IndexPopulationFailedKernelException> indexAllEntities()
     {
-        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllNodes();
+        StoreScan<IndexPopulationFailedKernelException> storeScan = super.indexAllEntities();
         return new BatchingStoreScan<>( storeScan );
     }
 

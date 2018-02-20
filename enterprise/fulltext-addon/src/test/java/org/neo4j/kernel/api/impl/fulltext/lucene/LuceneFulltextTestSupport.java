@@ -36,8 +36,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexProviderFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -53,28 +60,36 @@ public class LuceneFulltextTestSupport
 {
     protected static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
     protected static final Log LOG = NullLog.getInstance();
+    public static final String PROP = "prop";
 
     @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+    public DatabaseRule db = new EmbeddedDatabaseRule();
 
     protected static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
     protected String analyzer = ANALYZER;
     protected AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
-    protected GraphDatabaseAPI db;
+//    protected GraphDatabaseAPI db;
     protected JobScheduler scheduler;
     protected FileSystemAbstraction fs;
     protected File storeDir;
     private TransactionIdStore transactionIdStore;
+    protected FulltextAccessor fulltextAccessor;
+
+//    @Before
+//    public void setUp() throws Throwable
+//    {
+//        db = dbRule.getGraphDatabaseAPI();
+//        scheduler = dbRule.resolveDependency( JobScheduler.class );
+//        fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+//        storeDir = dbRule.getStoreDir();
+//        transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
+//    }
 
     @Before
     public void setUp() throws Throwable
     {
-        db = dbRule.getGraphDatabaseAPI();
-        scheduler = dbRule.resolveDependency( JobScheduler.class );
-        fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        storeDir = dbRule.getStoreDir();
-        transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
+        fulltextAccessor = getAccessor();
     }
 
     protected FulltextProviderImpl createProvider() throws IOException
@@ -83,9 +98,14 @@ public class LuceneFulltextTestSupport
                 fs, storeDir, analyzer );
     }
 
+    private FulltextAccessor getAccessor() throws IOException
+    {
+        return (FulltextAccessor) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
+    }
+
     protected long createNodeIndexableByPropertyValue( Object propertyValue )
     {
-        return createNodeWithProperty( "prop", propertyValue );
+        return createNodeWithProperty( PROP, propertyValue );
     }
 
     protected long createNodeWithProperty( String propertyKey, Object propertyValue )
@@ -97,7 +117,7 @@ public class LuceneFulltextTestSupport
 
     protected long createRelationshipIndexableByPropertyValue( long firstNodeId, long secondNodeId, Object propertyValue )
     {
-        return createRelationshipWithProperty( firstNodeId, secondNodeId, "prop", propertyValue );
+        return createRelationshipWithProperty( firstNodeId, secondNodeId, PROP, propertyValue );
     }
 
     protected long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey,
@@ -110,42 +130,46 @@ public class LuceneFulltextTestSupport
         return relationship.getId();
     }
 
-    protected void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
+    protected void assertExactQueryFindsNothing( String indexName, String query ) throws IOException
     {
-        assertExactQueryFindsIds( reader, query, false );
+        assertExactQueryFindsIds( indexName, query, false );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
+    protected void assertExactQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids ) throws IOException
     {
-        PrimitiveLongIterator result = reader.query( query, matchAll );
+        String queryString = FulltextQueryHelper.createQuery(query, false, matchAll);
+        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
+    protected void assertExactQueryFindsIdsInOrder( String indexName, Collection<String> query, boolean matchAll, long... ids ) throws IOException
     {
-        PrimitiveLongIterator result = reader.query( query, matchAll );
+        String queryString = FulltextQueryHelper.createQuery(query, false, matchAll);
+        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    protected void assertExactQueryFindsIds( String indexName, String query, boolean matchAll, long... ids ) throws IOException
     {
-        assertExactQueryFindsIds( reader, Arrays.asList( query ), matchAll, ids );
+        assertExactQueryFindsIds( indexName, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    protected void assertFuzzyQueryFindsIds( String indexName, String query, boolean matchAll, long... ids ) throws IOException
     {
-        assertFuzzyQueryFindsIds( reader, Arrays.asList( query ), matchAll, ids );
+        assertFuzzyQueryFindsIds( indexName, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
+    protected void assertFuzzyQueryFindsIds( String indexName, Collection<String> query, boolean matchAll, long... ids ) throws IOException
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( query, matchAll );
+        String queryString = FulltextQueryHelper.createQuery(query, true, matchAll);
+        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertFuzzyQueryFindsIdsInOrder( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    protected void assertFuzzyQueryFindsIdsInOrder( String indexName, String query, boolean matchAll, long... ids ) throws IOException
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( Arrays.asList( query ), matchAll );
+        String queryString = FulltextQueryHelper.createQuery(Arrays.asList( query ), true, matchAll);
+        PrimitiveLongIterator result = fulltextAccessor.query( indexName, queryString );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
@@ -174,7 +198,7 @@ public class LuceneFulltextTestSupport
 
     protected void setNodeProp( long nodeId, String value )
     {
-        setNodeProp( nodeId, "prop", value );
+        setNodeProp( nodeId, PROP, value );
     }
 
     protected void setNodeProp( long nodeId, String propertyKey, String value )
@@ -184,6 +208,18 @@ public class LuceneFulltextTestSupport
             Node node = db.getNodeById( nodeId );
             node.setProperty( propertyKey, value );
             tx.success();
+        }
+    }
+    protected void await( IndexDescriptor fulltextIndexDescriptor ) throws IndexNotFoundKernelException
+    {
+        //TODO real await
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            //noinspection StatementWithEmptyBody
+            while ( stmt.readOperations().indexGetState( fulltextIndexDescriptor ) != InternalIndexState.ONLINE )
+            {
+                ;
+            }
         }
     }
 }

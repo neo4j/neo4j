@@ -429,6 +429,7 @@ public final class IndexMap implements Cloneable
                 count += forLabel.size();
             }
         }
+        count += descriptorsForAllLabels.size();
         return count;
     }
 
@@ -443,6 +444,7 @@ public final class IndexMap implements Cloneable
                 count += forReltype.size();
             }
         }
+        count += descriptorsForAllReltypes.size();
         return count;
     }
 

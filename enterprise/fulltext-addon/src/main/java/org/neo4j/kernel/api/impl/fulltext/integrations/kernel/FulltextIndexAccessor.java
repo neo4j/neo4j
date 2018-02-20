@@ -114,7 +114,7 @@ public class FulltextIndexAccessor implements IndexAccessor
     {
         try ( ReadOnlyFulltext indexReader = luceneFulltext.getIndexReader() )
         {
-            return indexReader.query( Collections.singleton( query ), false );
+            return indexReader.query( query );
         }
     }
 

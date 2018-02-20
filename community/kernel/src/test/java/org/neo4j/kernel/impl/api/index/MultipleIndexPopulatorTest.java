@@ -134,7 +134,7 @@ public class MultipleIndexPopulatorTest
         addPopulator( indexPopulator2, 2 );
 
         multipleIndexPopulator.create();
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
 
         verify( indexStoreView ).visitNodes( any(int[].class), any( IntPredicate.class ), any( Visitor.class ),
                 isNull(), anyBoolean() );
@@ -281,7 +281,7 @@ public class MultipleIndexPopulatorTest
 
         when( indexPopulator1.sampleResult() ).thenThrow( getSampleError() );
 
-        multipleIndexPopulator.indexAllNodes();
+        multipleIndexPopulator.indexAllEntities();
         multipleIndexPopulator.flipAfterPopulation();
 
         verify( indexPopulator1 ).close( false );
