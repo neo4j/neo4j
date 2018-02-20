@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.{v3_3 => frontendV3_3}
 import org.neo4j.cypher.internal.ir.{v3_3 => irV3_3, v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.util.v3_4.Rewritable.RewritableAny
-import org.neo4j.cypher.internal.util.v3_4.attribution.{Id, IdGen, SameId, SequentialIdGen}
+import org.neo4j.cypher.internal.util.v3_4.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4, _}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
@@ -51,6 +51,7 @@ object LogicalPlanConverter {
   //noinspection ZeroIndexToHead
   private class LogicalPlanRewriter(solveds: Solveds,
                                     cardinalities: Cardinalities,
+                                    ids: IdConverter,
                                     val expressionMap: MutableExpressionMapping3To4 = new mutable.HashMap[(ExpressionV3_3, InputPositionV3_3), ExpressionV3_4],
                                     val isImportant: ExpressionV3_3 => Boolean = _ => true)
     extends RewriterWithArgs {
@@ -62,19 +63,19 @@ object LogicalPlanConverter {
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
         case (plan: plansV3_3.Argument, children: Seq[AnyRef]) =>
-          plansV3_4.Argument(children.head.asInstanceOf[Set[String]])(SameId(Id(plan.assignedId.underlying)))
+          plansV3_4.Argument(children.head.asInstanceOf[Set[String]])(ids.convertId(plan))
         case (plan: plansV3_3.SingleRow, _) =>
-          plansV3_4.Argument()(SameId(Id(plan.assignedId.underlying)))
+          plansV3_4.Argument()(ids.convertId(plan))
         case (plan: plansV3_3.ProduceResult, children: Seq[AnyRef]) =>
           plansV3_4.ProduceResult(source = children(1).asInstanceOf[LogicalPlanV3_4],
-            columns = children(0).asInstanceOf[Seq[String]])(SameId(Id(plan.assignedId.underlying)))
+            columns = children(0).asInstanceOf[Seq[String]])(ids.convertId(plan))
         case (plan: plansV3_3.TriadicSelection, children: Seq[AnyRef]) =>
           plansV3_4.TriadicSelection(left = children(1).asInstanceOf[LogicalPlanV3_4],
             right = children(5).asInstanceOf[LogicalPlanV3_4],
             positivePredicate = children(0).asInstanceOf[Boolean],
             sourceId = children(2).asInstanceOf[String],
             seenId = children(3).asInstanceOf[String],
-            targetId = children(4).asInstanceOf[String])(SameId(Id(plan.assignedId.underlying)))
+            targetId = children(4).asInstanceOf[String])(ids.convertId(plan))
         case (plan: plansV3_3.ProceduralLogicalPlan, children: Seq[AnyRef]) =>
           convertVersion("v3_3", "v3_4", plan, children, procedureOrSchemaIdGen, classOf[IdGen])
         case (plan: plansV3_3.OuterHashJoin, children: Seq[AnyRef]) =>
@@ -82,9 +83,9 @@ object LogicalPlanConverter {
             children(0).asInstanceOf[Set[String]],
             children(1).asInstanceOf[LogicalPlanV3_4],
             children(2).asInstanceOf[LogicalPlanV3_4]
-          )(SameId(Id(plan.assignedId.underlying)))
+          )(ids.convertId(plan))
         case (plan: plansV3_3.LogicalPlan, children: Seq[AnyRef]) =>
-          convertVersion("v3_3", "v3_4", plan, children, SameId(Id(plan.assignedId.underlying)), classOf[IdGen])
+          convertVersion("v3_3", "v3_4", plan, children, ids.convertId(plan), classOf[IdGen])
 
         case (inp: astV3_3.InvalidNodePattern, children: Seq[AnyRef]) =>
           new expressionsV3_4.InvalidNodePattern(children.head.asInstanceOf[Option[expressionsV3_4.Variable]].get)(helpers.as3_4(inp.position))
@@ -134,7 +135,7 @@ object LogicalPlanConverter {
         case (_: frontendV3_3.ExhaustiveShortestPathForbiddenException, _) => new utilV3_4.ExhaustiveShortestPathForbiddenException
 
         case (spp: irV3_3.ShortestPathPattern, children: Seq[AnyRef]) =>
-          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, solveds, cardinalities, isImportant)
+          val sp3_4 = convertASTNode[expressionsV3_4.ShortestPaths](spp.expr, expressionMap, solveds, cardinalities, ids, isImportant)
           irV3_4.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irV3_4.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_4)
         case (astV3_3.NilPathStep, _) => expressionsV3_4.NilPathStep
         case (item@(_: astV3_3.PathStep | _: astV3_3.NameToken[_]), children: Seq[AnyRef]) =>
@@ -201,22 +202,35 @@ object LogicalPlanConverter {
   def convertLogicalPlan[T <: LogicalPlanV3_4](logicalPlan: LogicalPlanV3_3,
                                                solveds: Solveds,
                                                cardinalities: Cardinalities,
+                                               idConverter: IdConverter,
                                                isImportant: ExpressionV3_3 => Boolean = _ => true): (LogicalPlanV3_4, ExpressionMapping3To4) = {
-    val rewriter = new LogicalPlanRewriter(solveds, cardinalities, isImportant = isImportant)
+    val rewriter = new LogicalPlanRewriter(solveds, cardinalities, idConverter, isImportant = isImportant)
     val planV3_4 = new RewritableAny[LogicalPlanV3_3](logicalPlan).rewrite(rewriter, Seq.empty).asInstanceOf[T]
     (planV3_4, rewriter.expressionMap.toMap)
   }
 
-  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3, solveds: Solveds, cardinalities: Cardinalities): T = {
-    new RewritableAny[ExpressionV3_3](expression).rewrite(new LogicalPlanRewriter(solveds, cardinalities), Seq.empty).asInstanceOf[T]
+  private[v3_3] def convertExpression[T <: ExpressionV3_4](expression: ExpressionV3_3,
+                                                           solveds: Solveds,
+                                                           cardinalities: Cardinalities,
+                                                           idConverter: IdConverter): T = {
+    new RewritableAny[ExpressionV3_3](expression)
+      .rewrite(new LogicalPlanRewriter(solveds, cardinalities, idConverter), Seq.empty)
+      .asInstanceOf[T]
   }
 
   private def convertASTNode[T <: utilV3_4.ASTNode](ast: astV3_3.ASTNode,
                                                     expressionMap: MutableExpressionMapping3To4,
                                                     solveds: Solveds,
                                                     cardinalities: Cardinalities,
+                                                    idConverter: IdConverter,
                                                     isImportant: ExpressionV3_3 => Boolean): T = {
-    new RewritableAny[astV3_3.ASTNode](ast).rewrite(new LogicalPlanRewriter(solveds, cardinalities, expressionMap, isImportant), Seq.empty).asInstanceOf[T]
+    new RewritableAny[astV3_3.ASTNode](ast)
+      .rewrite(new LogicalPlanRewriter(solveds,
+                                       cardinalities,
+                                       idConverter,
+                                       expressionMap,
+                                       isImportant), Seq.empty)
+      .asInstanceOf[T]
   }
 
   private val constructors = new ThreadLocal[MutableHashMap[(String, String, String), Constructor[_]]]() {

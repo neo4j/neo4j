@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans._
   * Detect logical plan parts derived from MERGE, and inject ActiveRead operators above the
   * merge read parts.
   */
-case class ActiveReadInjector(attributes: Attributes) extends Rewriter {
+case class ActiveReadInjector(attributes: Attributes) {
   private val instance = bottomUp(Rewriter.lift {
 
     // single merge node:           MERGE (a)
@@ -155,5 +155,5 @@ case class ActiveReadInjector(attributes: Attributes) extends Rewriter {
       case _:LockNodes => true
     }
 
-  def apply(that: AnyRef): AnyRef = instance.apply(that)
+  def apply(that: LogicalPlan): LogicalPlan = instance.apply(that).asInstanceOf[LogicalPlan]
 }
