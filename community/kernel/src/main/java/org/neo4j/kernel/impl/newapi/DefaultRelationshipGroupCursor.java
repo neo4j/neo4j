@@ -205,11 +205,22 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public int incomingCount()
     {
-        if ( isBuffered() )
+        int count;
+        if ( read.hasTxStateWithChanges() && read.txState().nodeIsAddedInThisTx( getOwningNode() ) )
         {
-            return bufferedGroup.incomingCount;
+            count = 0;
         }
-        return count( incomingRawId() );
+        else if ( isBuffered() )
+        {
+            count = bufferedGroup.incomingCount;
+        }
+        else
+        {
+            count = count( incomingRawId() );
+        }
+        return read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() )
+                       .augmentDegree( Direction.INCOMING, count, getType() ) : count;
     }
 
     @Override
