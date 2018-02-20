@@ -27,6 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
@@ -183,11 +184,22 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public int outgoingCount()
     {
-        if ( isBuffered() )
+        int count;
+        if ( read.hasTxStateWithChanges() && read.txState().nodeIsAddedInThisTx( getOwningNode() ) )
         {
-            return bufferedGroup.outgoingCount;
+            count = 0;
         }
-        return count( outgoingRawId() );
+        else if ( isBuffered() )
+        {
+            count = bufferedGroup.outgoingCount;
+        }
+        else
+        {
+            count = count( outgoingRawId() );
+        }
+        return read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() )
+                       .augmentDegree( Direction.OUTGOING, count, getType() ) : count;
     }
 
     @Override

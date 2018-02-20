@@ -41,6 +41,7 @@ import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCount;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.computeKey;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
+import static org.neo4j.internal.kernel.api.RelationshipTestSupport.sparse;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -274,7 +275,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
-        traverseWithoutGroups( RelationshipTestSupport.sparse( graphDb ), false );
+        traverseWithoutGroups( sparse( graphDb ), false );
     }
 
     @Test
@@ -286,7 +287,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
-        traverseWithoutGroups( RelationshipTestSupport.sparse( graphDb ), true );
+        traverseWithoutGroups( sparse( graphDb ), true );
     }
 
     @Test
@@ -298,7 +299,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeViaGroups() throws Exception
     {
-        traverseViaGroups( RelationshipTestSupport.sparse( graphDb ), false );
+        traverseViaGroups( sparse( graphDb ), false );
     }
 
     @Test
@@ -310,7 +311,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     @Test
     public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
     {
-        traverseViaGroups( RelationshipTestSupport.sparse( graphDb ), true );
+        traverseViaGroups( sparse( graphDb ), true );
     }
 
     @Test
@@ -623,6 +624,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
+
+    @Test
+    public void shouldCountOutgoingNodesFromTxState() throws Exception
+    {
+        assertOutgoingCount( 100 );//node will be dense
+        assertOutgoingCount( 1 );//node will be sparse
+    }
+
     private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
         try ( Transaction tx = session.beginTransaction() )
@@ -786,5 +795,40 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             count++;
         }
         assertEquals( expectedCount, count );
+    }
+
+    private void assertOutgoingCount( int count ) throws Exception
+    {
+        long start;
+        int type;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            start = write.nodeCreate();
+            type = tx.tokenWrite().relationshipTypeGetOrCreateForName( "R" );
+            for ( int i = 0; i < count; i++ )
+            {
+                write.relationshipCreate( start, type, write.nodeCreate() );
+            }
+            tx.success();
+        }
+
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            write.relationshipCreate( start, type, write.nodeCreate() );
+            try ( NodeCursor node = cursors.allocateNodeCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                node.relationships( group );
+                assertTrue( group.next() );
+
+                assertEquals( count + 1, group.outgoingCount() );
+                assertEquals( count + 1, group.totalCount() );
+            }
+        }
     }
 }
