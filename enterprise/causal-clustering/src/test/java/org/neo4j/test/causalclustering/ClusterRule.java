@@ -42,7 +42,8 @@ import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
- * Includes a {@link VerboseTimeout} rule with a long default timeout.
+ * Includes a {@link VerboseTimeout} rule with a long default timeout. Use {@link #withTimeout(long, TimeUnit)} to customise
+ * or {@link #withNoTimeout()} to disable.
  */
 public class ClusterRule extends ExternalResource
 {
@@ -60,7 +61,7 @@ public class ClusterRule extends ExternalResource
     private String recordFormat = Standard.LATEST_NAME;
     private IpFamily ipFamily = IPV4;
     private boolean useWildcard;
-    private VerboseTimeout.VerboseTimeoutBuilder timeoutBuilder = new VerboseTimeout.VerboseTimeoutBuilder() .withTimeout( 15, TimeUnit.MINUTES );
+    private VerboseTimeout.VerboseTimeoutBuilder timeoutBuilder = new VerboseTimeout.VerboseTimeoutBuilder().withTimeout( 15, TimeUnit.MINUTES );
 
     public ClusterRule()
     {
@@ -70,7 +71,15 @@ public class ClusterRule extends ExternalResource
     @Override
     public Statement apply( final Statement base, final Description description )
     {
-        Statement timeoutStatement = timeoutBuilder.build().apply( base, description );
+        Statement timeoutStatement;
+        if ( timeoutBuilder != null )
+        {
+            timeoutStatement = timeoutBuilder.build().apply( base, description );
+        }
+        else
+        {
+            timeoutStatement = base;
+        }
 
         Statement testMethod = new Statement()
         {
@@ -225,7 +234,13 @@ public class ClusterRule extends ExternalResource
 
     public ClusterRule withTimeout( long timeout, TimeUnit unit )
     {
-        this.timeoutBuilder = timeoutBuilder.withTimeout( timeout, unit );
+        this.timeoutBuilder = new VerboseTimeout.VerboseTimeoutBuilder().withTimeout( timeout, unit );
+        return this;
+    }
+
+    public ClusterRule withNoTimeout()
+    {
+        this.timeoutBuilder = null;
         return this;
     }
 }
