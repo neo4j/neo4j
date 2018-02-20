@@ -64,8 +64,7 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
 
     default int totalCount()
     {
-        // the outgoingCount and incomingCount both contain the loopCount, so we need to remove it once.
-        return outgoingCount() + incomingCount() - loopCount();
+        return outgoingCount() + incomingCount() + loopCount();
     }
 
     void outgoing( RelationshipTraversalCursor cursor );

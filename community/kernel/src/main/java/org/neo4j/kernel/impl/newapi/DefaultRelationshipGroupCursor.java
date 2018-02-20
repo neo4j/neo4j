@@ -27,7 +27,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.newapi.DefaultRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.Direction;
 
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
@@ -199,18 +198,15 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         }
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( Direction.OUTGOING, count, getType() ) : count;
+                       .augmentDegree( RelationshipDirection.OUTGOING, count, getType() ) : count;
     }
 
     @Override
     public int incomingCount()
     {
         int count;
-        if ( read.hasTxStateWithChanges() && read.txState().nodeIsAddedInThisTx( getOwningNode() ) )
-        {
-            count = 0;
-        }
-        else if ( isBuffered() )
+
+        if ( isBuffered() )
         {
             count = bufferedGroup.incomingCount;
         }
@@ -220,17 +216,30 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         }
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( getOwningNode() )
-                       .augmentDegree( Direction.INCOMING, count, getType() ) : count;
+                       .augmentDegree( RelationshipDirection.INCOMING, count, getType() ) : count;
     }
 
     @Override
     public int loopCount()
     {
-        if ( isBuffered() )
+        int count;
+        if ( read.hasTxStateWithChanges() && read.txState().nodeIsAddedInThisTx( getOwningNode() ) )
         {
-            return bufferedGroup.loopsCount;
+            count = 0;
         }
-        return count( loopsRawId() );
+        else if ( isBuffered() )
+        {
+            count = bufferedGroup.loopsCount;
+        }
+        else
+        {
+            count = count( loopsRawId() );
+        }
+
+        return read.hasTxStateWithChanges()
+               ? read.txState().getNodeState( getOwningNode() )
+                       .augmentDegree( RelationshipDirection.LOOP, count, getType() ) : count;
+
     }
 
     private int count( long reference )

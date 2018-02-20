@@ -154,7 +154,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                             degree.incoming );
                     assertEquals( "node #" + node.nodeReference() + " loop", group.loopCount(), degree.loop );
                     assertEquals( "node #" + node.nodeReference() + " all = incoming + outgoing - loop",
-                            group.totalCount(), degree.incoming + degree.outgoing - degree.loop );
+                            group.totalCount(), degree.incoming + degree.outgoing + degree.loop );
                 }
                 if ( none )
                 {

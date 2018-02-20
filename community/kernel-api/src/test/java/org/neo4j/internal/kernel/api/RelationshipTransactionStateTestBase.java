@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -44,6 +43,9 @@ import static org.neo4j.internal.kernel.api.RelationshipTestSupport.assertCounts
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.computeKey;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.count;
 import static org.neo4j.internal.kernel.api.RelationshipTestSupport.sparse;
+import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.IN;
+import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.LOOP;
+import static org.neo4j.internal.kernel.api.RelationshipTransactionStateTestBase.RelationshipDirection.OUT;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -631,27 +633,52 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     public void shouldCountFromTxState() throws Exception
     {
         //dense outgoing
-        assertCount( 100, OUTGOING, group ->
+        assertCount( 100, OUT, group ->
         {
             assertEquals( 101, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
             assertEquals( 101, group.totalCount() );
         } );
         //sparse outgoing
-        assertCount( 1, OUTGOING, group ->
+        assertCount( 1, OUT, group ->
         {
             assertEquals( 2, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
             assertEquals( 2, group.totalCount() );
         } );
         //dense incoming
-        assertCount( 100, INCOMING, group ->
+        assertCount( 100, IN, group ->
         {
+            assertEquals( 0, group.outgoingCount() );
             assertEquals( 101, group.incomingCount() );
+            assertEquals( 0, group.outgoingCount() );
             assertEquals( 101, group.totalCount() );
         } );
         //sparse incoming
-        assertCount( 1, INCOMING, group ->
+        assertCount( 1, IN, group ->
         {
+            assertEquals( 0, group.outgoingCount() );
             assertEquals( 2, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
+        } );
+
+        //dense loops
+        assertCount( 100, LOOP, group ->
+        {
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.loopCount() );
+            assertEquals( 101, group.totalCount() );
+        } );
+        //sparse loops
+        assertCount( 1, LOOP, group ->
+        {
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 2, group.loopCount() );
             assertEquals( 2, group.totalCount() );
         } );
     }
@@ -824,7 +851,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         assertEquals( expectedCount, count );
     }
 
-    private void assertCount( int count, Direction direction, Consumer<RelationshipGroupCursor> asserter) throws Exception
+    enum RelationshipDirection
+    {
+        OUT,
+        IN,
+        LOOP
+    }
+
+    private void assertCount( int count, RelationshipDirection direction, Consumer<RelationshipGroupCursor> asserter) throws Exception
     {
         long start;
         int type;
@@ -857,20 +891,19 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-    private void createRelationship( Direction direction, long start, int type, Write write )
+    private void createRelationship( RelationshipDirection direction, long start, int type, Write write )
             throws EntityNotFoundException
     {
         switch ( direction )
         {
-        case OUTGOING:
+        case OUT:
             write.relationshipCreate( start, type, write.nodeCreate() );
             break;
-        case INCOMING:
+        case IN:
             write.relationshipCreate( write.nodeCreate(), type, start );
             break;
-        case BOTH:
-            write.relationshipCreate( start, type, write.nodeCreate() );
-            write.relationshipCreate( write.nodeCreate(), type, start );
+        case LOOP:
+            write.relationshipCreate( start, type, start );
             break;
         default:
             throw new IllegalStateException( "Checkstyle, you win again!" );
