@@ -422,9 +422,8 @@ public class ProcedureIT
             // Expect
             exception.expect( QueryExecutionException.class );
             exception.expectMessage(
-                    "Failed to call procedure `org.neo4j.procedure.throwsExceptionInStream() :: (someVal :: INTEGER?)" +
-                    "`: " +
-                    "Kaboom" );
+                    "Failed to invoke procedure `org.neo4j.procedure.throwsExceptionInStream`: " +
+                            "Caused by: java.lang.RuntimeException: Kaboom" );
 
             // When
             result.next();
