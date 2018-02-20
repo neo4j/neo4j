@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_4.codegen
 import java.util
 
 import org.neo4j.codegen.MethodReference
-import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator, PrimitiveLongResourceIterator}
+import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.QueryExecutionEvent
@@ -34,8 +34,7 @@ import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.{Read, TokenRead}
+import org.neo4j.internal.kernel.api.{Read, TokenRead, _}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
@@ -60,8 +59,6 @@ object Methods {
   val startNode: MethodReference = method[RelationshipDataExtractor, Long]("startNode")
   val endNode: MethodReference = method[RelationshipDataExtractor, Long]("endNode")
   val typeOf: MethodReference = method[RelationshipDataExtractor, Int]("type")
-  val nodeGetRelationshipsWithDirection: MethodReference = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
-  val nodeGetRelationshipsWithDirectionAndTypes: MethodReference = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
   val allConnectingRelationships: MethodReference = method[CompiledExpandUtils, RelationshipSelectionCursor]("connectingRelationships",
                                                                                                              typeRef[ReadOperations],
                                                                                                              typeRef[Read],
@@ -105,9 +102,6 @@ object Methods {
   val nodeExists: MethodReference = method[Read, Boolean]("nodeExists", typeRef[Long])
   val countsForNode: MethodReference = method[ReadOperations, Long]("countsForNode", typeRef[Int])
   val countsForRel: MethodReference = method[ReadOperations, Long]("countsForRelationship", typeRef[Int], typeRef[Int], typeRef[Int])
-  val relationshipGetProperty: MethodReference = method[ReadOperations, Value]("relationshipGetProperty", typeRef[Long], typeRef[Int])
-  val nodesGetForLabel: MethodReference = method[ReadOperations, PrimitiveLongResourceIterator]("nodesGetForLabel", typeRef[Int])
-  val nodeHasLabel: MethodReference = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])
   val nextLong: MethodReference = method[PrimitiveLongIterator, Long]("next")
   val fetchNextRelationship: MethodReference = method[RelationshipIterator, Long]("next")
   val newNodeProxyById: MethodReference = method[EmbeddedProxySPI, NodeProxy]("newNodeProxy", typeRef[Long])
