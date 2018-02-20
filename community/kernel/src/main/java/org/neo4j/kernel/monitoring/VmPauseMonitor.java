@@ -23,7 +23,6 @@ package org.neo4j.kernel.monitoring;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.neo4j.logging.Log;
@@ -70,22 +69,7 @@ public class VmPauseMonitor
         log.debug( "Stopping VM pause monitor" );
         checkState( job != null, "VM pause monitor is not started" );
         job.cancel( true );
-        try
-        {
-            job.waitTermination();
-        }
-        catch ( InterruptedException ignore )
-        {
-            currentThread().interrupt();
-        }
-        catch ( ExecutionException e )
-        {
-            log.debug( "VM pause monitor job failed", e );
-        }
-        finally
-        {
-            job = null;
-        }
+        job = null;
     }
 
     private void run()
