@@ -87,7 +87,7 @@ public class BoltConnector extends Connector
         this.listen_address = group.scope( listenAddressSetting );
         this.advertised_address = group.scope( advertisedAddress( "advertised_address", listenAddressSetting ) );
         this.thread_pool_core_size = group.scope( setting( "thread_pool_core_size", INTEGER, String.valueOf( 10 ) ) );
-        this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 100 ) ) );
+        this.thread_pool_max_size = group.scope( setting( "thread_pool_max_size", INTEGER, String.valueOf( 400 ) ) );
         this.thread_pool_keep_alive = group.scope( setting( "thread_pool_keep_alive", DURATION, "5m" ) );
         this.thread_pool_queue_size = group.scope( setting( "thread_pool_queue_size", INTEGER, String.valueOf( 0 ) ) );
     }
