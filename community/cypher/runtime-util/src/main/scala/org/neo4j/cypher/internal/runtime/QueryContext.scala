@@ -248,6 +248,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def stableDataRead: Read
 
+  def markAsStable(): Unit
+
   def tokenRead: TokenRead
 
   def schemaRead: SchemaRead
