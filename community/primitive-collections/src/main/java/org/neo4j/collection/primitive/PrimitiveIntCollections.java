@@ -34,9 +34,6 @@ import java.util.function.LongToIntFunction;
 
 import org.neo4j.collection.primitive.base.Empty;
 
-import static java.util.Arrays.copyOf;
-import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
-
 /**
  * Basic and common primitive int collection utils and manipulations.
  *
@@ -122,72 +119,10 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static PrimitiveIntIterator reversed( final int... items )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            private int index = items.length;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                return --index >= 0 && next( items[index] );
-            }
-        };
-    }
-
-    public static PrimitiveIntIterator reversed( PrimitiveIntIterator source )
-    {
-        int[] items = asArray( source );
-        return reversed( items );
-    }
-
     // Concating
     public static PrimitiveIntIterator concat( Iterator<PrimitiveIntIterator> iterators )
     {
         return new PrimitiveIntConcatingIterator( iterators );
-    }
-
-    public static PrimitiveIntIterator prepend( final int item, final PrimitiveIntIterator iterator )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            private boolean singleItemReturned;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                if ( !singleItemReturned )
-                {
-                    singleItemReturned = true;
-                    return next( item );
-                }
-                return iterator.hasNext() && next( iterator.next() );
-            }
-        };
-    }
-
-    public static PrimitiveIntIterator append( final PrimitiveIntIterator iterator, final int item )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            private boolean singleItemReturned;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                if ( iterator.hasNext() )
-                {
-                    return next( iterator.next() );
-                }
-                else if ( !singleItemReturned )
-                {
-                    singleItemReturned = true;
-                    return next( item );
-                }
-                return false;
-            }
-        };
     }
 
     public static class PrimitiveIntConcatingIterator extends PrimitiveIntBaseIterator
@@ -223,37 +158,6 @@ public class PrimitiveIntCollections
         }
     }
 
-    // Interleave
-    public static class PrimitiveIntInterleavingIterator extends PrimitiveIntBaseIterator
-    {
-        private final Iterable<PrimitiveIntIterator> iterators;
-        private Iterator<PrimitiveIntIterator> currentRound;
-
-        public PrimitiveIntInterleavingIterator( Iterable<PrimitiveIntIterator> iterators )
-        {
-            this.iterators = iterators;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            if ( currentRound == null || !currentRound.hasNext() )
-            {
-                currentRound = iterators.iterator();
-            }
-            while ( currentRound.hasNext() )
-            {
-                PrimitiveIntIterator iterator = currentRound.next();
-                if ( iterator.hasNext() )
-                {
-                    return next( iterator.next() );
-                }
-            }
-            currentRound = null;
-            return false;
-        }
-    }
-
     public static PrimitiveIntIterator filter( PrimitiveIntIterator source, final IntPredicate filter )
     {
         return new PrimitiveIntFilteringIterator( source )
@@ -276,37 +180,6 @@ public class PrimitiveIntCollections
             public boolean test( int testItem )
             {
                 return visited.add( testItem );
-            }
-        };
-    }
-
-    public static PrimitiveIntIterator not( PrimitiveIntIterator source, final int disallowedValue )
-    {
-        return new PrimitiveIntFilteringIterator( source )
-        {
-            @Override
-            public boolean test( int testItem )
-            {
-                return testItem != disallowedValue;
-            }
-        };
-    }
-
-    public static PrimitiveIntIterator skip( PrimitiveIntIterator source, final int skipTheFirstNItems )
-    {
-        return new PrimitiveIntFilteringIterator( source )
-        {
-            private int skipped;
-
-            @Override
-            public boolean test( int item )
-            {
-                if ( skipped < skipTheFirstNItems )
-                {
-                    skipped++;
-                    return false;
-                }
-                return true;
             }
         };
     }
@@ -338,265 +211,6 @@ public class PrimitiveIntCollections
         public abstract boolean test( int testItem );
     }
 
-    // Limitinglic
-    public static PrimitiveIntIterator limit( final PrimitiveIntIterator source, final int maxItems )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            private int visited;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                if ( visited++ < maxItems )
-                {
-                    if ( source.hasNext() )
-                    {
-                        return next( source.next() );
-                    }
-                }
-                return false;
-            }
-        };
-    }
-
-    // Range
-    public static PrimitiveIntIterator range( int end )
-    {
-        return range( 0, end );
-    }
-
-    public static PrimitiveIntIterator range( int start, int end )
-    {
-        return range( start, end, 1 );
-    }
-
-    public static PrimitiveIntIterator range( int start, int end, int stride )
-    {
-        return new PrimitiveIntRangeIterator( start, end, stride );
-    }
-
-    public static class PrimitiveIntRangeIterator extends PrimitiveIntBaseIterator
-    {
-        private int current;
-        private final int end;
-        private final int stride;
-
-        public PrimitiveIntRangeIterator( int start, int end, int stride )
-        {
-            this.current = start;
-            this.end = end;
-            this.stride = stride;
-        }
-
-        @Override
-        protected boolean fetchNext()
-        {
-            try
-            {
-                return current <= end && next( current );
-            }
-            finally
-            {
-                current += stride;
-            }
-        }
-    }
-
-    public static PrimitiveIntIterator singleton( final int item )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            private boolean returned;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                try
-                {
-                    return !returned && next( item );
-                }
-                finally
-                {
-                    returned = true;
-                }
-            }
-        };
-    }
-
-    public static int first( PrimitiveIntIterator iterator )
-    {
-        assertMoreItems( iterator );
-        return iterator.next();
-    }
-
-    private static void assertMoreItems( PrimitiveIntIterator iterator )
-    {
-        if ( !iterator.hasNext() )
-        {
-            throw new NoSuchElementException( "No element in " + iterator );
-        }
-    }
-
-    public static int first( PrimitiveIntIterator iterator, int defaultItem )
-    {
-        return iterator.hasNext() ? iterator.next() : defaultItem;
-    }
-
-    public static int last( PrimitiveIntIterator iterator )
-    {
-        assertMoreItems( iterator );
-        return last( iterator, 0 /*will never be used*/ );
-    }
-
-    public static int last( PrimitiveIntIterator iterator, int defaultItem )
-    {
-        int result = defaultItem;
-        while ( iterator.hasNext() )
-        {
-            result = iterator.next();
-        }
-        return result;
-    }
-
-    public static int single( PrimitiveIntIterator iterator )
-    {
-        try
-        {
-            assertMoreItems( iterator );
-            int item = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                        ", second:" + iterator.next() );
-            }
-            closeSafely( iterator );
-            return item;
-        }
-        catch ( NoSuchElementException exception )
-        {
-            closeSafely( iterator, exception );
-            throw exception;
-        }
-    }
-
-    public static int single( PrimitiveIntIterator iterator, int defaultItem )
-    {
-        try
-        {
-            if ( !iterator.hasNext() )
-            {
-                closeSafely( iterator );
-                return defaultItem;
-            }
-            int item = iterator.next();
-            if ( iterator.hasNext() )
-            {
-                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                        ", second:" + iterator.next() );
-            }
-            closeSafely( iterator );
-            return item;
-        }
-        catch ( NoSuchElementException exception )
-        {
-            closeSafely( iterator, exception );
-            throw exception;
-        }
-    }
-
-    public static int itemAt( PrimitiveIntIterator iterator, int index )
-    {
-        if ( index >= 0 )
-        {   // Look forwards
-            for ( int i = 0; iterator.hasNext() && i < index; i++ )
-            {
-                iterator.next();
-            }
-            assertMoreItems( iterator );
-            return iterator.next();
-        }
-
-        // Look backwards
-        int fromEnd = index * -1;
-        int[] trail = new int[fromEnd];
-        int cursor = 0;
-        for ( ; iterator.hasNext(); cursor++ )
-        {
-            trail[cursor % trail.length] = iterator.next();
-        }
-        if ( cursor < fromEnd )
-        {
-            throw new NoSuchElementException( "Item " + index + " not found in " + iterator );
-        }
-        return trail[cursor % fromEnd];
-    }
-
-    public static int itemAt( PrimitiveIntIterator iterator, int index, int defaultItem )
-    {
-        if ( index >= 0 )
-        {   // Look forwards
-            for ( int i = 0; iterator.hasNext() && i < index; i++ )
-            {
-                iterator.next();
-            }
-            return iterator.hasNext() ? iterator.next() : defaultItem;
-        }
-
-        // Look backwards
-        int fromEnd = index * -1;
-        int[] trail = new int[fromEnd];
-        int cursor = 0;
-        for ( ; iterator.hasNext(); cursor++ )
-        {
-            trail[cursor % trail.length] = iterator.next();
-        }
-        return cursor < fromEnd ? defaultItem : trail[cursor % fromEnd];
-    }
-
-    /**
-     * Returns the index of the given item in the iterator(zero-based). If no items in {@code iterator}
-     * equals {@code item} {@code -1} is returned.
-     *
-     * @param item the item to look for.
-     * @param iterator of items.
-     * @return index of found item or -1 if not found.
-     */
-    public static int indexOf( PrimitiveIntIterator iterator, int item )
-    {
-        for ( int i = 0; iterator.hasNext(); i++ )
-        {
-            if ( item == iterator.next() )
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Validates whether two {@link Iterator}s are equal or not, i.e. if they have contain same number of items
-     * and each orderly item equals one another.
-     *
-     * @param first the {@link Iterator} containing the first items.
-     * @param other the {@link Iterator} containing the other items.
-     * @return whether the two iterators are equal or not.
-     */
-    public static boolean equals( PrimitiveIntIterator first, PrimitiveIntIterator other )
-    {
-        boolean firstHasNext;
-        boolean otherHasNext;
-        // single | so that both iterator's hasNext() gets evaluated.
-        while ( (firstHasNext = first.hasNext()) | (otherHasNext = other.hasNext()) )
-        {
-            if ( firstHasNext != otherHasNext || first.next() != other.next() )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public static PrimitiveIntSet asSet( PrimitiveIntIterator iterator )
     {
         PrimitiveIntSet set = Primitive.intSet();
@@ -611,45 +225,6 @@ public class PrimitiveIntCollections
         return set;
     }
 
-    public static PrimitiveIntSet asSetAllowDuplicates( PrimitiveIntIterator iterator )
-    {
-        PrimitiveIntSet set = Primitive.intSet();
-        while ( iterator.hasNext() )
-        {
-            set.add( iterator.next() );
-        }
-        return set;
-    }
-
-    public static int count( PrimitiveIntIterator iterator )
-    {
-        int count = 0;
-        for ( ; iterator.hasNext(); iterator.next(), count++ )
-        {   // Just loop through this
-        }
-        return count;
-    }
-
-    public static int[] asArray( PrimitiveIntIterator iterator )
-    {
-        int[] array = new int[8];
-        int i = 0;
-        for ( ; iterator.hasNext(); i++ )
-        {
-            if ( i >= array.length )
-            {
-                array = copyOf( array, i << 1 );
-            }
-            array[i] = iterator.next();
-        }
-
-        if ( i < array.length )
-        {
-            array = copyOf( array, i );
-        }
-        return array;
-    }
-
     public static long[] asLongArray( PrimitiveIntCollection values )
     {
         long[] array = new long[values.size()];
@@ -658,17 +233,6 @@ public class PrimitiveIntCollections
         while ( iterator.hasNext() )
         {
             array[i++] = iterator.next();
-        }
-        return array;
-    }
-
-    public static int[] asArray( Collection<Integer> values )
-    {
-        int[] array = new int[values.size()];
-        int i = 0;
-        for ( int value : values )
-        {
-            array[i++] = value;
         }
         return array;
     }
@@ -713,28 +277,6 @@ public class PrimitiveIntCollections
         };
     }
 
-    public static PrimitiveIntIterator flatten( final Iterator<PrimitiveIntIterator> source )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            private PrimitiveIntIterator current;
-
-            @Override
-            protected boolean fetchNext()
-            {
-                while ( current == null || !current.hasNext() )
-                {
-                    if ( !source.hasNext() )
-                    {
-                        return false;
-                    }
-                    current = source.next();
-                }
-                return source.hasNext() && next( current.next() );
-            }
-        };
-    }
-
     public static <T> Iterator<T> map( final IntFunction<T> mapFunction, final PrimitiveIntIterator source )
     {
         return new Iterator<T>()
@@ -765,18 +307,6 @@ public class PrimitiveIntCollections
         {
             consumer.accept( source.next() );
         }
-    }
-
-    public static PrimitiveIntIterator constant( final int value )
-    {
-        return new PrimitiveIntBaseIterator()
-        {
-            @Override
-            protected boolean fetchNext()
-            {
-                return next( value );
-            }
-        };
     }
 
     public static PrimitiveIntSet asSet( int[] values )
