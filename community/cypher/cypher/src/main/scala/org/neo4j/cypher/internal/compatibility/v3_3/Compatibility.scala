@@ -96,23 +96,23 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
   private def queryGraphSolverV3_3 = Compatibility.
     createQueryGraphSolver(maybePlannerName.getOrElse(v3_3.CostBasedPlannerName.default), monitorsV3_3, configV3_3)
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, preparationTracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val inputPositionV3_3 = helpers.as3_3(preParsedQuery.offset)
     val inputPositionV3_4 = preParsedQuery.offset
     val notificationLoggerV3_3 = new RecordingNotificationLoggerV3_3(Some(inputPositionV3_3))
     val notificationLoggerV3_4 = new RecordingNotificationLoggerV3_4(Some(inputPositionV3_4))
 
-    val tracerV3_3 = as3_3(tracer)
-
+    // The "preparationTracer" can get closed, even if a ParsedQuery is cached and reused. It should not
+    // be used inside ParsedQuery.plan. There, use the "planningTracer" instead
     val preparedSyntacticQueryForV_3_3 =
       Try(compiler.parseQuery(preParsedQuery.statement,
         preParsedQuery.rawStatement,
         notificationLoggerV3_3, preParsedQuery.planner.name,
         preParsedQuery.debugOptions,
-        Some(helpers.as3_3(preParsedQuery.offset)), tracerV3_3))
+        Some(helpers.as3_3(preParsedQuery.offset)), as3_3(preparationTracer)))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, tracerV3_4: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContextWrapper, planningTracer: CompilationPhaseTracer):
       (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_3.get
 
@@ -141,14 +141,14 @@ extends LatestRuntimeVariablePlannerCompatibility[CONTEXT3_4, T, StatementV3_3](
         }
 
         //Context used to create logical plans
-        val contextV3_3: CONTEXT3_3 = contextCreatorV3_3.create(tracerV3_3, notificationLoggerV3_3, planContextV3_3,
+        val contextV3_3: CONTEXT3_3 = contextCreatorV3_3.create(as3_3(planningTracer), notificationLoggerV3_3, planContextV3_3,
           syntacticQuery.queryText, preParsedQuery.debugOptions,
           Some(inputPositionV3_3), monitorsV3_3,
           logicalV3_3.CachedMetricsFactory(logicalV3_3.SimpleMetricsFactory), queryGraphSolverV3_3,
           configV3_3, maybeUpdateStrategy.getOrElse(v3_3.defaultUpdateStrategy),
           clock, simpleExpressionEvaluatorV3_3)
         val logicalPlanIdGen = new SequentialIdGen()
-        val contextV3_4: CONTEXT3_4 = contextCreatorV3_4.create(tracerV3_4, notificationLoggerV3_4, planContextV3_4,
+        val contextV3_4: CONTEXT3_4 = contextCreatorV3_4.create(planningTracer, notificationLoggerV3_4, planContextV3_4,
           syntacticQuery.queryText, preParsedQuery.debugOptions,
           Some(inputPositionV3_4), monitorsV3_4,
           CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolverV3_4,
