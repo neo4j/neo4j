@@ -25,6 +25,7 @@ import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
+import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.Integer.max;
@@ -64,9 +65,9 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     private volatile Thread receiverThread;
     private final StampedLock stripingLock;
 
-    protected ForkedProcessorStep( StageControl control, String name, Configuration config )
+    protected ForkedProcessorStep( StageControl control, String name, Configuration config, StatsProvider... statsProviders )
     {
-        super( control, name, config );
+        super( control, name, config, statsProviders );
         this.maxProcessors = config.maxNumberOfProcessors();
         this.forkedProcessors = new Object[this.maxProcessors];
         stripingLock = new StampedLock();
@@ -156,7 +157,6 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
 
     protected abstract void forkedProcess( int id, int processors, T batch ) throws Throwable;
 
-    @SuppressWarnings( "unchecked" )
     void sendDownstream( Unit unit )
     {
         downstreamIdleTime.add( downstream.receive( unit.ticket, unit.batch ) );
@@ -201,10 +201,6 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
             UnsafeUtil.getAndAddLong( this, PROCESSING_TIME_OFFSET, time );
             int prevCompletedProcessors = UnsafeUtil.getAndAddInt( this, COMPLETED_PROCESSORS_OFFSET, 1 );
             assert prevCompletedProcessors < processors : prevCompletedProcessors + " vs " + processors + " for " + ticket;
-            if ( prevCompletedProcessors == processors - 1 )
-            {
-                PARK.unpark( downstreamSender );
-            }
         }
 
         @Override
