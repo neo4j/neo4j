@@ -24,14 +24,18 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
@@ -40,12 +44,15 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
+import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.values.virtual.MapValue;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -68,6 +75,7 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_
  * For each permutation, it delivers the fragments to the protocol implementation, and asserts the protocol handled
  * them properly.
  */
+@RunWith( Parameterized.class )
 public class FragmentedMessageDeliveryTest
 {
     // Only test one chunk size for now, this can be parameterized to test lots of different ones
@@ -78,6 +86,15 @@ public class FragmentedMessageDeliveryTest
 
     // Only test one message for now. This can be parameterized later to test lots of different ones
     private RequestMessage[] messages = new RequestMessage[]{RunMessage.run( "Mjölnir" )};
+
+    @Parameter
+    public Neo4jPack neo4jPack;
+
+    @Parameters( name = "{0}" )
+    public static List<Neo4jPack> parameters()
+    {
+        return Arrays.asList( new Neo4jPackV1(), new Neo4jPackV2() );
+    }
 
     @Test
     public void testFragmentedMessageDelivery() throws Throwable
@@ -124,8 +141,8 @@ public class FragmentedMessageDeliveryTest
         when( boltChannel.rawChannel() ).thenReturn( ch );
         when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
 
-        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler( boltChannel, new Neo4jPackV1(),
-                new SynchronousBoltWorker( machine ), TransportThrottleGroup.NO_THROTTLE,
+        BoltMessagingProtocolHandlerImpl protocol = new BoltMessagingProtocolHandlerImpl( boltChannel,
+                new SynchronousBoltWorker( machine ), neo4jPack, TransportThrottleGroup.NO_THROTTLE,
                 NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation

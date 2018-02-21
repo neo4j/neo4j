@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
@@ -42,7 +41,6 @@ import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
@@ -209,14 +207,14 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertReadSucceeds();
 
         // When
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL dbms.security.clearAuthCache()" ), pullAll() ) );
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
 
         // Then
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "MATCH (n) RETURN n" ), pullAll() ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
     }
@@ -230,11 +228,11 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         // Then
         assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
 
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
     }
 
     @Test
@@ -256,9 +254,9 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
         assertConnectionSucceeds( authToken( "authorization_expired_user", "neo4j", null ) );
 
         // Then
-        client.send( TransportTestUtil.chunk(
+        client.send( util.chunk(
                 run( "MATCH (n) RETURN n" ), pullAll() ) );
-        assertThat( client, eventuallyReceives(
+        assertThat( client, util.eventuallyReceives(
                 msgFailure( Status.Security.AuthorizationExpired,
                         "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +
                         "authorization_expired_user needs to re-authenticate." ) ) );

@@ -19,87 +19,49 @@
  */
 package org.neo4j.bolt.v1.transport.integration;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
-import java.util.Collection;
 
+import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.function.Factory;
-import org.neo4j.helpers.HostnamePort;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.acceptedVersions;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
-@RunWith( Parameterized.class )
-public class TransportErrorIT
+public class TransportErrorIT extends AbstractBoltTransportsTest
 {
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass() );
 
-    @Parameterized.Parameter
-    public Factory<TransportConnection> cf;
-
-    private HostnamePort address;
-    private TransportConnection client;
-
-    @Parameterized.Parameters
-    public static Collection<Factory<TransportConnection>> transports()
-    {
-        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
-                SecureWebSocketConnection::new );
-    }
-
     @Before
     public void setup()
     {
-        this.client = cf.newInstance();
-        this.address = server.lookupDefaultConnector();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
+        address = server.lookupDefaultConnector();
     }
 
     @Test
     public void shouldHandleIncorrectFraming() throws Throwable
     {
         // Given I have a message that gets truncated in the chunking, so part of it is missing
-        byte[] truncated = serialize( run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
+        byte[] truncated = serialize( util.getNeo4jPack(), run( "UNWIND [1,2,3] AS a RETURN a, a * a AS a_squared" ) );
         truncated = Arrays.copyOf(truncated, truncated.length - 12);
 
         // When
-        client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, truncated ) );
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk( 32, truncated ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -117,13 +79,13 @@ public class TransportErrorIT
         byte[] invalidMessage = rawData.getBytes();
 
         // When
-        client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, invalidMessage ) );
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -140,13 +102,13 @@ public class TransportErrorIT
         byte[] invalidMessage = rawData.getBytes();
 
         // When
-        client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, invalidMessage ) );
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 
     @Test
@@ -158,18 +120,18 @@ public class TransportErrorIT
         final PackStream.Packer packer = new PackStream.Packer( out );
 
         packer.packStructHeader( 2, RUN.signature() );
-        out.writeByte( PackStream.RESERVED_C4 ); // Invalid marker byte
+        out.writeByte( PackStream.RESERVED_C7 ); // Invalid marker byte
         out.flush();
 
         byte[] invalidMessage = rawData.getBytes();
 
         // When
-        client.connect( address )
-                .send( acceptedVersions( 1, 0, 0, 0 ) )
-                .send( chunk( 32, invalidMessage ) );
+        connection.connect( address )
+                .send( util.defaultAcceptedVersions() )
+                .send( util.chunk( 32, invalidMessage ) );
 
         // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyDisconnects() );
+        assertThat( connection, util.eventuallyReceivesSelectedProtocolVersion() );
+        assertThat( connection, eventuallyDisconnects() );
     }
 }
