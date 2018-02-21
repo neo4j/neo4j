@@ -28,9 +28,9 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
-import org.neo4j.causalclustering.handlers.PipelineWrapper;
 import org.neo4j.causalclustering.handlers.DuplexPipelineWrapperFactory;
+import org.neo4j.causalclustering.handlers.PipelineWrapper;
+import org.neo4j.causalclustering.handlers.VoidPipelineWrapperFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -43,7 +43,7 @@ import org.neo4j.logging.LogProvider;
  * By having this factory we can wait until the configuration has been loaded and the provide all the classes required
  * for backups that are dependant on the config.
  */
-class BackupSupportingClassesFactory
+public class BackupSupportingClassesFactory
 {
     private static final long INACTIVITY_TIMEOUT_MILLIS = 60 * 1000;
 
