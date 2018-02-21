@@ -40,7 +40,6 @@ import javax.ws.rs.core.Response.Status;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status.Request;
@@ -48,7 +47,6 @@ import org.neo4j.kernel.api.exceptions.Status.Schema;
 import org.neo4j.kernel.api.exceptions.Status.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.plugins.ConfigAdapter;
@@ -68,7 +66,6 @@ import org.neo4j.test.server.EntityOutputFormat;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.parseLong;
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -102,12 +99,14 @@ public class RestfulGraphDatabaseTest
         database = new WrappedDatabase( graph );
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );
+        DatabaseActions databaseActions = new DatabaseActions(
+                new LeaseManager( Clocks.fakeClock() ), ScriptExecutionMode.SANDBOXED, database.getGraph() );
         service = new TransactionWrappingRestfulGraphDatabase(
                 graph,
                 new RestfulGraphDatabase(
                         new JsonFormat(),
                         output,
-                        new DatabaseActions( new LeaseManager( Clocks.fakeClock() ), true, database.getGraph() ),
+                        databaseActions,
                         new ConfigAdapter( Config.embeddedDefaults() )
                 )
         );

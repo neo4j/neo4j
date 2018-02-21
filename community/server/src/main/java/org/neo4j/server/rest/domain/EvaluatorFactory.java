@@ -25,6 +25,7 @@ import java.util.Map;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
+import org.neo4j.server.rest.web.ScriptExecutionMode;
 import org.neo4j.server.scripting.ScriptExecutor;
 import org.neo4j.server.scripting.ScriptExecutorFactoryRepository;
 import org.neo4j.server.scripting.javascript.JavascriptExecutor;
@@ -45,10 +46,10 @@ public class EvaluatorFactory
 
     private final ScriptExecutorFactoryRepository factoryRepo;
 
-    public EvaluatorFactory( boolean enableSandboxing )
+    public EvaluatorFactory( ScriptExecutionMode executionMode )
     {
         Map<String,ScriptExecutor.Factory> languages = new HashMap<>();
-        languages.put( "javascript", new JavascriptExecutor.Factory( enableSandboxing ) );
+        languages.put( "javascript", new JavascriptExecutor.Factory( executionMode ) );
 
         factoryRepo = new ScriptExecutorFactoryRepository( languages );
     }
