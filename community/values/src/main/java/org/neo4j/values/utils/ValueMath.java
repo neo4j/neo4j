@@ -22,6 +22,9 @@ package org.neo4j.values.utils;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+
 /**
  * Helper methods for doing math on Values
  */
@@ -35,9 +38,7 @@ public final class ValueMath
     /**
      * Overflow safe addition of two longs
      * <p>
-     * If the result doesn't fit in a long we widen type to use double instead. This implementation
-     * is fast for the happy path since it is using the intrinsic method addExact but will be slow when
-     * actually overflowing. We bet on overflows being rare and optimize for the happy path.
+     * If the result doesn't fit in a long we widen type to use double instead.
      *
      * @param a left-hand operand
      * @param b right-hand operand
@@ -45,14 +46,13 @@ public final class ValueMath
      */
     public static NumberValue add( long a, long b )
     {
-        try
-        {
-            return Values.longValue( Math.addExact( a, b ) );
-        }
-        catch ( ArithmeticException e )
+        long r = a + b;
+        //Check if result overflows
+        if ( ((a ^ r) & (b ^ r)) < 0 )
         {
             return Values.doubleValue( (double) a + (double) b );
         }
+        return longValue( r );
     }
 
     /**
@@ -70,9 +70,7 @@ public final class ValueMath
     /**
      * Overflow safe subtraction of two longs
      * <p>
-     * If the result doesn't fit in a long we widen type to use double instead. This implementation
-     * is fast for the happy path since it is using the intrinsic method addExact but will be slow when
-     * actually overflowing. We bet on overflows being rare and optimize for the happy path.
+     * If the result doesn't fit in a long we widen type to use double instead.
      *
      * @param a left-hand operand
      * @param b right-hand operand
@@ -80,14 +78,13 @@ public final class ValueMath
      */
     public static NumberValue subtract( long a, long b )
     {
-        try
-        {
-            return Values.longValue( Math.subtractExact( a, b ) );
-        }
-        catch ( ArithmeticException e )
+        long r = a - b;
+        //Check if result overflows
+        if ( ((a ^ r) & (b ^ r)) < 0 )
         {
             return Values.doubleValue( (double) a - (double) b );
         }
+        return longValue( r );
     }
 
     /**
@@ -105,9 +102,7 @@ public final class ValueMath
     /**
      * Overflow safe multiplication of two longs
      * <p>
-     * If the result doesn't fit in a long we widen type to use double instead. This implementation
-     * is fast for the happy path since it is using the intrinsic method addExact but will be slow when
-     * actually overflowing. We bet on overflows being rare and optimize for the happy path.
+     * If the result doesn't fit in a long we widen type to use double instead.
      *
      * @param a left-hand operand
      * @param b right-hand operand
@@ -115,14 +110,18 @@ public final class ValueMath
      */
     public static NumberValue multiply( long a, long b )
     {
-        try
+        long r = a * b;
+        //Check if result overflows
+        long aa = Math.abs( a );
+        long ab = Math.abs( b );
+        if ( (aa | ab) >>> 31 != 0 )
         {
-            return Values.longValue( Math.multiplyExact( a, b ) );
+            if ( ((b != 0) && (r / b != a)) || (a == Long.MIN_VALUE && b == -1) )
+            {
+                return doubleValue( (double) a + (double) b );
+            }
         }
-        catch ( ArithmeticException e )
-        {
-            return Values.doubleValue( (double) a * (double) b );
-        }
+        return longValue( r );
     }
 
     /**
