@@ -41,7 +41,9 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.proc.BasicContext;
@@ -92,6 +94,7 @@ public class BuiltInProceduresTest
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
 
     private final Procedures procs = new Procedures();
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldListAllIndexes() throws Throwable
@@ -524,8 +527,8 @@ public class BuiltInProceduresTest
         ctx.put( SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
-        return Iterators
-                .asList( procs.callProcedure( ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args ) );
+        return Iterators.asList( procs.callProcedure(
+                ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args, resourceTracker ) );
     }
 
     private static final Key<DependencyResolver> DEPENDENCY_RESOLVER =

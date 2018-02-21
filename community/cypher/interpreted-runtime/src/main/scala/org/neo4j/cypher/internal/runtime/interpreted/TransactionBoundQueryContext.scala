@@ -898,7 +898,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
     callProcedure(name, args,
-                  transactionalContext.dbmsOperations.procedureCallDbms(_, _, transactionalContext.securityContext))
+                  transactionalContext.dbmsOperations.procedureCallDbms(_,
+                                                                        _,
+                                                                        transactionalContext.securityContext,
+                                                                        transactionalContext.resourceTracker))
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {

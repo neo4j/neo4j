@@ -25,7 +25,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{ReadOperations, ResourceTracker, Statement}
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
@@ -57,4 +57,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   def restrictCurrentTransaction(context: SecurityContext): Revertable = tc.restrictCurrentTransaction(context)
 
   def securityContext: SecurityContext = tc.securityContext
+
+  def resourceTracker: ResourceTracker = tc.resourceTracker
 }

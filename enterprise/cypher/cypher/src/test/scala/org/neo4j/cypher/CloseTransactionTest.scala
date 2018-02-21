@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.api.{ResourceTracker, Statement}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
 import org.neo4j.kernel.api.proc._
@@ -498,7 +498,9 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
       fields :+ FieldSignature.outputField(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
     }.asJava
 
-    override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+    override def apply(context: Context,
+                       objects: Array[AnyRef],
+                       resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
       val readOperations = statement.readOperations
       val nodes = readOperations.nodesGetAll()

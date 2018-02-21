@@ -38,6 +38,7 @@ import javax.management.openmbean.TabularData;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -66,7 +67,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         String query = input[0].toString();
         try

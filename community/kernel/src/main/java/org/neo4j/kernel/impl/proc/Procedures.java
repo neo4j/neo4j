@@ -26,6 +26,7 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -283,9 +284,9 @@ public class Procedures extends LifecycleAdapter
     }
 
     public RawIterator<Object[], ProcedureException> callProcedure( Context ctx, QualifiedName name,
-                                                           Object[] input ) throws ProcedureException
+                                                           Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        return registry.callProcedure( ctx, name, input );
+        return registry.callProcedure( ctx, name, input, resourceTracker );
     }
 
     public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input ) throws ProcedureException
