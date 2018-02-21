@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.util.Arrays;
-
-import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -34,8 +29,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-
-import static java.lang.String.format;
 
 class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeSchemaValue> extends NativeSchemaIndexReader<KEY,VALUE>
 {
@@ -53,18 +46,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
             throw new UnsupportedOperationException();
         }
 
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            ValueGroup valueGroup = predicates[0].valueGroup();
-            IndexOrder[] capability = NumberSchemaIndexProvider.CAPABILITY.orderCapability( valueGroup );
-            if ( !ArrayUtil.contains( capability, indexOrder ) )
-            {
-                capability = ArrayUtils.add( capability, IndexOrder.NONE );
-                throw new UnsupportedOperationException(
-                        format( "Tried to query index with unsupported order %s. Supported orders for query %s are %s.", indexOrder,
-                                Arrays.toString( predicates ), Arrays.toString( capability ) ) );
-            }
-        }
+        CapabilityValidator.validateQuery( NumberSchemaIndexProvider.CAPABILITY, indexOrder, predicates );
     }
 
     @Override
@@ -102,7 +84,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         else
         {
             treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
-            treeKeyTo.setEntityIdIsSpecialTieBreaker( true );
+            treeKeyTo.setCompareId( true );
         }
     }
 
@@ -116,7 +98,7 @@ class NumberSchemaIndexReader<KEY extends NumberSchemaKey, VALUE extends NativeS
         else
         {
             treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
-            treeKeyFrom.setEntityIdIsSpecialTieBreaker( true );
+            treeKeyFrom.setCompareId( true );
         }
     }
 

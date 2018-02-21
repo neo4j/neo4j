@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -74,6 +76,7 @@ public class ProcedureJarLoaderTest
     private final ProcedureJarLoader jarloader =
             new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
                     registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance() );
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldLoadProcedureFromJar() throws Throwable
@@ -89,7 +92,7 @@ public class ProcedureJarLoaderTest
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
@@ -110,7 +113,7 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L} ) ),
+        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L}, resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 
@@ -246,7 +249,7 @@ public class ProcedureJarLoaderTest
                 procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "unsafeFullAccessProcedure" )
                         .out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0] ) ),
+        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{7331L} )) );
 
         List<UserFunctionSignature> functionsSignatures =

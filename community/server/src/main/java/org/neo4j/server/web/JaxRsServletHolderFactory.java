@@ -32,7 +32,6 @@ import java.util.List;
 import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.rest.web.AllowAjaxFilter;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.
@@ -65,7 +64,6 @@ public abstract class JaxRsServletHolderFactory
         ServletHolder servletHolder = new ServletHolder( container );
         servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( !wadlEnabled ) );
         configure( servletHolder, toCommaSeparatedList( items ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_RESPONSE_FILTERS, AllowAjaxFilter.class.getName() );
         servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilterConfig() );
         return servletHolder;
     }

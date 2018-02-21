@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.CatchupResult;
+import org.neo4j.causalclustering.catchup.storecopy.CommitStateHelper;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -53,11 +54,13 @@ public class CoreStateDownloader
     private final CoreStateMachines coreStateMachines;
     private final CoreSnapshotService snapshotService;
     private final TopologyService topologyService;
+    private CommitStateHelper commitStateHelper;
 
     public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
             RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
             StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines,
-            CoreSnapshotService snapshotService, TopologyService topologyService )
+            CoreSnapshotService snapshotService, TopologyService topologyService,
+            CommitStateHelper commitStateHelper )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
@@ -68,6 +71,7 @@ public class CoreStateDownloader
         this.coreStateMachines = coreStateMachines;
         this.snapshotService = snapshotService;
         this.topologyService = topologyService;
+        this.commitStateHelper = commitStateHelper;
     }
 
     void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
@@ -77,9 +81,16 @@ public class CoreStateDownloader
             /* Extract some key properties before shutting it down. */
             boolean isEmptyStore = localDatabase.isEmpty();
 
-            if ( !isEmptyStore )
+            /*
+             *  There is no reason to try to recover if there are no transaction logs and in fact it is
+             *  also problematic for the initial transaction pull during the snapshot download because the
+             *  kernel will create a transaction log with a header where previous index points to the same
+             *  index as that written down into the metadata store. This is problematic because we have no
+             *  guarantee that there are later transactions and we need at least one transaction in
+             *  the log to figure out the Raft log index (see {@link RecoverConsensusLogIndex}).
+             */
+            if ( commitStateHelper.hasTxLogs( localDatabase.storeDir() ) )
             {
-                /* make sure it's recovered before we start messing with catchup */
                 localDatabase.start();
                 localDatabase.stop();
             }
@@ -120,8 +131,7 @@ public class CoreStateDownloader
             else
             {
                 StoreId localStoreId = localDatabase.storeId();
-                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId, localDatabase
-                        .storeDir(), false );
+                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId, localDatabase.storeDir(), false );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {

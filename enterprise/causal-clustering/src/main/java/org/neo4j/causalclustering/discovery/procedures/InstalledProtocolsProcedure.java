@@ -30,6 +30,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -61,7 +62,8 @@ public class InstalledProtocolsProcedure extends CallableProcedure.BasicProcedur
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply(
+            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         Stream<Object[]> outbound = toOutputRows( clientInstalledProtocols, ProtocolInstaller.Orientation.Client.OUTBOUND );
 

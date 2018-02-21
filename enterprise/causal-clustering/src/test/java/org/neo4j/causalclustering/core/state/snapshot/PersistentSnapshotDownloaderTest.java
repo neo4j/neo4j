@@ -220,7 +220,7 @@ public class PersistentSnapshotDownloaderTest
         {
             super( null, null, null,
                     null, NullLogProvider.getInstance(), null, null,
-                    null, null );
+                    null, null, null );
             this.after = after;
         }
 

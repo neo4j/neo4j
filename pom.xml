@@ -237,7 +237,7 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.9.5</version>
+          <version>0.10.0</version>
           <configuration>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
             <analysisConfiguration>
@@ -316,12 +316,12 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.14.4</version>
+              <version>0.15.1</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-basic-features</artifactId>
-              <version>0.6.3</version>
+              <version>0.7.0</version>
             </dependency>
           </dependencies>
           <executions>
@@ -1139,7 +1139,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.17.Final</version>
+        <version>4.1.21.Final</version>
       </dependency>
 
       <dependency>

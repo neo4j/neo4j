@@ -59,6 +59,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
@@ -368,6 +369,12 @@ public class QueryExecutionLocksIT
         public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
         {
             return delegate.restrictCurrentTransaction( context );
+        }
+
+        @Override
+        public ResourceTracker resourceTracker()
+        {
+            return delegate.resourceTracker();
         }
     }
 

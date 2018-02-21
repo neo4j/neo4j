@@ -30,6 +30,7 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
+import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
@@ -69,6 +70,7 @@ public class RESTApiModule implements ServerModule
         URI restApiUri = restApiUri( );
 
         webServer.addFilter( new CollectUserAgentFilter( clientNames() ), "/*" );
+        webServer.addFilter( new CorsFilter(), "/*" );
         webServer.addJAXRSClasses( getClassNames(), restApiUri.toString(), null );
         loadPlugins();
     }

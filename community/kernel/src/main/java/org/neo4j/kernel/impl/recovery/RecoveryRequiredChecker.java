@@ -60,7 +60,6 @@ public class RecoveryRequiredChecker
         // We need config to determine where the logical log files are
         if ( !NeoStores.isStorePresent( pageCache, dataDir ) )
         {
-            // No database in the specified directory.
             return false;
         }
 

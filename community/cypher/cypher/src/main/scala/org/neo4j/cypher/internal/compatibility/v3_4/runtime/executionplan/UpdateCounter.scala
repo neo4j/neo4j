@@ -20,6 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 class UpdateCounter {
+  def offsetForHeaders(): Unit = {
+    if (uncommittedRows != 0)
+      throw new IllegalStateException("Header offset must be accounted for at the beginning")
+    uncommittedRows = -1
+  }
+
   private var uncommittedRows = 0L
   private var totalRows = 0L
 

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,9 +55,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
@@ -66,15 +63,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.function.Predicates.all;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.helpers.collection.Iterables.asUniqueSet;
+import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
-import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.of;
 
 /**
@@ -159,26 +155,13 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
 
         for ( int i = 0; i < updates.length; i++ )
         {
             IndexEntryUpdate<IndexDescriptor> update = updates[i];
-            Number newValue;
-            switch ( i % 3 )
-            {
-            case 0:
-                newValue = NON_EXISTENT_VALUE + i;
-                break;
-            case 1:
-                newValue = (float) NON_EXISTENT_VALUE + i;
-                break;
-            case 2:
-                newValue = (double) NON_EXISTENT_VALUE + i;
-                break;
-            default:
-                throw new IllegalArgumentException();
-            }
-            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], layoutUtil.asValue( newValue ) );
+            Value newValue = generator.next().values()[0];
+            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], newValue );
         }
 
         // when
@@ -210,7 +193,6 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldHandleRandomUpdates() throws Exception
     {
@@ -245,7 +227,8 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         try ( IndexReader reader = accessor.newReader() )
         {
             // when
-            long count = reader.countIndexedNodes( 123, layoutUtil.asValue( 456 ) );
+            IndexEntryUpdate<IndexDescriptor> update = layoutUtil.randomUpdateGenerator( random ).next();
+            long count = reader.countIndexedNodes( 123, update.values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -271,7 +254,8 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
             }
 
             // and when
-            long count = reader.countIndexedNodes( 123, layoutUtil.asValue( 456 ) );
+            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
+            long count = reader.countIndexedNodes( 123, generator.next().values()[0] );
 
             // then
             assertEquals( 0, count );
@@ -292,7 +276,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         {
             long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, update.values() );
             long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, update.values() );
-            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), layoutUtil.asValue( NON_EXISTENT_VALUE ) );
+            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), generateUniqueValue( updates ) );
 
             // then
             assertEquals( 0, countWithMismatchingData );
@@ -354,7 +338,7 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
 
         // when
         IndexReader reader = accessor.newReader();
-        Object value = layoutUtil.asValue( NON_EXISTENT_VALUE );
+        Object value = generateUniqueValue( updates );
         PrimitiveLongIterator result = query( reader, IndexQuery.exact( 0, value ) );
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
@@ -363,27 +347,29 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
+        layoutUtil.sort( updates );
 
         // when
         IndexReader reader = accessor.newReader();
         PrimitiveLongIterator result = query( reader,
-                layoutUtil.rangeQuery( Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, false ) );
-        assertEntityIdHits( extractEntityIds( updates, lessThan( layoutUtil.asValue( Double.POSITIVE_INFINITY ) ) ), result );
+                layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), false ) );
+        assertEntityIdHits( extractEntityIds( Arrays.copyOf( updates, updates.length - 1 ), alwaysTrue() ), result );
     }
 
     @Test
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
+        layoutUtil.sort( updates );
 
         // when
         IndexReader reader = accessor.newReader();
         PrimitiveLongIterator result = query( reader,
-                layoutUtil.rangeQuery( Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true ) );
+                layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), true ) );
         assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
     }
 
@@ -391,97 +377,63 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
+        layoutUtil.sort( updates );
 
         // when
         IndexReader reader = accessor.newReader();
         PrimitiveLongIterator result = query( reader,
-                layoutUtil.rangeQuery( Double.NEGATIVE_INFINITY, false, Double.POSITIVE_INFINITY, false ) );
-        assertEntityIdHits( extractEntityIds( updates,
-                all( greaterThan( layoutUtil.asValue( Double.NEGATIVE_INFINITY ) ), lessThan( layoutUtil.asValue( Double.POSITIVE_INFINITY ) ) ) ), result );
+                layoutUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), false ) );
+        assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length - 1 ), alwaysTrue() ), result );
     }
 
     @Test
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
         processAll( updates );
+        layoutUtil.sort( updates );
 
         // when
         IndexReader reader = accessor.newReader();
         PrimitiveLongIterator result = query( reader,
-                layoutUtil.rangeQuery( Double.NEGATIVE_INFINITY, false, Double.POSITIVE_INFINITY, true ) );
-        assertEntityIdHits( extractEntityIds( updates,
-                all(
-                    greaterThan( layoutUtil.asValue( Double.NEGATIVE_INFINITY ) ),
-                    lessThanOrEqual( layoutUtil.asValue( Double.POSITIVE_INFINITY ) )
-                ) ), result );
+                layoutUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), true ) );
+        assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length ), alwaysTrue() ), result );
     }
-
-    // <READER ordering>
-
-    @Test
-    public void throwForUnsupportedIndexOrder() throws Exception
-    {
-        // given
-        // Unsupported index order for query
-        IndexReader reader = accessor.newReader();
-        IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
-        IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
-
-        // then
-        expected.expect( UnsupportedOperationException.class );
-        expected.expectMessage( CoreMatchers.allOf(
-                CoreMatchers.containsString( "unsupported order" ),
-                CoreMatchers.containsString( unsupportedOrder.toString() ),
-                CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
-
-        // when
-        reader.query( new SimpleNodeValueClient(), unsupportedOrder, unsupportedQuery );
-    }
-
-    // </READER ordering>
 
     @Test
     public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
     {
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
-        processAll( updates );
+        layoutUtil.sort( updates );
+        processAll( updates[0], updates[1], updates[updates.length - 1], updates[updates.length - 2] );
 
         // when
         IndexReader reader = accessor.newReader();
         PrimitiveLongIterator result = query( reader,
-                layoutUtil.rangeQuery( NON_EXISTENT_VALUE, true, NON_EXISTENT_VALUE + 10, true ) );
+                layoutUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[updates.length - 3] ), true ) );
         assertEntityIdHits( EMPTY_LONG_ARRAY, result );
     }
 
     @Test( timeout = 10_000L )
-    @SuppressWarnings( "unchecked" )
     public void mustHandleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate[] updates = new IndexEntryUpdate[]
-                {
-                        IndexEntryUpdate.add( 0, indexDescriptor, layoutUtil.asValue( 0 ) ),
-                        IndexEntryUpdate.add( 1, indexDescriptor, layoutUtil.asValue( 1 ) ),
-                        IndexEntryUpdate.add( 2, indexDescriptor, layoutUtil.asValue( 2 ) ),
-                        IndexEntryUpdate.add( 3, indexDescriptor, layoutUtil.asValue( 3 ) ),
-                        IndexEntryUpdate.add( 4, indexDescriptor, layoutUtil.asValue( 4 ) ),
-                        IndexEntryUpdate.add( 5, indexDescriptor, layoutUtil.asValue( 5 ) )
-                };
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
+        layoutUtil.sort( updates );
 
         // when
         IndexReader reader = accessor.newReader();
 
-        IndexQuery outerQuery = layoutUtil.rangeQuery( 2, true, 3, true );
-        IndexQuery innerQuery = layoutUtil.rangeQuery( 0, true, 1, true );
+        IndexQuery outerQuery = layoutUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
+        IndexQuery innerQuery = layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
-        long[] expectedOuter = new long[]{2, 3};
-        long[] expectedInner = new long[]{0, 1};
+        long[] expectedOuter = new long[]{entityIdOf( updates[2] ), entityIdOf( updates[3] )};
+        long[] expectedInner = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
         PrimitiveLongIterator outerIter = query( reader, outerQuery );
         Collection<Long> outerResult = new ArrayList<>();
@@ -494,32 +446,24 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         assertEntityIdHits( expectedOuter, outerResult );
     }
 
-    @Test( timeout = 10_000L )
-    @SuppressWarnings( "unchecked" )
+    @Test
     public void mustHandleMultipleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate[] updates = new IndexEntryUpdate[]
-                {
-                        IndexEntryUpdate.add( 0, indexDescriptor, layoutUtil.asValue( 0 ) ),
-                        IndexEntryUpdate.add( 1, indexDescriptor, layoutUtil.asValue( 1 ) ),
-                        IndexEntryUpdate.add( 2, indexDescriptor, layoutUtil.asValue( 2 ) ),
-                        IndexEntryUpdate.add( 3, indexDescriptor, layoutUtil.asValue( 3 ) ),
-                        IndexEntryUpdate.add( 4, indexDescriptor, layoutUtil.asValue( 4 ) ),
-                        IndexEntryUpdate.add( 5, indexDescriptor, layoutUtil.asValue( 5 ) )
-                };
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         processAll( updates );
+        layoutUtil.sort( updates );
 
         // when
         IndexReader reader = accessor.newReader();
 
-        IndexQuery query1 = layoutUtil.rangeQuery( 4, true, 5, true );
-        IndexQuery query2 = layoutUtil.rangeQuery( 2, true, 3, true );
-        IndexQuery query3 = layoutUtil.rangeQuery( 0, true, 1, true );
+        IndexQuery query1 = layoutUtil.rangeQuery( valueOf( updates[4] ), true, valueOf( updates[5] ), true );
+        IndexQuery query2 = layoutUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[3] ), true );
+        IndexQuery query3 = layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[1] ), true );
 
-        long[] expected1 = new long[]{4, 5};
-        long[] expected2 = new long[]{2, 3};
-        long[] expected3 = new long[]{0, 1};
+        long[] expected1 = new long[]{entityIdOf( updates[4] ), entityIdOf( updates[5] )};
+        long[] expected2 = new long[]{entityIdOf( updates[2] ), entityIdOf( updates[3] )};
+        long[] expected3 = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
         Collection<Long> result1 = new ArrayList<>();
         PrimitiveLongIterator iter1 = query( reader, query1 );
@@ -544,6 +488,11 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
             assertEntityIdHits( expected2, result2 );
         }
         assertEntityIdHits( expected1, result1 );
+    }
+
+    private long entityIdOf( IndexEntryUpdate<IndexDescriptor> update )
+    {
+        return update.getEntityId();
     }
 
     @Test
@@ -735,31 +684,78 @@ public abstract class NativeSchemaIndexAccessorTest<KEY extends NativeSchemaKey,
         assertEquals( expectedIds, ids );
     }
 
+    @Test
+    public void shouldNotSeeFilteredEntries() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        processAll( updates );
+        layoutUtil.sort( updates );
+        IndexReader reader = accessor.newReader();
+
+        // when
+        NodeValueIterator iter = new NodeValueIterator();
+        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1] ) );
+        IndexQuery rangeQuery = layoutUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
+        IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
+        reader.query( filterClient, IndexOrder.NONE, rangeQuery );
+
+        // then
+        assertTrue( iter.hasNext() );
+        assertEquals( entityIdOf( updates[1] ), iter.next() );
+        assertFalse( iter.hasNext() );
+    }
+
+    private Value generateUniqueValue( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        return filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) ).next().values()[0];
+    }
+
+    private static Predicate<IndexEntryUpdate<IndexDescriptor>> skipExisting( IndexEntryUpdate<IndexDescriptor>[] existing )
+    {
+        Set<IndexEntryUpdate<IndexDescriptor>> set = new HashSet<>( Arrays.asList( existing ) );
+        return set::add;
+    }
+
+    private Object valueOf( IndexEntryUpdate<IndexDescriptor> update )
+    {
+        return update.values()[0].asObject();
+    }
+
+    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )
+    {
+        return new IndexProgressor.NodeValueClient()
+        {
+            @Override
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query )
+            {
+                iter.initialize( descriptor, progressor, query );
+            }
+
+            @Override
+            public boolean acceptNode( long reference, Value... values )
+            {
+                //noinspection SimplifiableIfStatement
+                if ( values.length > 1 )
+                {
+                    return false;
+                }
+                return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
+            }
+
+            @Override
+            public boolean needsValues()
+            {
+                return true;
+            }
+        };
+    }
+
     private PrimitiveLongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
         reader.query( client, IndexOrder.NONE, query );
         return client;
-    }
-
-    private static int compare( Value value, Value other )
-    {
-        return COMPARATOR.compare( value, other );
-    }
-
-    private static Predicate<Value> lessThan( Value other )
-    {
-        return t -> compare( t, other ) < 0;
-    }
-
-    private static Predicate<Value> lessThanOrEqual( Value other )
-    {
-        return t -> compare( t, other ) <= 0;
-    }
-
-    private static Predicate<Value> greaterThan( Value other )
-    {
-        return t -> compare( t, other ) > 0;
     }
 
     private void assertEntityIdHits( long[] expected, PrimitiveLongIterator result )

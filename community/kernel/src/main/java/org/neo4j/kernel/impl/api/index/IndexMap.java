@@ -28,9 +28,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntCollection;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
@@ -145,7 +145,7 @@ public final class IndexMap implements Cloneable
      * @return set of LabelSchemaDescriptors describing the potentially affected indexes
      */
     public Set<LabelSchemaDescriptor> getRelatedIndexes(
-            long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
+            long[] changedLabels, long[] unchangedLabels, PrimitiveIntSet properties )
     {
         if ( changedLabels.length == 1 && properties.isEmpty() )
         {
@@ -269,7 +269,7 @@ public final class IndexMap implements Cloneable
      */
     private Set<LabelSchemaDescriptor> getDescriptorsByProperties(
             long[] unchangedLabels,
-            PrimitiveIntCollection properties )
+            PrimitiveIntSet properties )
     {
         int nIndexesForLabels = countIndexesByLabels( unchangedLabels );
         int nIndexesForProperties = countIndexesByProperties( properties );
@@ -316,7 +316,7 @@ public final class IndexMap implements Cloneable
         return count;
     }
 
-    private Set<LabelSchemaDescriptor> extractIndexesByProperties( PrimitiveIntCollection properties )
+    private Set<LabelSchemaDescriptor> extractIndexesByProperties( PrimitiveIntSet properties )
     {
         Set<LabelSchemaDescriptor> set = new HashSet<>();
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )
@@ -330,7 +330,7 @@ public final class IndexMap implements Cloneable
         return set;
     }
 
-    private int countIndexesByProperties( PrimitiveIntCollection properties )
+    private int countIndexesByProperties( PrimitiveIntSet properties )
     {
         int count = 0;
         for ( PrimitiveIntIterator iterator = properties.iterator(); iterator.hasNext(); )

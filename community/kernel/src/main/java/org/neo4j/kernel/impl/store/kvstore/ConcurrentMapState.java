@@ -179,16 +179,16 @@ class ConcurrentMapState<Key> extends ActiveState<Key>
        ChangeEntry value = changes.get( key );
         if ( value == null )
         {
-            final byte[] proposal = new byte[store.keyFormat().valueSize()];
-            synchronized ( proposal )
+            ChangeEntry newEntry = ChangeEntry.of( new byte[store.keyFormat().valueSize()], version );
+            synchronized ( newEntry )
             {
-                value = changes.putIfAbsent( key, ChangeEntry.of( proposal, version ) );
+                value = changes.putIfAbsent( key, newEntry );
                 if ( value == null )
                 {
-                    BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( proposal );
+                    BigEndianByteArrayBuffer buffer = new BigEndianByteArrayBuffer( newEntry.data );
                     if ( !reset )
                     {
-                        PreviousValue lookup = new PreviousValue( proposal );
+                        PreviousValue lookup = new PreviousValue( newEntry.data );
                         if ( !store.lookup( key, lookup ) )
                         {
                             buffer.clear();

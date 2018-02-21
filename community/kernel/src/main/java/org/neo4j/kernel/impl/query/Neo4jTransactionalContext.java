@@ -27,6 +27,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -305,6 +306,14 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public SecurityContext securityContext()
     {
         return securityContext;
+    }
+
+    @Override
+    public ResourceTracker resourceTracker()
+    {
+        // We use the current statement as resourceTracker since it is attached to the KernelTransaction
+        // and is guaranteed to be cleaned up on transaction failure.
+        return statement;
     }
 
     @Override

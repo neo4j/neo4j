@@ -28,7 +28,7 @@ public class TestSecurityManager extends SecurityManager
 
     private SecurityManager securityManager;
 
-    public TestSecurityManager( SecurityManager securityManager )
+    TestSecurityManager( SecurityManager securityManager )
     {
         this.securityManager = securityManager;
     }
@@ -37,12 +37,6 @@ public class TestSecurityManager extends SecurityManager
     public void checkExit( int status )
     {
         throw new SystemExitError( status );
-    }
-
-    @Override
-    public boolean getInCheck()
-    {
-        return managerExists() ? securityManager.getInCheck() : super.getInCheck();
     }
 
     @Override
