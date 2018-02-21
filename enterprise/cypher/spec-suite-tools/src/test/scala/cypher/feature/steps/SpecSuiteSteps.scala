@@ -32,7 +32,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.frontend.v3_2.symbols.{CypherType, _}
 import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
-import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.{KernelAPI, ResourceTracker}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
@@ -201,7 +201,8 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       )
     val kernelSignature = asKernelSignature(parsedSignature)
     val kernelProcedure = new BasicProcedure(kernelSignature) {
-      override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
+      override def apply(ctx: Context, input: Array[AnyRef],
+                         resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
         val scalaIterator = tableValues
           .filter { row => input.indices.forall { index => row(index) == input(index) } }
           .map { row => row.drop(input.length).clone() }

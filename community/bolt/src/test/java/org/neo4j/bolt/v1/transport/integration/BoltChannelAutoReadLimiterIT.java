@@ -44,6 +44,7 @@ import org.neo4j.function.Factory;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -187,7 +188,8 @@ public class BoltChannelAutoReadLimiterIT
                                 .build())
                 {
                     @Override
-                    public RawIterator<Object[],ProcedureException> apply( Context context, Object[] objects ) throws ProcedureException
+                    public RawIterator<Object[],ProcedureException> apply(
+                            Context context, Object[] objects, ResourceTracker resourceTracker ) throws ProcedureException
                     {
                         try
                         {

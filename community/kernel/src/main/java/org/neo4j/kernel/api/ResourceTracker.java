@@ -17,25 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
+package org.neo4j.kernel.api;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
+public interface ResourceTracker
 {
-    public FailedLoadProcedure( ProcedureSignature signature )
-    {
-        super( signature );
-    }
+    /**
+     * Register a closeable resource that needs to be closed on statement cleanup.
+     *
+     * If the given resource can be closed elsewhere, e.g. by exhausting an iterator,
+     * the close() method of the resource should be idempotent.
+     */
+    void registerCloseableResource( AutoCloseable closeableResource );
 
-    @Override
-    public RawIterator<Object[],ProcedureException> apply(
-            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
-    {
-        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
-    }
+    /**
+     * @see #registerCloseableResource
+     */
+    void unregisterCloseableResource( AutoCloseable closeableResource );
 }

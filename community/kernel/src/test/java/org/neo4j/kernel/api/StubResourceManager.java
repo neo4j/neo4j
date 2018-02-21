@@ -17,25 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
+package org.neo4j.kernel.api;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
-
-public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
+public class StubResourceManager implements ResourceManager
 {
-    public FailedLoadProcedure( ProcedureSignature signature )
+    @Override
+    public void registerCloseableResource( AutoCloseable closeable )
     {
-        super( signature );
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply(
-            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+    public void unregisterCloseableResource( AutoCloseable closeable )
     {
-        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+    }
+
+    @Override
+    public void closeAllCloseableResources()
+    {
     }
 }

@@ -17,25 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.proc;
+package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.collection.RawIterator;
-import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.graphdb.Resource;
 
-public class FailedLoadProcedure extends CallableProcedure.BasicProcedure
+/**
+ * This exception is thrown when a checked exception occurs inside {@link Resource#close()}.
+ * It is a RuntimeException since {@link Resource#close()} is not allowed to throw checked exceptions.
+ */
+public class ResourceCloseFailureException extends RuntimeException
 {
-    public FailedLoadProcedure( ProcedureSignature signature )
+    public ResourceCloseFailureException( String message, Throwable cause )
     {
-        super( signature );
-    }
-
-    @Override
-    public RawIterator<Object[],ProcedureException> apply(
-            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
-    {
-        throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                signature().description().orElse( "Failed to load " + signature().name().toString() ) );
+        super( message, cause );
     }
 }

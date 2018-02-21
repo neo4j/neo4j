@@ -642,9 +642,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     callProcedure(name, args, call)
   }
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.securityContext))
-  }
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+    callProcedure(name, args,
+                  transactionalContext.dbmsOperations.procedureCallDbms(_,_,transactionalContext.securityContext,
+                                                                        transactionalContext.resourceTracker))
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)

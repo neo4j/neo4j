@@ -68,7 +68,7 @@ public class GetServersProcedureV2Test
         Map<String,String> clientContext = stringMap( "key", "value", "key2", "value2" );
 
         // when
-        getServers.apply( null, new Object[]{clientContext} );
+        getServers.apply( null, new Object[]{clientContext}, null );
 
         // then
         verify( plugin ).run( clientContext );

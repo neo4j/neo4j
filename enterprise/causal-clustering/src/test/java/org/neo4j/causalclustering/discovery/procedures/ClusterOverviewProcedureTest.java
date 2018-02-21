@@ -83,7 +83,7 @@ public class ClusterOverviewProcedureTest
         ClusterOverviewProcedure procedure = new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
-        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0] );
+        final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0], null );
 
         assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, Role.LEADER, asSet( "core", "core0" ) ) );
         assertThat( members.next(), new IsRecord( follower1.getUuid(), 5001, Role.FOLLOWER, asSet( "core", "core1" ) ) );

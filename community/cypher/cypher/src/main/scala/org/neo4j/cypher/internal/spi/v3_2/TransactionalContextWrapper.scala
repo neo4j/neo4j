@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.{ReadOperations, ResourceTracker, Statement}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
@@ -72,4 +72,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])
+
+  def resourceTracker: ResourceTracker = tc.resourceTracker
 }
