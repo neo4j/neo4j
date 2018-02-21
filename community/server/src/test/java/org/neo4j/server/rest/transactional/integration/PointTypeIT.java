@@ -22,15 +22,22 @@ package org.neo4j.server.rest.transactional.integration;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.server.HTTP.POST;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
@@ -38,6 +45,32 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 public class PointTypeIT extends AbstractRestFunctionalTestBase
 {
+    @Test
+    public void shouldWorkWithPoint2DArrays() throws Exception
+    {
+        HTTP.Response response = runQuery( "create (:Node {points: [point({x:1, y:1}), point({x:2, y:2}), point({x: 3.0, y: 3.0})]})" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node node : db.getAllNodes() )
+            {
+                if ( node.hasLabel( label( "Node" ) ) && node.hasProperty( "points" ) )
+                {
+                    Point[] points = (Point[]) node.getProperty( "points" );
+
+                    verifyPoint( points[0], Cartesian, 1.0, 1.0 );
+                    verifyPoint( points[1], Cartesian, 2.0, 2.0 );
+                    verifyPoint( points[2], Cartesian, 3.0, 3.0 );
+                }
+            }
+            tx.success();
+        }
+    }
+
     @Test
     public void shouldReturnPoint2DWithXAndY() throws Exception
     {
@@ -52,9 +85,7 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
 
     private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs ) throws Exception
     {
-        HTTP.Response response = POST( txCommitUri(), quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );
-
-        System.out.println( response.rawContent() );
+        HTTP.Response response = runQuery( query );
 
         assertEquals( 200, response.status() );
         assertNoErrors( response );
@@ -63,6 +94,11 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, element );
         assertCoordinatesEqual( expectedCoordinate, element );
         assertCrsEqual( expectedCrs, element );
+    }
+
+    private static HTTP.Response runQuery( String query )
+    {
+        return POST( txCommitUri(), quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );
     }
 
     private static void assertNoErrors( HTTP.Response response ) throws JsonParseException
@@ -99,5 +135,11 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     private static void assertCrsEqual( CoordinateReferenceSystem crs, JsonNode element )
     {
         assertEquals( crs.getName(), element.get( "crs" ).get( "name" ).asText() );
+    }
+
+    private static void verifyPoint( Point point, CRS expectedCRS, Double... expectedCoordinate )
+    {
+        assertEquals( expectedCRS.getCode(), point.getCRS().getCode() );
+        assertEquals( asList( expectedCoordinate ), point.getCoordinate().getCoordinate() );
     }
 }

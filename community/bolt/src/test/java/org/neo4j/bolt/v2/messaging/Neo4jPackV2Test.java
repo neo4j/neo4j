@@ -32,6 +32,7 @@ import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.virtual.ListValue;
 
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
@@ -41,6 +42,7 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.pointValue;
+import static org.neo4j.values.virtual.VirtualValues.list;
 
 public class Neo4jPackV2Test
 {
@@ -108,6 +110,31 @@ public class Neo4jPackV2Test
         testPackingAndUnpackingOfPoints( 3 );
     }
 
+    @Test
+    public void shouldPackAndUnpackListsOf2DPoints() throws IOException
+    {
+        testPackingAndUnpackingOfListsOfPoints( 2 );
+    }
+
+    @Test
+    public void shouldPackAndUnpackListsOf3DPoints() throws IOException
+    {
+        testPackingAndUnpackingOfListsOfPoints( 3 );
+    }
+
+    private static void testPackingAndUnpackingOfListsOfPoints( int pointDimension ) throws IOException
+    {
+        List<ListValue> pointLists = IntStream.range( 0, 1000 )
+                .mapToObj( index -> randomListOfPoints( index, pointDimension ) )
+                .collect( toList() );
+
+        for ( ListValue original : pointLists )
+        {
+            ListValue unpacked = packAndUnpack( original );
+            assertEquals( "Failed on " + original, original, unpacked );
+        }
+    }
+
     private static void testPackingAndUnpackingOfPoints( int dimension ) throws IOException
     {
         List<PointValue> points = IntStream.range( 0, 1000 )
@@ -117,10 +144,7 @@ public class Neo4jPackV2Test
         for ( PointValue original : points )
         {
             PointValue unpacked = packAndUnpack( original );
-
-            String message = "Failed on " + original;
-            assertEquals( message, original.getCoordinateReferenceSystem(), unpacked.getCoordinateReferenceSystem() );
-            assertEquals( message, original.getCoordinate(), unpacked.getCoordinate() );
+            assertEquals( "Failed on " + original, original, unpacked );
         }
     }
 
@@ -157,7 +181,18 @@ public class Neo4jPackV2Test
         Neo4jPackV2 neo4jPack = new Neo4jPackV2();
         PackedInputArray input = new PackedInputArray( output.bytes() );
         Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
-        return (T) unpacker.unpack();
+        AnyValue unpack = unpacker.unpack();
+        return (T) unpack;
+    }
+
+    private static ListValue randomListOfPoints( int index, int pointDimension )
+    {
+        PointValue[] pointValues = ThreadLocalRandom.current()
+                .ints( 100, 1, 100 )
+                .mapToObj( i -> randomPoint( index, pointDimension ) )
+                .toArray( PointValue[]::new );
+
+        return list( pointValues );
     }
 
     private static PointValue randomPoint( int index, int dimension )
