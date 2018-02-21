@@ -406,10 +406,32 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     resultNoIndex.toList shouldBe empty
   }
 
-  // TODO should we really have different behavior with and without parameters?
-  test("distance function should fail on wrong type when not using parameters") {
-    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
-    failWithError(config, "RETURN distance(1, 2) as dist", List("Type mismatch: expected Point or Geometry but was Integer"))
+  test("no error for distance with no point when using no parameters") {
+    // Given
+    graph.createIndex("Place", "location")
+    graph.execute("CREATE (p:Place) SET p.location = point({y: 0, x: 0, crs: 'cartesian'})")
+    Range(11, 100).foreach(i => graph.execute(s"CREATE (p:Place) SET p.location = point({y: $i, x: $i, crs: 'cartesian'})"))
+
+    val config = distanceConfig - Configs.Version3_3
+
+    val query =
+      """MATCH (p:Place)
+        |WHERE distance(p.location, 5) <= 10
+        |RETURN p.location as point
+      """.stripMargin
+    // When
+    val result = executeWith(config, query)
+
+    // Then
+    result.toList shouldBe empty
+
+    // And given
+    graph.execute(s"DROP INDEX ON :Place(location)")
+    // when
+    val resultNoIndex = executeWith(config, query)
+
+    // Then
+    resultNoIndex.toList shouldBe empty
   }
 
   private def setupPointsBothCRS(): Unit = {
