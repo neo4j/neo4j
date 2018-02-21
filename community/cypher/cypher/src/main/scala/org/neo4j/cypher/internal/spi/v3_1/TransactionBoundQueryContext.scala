@@ -629,7 +629,9 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
-    callProcedure(name, args, txContext.dbmsOperations.procedureCallDbms(_,_,txContext.securityContext))
+    callProcedure(name, args,
+                  txContext.dbmsOperations.procedureCallDbms(_,_,txContext.securityContext,
+                                                                        txContext.resourceTracker))
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {

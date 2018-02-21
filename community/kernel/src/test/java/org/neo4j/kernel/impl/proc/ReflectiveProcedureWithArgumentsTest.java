@@ -32,6 +32,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
@@ -50,6 +52,8 @@ public class ReflectiveProcedureWithArgumentsTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldCompileSimpleProcedure() throws Throwable
@@ -74,7 +78,7 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{"Pontus", 35L} );
+        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{"Pontus", 35L}, resourceTracker );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -90,7 +94,7 @@ public class ReflectiveProcedureWithArgumentsTest
         // When
         RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{
                 Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
-                Arrays.asList( 1000L, 23L, 29L, 12L )} );
+                Arrays.asList( 1000L, 23L, 29L, 12L )}, resourceTracker );
 
         // Then
         List<Object[]> collect = asList( out );

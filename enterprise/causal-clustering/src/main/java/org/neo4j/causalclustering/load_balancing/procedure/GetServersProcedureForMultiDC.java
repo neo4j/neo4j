@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -68,7 +69,8 @@ public class GetServersProcedureForMultiDC implements CallableProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply(
+            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         @SuppressWarnings( "unchecked" )
         Map<String,String> clientContext = (Map<String,String>) input[0];

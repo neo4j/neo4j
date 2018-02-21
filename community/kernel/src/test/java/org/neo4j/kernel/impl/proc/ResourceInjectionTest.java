@@ -30,6 +30,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -61,6 +63,7 @@ public class ResourceInjectionTest
     public ExpectedException exception = ExpectedException.none();
 
     private ReflectiveProcedureCompiler compiler;
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     private Log log = mock(Log.class);
 
@@ -95,7 +98,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithInjectedAPI.class, Optional.empty(), true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new Object[]{"Bonnie"} ) );
@@ -123,7 +126,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, Optional.empty(), true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new Object[]{"Morpheus"} ) );
@@ -143,7 +146,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get( 0 ).apply( new BasicContext(), new Object[0] );
+            procList.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker );
             fail();
         }
         catch ( ProcedureException e )

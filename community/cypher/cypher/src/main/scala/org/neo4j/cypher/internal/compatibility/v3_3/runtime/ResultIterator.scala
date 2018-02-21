@@ -84,7 +84,16 @@ class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
       f
     } catch {
       case t: Throwable =>
-        close(success = false)
+        try {
+          close(success = false)
+        } catch {
+          case thrownDuringClose: Throwable =>
+            try {
+              t.addSuppressed(thrownDuringClose)
+            } catch {
+              case _: Throwable => // Ignore
+            }
+        }
         throw t
     }
   })

@@ -31,7 +31,9 @@ import java.util.Set;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -54,6 +56,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
+
+    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void listAllLabels() throws Throwable
@@ -262,7 +266,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         {
             // When
             dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    AnonymousContext.none() );
+                    AnonymousContext.none(), resourceTracker );
             fail( "This should never get here" );
         }
         catch ( Exception e )

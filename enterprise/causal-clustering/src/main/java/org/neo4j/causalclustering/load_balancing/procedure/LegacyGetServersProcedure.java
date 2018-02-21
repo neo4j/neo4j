@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -89,7 +90,8 @@ public class LegacyGetServersProcedure implements CallableProcedure
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+    public RawIterator<Object[],ProcedureException> apply(
+            Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         List<Endpoint> routeEndpoints = routeEndpoints();
         List<Endpoint> writeEndpoints = writeEndpoints();
