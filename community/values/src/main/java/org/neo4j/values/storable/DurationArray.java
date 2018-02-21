@@ -80,4 +80,17 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     {
         return ValueGroup.DURATION_ARRAY;
     }
+
+    @Override
+    public int compareTo( Value otherValue )
+    {
+        if ( otherValue instanceof DurationArray )
+        {
+            return compareToNonPrimitiveArray( (DurationArray) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
 }

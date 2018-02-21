@@ -40,7 +40,7 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
       case (n1: NumberValue, n2: NumberValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
       case (n1: TextValue, n2: TextValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
       case (n1: BooleanValue, n2: BooleanValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case (n1: PointValue, n2: PointValue) => Some(compare(n1.compareTo(n2)))
+      case (n1: PointValue, n2: PointValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
       case _ => None
     }
     res

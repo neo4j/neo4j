@@ -69,4 +69,17 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime, LocalDateTi
     {
         return ValueGroup.LOCAL_DATE_TIME_ARRAY;
     }
+
+    @Override
+    public int compareTo( Value otherValue )
+    {
+        if ( otherValue instanceof LocalDateTimeArray )
+        {
+            return compareToNonPrimitiveArray( (LocalDateTimeArray) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
 }

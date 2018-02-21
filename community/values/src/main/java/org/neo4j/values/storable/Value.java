@@ -32,7 +32,7 @@ import org.neo4j.values.SequenceValue;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public abstract class Value extends AnyValue
+public abstract class Value extends AnyValue implements Comparable<Value>
 {
     @Override
     public boolean eq( Object other )
@@ -169,6 +169,8 @@ public abstract class Value extends AnyValue
         }
         return false;
     }
+
+    public abstract int compareTo( Value other );
 
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E

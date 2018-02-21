@@ -71,6 +71,19 @@ public abstract class TextValue extends ScalarValue
     public abstract int compareTo( TextValue other );
 
     @Override
+    public int compareTo( Value otherValue )
+    {
+        if ( otherValue instanceof TextValue )
+        {
+            return compareTo( (TextValue) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
+
+    @Override
     public final boolean equals( boolean x )
     {
         return false;

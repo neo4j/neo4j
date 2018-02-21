@@ -184,9 +184,14 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         this.value = value;
     }
 
-    public int compareTo( TimeValue other )
+    @Override
+    public int compareTo( Value otherValue )
     {
-
+        if ( !(otherValue instanceof TimeValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+        TimeValue other = (TimeValue) otherValue;
         return value.compareTo( other.value );
     }
 

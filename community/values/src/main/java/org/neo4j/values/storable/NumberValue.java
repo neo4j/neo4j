@@ -30,6 +30,23 @@ public abstract class NumberValue extends ScalarValue
     abstract int compareTo( FloatingPointValue other );
 
     @Override
+    public int compareTo( Value otherValue )
+    {
+        if ( otherValue instanceof IntegralValue )
+        {
+            return compareTo( (IntegralValue) otherValue );
+        }
+        else if ( otherValue instanceof FloatingPointValue )
+        {
+            return compareTo( (FloatingPointValue) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
+
+    @Override
     public abstract Number asObjectCopy();
 
     @Override

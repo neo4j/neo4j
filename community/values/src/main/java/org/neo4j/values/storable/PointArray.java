@@ -81,4 +81,17 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     {
         return Values.point( value[offset] );
     }
+
+    @Override
+    public int compareTo( Value otherValue )
+    {
+        if ( otherValue instanceof PointArray )
+        {
+            return compareToNonPrimitiveArray( (PointArray) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
 }

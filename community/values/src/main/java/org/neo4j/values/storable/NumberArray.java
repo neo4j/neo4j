@@ -34,6 +34,23 @@ public abstract class NumberArray extends ArrayValue
     abstract int compareTo( FloatingPointArray other );
 
     @Override
+    public int compareTo( Value otherValue )
+    {
+        if ( otherValue instanceof IntegralArray )
+        {
+            return compareTo( (IntegralArray) otherValue );
+        }
+        else if ( otherValue instanceof FloatingPointArray )
+        {
+            return compareTo( (FloatingPointArray) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+    }
+
+    @Override
     public final boolean equals( boolean[] x )
     {
         return false;

@@ -60,7 +60,7 @@ import static org.neo4j.values.storable.NumberType.NO_NUMBER;
  * {@link java.time.Duration} only works with seconds, assumes 24H days, and is unable to handle larger units than days.
  * {@link java.time.Period} only works with units from days or larger, and does not deal with time.
  */
-public final class DurationValue extends ScalarValue implements TemporalAmount, Comparable<DurationValue>
+public final class DurationValue extends ScalarValue implements TemporalAmount
 {
     public static DurationValue duration( Duration value )
     {
@@ -237,8 +237,14 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         this.nanos = (int) nanos;
     }
 
-    public int compareTo( DurationValue other )
+    @Override
+    public int compareTo( Value otherValue )
     {
+        if ( !(otherValue instanceof DurationValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+        DurationValue other = (DurationValue) otherValue;
         return COMPARATOR.compare( this, other );
     }
 

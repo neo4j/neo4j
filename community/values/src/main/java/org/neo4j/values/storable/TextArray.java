@@ -23,9 +23,17 @@ public abstract class TextArray extends ArrayValue
 {
     public abstract String stringValue( int offset );
 
-    public int compareTo( TextArray other )
+    @Override
+    public int compareTo( Value otherValue )
     {
-        return TextValues.compareTextArrays( this, other );
+        if ( otherValue instanceof TextArray )
+        {
+            return TextValues.compareTextArrays( this, (TextArray) otherValue );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
     }
 
     @Override
