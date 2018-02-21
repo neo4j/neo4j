@@ -520,6 +520,29 @@
           </executions>
         </plugin>
 
+        <!-- Enforce naming if packages -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.0.0-M1</version>
+          <configuration>
+            <rules>
+              <evaluateBeanshell>
+                <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
+                <condition>String s = "${project.groupId}"; s.startsWith("org.neo4j")</condition>
+              </evaluateBeanshell>
+              <requireFilesDontExist>
+                <message>You are not allowed to have classes in "com" package</message>
+                <files>
+                  <file>${project.build.sourceDirectory}/com</file>
+                  <file>${project.build.testSourceDirectory}/com</file>
+                </files>
+              </requireFilesDontExist>
+            </rules>
+            <fail>true</fail>
+          </configuration>
+        </plugin>
+
         <!-- Plugin version management -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -712,6 +735,19 @@
             <inceptionYear>${project.inceptionYear}</inceptionYear>
           </properties>
         </configuration>
+      </plugin>
+
+      <!-- Always enforce -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
