@@ -212,7 +212,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
       val query =
         s"""WITH distance(point({latitude: 0, longitude: 0, crs: 'WGS-84'}), point({latitude: 10, longitude: 0, crs: 'WGS-84'})) as d
            |MATCH (p:Place)
-           |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) <= 	d
+           |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) <= d
            |RETURN p.location as point
         """.stripMargin
 
@@ -285,7 +285,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
           val query =
             s"""WITH distance(point({latitude: 0, longitude: 0, crs: 'WGS-84'}), point({latitude: 10, longitude: 0, crs: 'WGS-84'})) as d
                |MATCH (p:Place)
-               |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) <= 	d and distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) > d / 2
+               |WHERE distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) <= d and distance(p.location, point({latitude: 0, longitude: 0, crs: 'WGS-84'})) > d / 2
                |RETURN p.location as point
             """.stripMargin
 
