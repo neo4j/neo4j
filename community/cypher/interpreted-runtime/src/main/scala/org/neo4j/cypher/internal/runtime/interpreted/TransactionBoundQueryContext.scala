@@ -711,7 +711,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       reads().singleRelationship(id, cursor)
       if (cursor.next())
         Some(fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, cursor.sourceNodeReference(), cursor.label(),
-                                                                       cursor.targetNodeReference()))
+                                                                       cursor.targetNodeReference())))
       else
         None
     }
@@ -1209,10 +1209,4 @@ object TransactionBoundQueryContext {
     def lockingUniqueIndexSeek(index: IndexReference, values: Seq[Any]): Unit
   }
 
-}
-
-object NoopVisitor extends RelationshipVisitor[RuntimeException] {
-
-  // should just throw if the relationship is missing
-  override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {}
 }
