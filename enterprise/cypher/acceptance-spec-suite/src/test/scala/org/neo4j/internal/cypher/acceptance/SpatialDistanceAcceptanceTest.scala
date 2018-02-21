@@ -313,7 +313,7 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
         }
   }
 
-  test("projecting distance into variable still uses index") {
+  ignore("projecting distance into variable still uses index") {
     // Given
     graph.createIndex("Place", "location")
     setupPointsBothCRS()
