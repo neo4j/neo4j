@@ -56,6 +56,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
@@ -240,7 +241,7 @@ public class CompositeIndexingIT
                 long nodeID3 = createNode();
                 PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
-                assertThat( result, contains( nodeID1, nodeID2, nodeID3 ) );
+                assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
             }
         }
     }
@@ -258,7 +259,7 @@ public class CompositeIndexingIT
             {
                 PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
-                assertThat( result, contains( nodeID1, nodeID2, nodeID3 ) );
+                assertThat( result, containsInAnyOrder( nodeID1, nodeID2, nodeID3 ) );
             }
         }
     }
