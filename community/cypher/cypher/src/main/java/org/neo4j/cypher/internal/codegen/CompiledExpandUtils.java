@@ -141,12 +141,12 @@ public abstract class CompiledExpandUtils
     }
 
     static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, RelationshipGroupCursor group,
-            Direction direction, int type)
+            Direction direction, int type )
     {
-            read.singleNode( node, nodeCursor );
-            if ( !nodeCursor.next() )
-            {
-                return 0;
+        read.singleNode( node, nodeCursor );
+        if ( !nodeCursor.next() )
+        {
+            return 0;
             }
             switch ( direction )
             {
