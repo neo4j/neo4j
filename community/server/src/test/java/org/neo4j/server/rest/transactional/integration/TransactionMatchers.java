@@ -39,6 +39,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.util.RFC1123;
 import org.neo4j.test.server.HTTP;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -409,18 +410,18 @@ public class TransactionMatchers
                 try
                 {
                     Iterator<JsonNode> nodes = getJsonNodeWithName( response, "graph" ).get( "nodes" ).iterator();
-
-                    for ( int i = 0; i < amount; ++i )
-                    {
-                        assertTrue( nodes.hasNext() );
-                        JsonNode node = nodes.next();
-                        assertThat( node.get( "deleted" ).asBoolean(), equalTo( Boolean.TRUE ) );
-                    }
+                    int deleted = 0;
                     while ( nodes.hasNext() )
                     {
                         JsonNode node = nodes.next();
-                        assertNull( node.get( "deleted" ) );
+                        if ( node.get( "deleted" ) != null )
+                        {
+                            assertTrue( node.get( "deleted" ).asBoolean() );
+                            deleted++;
+                        }
                     }
+                    assertEquals( format( "Expected to see %d deleted elements but %d was encountered.", amount, deleted ),
+                            amount, deleted );
                     return true;
                 }
                 catch ( JsonParseException e )

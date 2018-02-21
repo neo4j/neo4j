@@ -51,6 +51,7 @@ public class SharedServerTestBase
         suppressAll().call( (Callable<Void>) () ->
         {
             ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.cypher_hints_error.name(), "true" );
+            ServerHolder.setServerBuilderProperty( GraphDatabaseSettings.transaction_timeout.name(), "120s" );
             server = ServerHolder.allocate();
             ServerHelper.cleanTheDatabase( server );
             return null;
