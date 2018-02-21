@@ -27,7 +27,7 @@ import org.neo4j.values.storable._
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
-  def compare(comparisonResult: Int): Boolean
+  def compare(comparisonResult: Option[Int]): Option[Boolean]
 
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     val l = left(m, state)
@@ -37,13 +37,20 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     else (l, r) match {
       case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
       case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
-      case (n1: NumberValue, n2: NumberValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case (n1: TextValue, n2: TextValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case (n1: BooleanValue, n2: BooleanValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case (n1: PointValue, n2: PointValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+      case (n1: NumberValue, n2: NumberValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: TextValue, n2: TextValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: BooleanValue, n2: BooleanValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: PointValue, n2: PointValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
       case _ => None
     }
     res
+  }
+
+  private def nullToNone(i: java.lang.Integer) : Option[Int] = {
+    // Do NOT use Option here (as suggested by the warning).
+    // This would lead to NullPointerExceptions when i == null
+    if(i == null) None
+    else Some(i)
   }
 
   def sign: String
@@ -98,7 +105,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  def compare(comparisonResult: Int) = comparisonResult < 0
+  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ < 0)
 
   def sign: String = "<"
 
@@ -107,7 +114,7 @@ case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a,
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  def compare(comparisonResult: Int) = comparisonResult > 0
+  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ > 0)
 
   def sign: String = ">"
 
@@ -116,7 +123,7 @@ case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  def compare(comparisonResult: Int) = comparisonResult <= 0
+  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ <= 0)
 
   def sign: String = "<="
 
@@ -125,7 +132,7 @@ case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredi
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  def compare(comparisonResult: Int) = comparisonResult >= 0
+  override def compare(comparisonResult: Option[Int]): Option[Boolean] = comparisonResult.map(_ >= 0)
 
   def sign: String = ">="
 

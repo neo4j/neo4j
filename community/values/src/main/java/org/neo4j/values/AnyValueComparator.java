@@ -20,28 +20,29 @@
 package org.neo4j.values;
 
 import java.util.Comparator;
+import java.util.function.BiFunction;
 
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueComparator;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 /**
  * Comparator for any values.
  */
-class AnyValueComparator implements Comparator<AnyValue>
+public class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<Value>
 {
-    private final Comparator<Value> valueComparator;
+    private final ValueComparator valueComparator;
     private final Comparator<VirtualValueGroup> virtualValueGroupComparator;
 
-    AnyValueComparator( Comparator<Value> valueComparator,
+    AnyValueComparator( ValueComparator valueComparator,
             Comparator<VirtualValueGroup> virtualValueGroupComparator )
     {
         this.valueComparator = valueComparator;
         this.virtualValueGroupComparator = virtualValueGroupComparator;
     }
 
-    @Override
-    public int compare( AnyValue v1, AnyValue v2 )
+    private Integer cmp( AnyValue v1, AnyValue v2, BiFunction<Value, Value, Integer> compareValues )
     {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
@@ -86,10 +87,22 @@ class AnyValueComparator implements Comparator<AnyValue>
         if ( x == 0 )
         {
             //noinspection ConstantConditions
-            return isValue1 ? valueComparator.compare( (Value)v1, (Value)v2 ) :
+            return isValue1 ? compareValues.apply( (Value)v1, (Value)v2 ) :
                    compareVirtualValues( (VirtualValue)v1, (VirtualValue)v2 );
         }
         return x;
+    }
+
+    @Override
+    public int compare( AnyValue v1, AnyValue v2 )
+    {
+        return cmp( v1, v2, valueComparator::compare );
+    }
+
+    @Override
+    public Integer ternaryCompare( Value v1, Value v2 )
+    {
+        return cmp( v1, v2, valueComparator::ternaryCompare );
     }
 
     @Override

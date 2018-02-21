@@ -141,6 +141,37 @@ public class PointValue extends ScalarValue implements Point
     }
 
     @Override
+    public Integer ternaryCompareTo( Value otherValue )
+    {
+        if ( !(otherValue instanceof PointValue) )
+        {
+            throw new IllegalArgumentException( "Cannot compare different values" );
+        }
+        PointValue other = (PointValue) otherValue;
+
+        if ( this.crs.getCode() != other.crs.getCode() || this.coordinate.length != other.coordinate.length )
+        {
+            return null;
+        }
+
+        int result = 0;
+        for ( int i = 0; i < coordinate.length; i++ )
+        {
+            int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
+            if ( cmpVal != 0 && cmpVal != result )
+            {
+                if((cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0))
+                {
+                    return null;
+                }
+                result = cmpVal;
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public Point asObjectCopy()
     {
         return this;

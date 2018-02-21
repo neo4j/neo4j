@@ -172,6 +172,15 @@ public abstract class Value extends AnyValue implements Comparable<Value>
 
     public abstract int compareTo( Value other );
 
+    /**
+     * Should return {@code null} for values that cannot be compared
+     * under Comparability semantics.
+     */
+    public Integer ternaryCompareTo( Value other)
+    {
+        return compareTo( other );
+    }
+
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {

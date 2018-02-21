@@ -67,6 +67,6 @@ public final class AnyValues
      *  <li> VOID (i.e. the type of null)
      * </ul>
      */
-    public static final Comparator<AnyValue> COMPARATOR =
+    public static final AnyValueComparator COMPARATOR =
             new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
 }

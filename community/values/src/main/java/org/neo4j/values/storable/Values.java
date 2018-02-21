@@ -81,7 +81,6 @@ public final class Values
     public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
     public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
     public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
-    public static final ArrayValue EMPTY_POINT_ARRAY = Values.pointArray( new PointValue[0] );
     public static final TextArray EMPTY_TEXT_ARRAY = Values.stringArray();
 
     private Values()
@@ -90,9 +89,11 @@ public final class Values
 
     /**
      * Default value comparator. Will correctly compare all storable values and order the value groups according the
-     * to comparability group.
+     * to orderability group.
+     *
+     * To get Comparability semantics, use .ternaryCompare
      */
-    public static final Comparator<Value> COMPARATOR = new ValueComparator( ValueGroup::compareTo );
+    public static final ValueComparator COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {

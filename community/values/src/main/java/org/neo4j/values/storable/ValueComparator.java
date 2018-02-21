@@ -21,12 +21,12 @@ package org.neo4j.values.storable;
 
 import java.util.Comparator;
 
-import static java.lang.String.format;
+import org.neo4j.values.TernaryComparator;
 
 /**
  * Comparator for values. Usable for sorting values, for example during index range scans.
  */
-public class ValueComparator implements Comparator<Value>
+public class ValueComparator implements Comparator<Value>, TernaryComparator<Value>
 {
     private final Comparator<ValueGroup> valueGroupComparator;
 
@@ -49,6 +49,23 @@ public class ValueComparator implements Comparator<Value>
         if ( x == 0 )
         {
             return v1.compareTo( v2 );
+        }
+        return x;
+    }
+
+    @Override
+    public Integer ternaryCompare( Value v1, Value v2 )
+    {
+        assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
+
+        ValueGroup id1 = v1.valueGroup();
+        ValueGroup id2 = v2.valueGroup();
+
+        int x = valueGroupComparator.compare( id1, id2 );
+
+        if ( x == 0 )
+        {
+            return v1.ternaryCompareTo( v2 );
         }
         return x;
     }
