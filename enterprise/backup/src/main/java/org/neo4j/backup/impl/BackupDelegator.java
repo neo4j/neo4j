@@ -59,7 +59,8 @@ class BackupDelegator extends LifecycleAdapter
     {
         try
         {
-            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true );
+            boolean useModifiedConfig = true; // See TransactionLogCatchUpWriter; When that receives `false` then it uses user config
+            return remoteStore.tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), !useModifiedConfig );
         }
         catch ( IOException e )
         {

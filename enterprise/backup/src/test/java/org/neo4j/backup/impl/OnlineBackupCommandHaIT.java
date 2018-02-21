@@ -20,6 +20,7 @@
 package org.neo4j.backup.impl;
 
 import org.apache.commons.lang3.SystemUtils;
+import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,12 +33,19 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.LongStream;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,10 +54,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -61,6 +73,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -188,7 +201,7 @@ public class OnlineBackupCommandHaIT
 
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( backupDir, name ), fileSystem ).build();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( new File( backupDir, name ), fileSystem ).build(); // TODO some relevant magic
             assertTrue( logFiles.versionExists( 0 ) );
             assertThat( logFiles.getLogFileForVersion( 0 ).length(), greaterThan( 50L ) );
         }
@@ -284,6 +297,55 @@ public class OnlineBackupCommandHaIT
         assertFalse( output.contains( "Start receiving index snapshot id 1" ) );
         assertFalse( output.contains( "Finished receiving index snapshot id 1" ) );
         assertFalse( output.contains( "Finished receiving index snapshots" ) );
+    }
+
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        int port = PortAuthority.allocatePort();
+        startDb( port );
+        createSomeData( db );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        File backupLocation = new File( backupDir, backupName );
+        String address = "localhost:" + port;
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir, "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+        LongStream.range( 0, 5 ).forEach( number -> createSomeData( db ) );
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir, "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
+                "--name=" + backupName ) );
+
+        // then there is only 1 transaction file containing 1 transaction
+        Collection<File> backupTransactionFiles = transactionFiles( backupDir );
+//        assertThat( backupTransactionFiles, hasSize( 1 ) ); // TODO actually zero? wtf
+        LogFiles logFiles = readLogFiles( backupDir );
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertEquals( lowestTxIdInLogFiles, highestTxIdInLogFiles );
+        assertTrue( lowestTxIdInLogFiles > 1 );
+    }
+
+    private LogFiles readLogFiles( File backupDir ) throws IOException
+    {
+        FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction );
+        return LogFilesBuilder.activeFilesBuilder( backupDir, fileSystemAbstraction, pageCache )
+                .build();
+    }
+
+    private Collection<File> transactionFiles( File dbLocation ) throws IOException
+    {
+        Collection<File> txFiles = new ArrayList<>();
+        DirectoryStream<Path> dirStream = Files.newDirectoryStream( dbLocation.toPath(), "neostore.transaction.db.*" );
+        dirStream.forEach( path -> txFiles.add( path.toFile() ) );
+        dirStream.close();
+        return txFiles;
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )

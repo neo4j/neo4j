@@ -36,6 +36,7 @@ import java.util.List;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
@@ -53,6 +54,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.neo4j.backup.impl.SelectedBackupProtocol.ANY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 
@@ -326,6 +328,21 @@ public class OnlineBackupContextBuilderTest
             // then
             assertEquals( expected.get( useCase ), context.getRequiredArguments().getSelectedBackupProtocol() );
         }
+    }
+
+    @Test
+    public void logRotationPolicyIsSetToOneTransaction() throws IOException, CommandFailed, IncorrectUsage
+    {
+        // given
+        Path additionalConf = homeDir.resolve( "additional-neo4j.conf" );
+        Files.write( additionalConf, singletonList( keep_logical_logs.name() + "=42 days" ) );
+
+        // when
+        OnlineBackupContextBuilder builder = new OnlineBackupContextBuilder( homeDir, configDir );
+        OnlineBackupContext context = builder.createContext( requiredAnd("--additional-config=" + additionalConf ) );
+
+        // then
+        assertThat( context.getConfig().get( keep_logical_logs ), is( "1 txs" ) );
     }
 
     private String[] requiredAnd( String... additionalArgs )

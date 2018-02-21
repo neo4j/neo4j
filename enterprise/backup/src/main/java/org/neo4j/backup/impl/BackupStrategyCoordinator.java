@@ -20,7 +20,9 @@
 package org.neo4j.backup.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -30,7 +32,14 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
+import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
@@ -51,15 +60,17 @@ class BackupStrategyCoordinator
     private final LogProvider logProvider;
     private final ProgressMonitorFactory progressMonitorFactory;
     private final List<BackupStrategyWrapper> strategies;
+    private final PageCache pageCache;
 
     BackupStrategyCoordinator( ConsistencyCheckService consistencyCheckService, OutsideWorld outsideWorld, LogProvider logProvider,
-            ProgressMonitorFactory progressMonitorFactory, List<BackupStrategyWrapper> strategies )
+            ProgressMonitorFactory progressMonitorFactory, PageCache pageCache, List<BackupStrategyWrapper> strategies )
     {
         this.consistencyCheckService = consistencyCheckService;
         this.outsideWorld = outsideWorld;
         this.logProvider = logProvider;
         this.progressMonitorFactory = progressMonitorFactory;
         this.strategies = strategies;
+        this.pageCache = pageCache;
     }
 
     /**
@@ -97,10 +108,30 @@ class BackupStrategyCoordinator
             causesOfFailure.forEach( commandFailed::addSuppressed );
             throw commandFailed;
         }
+        pruneLogs( destination.toFile(), pageCache, outsideWorld.fileSystem() );
         if ( requiredArgs.isDoConsistencyCheck() )
         {
             performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, destination );
         }
+    }
+
+    private void pruneLogs( File backupDirectory, PageCache pageCache, FileSystemAbstraction fileSystemAbstraction )
+    {
+        LogFiles logFiles = null;
+        try
+        {
+            logFiles = LogFilesBuilder.activeFilesBuilder( backupDirectory, fileSystemAbstraction, pageCache )
+                    .build();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        LogPruneStrategyFactory logPruneStrategyFactory = new LogPruneStrategyFactory();
+        Clock clock = Clock.systemDefaultZone();
+        Config config = Config.defaults();
+        LogPruningImpl logPruningImpl = new LogPruningImpl( fileSystemAbstraction, logFiles, logProvider, logPruneStrategyFactory, clock, config );
+        logPruningImpl.pruneLogs( logFiles.getHighestLogVersion() );
     }
 
     private static Supplier<CommandFailed> commandFailedWithCause( Fallible<BackupStrategyOutcome> cause )

@@ -74,7 +74,7 @@ public class BackupDelegatorTest
         subject.tryCatchingUp( fromAddress, expectedStoreId, storeDir );
 
         // then
-        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), true );
+        verify( remoteStore ).tryCatchingUp( fromAddress, expectedStoreId, storeDir.toFile(), false );
     }
 
     @Test
