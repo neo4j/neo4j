@@ -42,6 +42,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -52,8 +53,8 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernel
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.helpers.Nodes;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
@@ -350,7 +351,7 @@ public class NodeProxy implements Node
             nodes.properties( properties );
             while ( properties.next() )
             {
-               keys.add( token.propertyKeyName( properties.propertyKey() ));
+                keys.add( token.propertyKeyName( properties.propertyKey() ) );
             }
         }
         catch ( PropertyKeyIdNotFoundKernelException e )
@@ -679,52 +680,72 @@ public class NodeProxy implements Node
     @Override
     public int getDegree( RelationshipType type )
     {
-        try ( Statement statement = spi.statement() )
-        {
-            ReadOperations ops = statement.readOperations();
-            int typeId = ops.relationshipTypeGetForName( type.name() );
-            if ( typeId == NO_ID )
-            {   // This type doesn't even exist. Return 0
-                return 0;
-            }
-            return ops.nodeGetDegree( nodeId, Direction.BOTH, typeId );
+        KernelTransaction transaction = safeAcquireTransaction();
+        int typeId = transaction.tokenRead().relationshipType( type.name() );
+        if ( typeId == NO_ID )
+        {   // This type doesn't even exist. Return 0
+            return 0;
         }
-        catch ( EntityNotFoundException e )
+
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            throw new NotFoundException( "Node not found.", e );
+            NodeCursor nodes = transaction.nodeCursor();
+            singleNode( transaction, nodes );
+            RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();
+
+            return Nodes.countAll( nodes, group, typeId );
         }
     }
 
     @Override
     public int getDegree( Direction direction )
     {
-        try ( Statement statement = spi.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            ReadOperations ops = statement.readOperations();
-            return ops.nodeGetDegree( nodeId, direction );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Node not found.", e );
+            NodeCursor nodes = transaction.nodeCursor();
+            singleNode( transaction, nodes );
+            RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();
+            switch ( direction )
+            {
+            case OUTGOING:
+                return Nodes.countOutgoing( nodes, group );
+            case INCOMING:
+                return Nodes.countIncoming( nodes, group );
+            case BOTH:
+                return Nodes.countAll( nodes, group );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
         }
     }
 
     @Override
     public int getDegree( RelationshipType type, Direction direction )
     {
-        try ( Statement statement = spi.statement() )
-        {
-            ReadOperations ops = statement.readOperations();
-            int typeId = ops.relationshipTypeGetForName( type.name() );
-            if ( typeId == NO_ID )
-            {   // This type doesn't even exist. Return 0
-                return 0;
-            }
-            return ops.nodeGetDegree( nodeId, direction, typeId );
+        KernelTransaction transaction = safeAcquireTransaction();
+        int typeId = transaction.tokenRead().relationshipType( type.name() );
+        if ( typeId == NO_ID )
+        {   // This type doesn't even exist. Return 0
+            return 0;
         }
-        catch ( EntityNotFoundException e )
+
+        try ( Statement ignore = transaction.acquireStatement() )
         {
-            throw new NotFoundException( "Node not found.", e );
+            NodeCursor nodes = transaction.nodeCursor();
+            singleNode( transaction, nodes );
+            RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();
+            switch ( direction )
+            {
+            case OUTGOING:
+                return Nodes.countOutgoing( nodes, group, typeId );
+            case INCOMING:
+                return Nodes.countIncoming( nodes, group, typeId );
+            case BOTH:
+                return Nodes.countAll( nodes, group, typeId );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
         }
     }
 
