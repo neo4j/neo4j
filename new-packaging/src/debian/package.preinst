@@ -23,7 +23,7 @@ case "$1" in
     # overrides only if the system has systemd and no overrides
     # exists yet (they can be named anything in the dir)
     if [ $(which systemctl) ] && [ -r /etc/default/neo4j ] && ! [ -d "${NEO4J_OVERRIDE_DIR}" ]; then
-      (
+
         . /etc/default/neo4j
 
         # Only do it if something was actually defined in it
@@ -37,7 +37,7 @@ case "$1" in
           [ -n "${NEO4J_SHUTDOWN_TIMEOUT}" ] && echo "TimeoutSec=${NEO4J_SHUTDOWN_TIMEOUT}" >> ${NEO4J_OVERRIDE_FILE}
           [ -n "${NEO4J_USER}" ] && echo "User=${NEO4J_USER}" >> ${NEO4J_OVERRIDE_FILE}
         fi
-      )
+
     fi
     case "$2" in
       2.*)
