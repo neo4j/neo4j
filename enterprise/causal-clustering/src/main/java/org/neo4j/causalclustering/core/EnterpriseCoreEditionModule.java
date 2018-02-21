@@ -159,7 +159,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         procedures.registerProcedure( ReplicationBenchmarkProcedure.class );
     }
 
-    EnterpriseCoreEditionModule( final PlatformModule platformModule,
+    public EnterpriseCoreEditionModule( final PlatformModule platformModule,
             final DiscoveryServiceFactory discoveryServiceFactory )
     {
         final Dependencies dependencies = platformModule.dependencies;
