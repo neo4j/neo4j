@@ -119,11 +119,6 @@ public class NodeProxy implements Node
             throw new IllegalStateException( "Auto indexing encountered a failure while deleting the node: "
                                              + e.getMessage(), e );
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Unable to delete node[" +
-                                         getId() + "] since it is already deleted." );
-        }
     }
 
     @Override
@@ -310,10 +305,6 @@ public class NodeProxy implements Node
         {
             throw new IllegalStateException( "Auto indexing encountered a failure while removing property: "
                                              + e.getMessage(), e );
-        }
-        catch ( KernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 

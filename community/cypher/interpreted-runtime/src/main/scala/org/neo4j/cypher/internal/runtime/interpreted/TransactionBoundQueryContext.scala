@@ -706,11 +706,15 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
-    override def getByIdIfExists(id: Long): Option[RelationshipValue] =
-      if (reads().relationshipExists(id))
-        Some(fromRelationshipProxy(entityAccessor.newRelationshipProxy(id)))
+    override def getByIdIfExists(id: Long): Option[RelationshipValue] = {
+      val cursor = relationshipScanCursor
+      reads().singleRelationship(id, cursor)
+      if (cursor.next())
+        Some(fromRelationshipProxy(entityAccessor.newRelationshipProxy(id, cursor.sourceNodeReference(), cursor.label(),
+                                                                       cursor.targetNodeReference()))
       else
         None
+    }
 
     override def all: Iterator[RelationshipValue] = {
       val relCursor = allocateAndTraceRelationshipScanCursor()

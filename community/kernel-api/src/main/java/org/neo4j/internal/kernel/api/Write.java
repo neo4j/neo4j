@@ -41,7 +41,7 @@ public interface Write
      * @param node the internal id of the node to delete
      * @return returns true if it deleted a node or false if no node was found for this id
      */
-    boolean nodeDelete( long node ) throws AutoIndexingKernelException, EntityNotFoundException;
+    boolean nodeDelete( long node ) throws AutoIndexingKernelException;
 
     /**
      * Create a relationship between two nodes.
@@ -56,8 +56,7 @@ public interface Write
      * Delete a relationship
      * @param relationship the internal id of the relationship to delete
      */
-    boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException, EntityNotFoundException;
-
+    boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException;
     /**
      * Add a label to a node
      * @param node the internal node id

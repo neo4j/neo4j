@@ -263,7 +263,6 @@ public abstract class ExplicitIndexCursorWritesTestBase<G extends KernelAPIWrite
         }
     }
 
-    //TODO unignore when we support relationship creation.
     @Test
     public void shouldAddRelationshipToExplicitIndex() throws Exception
     {

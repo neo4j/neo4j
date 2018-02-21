@@ -40,7 +40,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -140,16 +139,13 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             boolean deleted = transaction.dataWrite().relationshipDelete( id );
             if ( !deleted )
             {
-                alreadyDeleted();
+                throw new NotFoundException( "Unable to delete relationship[" +
+                                             getId() + "] since it is already deleted." );
             }
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            alreadyDeleted();
         }
         catch ( AutoIndexingKernelException e )
         {
@@ -452,10 +448,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
             throw new IllegalStateException( "Auto indexing encountered a failure while setting property: "
                                              + e.getMessage(), e );
         }
-        catch ( KernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
+
     }
 
     @Override
@@ -483,10 +476,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalStateException( "Auto indexing encountered a failure while removing property: "
                                              + e.getMessage(), e );
-        }
-        catch ( KernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
         }
     }
 
@@ -559,9 +548,4 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         actions.assertInUnterminatedTransaction();
     }
 
-    private void alreadyDeleted()
-    {
-        throw new NotFoundException( "Unable to delete relationship[" +
-        getId() + "] since it is already deleted." );
-    }
 }

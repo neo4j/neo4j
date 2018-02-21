@@ -172,7 +172,7 @@ public class Operations implements Write, ExplicitIndexWrite
     }
 
     @Override
-    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException, EntityNotFoundException
+    public boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException
     {
         ktx.assertOpen();
 
@@ -182,7 +182,10 @@ public class Operations implements Write, ExplicitIndexWrite
         {
             lockRelationshipNodes( relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
             acquireExclusiveRelationshipLock( relationship );
-            assertRelationshipExists( relationship );
+            if ( !allStoreHolder.relationshipExists( relationship ) )
+            {
+                return false;
+            }
 
             ktx.assertOpen();
 
