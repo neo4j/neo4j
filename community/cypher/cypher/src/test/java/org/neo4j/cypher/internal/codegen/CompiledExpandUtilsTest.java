@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.Session;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -81,10 +82,14 @@ public class CompiledExpandUtilsTest
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
-            NodeCursor nodes = cursors.allocateNodeCursor();
-            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, cursors ), equalTo( 3 ) );
-            assertThat( nodeGetDegree( read, node, nodes, INCOMING, cursors ), equalTo( 2 ) );
-            assertThat( nodeGetDegree( read, node, nodes, BOTH, cursors ), equalTo( 4 ) );
+            try ( NodeCursor nodes = cursors.allocateNodeCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+
+                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING ), equalTo( 3 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING ), equalTo( 2 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, BOTH ), equalTo( 4 ) );
+            }
         }
     }
 
@@ -117,18 +122,21 @@ public class CompiledExpandUtilsTest
         {
             Read read = tx.dataRead();
             CursorFactory cursors = tx.cursors();
-            NodeCursor nodes = cursors.allocateNodeCursor();
-            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, out, cursors ), equalTo( 2 ) );
-            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, in, cursors ), equalTo( 0 ) );
-            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, loop, cursors ), equalTo( 1 ) );
+            try ( NodeCursor nodes = cursors.allocateNodeCursor();
+                  RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING, in ), equalTo( 0 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, OUTGOING, loop ), equalTo( 1 ) );
 
-            assertThat( nodeGetDegree( read, node, nodes, INCOMING, out, cursors ), equalTo( 0 ) );
-            assertThat( nodeGetDegree( read, node, nodes, INCOMING, in, cursors ), equalTo( 1 ) );
-            assertThat( nodeGetDegree( read, node, nodes, INCOMING, loop, cursors ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING, out ), equalTo( 0 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, INCOMING, loop ), equalTo( 1 ) );
 
-            assertThat( nodeGetDegree( read, node, nodes, BOTH, out, cursors ), equalTo( 2 ) );
-            assertThat( nodeGetDegree( read, node, nodes, BOTH, in, cursors ), equalTo( 1 ) );
-            assertThat( nodeGetDegree( read, node, nodes, BOTH, loop, cursors ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, BOTH, out ), equalTo( 2 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, BOTH, in ), equalTo( 1 ) );
+                assertThat( nodeGetDegree( read, node, nodes, group, BOTH, loop ), equalTo( 1 ) );
+            }
         }
     }
 }
