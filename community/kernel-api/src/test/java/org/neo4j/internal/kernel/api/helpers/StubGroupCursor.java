@@ -87,37 +87,37 @@ class StubGroupCursor implements RelationshipGroupCursor
     @Override
     public int outgoingCount()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return groups[offset].countOut;
     }
 
     @Override
     public int incomingCount()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return groups[offset].countIn;
     }
 
     @Override
     public int loopCount()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return groups[offset].countLoop;
     }
 
     @Override
     public void outgoing( RelationshipTraversalCursor cursor )
     {
-        ((StubRelationshipCursor)cursor).read( groups[offset].out );
+        ((StubRelationshipCursor) cursor).read( groups[offset].out );
     }
 
     @Override
     public void incoming( RelationshipTraversalCursor cursor )
     {
-        ((StubRelationshipCursor)cursor).read( groups[offset].in );
+        ((StubRelationshipCursor) cursor).read( groups[offset].in );
     }
 
     @Override
     public void loops( RelationshipTraversalCursor cursor )
     {
-        ((StubRelationshipCursor)cursor).read( groups[offset].loop );
+        ((StubRelationshipCursor) cursor).read( groups[offset].loop );
     }
 
     @Override
@@ -150,6 +150,9 @@ class StubGroupCursor implements RelationshipGroupCursor
         final int in;
         final int loop;
         final int type;
+        int countIn;
+        int countOut;
+        int countLoop;
 
         GroupData( int out, int in, int loop, int type )
         {
@@ -157,6 +160,24 @@ class StubGroupCursor implements RelationshipGroupCursor
             this.in = in;
             this.loop = loop;
             this.type = type;
+        }
+
+        GroupData withOutCount( int count )
+        {
+            this.countOut = count;
+            return this;
+        }
+
+        GroupData withInCount( int count )
+        {
+            this.countIn = count;
+            return this;
+        }
+
+        GroupData withLoopCount( int count )
+        {
+            this.countLoop = count;
+            return this;
         }
     }
 }
