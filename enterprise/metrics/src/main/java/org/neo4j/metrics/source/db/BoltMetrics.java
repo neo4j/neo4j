@@ -27,7 +27,6 @@ import com.codahale.metrics.UniformReservoir;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.bolt.runtime.BoltConnectionMetricsMonitor;
-import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;

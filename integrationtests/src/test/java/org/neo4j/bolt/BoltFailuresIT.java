@@ -28,9 +28,8 @@ import org.junit.rules.Timeout;
 import java.time.Clock;
 import java.util.function.Consumer;
 
+import org.neo4j.bolt.runtime.BoltConnectionMetricsMonitor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
-import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
-import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -54,8 +53,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
@@ -85,34 +82,10 @@ public class BoltFailuresIT
     }
 
     @Test
-    public void throwsWhenWorkerCreationFails()
-    {
-        WorkerFactory workerFactory = mock( WorkerFactory.class );
-        when( workerFactory.newWorker( any(), any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
-
-        BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
-
-        int port = PortAuthority.allocatePort();
-
-        db = startDbWithBolt( new GraphDatabaseFactoryWithCustomBoltKernelExtension( extension ), port );
-
-        try
-        {
-            // attempt to create a driver when server is unavailable
-            driver = createDriver( port );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( ServiceUnavailableException.class ) );
-        }
-    }
-
-    @Test
     public void throwsWhenMonitoredWorkerCreationFails()
     {
         ThrowingSessionMonitor sessionMonitor = new ThrowingSessionMonitor();
-        sessionMonitor.throwInSessionStarted();
+        sessionMonitor.throwInConnectionOpened();
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
         int port = PortAuthority.allocatePort();
@@ -139,13 +112,13 @@ public class BoltFailuresIT
     @Test
     public void throwsWhenInitMessageProcessingFailsToStart()
     {
-        throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInProcessingStarted, false );
+        throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInMessageProcessingStarted, false );
     }
 
     @Test
     public void throwsWhenInitMessageProcessingFailsToComplete()
     {
-        throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInProcessingDone, true );
+        throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInMessageProcessingCompleted, true );
     }
 
     @Test
@@ -157,13 +130,13 @@ public class BoltFailuresIT
     @Test
     public void throwsWhenRunMessageProcessingFailsToStart()
     {
-        throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInProcessingStarted );
+        throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInMessageProcessingStarted );
     }
 
     @Test
     public void throwsWhenRunMessageProcessingFailsToComplete()
     {
-        throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInProcessingDone );
+        throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInMessageProcessingCompleted );
     }
 
     private void throwsWhenInitMessageFails( Consumer<ThrowingSessionMonitor> monitorSetup,
@@ -266,39 +239,34 @@ public class BoltFailuresIT
         Monitors monitors = spy( new Monitors() );
         // it is not allowed to throw exceptions from monitors
         // make the given sessionMonitor be returned as is, without any proxying
-        when( monitors.newMonitor( SessionMonitor.class ) ).thenReturn( sessionMonitor );
-        when( monitors.hasListeners( SessionMonitor.class ) ).thenReturn( true );
+        when( monitors.newMonitor( BoltConnectionMetricsMonitor.class ) ).thenReturn( sessionMonitor );
+        when( monitors.hasListeners( BoltConnectionMetricsMonitor.class ) ).thenReturn( true );
         return monitors;
     }
 
-    private static class BoltKernelExtensionWithWorkerFactory extends BoltKernelExtension
+    private static class ThrowingSessionMonitor implements BoltConnectionMetricsMonitor
     {
-        final WorkerFactory workerFactory;
-
-        BoltKernelExtensionWithWorkerFactory( WorkerFactory workerFactory )
-        {
-            this.workerFactory = workerFactory;
-        }
-
-        @Override
-        protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
-                Dependencies dependencies, LogService logService, Clock clock )
-        {
-            return workerFactory;
-        }
-    }
-
-    private static class ThrowingSessionMonitor implements SessionMonitor
-    {
-        volatile boolean throwInSessionStarted;
+        volatile boolean throwInConnectionOpened;
         volatile boolean throwInMessageReceived;
-        volatile boolean throwInProcessingStarted;
-        volatile boolean throwInProcessingDone;
+        volatile boolean throwInMessageProcessingStarted;
+        volatile boolean throwInMessageProcessingCompleted;
 
         @Override
-        public void sessionStarted()
+        public void connectionOpened()
         {
-            throwIfNeeded( throwInSessionStarted );
+            throwIfNeeded( throwInConnectionOpened );
+        }
+
+        @Override
+        public void connectionActivated()
+        {
+
+        }
+
+        @Override
+        public void connectionWaiting()
+        {
+
         }
 
         @Override
@@ -308,20 +276,32 @@ public class BoltFailuresIT
         }
 
         @Override
-        public void processingStarted( long queueTime )
+        public void messageProcessingStarted( long queueTime )
         {
-            throwIfNeeded( throwInProcessingStarted );
+            throwIfNeeded( throwInMessageProcessingStarted );
         }
 
         @Override
-        public void processingDone( long processingTime )
+        public void messageProcessingCompleted( long processingTime )
         {
-            throwIfNeeded( throwInProcessingDone );
+            throwIfNeeded( throwInMessageProcessingCompleted );
         }
 
-        void throwInSessionStarted()
+        @Override
+        public void messageProcessingFailed()
         {
-            throwInSessionStarted = true;
+
+        }
+
+        @Override
+        public void connectionClosed()
+        {
+
+        }
+
+        void throwInConnectionOpened()
+        {
+            throwInConnectionOpened = true;
         }
 
         void throwInMessageReceived()
@@ -329,14 +309,14 @@ public class BoltFailuresIT
             throwInMessageReceived = true;
         }
 
-        void throwInProcessingStarted()
+        void throwInMessageProcessingStarted()
         {
-            throwInProcessingStarted = true;
+            throwInMessageProcessingStarted = true;
         }
 
-        void throwInProcessingDone()
+        void throwInMessageProcessingCompleted()
         {
-            throwInProcessingDone = true;
+            throwInMessageProcessingCompleted = true;
         }
 
         void throwIfNeeded( boolean shouldThrow )

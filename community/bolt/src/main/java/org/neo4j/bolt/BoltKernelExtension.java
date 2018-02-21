@@ -45,9 +45,6 @@ import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
-import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
-import org.neo4j.bolt.v1.runtime.WorkerFactory;
-import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -138,7 +135,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         LogService logService = dependencies.logService();
         Clock clock = dependencies.clock();
         SslPolicyLoader sslPolicyFactory = dependencies.sslPolicyFactory();
-        Log log = logService.getInternalLog( WorkerFactory.class );
+        Log log = logService.getInternalLog( BoltKernelExtension.class );
+        Log userLog = logService.getUserLog( BoltKernelExtension.class );
 
         LifeSupport life = new LifeSupport();
 
@@ -163,19 +161,12 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         {
             NettyServer server = new NettyServer( scheduler.threadFactory( boltNetworkIO ),
                     createConnectors( config, sslPolicyFactory, logService, log, boltLogging, throttleGroup, handlerFactory ), connectionRegister,
-                    logService.getUserLog( WorkerFactory.class ) );
+                    userLog );
             life.add( server );
             log.info( "Bolt Server extension loaded." );
         }
 
         return life;
-    }
-
-    protected WorkerFactory createWorkerFactory( BoltFactory boltFactory, JobScheduler scheduler,
-            Dependencies dependencies, LogService logService, Clock clock )
-    {
-        WorkerFactory threadedWorkerFactory = new ThreadedWorkerFactory( boltFactory, scheduler, logService, clock );
-        return new MonitoredWorkerFactory( dependencies.monitors(), threadedWorkerFactory, clock );
     }
 
     private BoltConnectionFactory createConnectionFactory( BoltFactory boltFactory, BoltSchedulerProvider schedulerProvider,
@@ -222,8 +213,6 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                         sslCtx = null;
                         break;
                     }
-
-                    logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", listenAddress );
 
                     return new SocketTransport( connConfig.key(), listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), boltLogging,
                             throttleGroup, handlerFactory );

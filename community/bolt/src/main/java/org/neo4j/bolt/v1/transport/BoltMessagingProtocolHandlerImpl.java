@@ -32,7 +32,6 @@ import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.messaging.BoltMessageRouter;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
