@@ -161,9 +161,6 @@ public class RestfulGraphDatabase
     private static final String UNIQUENESS_MODE_GET_OR_CREATE = "get_or_create";
     private static final String UNIQUENESS_MODE_CREATE_OR_FAIL = "create_or_fail";
 
-    // TODO Obviously change name/content on this
-    private static final String HEADER_TRANSACTION = "Transaction";
-
     private final DatabaseActions actions;
     private Configuration config;
     private final OutputFormat output;
