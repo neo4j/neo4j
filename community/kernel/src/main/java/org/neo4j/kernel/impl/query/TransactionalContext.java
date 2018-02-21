@@ -25,6 +25,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutingQuery;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -78,4 +79,6 @@ public interface TransactionalContext
     SecurityContext securityContext();
 
     KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context );
+
+    ResourceTracker resourceTracker();
 }

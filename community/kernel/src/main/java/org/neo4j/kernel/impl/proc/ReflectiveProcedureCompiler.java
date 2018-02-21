@@ -34,8 +34,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
@@ -338,7 +342,7 @@ public class ReflectiveProcedureCompiler
         }
 
         @Override
-        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
+        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
             // instances local to
@@ -370,33 +374,27 @@ public class ReflectiveProcedureCompiler
                 }
                 else
                 {
-                    return new MappingIterator( ((Stream<?>) rs).iterator(), () -> ((Stream<?>) rs).close() );
+                    return new MappingIterator( ((Stream<?>) rs).iterator(), ((Stream<?>) rs)::close, resourceTracker );
                 }
             }
             catch ( Throwable throwable )
             {
-                if ( throwable instanceof Status.HasStatus )
-                {
-                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                            throwable.getMessage() );
-                }
-                else
-                {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                            "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
-                }
+                throw newProcedureException( throwable );
             }
         }
 
-        private class MappingIterator implements RawIterator<Object[],ProcedureException>, AutoCloseable
+        private class MappingIterator implements RawIterator<Object[],ProcedureException>, Resource
         {
             private final Iterator<?> out;
-            private Closeable closeable;
+            private Resource closeableResource;
+            private ResourceTracker resourceTracker;
 
-            MappingIterator( Iterator<?> out, Closeable closeable )
+            MappingIterator( Iterator<?> out, Resource closeableResource, ResourceTracker resourceTracker )
             {
                 this.out = out;
-                this.closeable = closeable;
+                this.closeableResource = closeableResource;
+                this.resourceTracker = resourceTracker;
+                resourceTracker.registerCloseableResource( closeableResource );
             }
 
             @Override
@@ -407,14 +405,13 @@ public class ReflectiveProcedureCompiler
                     boolean hasNext = out.hasNext();
                     if ( !hasNext )
                     {
-                        closeable.close();
+                        close();
                     }
                     return hasNext;
                 }
-                catch ( RuntimeException | IOException e )
+                catch ( Throwable throwable )
                 {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
-                            "Failed to call procedure `%s`: %s", signature, e.getMessage() );
+                    throw closeAndCreateProcedureException( throwable );
                 }
             }
 
@@ -426,22 +423,56 @@ public class ReflectiveProcedureCompiler
                     Object record = out.next();
                     return outputMapper.apply( record );
                 }
-                catch ( RuntimeException e )
+                catch ( Throwable throwable )
                 {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
-                            "Failed to call procedure `%s`: %s", signature, e.getMessage() );
+                    throw closeAndCreateProcedureException( throwable );
                 }
             }
 
             @Override
-            public void close() throws Exception
+            public void close()
             {
-                if ( closeable != null )
+                if ( closeableResource != null )
                 {
-                    closeable.close();
-                    closeable = null;
+                    // Make sure we reset closeableResource before doing anything which may throw an exception that may
+                    // result in a recursive call to this close-method
+                    Resource resourceToClose = closeableResource;
+                    closeableResource = null;
+
+                    IOUtils.closeAll( ResourceCloseFailureException.class,
+                            () -> resourceTracker.unregisterCloseableResource( resourceToClose ),
+                            resourceToClose::close );
                 }
             }
+
+            private ProcedureException closeAndCreateProcedureException( Throwable t )
+            {
+                ProcedureException procedureException = newProcedureException( t );
+
+                try
+                {
+                    close();
+                }
+                catch ( Exception exceptionDuringClose )
+                {
+                    try
+                    {
+                        procedureException.addSuppressed( exceptionDuringClose );
+                    }
+                    catch ( Throwable ignore )
+                    {
+                    }
+                }
+                return procedureException;
+            }
+        }
+
+        private ProcedureException newProcedureException( Throwable throwable )
+        {
+            return throwable instanceof Status.HasStatus ?
+                   new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() ) :
+                   new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                           "Failed to invoke procedure `%s`: %s", signature.name(), "Caused by: " + throwable );
         }
     }
 

@@ -109,7 +109,7 @@ public class GetServersProcedureRoutingTest
     private Object[] getEndpoints( GetServersProcedure proc )
             throws org.neo4j.kernel.api.exceptions.ProcedureException
     {
-        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        List<Object[]> results = asList( proc.apply( null, new Object[0], null ) );
         Object[] rows = results.get( 0 );
         List<Map<String,Object[]>> servers = (List<Map<String,Object[]>>) rows[1];
         Map<String,Object[]> endpoints = servers.get( serverClass );

@@ -115,7 +115,7 @@ public class GetServersProcedureTest
                 new GetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );
 
         // when
-        List<Object[]> results = asList( proc.apply( null, new Object[0] ) );
+        List<Object[]> results = asList( proc.apply( null, new Object[0], null ) );
 
         // then
         Object[] rows = results.get( 0 );
@@ -361,7 +361,7 @@ public class GetServersProcedureTest
     @SuppressWarnings( "unchecked" )
     private ClusterView run( GetServersProcedure proc ) throws ProcedureException
     {
-        final Object[] rows = asList( proc.apply( null, new Object[0] ) ).get( 0 );
+        final Object[] rows = asList( proc.apply( null, new Object[0], null ) ).get( 0 );
         assertEquals( config.get( cluster_routing_ttl ) / 1000, /* ttl */(long) rows[0] );
         return ClusterView.parse( (List<Map<String,Object>>) rows[1] );
     }

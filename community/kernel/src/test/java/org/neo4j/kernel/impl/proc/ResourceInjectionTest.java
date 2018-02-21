@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
@@ -45,6 +47,8 @@ public class ResourceInjectionTest
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private final ResourceTracker resourceTracker = new StubResourceManager();
+
     @Test
     public void shouldCompileAndRunProcedure() throws Throwable
     {
@@ -52,7 +56,7 @@ public class ResourceInjectionTest
         CallableProcedure proc = compile( ProcedureWithInjectedAPI.class ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0] ) );
+        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( (new Object[]{"Bonnie"}) ) );

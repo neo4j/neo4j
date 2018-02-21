@@ -74,7 +74,7 @@ public class ClusterOverviewProcedureTest
                 NullLogProvider.getInstance() );
 
         // when
-        final List<Object[]> members = asList( procedure.apply( null, new Object[0] ) );
+        final List<Object[]> members = asList( procedure.apply( null, new Object[0], null ) );
 
         // then
         assertThat( members, IsIterableContainingInOrder.contains(

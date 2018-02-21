@@ -25,10 +25,11 @@ import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 
-public class StubStatement implements Statement
+public class StubStatement extends StubResourceManager implements Statement
 {
     private final ReadOperations readOperations;
 
