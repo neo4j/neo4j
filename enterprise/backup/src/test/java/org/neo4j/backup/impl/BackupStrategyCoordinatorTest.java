@@ -38,14 +38,17 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.backup.ExceptionMatchers.exceptionContainsSuppressedThrowable;
@@ -57,6 +60,7 @@ public class BackupStrategyCoordinatorTest
 
     // dependencies
     private final ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
+    private final ForceCheckpointBackupService forceCheckpointBackupService = mock( ForceCheckpointBackupService.class );
     private final OutsideWorld outsideWorld = mock( OutsideWorld.class );
     private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
@@ -71,6 +75,7 @@ public class BackupStrategyCoordinatorTest
 
     // mock returns
     private final ProgressMonitorFactory progressMonitorFactory = mock( ProgressMonitorFactory.class );
+    private final PageCache pageCache = mock( PageCache.class );
     private final Path reportDir = mock( Path.class );
     private final ConsistencyCheckService.Result consistencyCheckResult = mock( ConsistencyCheckService.Result.class );
 
@@ -81,7 +86,7 @@ public class BackupStrategyCoordinatorTest
         when( onlineBackupContext.getRequiredArguments() ).thenReturn( requiredArguments );
         when( onlineBackupContext.getResolvedLocationFromName() ).thenReturn( reportDir );
         when( requiredArguments.getReportDir() ).thenReturn( reportDir );
-        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory,
+        subject = new BackupStrategyCoordinator( consistencyCheckService, forceCheckpointBackupService, outsideWorld, logProvider, progressMonitorFactory,
                 Arrays.asList( firstStrategy, secondStrategy ) );
     }
 
@@ -231,7 +236,8 @@ public class BackupStrategyCoordinatorTest
     public void havingNoStrategiesCausesAllSolutionsFailedException() throws CommandFailed
     {
         // given there are no strategies in the solution
-        subject = new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, Collections.emptyList() );
+        subject = new BackupStrategyCoordinator( consistencyCheckService, forceCheckpointBackupService, outsideWorld, logProvider, progressMonitorFactory,
+                Collections.emptyList() );
 
         // then we want a predictable exception (instead of NullPointer)
         expectedException.expect( CommandFailed.class );
@@ -239,6 +245,44 @@ public class BackupStrategyCoordinatorTest
 
         // when
         subject.performBackup( onlineBackupContext );
+    }
+
+    @Test
+    public void unsuccessfulBackupsAreNotPruned() throws CommandFailed
+    {
+        // given
+        when( firstStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, new RuntimeException() ) );
+        when( secondStrategy.doBackup( any() ) ).thenReturn( new Fallible<>( BackupStrategyOutcome.INCORRECT_STRATEGY, new RuntimeException() ) );
+
+        // when
+        try
+        {
+            subject.performBackup( onlineBackupContext );
+            fail( "Both strategies failed so the command should have failed" );
+        }
+        catch ( CommandFailed e )
+        { // deliberately empty
+        }
+
+        // then
+        verify( forceCheckpointBackupService, never() ).forceCheckpoint();
+        verify( forceCheckpointBackupService, never() ).forcePrune();
+        verify( forceCheckpointBackupService, never() ).forceRotation();
+    }
+
+    @Test
+    public void successfulBackupsArePruned() throws CommandFailed
+    {
+        // given
+        anyStrategyPasses();
+
+        // when
+        subject.performBackup( onlineBackupContext );
+
+        // then
+        verify( forceCheckpointBackupService, times( 1 ) ).forceCheckpoint();
+        verify( forceCheckpointBackupService, times( 1 ) ).forcePrune();
+        verify( forceCheckpointBackupService, times( 1 ) ).forceRotation();
     }
 
     /**

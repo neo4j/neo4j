@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.LongStream;
 
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -51,11 +52,15 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -64,8 +69,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -269,6 +276,60 @@ public class OnlineBackupCommandCcIT
         assertTrue( output.contains( "Finished receiving index snapshots" ) );
     }
 
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        Cluster cluster = startCluster( recordFormat );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        String address = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
+        assertEquals( 0,
+                runBackupToolFromOtherJvmToGetExitCode(
+                        "--from", address,
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+        LongStream.range( 0, 50 ).forEach( number -> createSomeData( cluster ) );
+
+        // when we perform an incremental backup
+        assertEquals( 0,
+                runBackupToolFromOtherJvmToGetExitCode(
+                        "--from", address,
+                        "--cc-report-dir=" + backupDir,
+                        "--backup-dir=" + backupDir,
+                        "--name=" + backupName ) );
+
+        // then there is only 1 transaction file containing 1 transaction
+        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
+        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+
+        // and there are 2 log files - one with the latest transactions, the other only with a checkpoint
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertThat( highestTxIdInLogFiles, greaterThan( lowestTxIdInLogFiles ) );
+
+        // and the first log file has been pruned
+        assertThat( lowestTxIdInLogFiles, greaterThan( 0L ) );
+
+        // and there is at least 1 transaction in the first tx log file
+        File lowestLogFile = logFiles.getLogFileForVersion( lowestTxIdInLogFiles );
+        Pair<List<LogEntry[]>,List<CheckPoint>> processedLogFile = backupTransactionLogFilesHelper.logEntriesAndCheckpoints( lowestLogFile );
+        List<LogEntry[]> transactions = processedLogFile.first();
+        assertThat(  transactions.size(), greaterThan( 1 ));
+
+        // and there are no transactions in the latest log file
+        File highestLogFile = logFiles.getLogFileForVersion( highestTxIdInLogFiles );
+        processedLogFile = backupTransactionLogFilesHelper.logEntriesAndCheckpoints( highestLogFile );
+        transactions = processedLogFile.first();
+        List<CheckPoint> checkPoints = processedLogFile.other();
+        assertEquals( 0, transactions.size() );
+        assertThat( checkPoints.size(), greaterThan( 1 ) );
+    }
+
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
     {
         if ( nullAbleOutput == null )
@@ -377,12 +438,17 @@ public class OnlineBackupCommandCcIT
         return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
     }
 
+    private int runBackupToolFromSameJvm( String... args ) throws Exception
+    {
+        return runBackupToolFromSameJvmToGetExitCode( testDirectory.absolutePath(), testDirectory.absolutePath().getName(), args );
+    }
+
     /**
      * This unused method is used for debugging, so don't remove
      */
-    private int runBackupToolFromSameJvmToGetExitCode( String... args ) throws Exception
+    public static int runBackupToolFromSameJvmToGetExitCode( File backupDir, String backupName, String... args ) throws Exception
     {
-        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( testDirectory.absolutePath(), testDirectory.absolutePath().getName() )
+        return new OnlineBackupCommandBuilder().withRawArgs( args ).backup( backupDir, backupName )
                ? 0 : 1;
     }
 }

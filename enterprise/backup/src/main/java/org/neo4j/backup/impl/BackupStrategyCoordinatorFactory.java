@@ -78,13 +78,17 @@ class BackupStrategyCoordinatorFactory
         BackupStrategy ccStrategy = new CausalClusteringBackupStrategy( backupDelegator, addressResolver, logProvider, storeFiles );
         BackupStrategy haStrategy = new HaBackupStrategy( backupProtocolService, addressResolver, logProvider, timeout );
 
+        ForceCheckpointBackupService forceCheckpointBackupService =
+                new ForceCheckpointBackupService( pageCache, fs, config, onlineBackupContext.getResolvedLocationFromName().toFile() );
+
         BackupStrategyWrapper ccStrategyWrapper = wrap( ccStrategy, copyService, pageCache, config, recoveryService );
         BackupStrategyWrapper haStrategyWrapper = wrap( haStrategy, copyService, pageCache, config, recoveryService );
         StrategyResolverService strategyResolverService = new StrategyResolverService( haStrategyWrapper, ccStrategyWrapper );
         List<BackupStrategyWrapper> strategies =
                 strategyResolverService.getStrategies( onlineBackupContext.getRequiredArguments().getSelectedBackupProtocol() );
 
-        return new BackupStrategyCoordinator( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );
+        return new BackupStrategyCoordinator( consistencyCheckService, forceCheckpointBackupService, outsideWorld, logProvider, progressMonitorFactory,
+                strategies );
     }
 
     private BackupStrategyWrapper wrap( BackupStrategy strategy, BackupCopyService copyService, PageCache pageCache,

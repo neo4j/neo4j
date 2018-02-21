@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.LongStream;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,12 +50,15 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.ports.allocation.PortAuthority;
@@ -287,6 +291,62 @@ public class OnlineBackupCommandHaIT
         assertFalse( output.contains( "Start receiving index snapshot id 1" ) );
         assertFalse( output.contains( "Finished receiving index snapshot id 1" ) );
         assertFalse( output.contains( "Finished receiving index snapshots" ) );
+    }
+
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        int port = PortAuthority.allocatePort();
+        startDb( port );
+        createSomeData( db );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        String address = "localhost:" + port;
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir,
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--protocol=common",
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+        LongStream.range( 0, 50 ).forEach( number -> createSomeData( db ) );
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir,
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--protocol=common",
+                "--name=" + backupName ) );
+
+        // then there is only 1 transaction file containing 1 transaction
+        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
+        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+
+        // and there are 2 log files - one with the latest transactions, the other only with a checkpoint
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertThat( highestTxIdInLogFiles, greaterThan( lowestTxIdInLogFiles ) );
+
+        // and the first log file has been pruned
+        assertThat( lowestTxIdInLogFiles, greaterThan( 0L ) );
+
+        // and there is at least 1 transaction in the first tx log file
+        File lowestLogFile = logFiles.getLogFileForVersion( lowestTxIdInLogFiles );
+        Pair<List<LogEntry[]>,List<CheckPoint>> processedLogFile = backupTransactionLogFilesHelper.logEntriesAndCheckpoints( lowestLogFile );
+        List<LogEntry[]> transactions = processedLogFile.first();
+        assertThat(  transactions.size(), greaterThan( 1 ));
+
+        // and there are no transactions in the latest log file
+        File highestLogFile = logFiles.getLogFileForVersion( highestTxIdInLogFiles );
+        processedLogFile = backupTransactionLogFilesHelper.logEntriesAndCheckpoints( highestLogFile );
+        transactions = processedLogFile.first();
+        List<CheckPoint> checkPoints = processedLogFile.other();
+        assertEquals( 0, transactions.size() );
+        assertThat( checkPoints.size(), greaterThan( 1 ) );
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
