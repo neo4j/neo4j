@@ -139,6 +139,17 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
     <pluginManagement>
       <plugins>
@@ -161,6 +172,27 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
           <version>3.0.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.0.0-M1</version>
+          <configuration>
+            <rules>
+              <evaluateBeanshell>
+                <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
+                <condition>String s = "${project.groupId}"; s.startsWith("org.neo4j")</condition>
+              </evaluateBeanshell>
+              <requireFilesDontExist>
+                <message>You are not allowed to have classes in "com" package</message>
+                <files>
+                  <file>${project.build.sourceDirectory}/com</file>
+                  <file>${project.build.testSourceDirectory}/com</file>
+                </files>
+              </requireFilesDontExist>
+            </rules>
+            <fail>true</fail>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
