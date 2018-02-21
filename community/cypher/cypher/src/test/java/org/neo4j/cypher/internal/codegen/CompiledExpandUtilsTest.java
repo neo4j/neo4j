@@ -19,90 +19,116 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.internal.kernel.api.Session;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.connectingRelationships;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.cypher.internal.codegen.CompiledExpandUtils.nodeGetDegree;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 
 public class CompiledExpandUtilsTest
 {
-    @Test
-    public void shouldUseGivenOrderIfItHasLowerDegree() throws EntityNotFoundException
+    @Rule
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+
+    private Session session()
     {
-        // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        Read read = mock( Read.class );
-        NodeCursor nodeCursor = mock( NodeCursor.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING ) ).thenReturn( 1 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING ) ).thenReturn( 3 );
-
-        // WHEN
-        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor, 1L, Direction.OUTGOING, 2L );
-
-        // THEN
-        verify( read, times( 1 ) ).singleNode( 1L, nodeCursor);
+        DependencyResolver resolver = this.db.getDependencyResolver();
+        return resolver.resolveDependency( Kernel.class ).beginSession( LoginContext.AUTH_DISABLED );
     }
 
     @Test
-    public void shouldSwitchOrderIfItHasLowerDegree() throws EntityNotFoundException
+    public void shouldComputeDegreeWithoutType() throws Exception
     {
         // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        Read read = mock( Read.class );
-        NodeCursor nodeCursor = mock( NodeCursor.class );
+        Session session = session();
+        long node;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            node = write.nodeCreate();
+            write.relationshipCreate( node,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R1" ),
+                    write.nodeCreate() );
+            write.relationshipCreate( node,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R2" ),
+                    write.nodeCreate() );
+            write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R3" ),
+                    node );
+            write.relationshipCreate( node,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "R4" ), node );
 
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING ) ).thenReturn( 3 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING ) ).thenReturn( 1 );
+            tx.success();
+        }
 
-        // WHEN
-        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor, 1L, Direction.OUTGOING, 2L );
-
-        // THEN
-        verify( read, times( 1 ) ).singleNode( 2L, nodeCursor );
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Read read = tx.dataRead();
+            CursorFactory cursors = tx.cursors();
+            NodeCursor nodes = cursors.allocateNodeCursor();
+            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, cursors ), equalTo( 3 ) );
+            assertThat( nodeGetDegree( read, node, nodes, INCOMING, cursors ), equalTo( 2 ) );
+            assertThat( nodeGetDegree( read, node, nodes, BOTH, cursors ), equalTo( 4 ) );
+        }
     }
 
     @Test
-    public void shouldUseGivenOrderIfItHasLowerDegreeWithTypes() throws EntityNotFoundException
+    public void shouldComputeDegreeWithType() throws Exception
     {
         // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        Read read = mock( Read.class );
-        NodeCursor nodeCursor = mock( NodeCursor.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING, 1 ) ).thenReturn( 1 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING, 1 ) ).thenReturn( 3 );
+        Session session = session();
+        long node;
+        int in, out, loop;
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            node = write.nodeCreate();
+            TokenWrite tokenWrite = tx.tokenWrite();
+            out = tokenWrite.relationshipTypeGetOrCreateForName( "OUT" );
+            in = tokenWrite.relationshipTypeGetOrCreateForName( "IN" );
+            loop = tokenWrite.relationshipTypeGetOrCreateForName( "LOOP" );
+            write.relationshipCreate( node,
+                    out,
+                    write.nodeCreate() );
+            write.relationshipCreate( node, out, write.nodeCreate() );
+            write.relationshipCreate( write.nodeCreate(), in, node );
+            write.relationshipCreate( node, loop, node );
 
-        // WHEN
-        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor, 1L, Direction.OUTGOING, 2L, new int[]{1} );
+            tx.success();
+        }
 
-        // THEN
-        verify( read, times( 1 ) ).singleNode( 1L, nodeCursor);
+        try ( Transaction tx = session.beginTransaction() )
+        {
+            Read read = tx.dataRead();
+            CursorFactory cursors = tx.cursors();
+            NodeCursor nodes = cursors.allocateNodeCursor();
+            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, out, cursors ), equalTo( 2 ) );
+            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, in, cursors ), equalTo( 0 ) );
+            assertThat( nodeGetDegree( read, node, nodes, OUTGOING, loop, cursors ), equalTo( 1 ) );
+
+            assertThat( nodeGetDegree( read, node, nodes, INCOMING, out, cursors ), equalTo( 0 ) );
+            assertThat( nodeGetDegree( read, node, nodes, INCOMING, in, cursors ), equalTo( 1 ) );
+            assertThat( nodeGetDegree( read, node, nodes, INCOMING, loop, cursors ), equalTo( 1 ) );
+
+            assertThat( nodeGetDegree( read, node, nodes, BOTH, out, cursors ), equalTo( 2 ) );
+            assertThat( nodeGetDegree( read, node, nodes, BOTH, in, cursors ), equalTo( 1 ) );
+            assertThat( nodeGetDegree( read, node, nodes, BOTH, loop, cursors ), equalTo( 1 ) );
+        }
     }
-
-    @Test
-    public void shouldSwitchOrderIfItHasLowerDegreeWithTypes() throws EntityNotFoundException
-    {
-        // GIVEN
-        ReadOperations readOperations = mock( ReadOperations.class );
-        Read read = mock( Read.class );
-        NodeCursor nodeCursor = mock( NodeCursor.class );
-        when( readOperations.nodeGetDegree( 1L, Direction.OUTGOING, 1 ) ).thenReturn( 3 );
-        when( readOperations.nodeGetDegree( 2L, Direction.INCOMING, 1 ) ).thenReturn( 1 );
-
-        // WHEN
-        connectingRelationships( readOperations, read, mock( CursorFactory.class ), nodeCursor , 1L, Direction.OUTGOING, 2L, new int[]{1} );
-
-        // THEN
-        verify( read, times( 1 ) ).singleNode( 2L, nodeCursor );
-    }
-
 }

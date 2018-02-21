@@ -138,6 +138,12 @@ class StubGroupCursor implements RelationshipGroupCursor
         return groups[offset].loop;
     }
 
+    @Override
+    public int type()
+    {
+        return groups[offset].type;
+    }
+
     static class GroupData
     {
         final int out;

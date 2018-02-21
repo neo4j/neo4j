@@ -327,6 +327,12 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     }
 
     @Override
+    public int type()
+    {
+        return getType();
+    }
+
+    @Override
     public boolean isClosed()
     {
         return page == null && bufferedGroup == null;

@@ -23,69 +23,68 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
-import org.neo4j.kernel.api.ReadOperations;
+
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countIncoming;
+import static org.neo4j.internal.kernel.api.helpers.Nodes.countOutgoing;
 
 public abstract class CompiledExpandUtils
 {
-    public static RelationshipSelectionCursor connectingRelationships(  ReadOperations readOperations,
-            Read read, CursorFactory cursors, NodeCursor nodeCursor,
+    public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
+            NodeCursor nodeCursor,
             long fromNode, Direction direction, long toNode )
     {
-        try
-        {
-            int fromDegree = readOperations.nodeGetDegree( fromNode, direction );
-            if ( fromDegree == 0 )
-            {
-                return RelationshipSelectionCursor.EMPTY;
-            }
 
-            int toDegree = readOperations.nodeGetDegree( toNode, direction.reverse() );
-            if ( toDegree == 0 )
-            {
-                return RelationshipSelectionCursor.EMPTY;
-            }
-
-            long startNode;
-            long endNode;
-            Direction relDirection;
-            if ( fromDegree < toDegree )
-            {
-                startNode = fromNode;
-                endNode = toNode;
-                relDirection = direction;
-            }
-            else
-            {
-                startNode = toNode;
-                endNode = fromNode;
-                relDirection = direction.reverse();
-            }
-
-            RelationshipSelectionCursor selectionCursor = CompiledCursorUtils
-                    .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection );
-
-            return connectingRelationshipsIterator( selectionCursor, endNode );
-        }
-        catch ( EntityNotFoundException ignore )
+        int fromDegree = nodeGetDegree( read, fromNode, nodeCursor, direction, cursors );
+        if ( fromDegree == 0 )
         {
             return RelationshipSelectionCursor.EMPTY;
         }
+
+        int toDegree = nodeGetDegree( read, toNode, nodeCursor, direction.reverse(), cursors );
+        if ( toDegree == 0 )
+        {
+            return RelationshipSelectionCursor.EMPTY;
+        }
+
+        long startNode;
+        long endNode;
+        Direction relDirection;
+        if ( fromDegree < toDegree )
+        {
+            startNode = fromNode;
+            endNode = toNode;
+            relDirection = direction;
+        }
+        else
+        {
+            startNode = toNode;
+            endNode = fromNode;
+            relDirection = direction.reverse();
+        }
+
+        RelationshipSelectionCursor selectionCursor = CompiledCursorUtils
+                .nodeGetRelationships( read, cursors, nodeCursor, startNode, relDirection );
+
+        return connectingRelationshipsIterator( selectionCursor, endNode );
+
     }
 
-    public static RelationshipSelectionCursor connectingRelationships( ReadOperations readOperations, Read read, CursorFactory cursors, NodeCursor nodeCursor,
-            long fromNode, Direction direction, long toNode, int[] relTypes )
+    public static RelationshipSelectionCursor connectingRelationships( Read read, CursorFactory cursors,
+            NodeCursor nodeCursor, long fromNode, Direction direction, long toNode, int[] relTypes )
     {
         try
         {
-            int fromDegree = calculateTotalDegree( readOperations, fromNode, direction, relTypes );
+            int fromDegree = calculateTotalDegree( read, fromNode, nodeCursor, direction, relTypes, cursors );
             if ( fromDegree == 0 )
             {
                 return RelationshipSelectionCursor.EMPTY;
             }
 
-            int toDegree = calculateTotalDegree( readOperations, toNode, direction.reverse(), relTypes );
+            int toDegree = calculateTotalDegree( read, toNode, nodeCursor, direction.reverse(), relTypes, cursors );
             if ( toDegree == 0 )
             {
                 return RelationshipSelectionCursor.EMPTY;
@@ -118,19 +117,67 @@ public abstract class CompiledExpandUtils
         }
     }
 
-    private static int calculateTotalDegree( ReadOperations readOperations, long fromNode, Direction direction,
-            int[] relTypes ) throws EntityNotFoundException
+    static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, Direction direction, CursorFactory cursors )
+    {
+        try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+        {
+            read.singleNode( node, nodeCursor );
+            if ( !nodeCursor.next() )
+            {
+                return 0;
+            }
+            switch ( direction )
+            {
+            case OUTGOING:
+                return countOutgoing( nodeCursor, group );
+            case INCOMING:
+                return countIncoming( nodeCursor, group );
+            case BOTH:
+                return countAll( nodeCursor, group );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
+        }
+    }
+
+    static int nodeGetDegree( Read read, long node, NodeCursor nodeCursor, Direction direction, int type,
+            CursorFactory cursors )
+    {
+        try ( RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+        {
+            read.singleNode( node, nodeCursor );
+            if ( !nodeCursor.next() )
+            {
+                return 0;
+            }
+            switch ( direction )
+            {
+            case OUTGOING:
+                return countOutgoing( nodeCursor, group, type );
+            case INCOMING:
+                return countIncoming( nodeCursor, group, type );
+            case BOTH:
+                return countAll( nodeCursor, group, type );
+            default:
+                throw new IllegalStateException( "Unknown direction " + direction );
+            }
+        }
+    }
+
+    private static int calculateTotalDegree( Read read, long fromNode, NodeCursor nodeCursor, Direction direction,
+            int[] relTypes, CursorFactory cursors ) throws EntityNotFoundException
     {
         int degree = 0;
         for ( int relType : relTypes )
         {
-            degree += readOperations.nodeGetDegree( fromNode, direction, relType );
+            degree += nodeGetDegree( read, fromNode, nodeCursor, direction, relType, cursors );
         }
 
         return degree;
     }
 
-    private static RelationshipSelectionCursor connectingRelationshipsIterator( final RelationshipSelectionCursor allRelationships, final long toNode )
+    private static RelationshipSelectionCursor connectingRelationshipsIterator(
+            final RelationshipSelectionCursor allRelationships, final long toNode )
     {
         return new RelationshipSelectionCursor()
         {

@@ -179,7 +179,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       m.declareAndInitialize("to", CodeGenType.primitiveNode)
       val local = m.generator.declare(typeRef[RelationshipSelectionCursor], "iter")
       m.generator.assign(local, Expression.invoke(Methods.allConnectingRelationships,
-                                             Expression.get(m.generator.self(), m.fields.ro),
                                              Expression.get(m.generator.self(), m.fields.dataRead),
                                              Expression.get(m.generator.self(), m.fields.cursors),
                                              Expression.get(m.generator.self(), m.fields.nodeCursor),
@@ -192,7 +191,6 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
       m.declareAndInitialize("to", CodeGenType.primitiveNode)
       val local = m.generator.declare(typeRef[RelationshipSelectionCursor], "iter")
       m.generator.assign(local, Expression.invoke(Methods.connectingRelationships,
-                                                  Expression.get(m.generator.self(), m.fields.ro),
                                                   Expression.get(m.generator.self(), m.fields.dataRead),
                                                   Expression.get(m.generator.self(), m.fields.cursors),
                                                   Expression.get(m.generator.self(), m.fields.nodeCursor),

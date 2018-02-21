@@ -60,7 +60,6 @@ object Methods {
   val endNode: MethodReference = method[RelationshipDataExtractor, Long]("endNode")
   val typeOf: MethodReference = method[RelationshipDataExtractor, Int]("type")
   val allConnectingRelationships: MethodReference = method[CompiledExpandUtils, RelationshipSelectionCursor]("connectingRelationships",
-                                                                                                             typeRef[ReadOperations],
                                                                                                              typeRef[Read],
                                                                                                              typeRef[CursorFactory],
                                                                                                              typeRef[NodeCursor],
@@ -68,7 +67,6 @@ object Methods {
                                                                                                              typeRef[Direction],
                                                                                                              typeRef[Long])
   val connectingRelationships: MethodReference = method[CompiledExpandUtils, RelationshipSelectionCursor]("connectingRelationships",
-                                                                                                          typeRef[ReadOperations],
                                                                                                           typeRef[Read],
                                                                                                           typeRef[CursorFactory],
                                                                                                           typeRef[NodeCursor],

@@ -78,4 +78,6 @@ public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipG
     long incomingReference();
 
     long loopsReference();
+
+    int type();
 }
