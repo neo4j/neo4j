@@ -315,7 +315,6 @@ public class RelationshipChangesForNode
         }
     }
 
-
     public int augmentDegree( Direction direction, int degree, int typeId )
     {
         switch ( direction )

@@ -628,7 +628,6 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         }
     }
 
-
     @Test
     public void shouldCountFromTxState() throws Exception
     {
@@ -858,7 +857,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         LOOP
     }
 
-    private void assertCount( int count, RelationshipDirection direction, Consumer<RelationshipGroupCursor> asserter) throws Exception
+    private void assertCount( int count, RelationshipDirection direction, Consumer<RelationshipGroupCursor> asserter )
+            throws Exception
     {
         long start;
         int type;
