@@ -562,3 +562,23 @@ Feature: PatternExpressionAcceptance
       | r0              | n | pattern1 | m | pattern2 |
       | [:HAS_ALBUM {}] | (:Artist {name: 'Metallica'}) | [[[[:HAS_ALBUM {}], (:Album {name: 'Reload'}), [[]]]]] | (:Album {name: 'Reload'}) | [[[[:HAS_ALBUM {}], (:Artist {name: 'Metallica'}), [[]]]]] |
     And no side effects
+
+  Scenario: Nested pattern comprehension with food
+    Given an empty graph
+    And having executed:
+    """
+    CREATE (:Chicken)-[:rel]->(:Carrot)-[:rel]->(:Ham)
+    """
+    When executing query:
+    """
+    MATCH (chicken :Chicken)
+    WITH [ (chicken)--(i1) | [ (i1)--(i2) | i2 ] ] as p
+    UNWIND p AS innerp
+    UNWIND innerp as elem
+    RETURN elem
+    """
+    Then the result should be:
+    | elem       |
+    | (:Chicken) |
+    | (:Ham)     |
+    And no side effects
