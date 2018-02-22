@@ -192,6 +192,16 @@ public class PrimitiveLongCollections
         return result;
     }
 
+    public static PrimitiveLongSet asSet( long...values )
+    {
+        PrimitiveLongSet result = Primitive.longSet( values.length );
+        for ( long value : values )
+        {
+            result.add( value );
+        }
+        return result;
+    }
+
     public static <T> PrimitiveLongObjectMap<T> copy( PrimitiveLongObjectMap<T> original )
     {
         PrimitiveLongObjectMap<T> copy = Primitive.longObjectMap( original.size() );

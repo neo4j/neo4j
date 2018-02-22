@@ -98,8 +98,9 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
                     throw new IllegalStateException( "not a part of the chain! TODO: better exception" );
                 }
             }
-            //we never need to check tx state, handled by traversal
-            this.hasCheckedTxState = true;
+            this.txTypes.clear();
+            this.txTypeIterator = null;
+            this.hasCheckedTxState = false;
             this.bufferedGroup = new BufferedGroup( edge, current ); // we need a dummy before the first to denote the initial pos
             this.read = read;
         }
@@ -136,17 +137,22 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     @Override
     public boolean next()
     {
-        if ( isBuffered() )
-        {
-            return nextFromBuffer();
-        }
-
         //We need to check tx state if there are new types added
         //on the first call of next
         if ( !hasCheckedTxState )
         {
             checkTxStateForUpdates();
             hasCheckedTxState = true;
+        }
+
+        if ( isBuffered() )
+        {
+            bufferedGroup = bufferedGroup.next;
+            if ( bufferedGroup != null )
+            {
+                loadFromBuffer();
+                return true;
+            }
         }
 
         do
@@ -164,18 +170,13 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         return true;
     }
 
-    private boolean nextFromBuffer()
+    private void loadFromBuffer()
     {
-        bufferedGroup = bufferedGroup.next;
-        if ( bufferedGroup == null )
-        {
-            return false; // we never have both types of traversal, so terminate early
-        }
+        markTypeAsSeen( bufferedGroup.label );
         setType( bufferedGroup.label );
         setFirstOut( bufferedGroup.outgoing() );
         setFirstIn( bufferedGroup.incoming() );
         setFirstLoop( bufferedGroup.loops() );
-        return true;
     }
 
     private boolean nextFromTxState()
@@ -189,6 +190,9 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
         if ( txTypeIterator != null && txTypeIterator.hasNext() )
         {
             setType( txTypeIterator.next() );
+            setFirstOut( NO_ID );
+            setFirstIn( NO_ID );
+            setFirstLoop( NO_ID );
             return true;
         }
         return false;
