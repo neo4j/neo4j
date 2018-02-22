@@ -90,7 +90,7 @@ public class ThrottlerTest
         Throttler throttler = new Throttler( 1000 );
         Counter counter = new Counter();
         ecs.submit( () -> throttler.invoke( counter, 500 ) ).get( 1, MINUTES );
-        assertEventually( null, counter::count, equalTo( 1 ), 1, MINUTES );
+        assertEventually( counter::count, equalTo( 1 ), 1, MINUTES );
 
         // when
         int count = ecs.submit( () -> throttler.invoke( counter, 800 ) ).get( 1, MINUTES );
@@ -106,7 +106,7 @@ public class ThrottlerTest
         Throttler throttler = new Throttler( 1000 );
         Blocker blocker = new Blocker();
         Future<Integer> call1 = ecs.submit( () -> throttler.invoke( blocker, 1200 ) );
-        assertEventually( null, blocker::count, equalTo( 1 ), 1, MINUTES );
+        assertEventually( blocker::count, equalTo( 1 ), 1, MINUTES );
 
         // when
         Future<Integer> call2 = ecs.submit( () -> throttler.invoke( blocker, 800 ) );
@@ -134,7 +134,7 @@ public class ThrottlerTest
         Future<Integer> call1 = ecs.submit( () -> throttler.invoke( blocker, 1200 ) );
 
         // then
-        assertEventually( null, blocker::count, equalTo( 1 ), 1, MINUTES );
+        assertEventually( blocker::count, equalTo( 1 ), 1, MINUTES );
 
         // when
         blocker.release( 1 );
@@ -142,7 +142,7 @@ public class ThrottlerTest
 
         // then
         call1.get( 1, MINUTES );
-        assertEventually( null, blocker::count, equalTo( 2 ), 1, MINUTES );
+        assertEventually( blocker::count, equalTo( 2 ), 1, MINUTES );
         assertFalse( call2.isDone() );
 
         // cleanup
@@ -161,7 +161,7 @@ public class ThrottlerTest
         Future<Integer> call1 = ecs.submit( () -> throttler.invoke( blocker, 2000 ) );
 
         // then
-        assertEventually( null, blocker::count, equalTo( 1 ), 1, MINUTES );
+        assertEventually( blocker::count, equalTo( 1 ), 1, MINUTES );
 
         // when
         Future<Integer> call2 = ecs.submit( () -> throttler.invoke( blocker, 400 ) );
@@ -176,7 +176,7 @@ public class ThrottlerTest
 
         // then
         call1.get( 1, MINUTES );
-        assertEventually( null, blocker::count, equalTo( 3 ), 1, MINUTES );
+        assertEventually( blocker::count, equalTo( 3 ), 1, MINUTES );
 
         // cleanup
         blocker.release( 2 );

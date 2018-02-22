@@ -25,6 +25,7 @@ import org.hamcrest.StringDescription;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingSupplier;
@@ -94,7 +95,21 @@ public final class Assert
     }
 
     public static <T, E extends Exception> void assertEventually(
+            ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
+    ) throws E, InterruptedException
+    {
+        assertEventually( ignored -> "", actual, matcher, timeout, timeUnit );
+    }
+
+    public static <T, E extends Exception> void assertEventually(
             String reason, ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
+    ) throws E, InterruptedException
+    {
+        assertEventually( ignored -> reason, actual, matcher, timeout, timeUnit );
+    }
+
+    public static <T, E extends Exception> void assertEventually(
+            Function<T, String> reason, ThrowingSupplier<T, E> actual, Matcher<? super T> matcher, long timeout, TimeUnit timeUnit
     ) throws E, InterruptedException
     {
         long endTimeMillis = System.currentTimeMillis() + timeUnit.toMillis( timeout );
@@ -120,7 +135,7 @@ public final class Assert
         if ( !matched )
         {
             Description description = new StringDescription();
-            description.appendText( reason )
+            description.appendText( reason.apply( last ) )
                     .appendText( "\nExpected: " )
                     .appendDescriptionOf( matcher )
                     .appendText( "\n     but: " );

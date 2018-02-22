@@ -30,9 +30,7 @@ import java.util.Collection;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.helpers.DataCreator;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -41,17 +39,12 @@ import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
 import static org.neo4j.causalclustering.discovery.IpFamily.IPV6;
 import static org.neo4j.causalclustering.helpers.DataCreator.countNodes;
-import static org.neo4j.causalclustering.scenarios.ClusterIpFamilyIT.DiscoveryService.HAZELCAST;
-import static org.neo4j.causalclustering.scenarios.ClusterIpFamilyIT.DiscoveryService.SHARED;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.HAZELCAST;
+import static org.neo4j.causalclustering.scenarios.DiscoveryServiceType.SHARED;
 
 @RunWith( Parameterized.class )
 public class ClusterIpFamilyIT
 {
-    enum DiscoveryService
-    {
-        SHARED,
-        HAZELCAST
-    }
 
     @Parameterized.Parameters( name = "{0} {1} useWildcard={2}" )
     public static Collection<Object[]> data()
@@ -68,19 +61,9 @@ public class ClusterIpFamilyIT
         } );
     }
 
-    public ClusterIpFamilyIT( DiscoveryService discoveryService, IpFamily ipFamily, boolean useWildcard )
+    public ClusterIpFamilyIT( DiscoveryServiceType discoveryServiceType, IpFamily ipFamily, boolean useWildcard )
     {
-        switch ( discoveryService )
-        {
-        case SHARED:
-            clusterRule.withDiscoveryServiceFactory( new SharedDiscoveryService() );
-            break;
-        case HAZELCAST:
-            clusterRule.withDiscoveryServiceFactory( new HazelcastDiscoveryServiceFactory() );
-            break;
-        default:
-            throw new IllegalArgumentException();
-        }
+        clusterRule.withDiscoveryServiceFactory( discoveryServiceType.create() );
 
         clusterRule.withIpFamily( ipFamily ).useWildcard( useWildcard );
     }
