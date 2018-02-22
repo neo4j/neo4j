@@ -41,13 +41,12 @@ import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.time.Duration.ofMillis;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -386,17 +385,13 @@ public class CheckPointerImplTest
     @Test
     public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeout( ofMillis( 5000 ), () -> {
-            verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
-        } );
+        assertTimeout( ofMillis( 5000 ), () -> verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
     @Test
     public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        assertTimeout( ofMillis( 5000 ), () -> {
-            verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
-        } );
+        assertTimeout( ofMillis( 5000 ), () -> verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )

@@ -73,7 +73,6 @@ public class ExplicitIndexTest
                 provider.shutdown();
                 batchNode.shutdown();
             }
-            ;
         } );
     }
 }

@@ -29,13 +29,11 @@ import javax.ws.rs.core.MediaType;
 import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.MediaTypeNotSupportedException;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,31 +77,26 @@ public class DefaultFormatTest
         assertTrue( map.size() == 1, "map contained extra values" );
         Object nested = map.get( "nested" );
         assertThat( nested, instanceOf( Map.class ) );
-        @SuppressWarnings( "unchecked" ) Map<String,String> nestedMap = (Map<String,String>) nested;
+        @SuppressWarnings( "unchecked" )
+        Map<String,String> nestedMap = (Map<String,String>) nested;
         assertThat( nestedMap, hasEntry( "key", "valuable" ) );
     }
 
     @Test
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput()
     {
-        assertThrows( MediaTypeNotSupportedException.class, () -> {
-            input.readValue( "<xml />" );
-        } );
+        assertThrows( MediaTypeNotSupportedException.class, () -> input.readValue( "<xml />" ) );
     }
 
     @Test
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput2()
     {
-        assertThrows( MediaTypeNotSupportedException.class, () -> {
-            input.readMap( "<xml />" );
-        } );
+        assertThrows( MediaTypeNotSupportedException.class, () -> input.readMap( "<xml />" ) );
     }
 
     @Test
     public void failsWithTheCorrectExceptionWhenGettingTheWrongInput3()
     {
-        assertThrows( MediaTypeNotSupportedException.class, () -> {
-            input.readUri( "<xml />" );
-        } );
+        assertThrows( MediaTypeNotSupportedException.class, () -> input.readUri( "<xml />" ) );
     }
 }

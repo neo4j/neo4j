@@ -256,49 +256,37 @@ public class DataIntegrityValidatingStatementOperationsTest
     @Test
     public void shouldFailInvalidLabelNames()
     {
-        assertThrows( SchemaKernelException.class, () -> {
-            ops.labelGetOrCreateForName( state, "" );
-        } );
+        assertThrows( SchemaKernelException.class, () -> ops.labelGetOrCreateForName( state, "" ) );
     }
 
     @Test
     public void shouldFailOnNullLabel()
     {
-        assertThrows( SchemaKernelException.class, () -> {
-            ops.labelGetOrCreateForName( state, null );
-        } );
+        assertThrows( SchemaKernelException.class, () -> ops.labelGetOrCreateForName( state, null ) );
     }
 
     @Test
     public void shouldFailIndexCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
-            ops.indexCreate( state, forLabel( 0, 1, 1 ) );
-        } );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.indexCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     @Test
     public void shouldFailNodeExistenceCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
-            ops.nodePropertyExistenceConstraintCreate( state, forLabel( 0, 1, 1 ) );
-        } );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.nodePropertyExistenceConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     @Test
     public void shouldFailRelExistenceCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
-            ops.relationshipPropertyExistenceConstraintCreate( state, forRelType( 0, 1, 1 ) );
-        } );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.relationshipPropertyExistenceConstraintCreate( state, forRelType( 0, 1, 1 ) ) );
     }
 
     @Test
     public void shouldFailUniquenessCreateOnRepeatedPropertyId()
     {
-        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> {
-            ops.uniquePropertyConstraintCreate( state, forLabel( 0, 1, 1 ) );
-        } );
+        assertThrows( RepeatedPropertyInCompositeSchemaException.class, () -> ops.uniquePropertyConstraintCreate( state, forLabel( 0, 1, 1 ) ) );
     }
 
     @SafeVarargs

@@ -284,17 +284,13 @@ public class SlaveLocksClientTest
     @Test
     public void tryExclusiveMustBeUnsupported()
     {
-        assertThrows( UnsupportedOperationException.class, () -> {
-            client.tryExclusiveLock( NODE, 1 );
-        } );
+        assertThrows( UnsupportedOperationException.class, () -> client.tryExclusiveLock( NODE, 1 ) );
     }
 
     @Test
     public void trySharedMustBeUnsupported()
     {
-        assertThrows( UnsupportedOperationException.class, () -> {
-            client.trySharedLock( NODE, 1 );
-        } );
+        assertThrows( UnsupportedOperationException.class, () -> client.trySharedLock( NODE, 1 ) );
     }
 
     @Test

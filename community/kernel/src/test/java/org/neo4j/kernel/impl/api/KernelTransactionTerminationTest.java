@@ -78,13 +78,11 @@ public class KernelTransactionTerminationTest
     @Test
     public void transactionCantBeTerminatedAfterItIsClosed()
     {
-        assertTimeout( ofMillis( TEST_RUN_TIME_MS * 20 ), () -> {
-            runTwoThreads( tx -> tx.markForTermination( TransactionMarkedAsFailed ), tx -> {
-                close( tx );
-                assertFalse( tx.getReasonIfTerminated().isPresent() );
-                tx.initialize();
-            } );
-        } );
+        assertTimeout( ofMillis( TEST_RUN_TIME_MS * 20 ), () -> runTwoThreads( tx -> tx.markForTermination( TransactionMarkedAsFailed ), tx -> {
+            close( tx );
+            assertFalse( tx.getReasonIfTerminated().isPresent() );
+            tx.initialize();
+        } ) );
     }
 
     @Test

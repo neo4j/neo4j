@@ -296,17 +296,13 @@ public class ForkedProcessorStepTest
     @Test
     public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenOrdered()
     {
-        assertTimeout( ofMillis( 60_000 ), () -> {
-            shouldBeAbleToProgressUnderStressfulProcessorChanges( ORDER_SEND_DOWNSTREAM );
-        } );
+        assertTimeout( ofMillis( 60_000 ), () -> shouldBeAbleToProgressUnderStressfulProcessorChanges( ORDER_SEND_DOWNSTREAM ) );
     }
 
     @Test
     public void shouldBeAbleToProgressUnderStressfulProcessorChangesWhenUnordered()
     {
-        assertTimeout( ofMillis( 60_000 ), () -> {
-            shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 );
-        } );
+        assertTimeout( ofMillis( 60_000 ), () -> shouldBeAbleToProgressUnderStressfulProcessorChanges( 0 ) );
     }
 
     private void shouldBeAbleToProgressUnderStressfulProcessorChanges( int orderingGuarantees ) throws Exception

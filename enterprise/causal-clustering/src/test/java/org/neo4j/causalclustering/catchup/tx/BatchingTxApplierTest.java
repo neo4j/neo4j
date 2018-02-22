@@ -157,7 +157,6 @@ public class BatchingTxApplierTest
                 }
             } );
 
-
             thread.start();
 
             latch.await();

@@ -63,9 +63,9 @@ public class AsyncLogTest
     @SuppressWarnings( "ThrowableInstanceNeverThrown" )
     private final Throwable exception = new Exception();
 
-    @ParameterizedTest(name = "{0} {1}.log({2})")
+    @ParameterizedTest( name = "{0} {1}.log({2})" )
     @MethodSource( "parameters" )
-    public void shouldLogAsynchronously(Invocation invocation, Level level, Style style)
+    public void shouldLogAsynchronously( Invocation invocation, Level level, Style style )
     {
         // given
         AssertableLogProvider logging = new AssertableLogProvider();

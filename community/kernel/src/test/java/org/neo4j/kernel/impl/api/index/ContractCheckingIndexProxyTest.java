@@ -139,7 +139,6 @@ public class ContractCheckingIndexProxyTest
             {
                 updater.process( null );
             }
-            ;
         } );
     }
 
@@ -158,7 +157,6 @@ public class ContractCheckingIndexProxyTest
             {
                 updater.process( null );
             }
-            ;
         } );
     }
 
@@ -218,7 +216,6 @@ public class ContractCheckingIndexProxyTest
             {
                 latch.finish();
             }
-            ;
         } );
     }
 
@@ -250,7 +247,6 @@ public class ContractCheckingIndexProxyTest
             {
                 latch.finish();
             }
-            ;
         } );
     }
 

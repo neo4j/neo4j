@@ -96,7 +96,6 @@ public class SharedDiscoveryServiceIT
                     result.get( TIMEOUT_MS, MILLISECONDS );
                 }
             }
-            ;
         } );
     }
 

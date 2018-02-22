@@ -38,9 +38,7 @@ public class SessionTest
     @Test
     public void cannotSetInvalidVariableName()
     {
-        assertThrows( ShellException.class, () -> {
-            session.set( "foo bar", 42 );
-        } );
+        assertThrows( ShellException.class, () -> session.set( "foo bar", 42 ) );
     }
 
     @Test
@@ -52,9 +50,7 @@ public class SessionTest
     @Test
     public void cannotGetInvalidVariableName()
     {
-        assertThrows( ShellException.class, () -> {
-            session.get( "foo bar" );
-        } );
+        assertThrows( ShellException.class, () -> session.get( "foo bar" ) );
     }
 
     @Test
@@ -67,9 +63,7 @@ public class SessionTest
     @Test
     public void cannotRemoveInvalidVariableName()
     {
-        assertThrows( ShellException.class, () -> {
-            session.remove( "foo bar" );
-        } );
+        assertThrows( ShellException.class, () -> session.remove( "foo bar" ) );
     }
 
     @Test
