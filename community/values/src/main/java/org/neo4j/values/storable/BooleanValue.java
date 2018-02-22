@@ -86,12 +86,8 @@ public abstract class BooleanValue extends ScalarValue
         }
 
         @Override
-        public int compareTo( Value otherValue )
+        int unsafeCompareTo( Value otherValue )
         {
-            if ( !(otherValue instanceof BooleanValue) )
-            {
-                throw new IllegalArgumentException( "Cannot compare different values" );
-            }
             BooleanValue other = (BooleanValue) otherValue;
             return other.booleanValue() ? 0 : 1;
         }
@@ -148,12 +144,8 @@ public abstract class BooleanValue extends ScalarValue
         }
 
         @Override
-        public int compareTo( Value otherValue )
+        int unsafeCompareTo( Value otherValue )
         {
-            if ( !(otherValue instanceof BooleanValue) )
-            {
-                throw new IllegalArgumentException( "Cannot compare different values" );
-            }
             BooleanValue other = (BooleanValue) otherValue;
             return !other.booleanValue() ? 0 : -1;
         }

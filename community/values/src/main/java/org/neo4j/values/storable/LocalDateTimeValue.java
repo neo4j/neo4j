@@ -280,12 +280,8 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( !(otherValue instanceof LocalDateTimeValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
         LocalDateTimeValue other = (LocalDateTimeValue) otherValue;
         return value.compareTo( other.value );
     }

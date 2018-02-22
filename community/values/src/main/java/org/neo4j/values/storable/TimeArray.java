@@ -71,15 +71,8 @@ public class TimeArray extends TemporalArray<OffsetTime, TimeValue>
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( otherValue instanceof TimeArray )
-        {
-            return compareToNonPrimitiveArray( (TimeArray) otherValue );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return compareToNonPrimitiveArray( (TimeArray) otherValue );
     }
 }

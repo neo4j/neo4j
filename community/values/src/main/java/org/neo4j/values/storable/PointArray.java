@@ -83,15 +83,8 @@ public class PointArray extends NonPrimitiveArray<PointValue>
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( otherValue instanceof PointArray )
-        {
-            return compareToNonPrimitiveArray( (PointArray) otherValue );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return compareToNonPrimitiveArray( (PointArray) otherValue );
     }
 }

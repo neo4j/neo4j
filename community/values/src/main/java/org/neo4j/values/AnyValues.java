@@ -67,6 +67,8 @@ public final class AnyValues
      *  <li> VOID (i.e. the type of null)
      * </ul>
      */
-    public static final AnyValueComparator COMPARATOR =
-            new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
+    private static final AnyValueComparator comp = new AnyValueComparator( Values.COMPARATOR, Values.TERNARY_COMPARATOR, VirtualValueGroup::compareTo );
+    public static final Comparator<AnyValue> COMPARATOR = comp;
+    public static final TernaryComparator<AnyValue> TERNARY_COMPARATOR = comp;
+
 }

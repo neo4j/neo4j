@@ -82,15 +82,8 @@ public class DurationArray extends NonPrimitiveArray<DurationValue>
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( otherValue instanceof DurationArray )
-        {
-            return compareToNonPrimitiveArray( (DurationArray) otherValue );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return compareToNonPrimitiveArray( (DurationArray) otherValue );
     }
 }

@@ -38,6 +38,7 @@ import java.util.Objects;
 
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.values.TernaryComparator;
 
 import static java.lang.String.format;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
@@ -93,7 +94,9 @@ public final class Values
      *
      * To get Comparability semantics, use .ternaryCompare
      */
-    public static final ValueComparator COMPARATOR = new ValueComparator( ValueGroup::compareTo );
+    private static final ValueComparator comp = new ValueComparator( ValueGroup::compareTo );
+    public static final Comparator<Value> COMPARATOR = comp;
+    public static final TernaryComparator<Value> TERNARY_COMPARATOR = comp;
 
     public static boolean isNumberValue( Object value )
     {

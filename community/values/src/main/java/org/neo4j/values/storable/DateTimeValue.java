@@ -356,12 +356,8 @@ public final class DateTimeValue extends TemporalValue<ZonedDateTime,DateTimeVal
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( !(otherValue instanceof DateTimeValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
         DateTimeValue other = (DateTimeValue) otherValue;
         return value.compareTo( other.value );
     }

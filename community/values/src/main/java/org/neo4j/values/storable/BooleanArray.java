@@ -91,16 +91,9 @@ public class BooleanArray extends ArrayValue
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( otherValue instanceof BooleanArray )
-        {
-            return NumberValues.compareBooleanArrays( this, (BooleanArray) otherValue );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return NumberValues.compareBooleanArrays( this, (BooleanArray) otherValue );
     }
 
     @Override

@@ -23,22 +23,23 @@ import java.util.Comparator;
 import java.util.function.BiFunction;
 
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueComparator;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 /**
  * Comparator for any values.
  */
-public class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<Value>
+class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyValue>
 {
-    private final ValueComparator valueComparator;
+    private final Comparator<Value> valueComparator;
+    private final TernaryComparator<Value> ternaryValueComparator;
     private final Comparator<VirtualValueGroup> virtualValueGroupComparator;
 
-    AnyValueComparator( ValueComparator valueComparator,
+    AnyValueComparator( Comparator<Value> valueComparator, TernaryComparator<Value> ternaryValueComparator,
             Comparator<VirtualValueGroup> virtualValueGroupComparator )
     {
         this.valueComparator = valueComparator;
+        this.ternaryValueComparator = ternaryValueComparator;
         this.virtualValueGroupComparator = virtualValueGroupComparator;
     }
 
@@ -100,9 +101,9 @@ public class AnyValueComparator implements Comparator<AnyValue>, TernaryComparat
     }
 
     @Override
-    public Integer ternaryCompare( Value v1, Value v2 )
+    public Integer ternaryCompare( AnyValue v1, AnyValue v2 )
     {
-        return cmp( v1, v2, valueComparator::ternaryCompare );
+        return cmp( v1, v2, ternaryValueComparator::ternaryCompare );
     }
 
     @Override

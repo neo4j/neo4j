@@ -71,15 +71,8 @@ public class DateArray extends TemporalArray<LocalDate,DateValue>
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( otherValue instanceof DateArray )
-        {
-            return compareToNonPrimitiveArray( (DateArray) otherValue );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return compareToNonPrimitiveArray( (DateArray) otherValue );
     }
 }

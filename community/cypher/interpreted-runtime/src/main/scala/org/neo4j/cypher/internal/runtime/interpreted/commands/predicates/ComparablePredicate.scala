@@ -37,10 +37,10 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     else (l, r) match {
       case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
       case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
-      case (n1: NumberValue, n2: NumberValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: TextValue, n2: TextValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: BooleanValue, n2: BooleanValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
-      case (n1: PointValue, n2: PointValue) => compare(nullToNone(AnyValues.COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: NumberValue, n2: NumberValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: TextValue, n2: TextValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: BooleanValue, n2: BooleanValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
+      case (n1: PointValue, n2: PointValue) => compare(nullToNone(AnyValues.TERNARY_COMPARATOR.ternaryCompare(n1, n2)))
       case _ => None
     }
     res

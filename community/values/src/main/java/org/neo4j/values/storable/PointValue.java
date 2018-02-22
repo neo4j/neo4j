@@ -31,7 +31,7 @@ import org.neo4j.values.utils.PrettyPrinter;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 
-public class PointValue extends ScalarValue implements Point
+public class PointValue extends ScalarValue implements Point, Comparable<PointValue>
 {
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
@@ -107,12 +107,14 @@ public class PointValue extends ScalarValue implements Point
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    public int compareTo( PointValue other )
     {
-        if ( !(otherValue instanceof PointValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return unsafeCompareTo(other);
+    }
+
+    @Override
+    int unsafeCompareTo( Value otherValue )
+    {
         PointValue other = (PointValue) otherValue;
         int cmpCRS = this.crs.getCode() - other.crs.getCode();
         if ( cmpCRS != 0 )
@@ -141,12 +143,8 @@ public class PointValue extends ScalarValue implements Point
     }
 
     @Override
-    public Integer ternaryCompareTo( Value otherValue )
+    Integer unsafeTernaryCompareTo( Value otherValue )
     {
-        if ( !(otherValue instanceof PointValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
         PointValue other = (PointValue) otherValue;
 
         if ( this.crs.getCode() != other.crs.getCode() || this.coordinate.length != other.coordinate.length )

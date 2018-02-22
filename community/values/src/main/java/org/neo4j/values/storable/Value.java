@@ -32,7 +32,7 @@ import org.neo4j.values.SequenceValue;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public abstract class Value extends AnyValue implements Comparable<Value>
+public abstract class Value extends AnyValue
 {
     @Override
     public boolean eq( Object other )
@@ -170,15 +170,15 @@ public abstract class Value extends AnyValue implements Comparable<Value>
         return false;
     }
 
-    public abstract int compareTo( Value other );
+    abstract int unsafeCompareTo( Value other );
 
     /**
      * Should return {@code null} for values that cannot be compared
      * under Comparability semantics.
      */
-    public Integer ternaryCompareTo( Value other )
+    Integer unsafeTernaryCompareTo( Value other )
     {
-        return compareTo( other );
+        return unsafeCompareTo( other );
     }
 
     @Override

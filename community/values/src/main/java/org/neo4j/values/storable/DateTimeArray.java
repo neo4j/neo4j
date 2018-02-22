@@ -71,15 +71,8 @@ public class DateTimeArray extends TemporalArray<ZonedDateTime,DateTimeValue>
     }
 
     @Override
-    public int compareTo( Value otherValue )
+    int unsafeCompareTo( Value otherValue )
     {
-        if ( otherValue instanceof DateTimeArray )
-        {
-            return compareToNonPrimitiveArray( (DateTimeArray) otherValue );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Cannot compare different values" );
-        }
+        return compareToNonPrimitiveArray( (DateTimeArray) otherValue );
     }
 }

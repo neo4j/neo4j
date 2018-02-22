@@ -104,7 +104,7 @@ final class NoValue extends Value
     }
 
     @Override
-    public int compareTo( Value other )
+    int unsafeCompareTo( Value other )
     {
         return 0;
     }
