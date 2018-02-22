@@ -43,7 +43,7 @@ public class SslPolicy
 
     /* cryptographic parameters */
     private final List<String> ciphers;
-    private final List<String> tlsVersions;
+    private final String[] tlsVersions;
     private final ClientAuth clientAuth;
 
     private final TrustManagerFactory trustManagerFactory;
@@ -55,7 +55,7 @@ public class SslPolicy
     {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
-        this.tlsVersions = tlsVersions;
+        this.tlsVersions = tlsVersions == null ? null : tlsVersions.toArray( new String[tlsVersions.size()] );
         this.ciphers = ciphers;
         this.clientAuth = clientAuth;
         this.trustManagerFactory = trustManagerFactory;
@@ -67,6 +67,7 @@ public class SslPolicy
         return SslContextBuilder.forServer( privateKey, keyCertChain )
                 .sslProvider( sslProvider )
                 .clientAuth( forNetty( clientAuth ) )
+                .protocols( tlsVersions )
                 .ciphers( ciphers )
                 .trustManager( trustManagerFactory )
                 .build();
@@ -77,6 +78,7 @@ public class SslPolicy
         return SslContextBuilder.forClient()
                 .sslProvider( sslProvider )
                 .keyManager( privateKey, keyCertChain )
+                .protocols( tlsVersions )
                 .ciphers( ciphers )
                 .trustManager( trustManagerFactory )
                 .build();
@@ -112,7 +114,7 @@ public class SslPolicy
         SSLEngine sslEngine = sslContext.newEngine( channel.alloc() );
         if ( tlsVersions != null )
         {
-            sslEngine.setEnabledProtocols( tlsVersions.toArray( new String[tlsVersions.size()] ) );
+            sslEngine.setEnabledProtocols( tlsVersions );
         }
         return new SslHandler( sslEngine );
     }
@@ -154,7 +156,7 @@ public class SslPolicy
         return ciphers;
     }
 
-    public List<String> getTlsVersions()
+    public String[] getTlsVersions()
     {
         return tlsVersions;
     }
@@ -170,7 +172,7 @@ public class SslPolicy
         return "SslPolicy{" +
                "keyCertChain=" + describeCertChain() +
                ", ciphers=" + ciphers +
-               ", tlsVersions=" + tlsVersions +
+               ", tlsVersions=" + Arrays.toString( tlsVersions ) +
                ", clientAuth=" + clientAuth +
                '}';
     }
