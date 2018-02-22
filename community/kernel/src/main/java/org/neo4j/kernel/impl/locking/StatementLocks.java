@@ -70,7 +70,7 @@ public interface StatementLocks extends AutoCloseable, org.neo4j.internal.kernel
      *
      * @return the locks held by this transaction.
      */
-    Stream<ActiveLock> activeLocks();
+    Stream<? extends ActiveLock> activeLocks();
 
     /**
      * Get the current number of active locks.

@@ -208,14 +208,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = new HashMap<>();
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageEngine, storageStatement, this, cursors, explicitIndexStore );
-        org.neo4j.kernel.impl.newapi.NodeSchemaMatcher matcher =
-                new org.neo4j.kernel.impl.newapi.NodeSchemaMatcher( allStoreHolder );
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder, matcher ),
+                        new IndexTxStateUpdater( storageEngine.storeReadLayer(), allStoreHolder ),
                         storageStatement,
-                        this, token, cursors, autoIndexing, matcher );
+                        this, token, cursors, autoIndexing );
     }
 
     /**
@@ -945,7 +943,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      *
      * @return the locks held by this transaction.
      */
-    public Stream<ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
         StatementLocks locks = this.statementLocks;
         return locks == null ? Stream.empty() : locks.activeLocks();

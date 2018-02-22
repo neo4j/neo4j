@@ -80,7 +80,7 @@ public class SlaveStatementLocks implements StatementLocks
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
         return delegate.activeLocks();
     }

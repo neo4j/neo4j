@@ -35,9 +35,9 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
  */
 public class NodeSchemaMatcher
 {
-
-    public NodeSchemaMatcher( Read read )
+    private NodeSchemaMatcher()
     {
+        throw new AssertionError( "no instance" );
     }
 
     /**
@@ -58,7 +58,7 @@ public class NodeSchemaMatcher
      * @param callback The action to take on match
      * @throws EXCEPTION This exception is propagated from the action
      */
-    <SUPPLIER extends LabelSchemaSupplier, EXCEPTION extends Exception> void onMatchingSchema(
+    static <SUPPLIER extends LabelSchemaSupplier, EXCEPTION extends Exception> void onMatchingSchema(
             Iterator<SUPPLIER> schemaSuppliers,
             NodeCursor node,
             PropertyCursor property,

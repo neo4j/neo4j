@@ -43,15 +43,13 @@ public class IndexTxStateUpdater
 {
     private final StoreReadLayer storeReadLayer;
     private final Read read;
-    private final NodeSchemaMatcher nodeIndexMatcher;
 
     // We can use the StoreReadLayer directly instead of the SchemaReadOps, because we know that in transactions
     // where this class is needed we will never have index changes.
-    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read, NodeSchemaMatcher nodeIndexMatcher )
+    public IndexTxStateUpdater( StoreReadLayer storeReadLayer, Read read )
     {
         this.storeReadLayer = storeReadLayer;
         this.read = read;
-        this.nodeIndexMatcher = nodeIndexMatcher;
     }
 
     // LABEL CHANGES
@@ -122,7 +120,7 @@ public class IndexTxStateUpdater
         assert noSchemaChangedInTx();
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
-        nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
+        NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( value );
@@ -138,7 +136,7 @@ public class IndexTxStateUpdater
         assert noSchemaChangedInTx();
         Iterator<IndexDescriptor> indexes =
                 storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
-        nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
+        NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     ValueTuple values =
@@ -153,7 +151,7 @@ public class IndexTxStateUpdater
     {
         assert noSchemaChangedInTx();
         Iterator<IndexDescriptor> indexes = storeReadLayer.indexesGetRelatedToProperty( propertyKeyId );
-        nodeIndexMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
+        NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
                     Validators.INDEX_VALUE_VALIDATOR.validate( afterValue );

@@ -132,7 +132,7 @@ public interface KernelTransactionHandle
     /**
      * @return the lock requests granted for this transaction.
      */
-    Stream<ActiveLock> activeLocks();
+    Stream<? extends ActiveLock> activeLocks();
 
     /**
      * Provide underlying transaction execution statistics. For example: elapsed time, allocated bytes etc

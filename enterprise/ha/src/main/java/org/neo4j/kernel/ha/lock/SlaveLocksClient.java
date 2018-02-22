@@ -225,7 +225,7 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
         return client.activeLocks();
     }

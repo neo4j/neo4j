@@ -66,7 +66,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public Stream<ActiveLock> activeLocks()
+    public Stream<? extends ActiveLock> activeLocks()
     {
         return client.activeLocks();
     }

@@ -26,7 +26,8 @@ import java.util.Comparator;
  */
 public class NoneStrictMath
 {
-    public static final double EPSILON = 1.0E-8;
+    // NOTE: This cannot be final since it's used to change the tolerance in the graph algorithms module
+    public static double EPSILON = 1.0E-8;
 
     private NoneStrictMath()
     {

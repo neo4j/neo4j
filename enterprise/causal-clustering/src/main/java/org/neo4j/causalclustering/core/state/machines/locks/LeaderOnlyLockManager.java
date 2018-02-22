@@ -280,7 +280,7 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public Stream<ActiveLock> activeLocks()
+        public Stream<? extends ActiveLock> activeLocks()
         {
             return localClient.activeLocks();
         }

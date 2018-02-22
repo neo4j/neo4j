@@ -369,7 +369,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 }
                 catch ( HighAvailabilityStoreFailureException e )
                 {
-                    userLog.error( "UNABLE HEADER_TO START UP AS SLAVE: %s", e.getMessage() );
+                    userLog.error( "UNABLE TO START UP AS SLAVE: %s", e.getMessage() );
                     msgLog.error( "Unable to start up as slave", e );
 
                     clusterMemberAvailability.memberIsUnavailable( SLAVE );
