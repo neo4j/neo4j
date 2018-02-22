@@ -19,9 +19,6 @@
  */
 package org.neo4j.bolt.runtime.integration;
 
-import org.apache.commons.text.CharacterPredicates;
-import org.apache.commons.text.RandomStringGenerator;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +27,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -38,24 +35,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
+import org.neo4j.bolt.AbstractBoltTransportsTest;
+import org.neo4j.bolt.v1.messaging.Neo4jPack;
+import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,16 +58,15 @@ import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.chunk;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 
 @RunWith( Parameterized.class )
-public class BoltSchedulerIT
+public class BoltSchedulerIT extends AbstractBoltTransportsTest
 {
     private final int numberOfWriters = 20;
     private final int numberOfReaders = 50;
-    private final int numberOfIterations = 10;
-    private AssertableLogProvider logProvider;
+    private final int numberOfIterations = 5;
+
     private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule::get, getSettingsFunction() );
     private Random rndSleep = new Random();
@@ -83,28 +74,12 @@ public class BoltSchedulerIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
 
-    @Parameterized.Parameter
-    public Supplier<TransportConnection> connectionCreator;
-
     private HostnamePort address;
     private AtomicInteger idCounter = new AtomicInteger();
 
-    @Parameterized.Parameters
-    public static Collection<Supplier<TransportConnection>> transports()
-    {
-        return asList( () -> new SecureSocketConnection(), () -> new SocketConnection(), () -> new SecureWebSocketConnection(),
-                () -> new WebSocketConnection() );
-    }
-
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-
-        logProvider = new AssertableLogProvider();
-
-        factory.setInternalLogProvider( logProvider );
-
-        return factory;
+        return new TestGraphDatabaseFactory();
     }
 
     protected Consumer<Map<String,String>> getSettingsFunction()
@@ -126,12 +101,6 @@ public class BoltSchedulerIT
         address = server.lookupDefaultConnector();
     }
 
-    @After
-    public void after() throws Exception
-    {
-
-    }
-
     @Test
     public void readerAndWritersShouldWork() throws Exception
     {
@@ -141,12 +110,12 @@ public class BoltSchedulerIT
         {
             for ( int i = 0; i < numberOfReaders; i++ )
             {
-                readers.add( performHandshake( connectionCreator.get() ) );
+                readers.add( performHandshake( connectionClass.newInstance() ) );
             }
 
             for ( int i = 0; i < numberOfWriters; i++ )
             {
-                writers.add( performHandshake( connectionCreator.get() ) );
+                writers.add( performHandshake( connectionClass.newInstance() ) );
             }
 
             List<CompletableFuture<Void>> allRequests = new ArrayList<>();
@@ -180,11 +149,11 @@ public class BoltSchedulerIT
 
     private TransportConnection performHandshake( TransportConnection connection ) throws Exception
     {
-        connection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) ).send(
-                TransportTestUtil.chunk( init( "TestClient/1.1", emptyMap() ) ) );
+        connection.connect( address ).send( util.acceptedVersions( 1, 0, 0, 0 ) ).send(
+                util.chunk( init( "TestClient/1.1", emptyMap() ) ) );
 
         assertThat( connection, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( connection, eventuallyReceives( msgSuccess() ) );
+        assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
         return connection;
     }
@@ -198,25 +167,25 @@ public class BoltSchedulerIT
                 int id = idCounter.incrementAndGet();
                 String label = "LABEL";
 
-                connection.send( chunk( run( "BEGIN" ) ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
-                connection.send( chunk( pullAll() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( run( "BEGIN" ) ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( pullAll() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
-                connection.send( chunk( run( String.format( "CREATE (n:%s { id: %d })", label, id ) ) ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
-                connection.send( chunk( pullAll() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( run( String.format( "CREATE (n:%s { id: %d })", label, id ) ) ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( pullAll() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
-                connection.send( chunk( run( "COMMIT" ) ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
-                connection.send( chunk( pullAll() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( run( "COMMIT" ) ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( pullAll() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
                 Thread.sleep( rndSleep.nextInt( 1000 ) );
 
-                connection.send( chunk( reset() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( reset() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
             }
         }
         catch ( Exception ex )
@@ -233,25 +202,25 @@ public class BoltSchedulerIT
             {
                 String label = "LABEL";
 
-                connection.send( chunk( run( "BEGIN" ) ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
-                connection.send( chunk( pullAll() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( run( "BEGIN" ) ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( pullAll() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
-                connection.send( chunk( run( String.format( "MATCH (n:%s) RETURN COUNT(n)", label ) ) ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
-                connection.send( chunk( pullAll() ) );
-                assertThat( connection, eventuallyReceives( msgRecord( any( QueryResult.Record.class )  ), msgSuccess() ) );
+                connection.send( util.chunk( run( String.format( "MATCH (n:%s) RETURN COUNT(n)", label ) ) ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( pullAll() ) );
+                assertThat( connection, util.eventuallyReceives( msgRecord( any( QueryResult.Record.class )  ), msgSuccess() ) );
 
-                connection.send( chunk( run( "COMMIT" ) ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
-                connection.send( chunk( pullAll() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( run( "COMMIT" ) ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( pullAll() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
                 Thread.sleep( rndSleep.nextInt( 1000 ) );
 
-                connection.send( chunk( reset() ) );
-                assertThat( connection, eventuallyReceives( msgSuccess() ) );
+                connection.send( util.chunk( reset() ) );
+                assertThat( connection, util.eventuallyReceives( msgSuccess() ) );
 
                 Thread.sleep( rndSleep.nextInt( 1000 ) );
             }

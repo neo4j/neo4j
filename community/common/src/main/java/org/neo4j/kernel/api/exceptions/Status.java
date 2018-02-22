@@ -107,7 +107,7 @@ public interface Status
         InvalidUsage( ClientError,  // TODO: see above
                 "The client made a request but did not consume outgoing buffers in a timely fashion." ),
         NoThreadsAvailable( TransientError,  // TODO: see above
-                "There is no available thread to serve this request at the moment. You can retry at a later time " +
+                "There are no available threads to serve this request at the moment. You can retry at a later time " +
                         "or consider increasing max pool / queue size for bolt connector(s)." );
         private final Code code;
 

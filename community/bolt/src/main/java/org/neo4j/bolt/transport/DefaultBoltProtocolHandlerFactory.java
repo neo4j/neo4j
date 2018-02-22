@@ -20,15 +20,13 @@
 package org.neo4j.bolt.transport;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolHandlerImpl;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
-import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.logging.Log;
 
 public class DefaultBoltProtocolHandlerFactory implements BoltProtocolHandlerFactory
 {
