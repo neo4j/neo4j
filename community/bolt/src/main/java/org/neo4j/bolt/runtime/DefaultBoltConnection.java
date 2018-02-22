@@ -163,6 +163,10 @@ public class DefaultBoltConnection implements BoltConnection
 
                                     break;
                                 }
+                                else
+                                {
+                                    machine.validateTransaction();
+                                }
                             }
                         }
                         notifyDrained( batch );
