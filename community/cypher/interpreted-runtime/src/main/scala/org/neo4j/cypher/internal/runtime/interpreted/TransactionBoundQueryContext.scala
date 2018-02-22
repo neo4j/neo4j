@@ -489,13 +489,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val group = transactionalContext.cursors.allocateRelationshipGroupCursor()
     try {
       reads().singleNode(node, cursor)
-      dir match {
-        case OUTGOING => Nodes.countOutgoing(cursor, group)
-        case INCOMING => Nodes.countIncoming(cursor, group)
-        case BOTH => Nodes.countAll(cursor, group)
+      if (!cursor.next()) 0
+      else {
+        dir match {
+          case OUTGOING => Nodes.countOutgoing(cursor, group)
+          case INCOMING => Nodes.countIncoming(cursor, group)
+          case BOTH => Nodes.countAll(cursor, group)
+        }
       }
-    } finally group.close()
-
+    }
+    finally group.close()
   }
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = {
@@ -503,10 +506,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val group = transactionalContext.cursors.allocateRelationshipGroupCursor()
     try {
       reads().singleNode(node, cursor)
-      dir match {
-        case OUTGOING => Nodes.countOutgoing(cursor, group, relTypeId)
-        case INCOMING => Nodes.countIncoming(cursor, group, relTypeId)
-        case BOTH => Nodes.countAll(cursor, group, relTypeId)
+      if (!cursor.next()) 0
+      else {
+        dir match {
+          case OUTGOING => Nodes.countOutgoing(cursor, group, relTypeId)
+          case INCOMING => Nodes.countIncoming(cursor, group, relTypeId)
+          case BOTH => Nodes.countAll(cursor, group, relTypeId)
+        }
       }
     } finally group.close()
   }
