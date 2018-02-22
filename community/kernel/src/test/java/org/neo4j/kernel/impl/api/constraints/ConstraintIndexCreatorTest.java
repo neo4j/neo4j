@@ -31,6 +31,8 @@ import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.Modes;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -580,6 +582,18 @@ public class ConstraintIndexCreatorTest
 
             @Override
             public PropertyCursor propertyCursor()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public NodeValueIndexCursor nodeValueIndexCursor()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public NodeLabelIndexCursor nodeLabelIndexCursor()
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

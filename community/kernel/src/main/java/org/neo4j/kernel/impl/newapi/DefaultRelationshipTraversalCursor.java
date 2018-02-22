@@ -149,6 +149,10 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
      */
     void chain( long nodeReference, long reference, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( pageCursor == null )
         {
             pageCursor = read.relationshipPage( reference );
@@ -168,6 +172,10 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
      */
     void groups( long nodeReference, long groupReference, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         setId( NO_ID );
         this.next = NO_ID;
         this.groupState = GroupState.INCOMING;
@@ -185,6 +193,10 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
      */
     void filtered( long nodeReference, long reference, Read read, boolean filterStore )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( pageCursor == null )
         {
             pageCursor = read.relationshipPage( reference );
@@ -478,11 +490,16 @@ class DefaultRelationshipTraversalCursor extends RelationshipCursor
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         if ( pageCursor != null )
         {
             pageCursor.close();
             pageCursor = null;
         }
+        group.close();
         read = null;
         reset();
     }

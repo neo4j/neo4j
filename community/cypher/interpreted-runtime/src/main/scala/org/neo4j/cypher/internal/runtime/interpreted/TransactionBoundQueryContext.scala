@@ -109,6 +109,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   private def writes() = transactionalContext.dataWrite
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
+  private val nodeValueIndexCursor = allocateAndTraceNodeValueIndexCursor()
+  private val nodeLabelIndexCursor = allocateAndTraceNodeLabelIndexCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
 
@@ -1055,7 +1057,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     cursor
   }
 
-
   abstract class CursorIterator[T] extends Iterator[T] {
     private var _next: T = fetchNext()
 
@@ -1122,7 +1123,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       //Note that if no more elements are found the selection cursor
       //will be closed so no need to do a extra check after fetching.
       _next = fetchNext()
-
       current
     }
   }

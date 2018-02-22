@@ -51,7 +51,12 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     @Override
     public void scan( LabelScanValueIndexProgressor progressor, boolean providesLabels, int label )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         super.initialize( progressor );
+
         if ( read.hasTxStateWithChanges() )
         {
             ReadableDiffSets<Long> changes =
@@ -140,6 +145,10 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<LabelScanValueIndexProgres
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         super.close();
         node = NO_ID;
         labels = null;

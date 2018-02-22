@@ -146,6 +146,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     public void setRead( Read read )
     {
         this.read = read;
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
     }
 
     @Override
@@ -187,6 +191,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         super.close();
         this.node = NO_ID;
         this.query = null;
@@ -215,6 +223,16 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" + keys +
                    ", values=" + Arrays.toString( values ) +
                    ", underlying record=" + super.toString() + " ]";
+//            if ( query == null || values == null )
+//            {
+//                return "NodeValueIndexCursor[node=" + node + ", open state with no query or values" + ", underlying record=" + super.toString() + " ]";
+//            }
+//            else
+//            {
+//                return "NodeValueIndexCursor[node=" + node + ", open state with: keys=" +
+//                        Arrays.toString( stream( query ).map( IndexQuery::propertyKeyId ).toArray( Integer[]::new ) ) + ", values=" +
+//                        Arrays.toString( values ) + ", underlying record=" + super.toString() + " ]";
+//            }
         }
     }
 

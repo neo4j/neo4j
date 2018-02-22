@@ -126,7 +126,7 @@ public class OperationsLockTest
     @After
     public void tearDown()
     {
-        operations.release();
+        operations.closeHelperCursors();
     }
 
     @Test

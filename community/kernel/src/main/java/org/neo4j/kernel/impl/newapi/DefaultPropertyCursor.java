@@ -126,6 +126,7 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
         {
             if ( page == null )
             {
+                read.acquireCursor( this );
                 page = read.propertyPage( reference );
             }
         }
@@ -230,6 +231,10 @@ public class DefaultPropertyCursor extends PropertyRecord implements PropertyCur
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         if ( page != null )
         {
             page.close();

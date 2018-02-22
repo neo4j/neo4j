@@ -39,6 +39,8 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -75,6 +77,8 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.newapi.DefaultNodeCursor;
+import org.neo4j.kernel.impl.newapi.DefaultPropertyCursor;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -433,6 +437,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         closed = true;
         notifyListeners( txId );
         closeCurrentStatementIfAny();
+        closeRead();
     }
 
     private void notifyListeners( long txId )
@@ -446,6 +451,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void closeCurrentStatementIfAny()
     {
         currentStatement.forceClose();
+    }
+
+    private void closeRead()
+    {
+        operations.closeHelperCursors();
+        operations.getCursorTracker().assertCursorsAreClosed();
     }
 
     private void assertTransactionNotClosing()
@@ -849,7 +860,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             userMetaData = Collections.emptyMap();
             userTransactionId = 0;
             statistics.reset();
-            operations.release();
             pool.release( this );
         }
         finally
@@ -1069,15 +1079,27 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public NodeCursor nodeCursor()
+    public DefaultNodeCursor nodeCursor()
     {
         return operations.nodeCursor();
     }
 
     @Override
-    public PropertyCursor propertyCursor()
+    public DefaultPropertyCursor propertyCursor()
     {
         return operations.propertyCursor();
+    }
+
+    @Override
+    public NodeValueIndexCursor nodeValueIndexCursor()
+    {
+        return operations.nodeValueIndexCursor();
+    }
+
+    @Override
+    public NodeLabelIndexCursor nodeLabelIndexCursor()
+    {
+        return operations.nodeLabelIndexCursor();
     }
 
     /**

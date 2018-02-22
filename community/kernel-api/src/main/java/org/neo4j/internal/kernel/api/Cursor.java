@@ -20,9 +20,9 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * This interface is package-private because it is not generically useful. All use cases should use the explicit cursor
- * types. It is however useful to define this interface to ensure that the generic usage pattern (as outlined by the
- * example code snippet below) aligns across all cursor interfaces.
+ * All use cases should use the explicit cursor types. This interface ensures that
+ * the generic usage pattern (as outlined by the example code snippet below)
+ * aligns across all cursor interfaces.
  * <p>
  * Generic usage:
  * <code><pre>
@@ -40,7 +40,7 @@ package org.neo4j.internal.kernel.api;
  * }
  * </pre></code>
  */
-interface Cursor extends AutoCloseable
+public interface Cursor extends AutoCloseable
 {
     boolean next();
 

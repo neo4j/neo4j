@@ -37,6 +37,10 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
 
     void scan( int label, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( getId() != NO_ID )
         {
             reset();
@@ -54,6 +58,10 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
 
     void single( long reference, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( getId() != NO_ID )
         {
             reset();
@@ -141,6 +149,10 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         if ( pageCursor != null )
         {
             pageCursor.close();

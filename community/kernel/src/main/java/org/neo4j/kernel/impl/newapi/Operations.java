@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.Token;
@@ -88,6 +89,8 @@ public class Operations implements Write, ExplicitIndexWrite
     private DefaultRelationshipScanCursor relationshipCursor;
     private final DefaultCursors cursors;
     private final NodeSchemaMatcher schemaMatcher;
+    private NodeValueIndexCursor nodeValueIndexCursor;
+    private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
 
     public Operations(
             AllStoreHolder allStoreHolder,
@@ -111,9 +114,32 @@ public class Operations implements Write, ExplicitIndexWrite
 
     public void initialize()
     {
+        if ( nodeCursor != null )
+        {
+            nodeCursor.close();
+        }
+        if ( propertyCursor != null )
+        {
+            propertyCursor.close();
+        }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+        }
+        if ( nodeValueIndexCursor != null )
+        {
+            nodeValueIndexCursor.close();
+        }
+        if ( nodeLabelIndexCursor != null )
+        {
+            nodeLabelIndexCursor.close();
+        }
+
         this.nodeCursor = cursors.allocateNodeCursor();
         this.propertyCursor = cursors.allocatePropertyCursor();
         this.relationshipCursor = cursors.allocateRelationshipScanCursor();
+        this.nodeValueIndexCursor = cursors.allocateNodeValueIndexCursor();
+        this.nodeLabelIndexCursor = cursors.allocateNodeLabelIndexCursor();
     }
 
     @Override
@@ -189,9 +215,10 @@ public class Operations implements Write, ExplicitIndexWrite
             autoIndexing.relationships().entityRemoved( this, relationship );
             ktx.txState().relationshipDoDelete( relationship, relationshipCursor.getType(),
                     relationshipCursor.sourceNodeReference(), relationshipCursor.targetNodeReference() );
+            relationshipCursor.close();
             return true;
         }
-
+        relationshipCursor.close();
         // tried to delete relationship that does not exist
         return false;
     }
@@ -241,6 +268,7 @@ public class Operations implements Write, ExplicitIndexWrite
         allStoreHolder.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
+            nodeCursor.close();
             throw new EntityNotFoundException( EntityType.NODE, node );
         }
     }
@@ -296,8 +324,9 @@ public class Operations implements Write, ExplicitIndexWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
+        try
         {
+            NodeValueIndexCursor valueCursor = ktx.nodeValueIndexCursor();
             IndexDescriptor indexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( indexDescriptor );
             int labelId = indexDescriptor.schema().getLabelId();
@@ -312,8 +341,9 @@ public class Operations implements Write, ExplicitIndexWrite
                     IndexOrder.NONE, propertyValues );
             if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
             {
+                long nodeReference = valueCursor.nodeReference();
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
-                        new IndexEntryConflictException( valueCursor.nodeReference(), NO_SUCH_NODE, IndexQuery.asValueTuple( propertyValues ) ) );
+                        new IndexEntryConflictException( nodeReference, NO_SUCH_NODE, IndexQuery.asValueTuple( propertyValues ) ) );
             }
         }
         catch ( IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e )
@@ -564,7 +594,7 @@ public class Operations implements Write, ExplicitIndexWrite
         return cursors;
     }
 
-    public void release()
+    public void closeHelperCursors()
     {
         if ( nodeCursor != null )
         {
@@ -576,6 +606,22 @@ public class Operations implements Write, ExplicitIndexWrite
             propertyCursor.close();
             propertyCursor = null;
         }
+        if ( relationshipCursor != null )
+        {
+            relationshipCursor.close();
+            relationshipCursor = null;
+        }
+        if ( nodeValueIndexCursor != null )
+        {
+            nodeValueIndexCursor.close();
+            nodeValueIndexCursor = null;
+        }
+        if ( nodeLabelIndexCursor != null )
+        {
+            nodeLabelIndexCursor.close();
+            nodeLabelIndexCursor = null;
+        }
+        allStoreHolder.closeAllCursors();
     }
 
     public Token token()
@@ -650,6 +696,11 @@ public class Operations implements Write, ExplicitIndexWrite
         return allStoreHolder;
     }
 
+    public CursorTracker getCursorTracker()
+    {
+        return allStoreHolder;
+    }
+
     public DefaultNodeCursor nodeCursor()
     {
         return nodeCursor;
@@ -658,5 +709,15 @@ public class Operations implements Write, ExplicitIndexWrite
     public DefaultPropertyCursor propertyCursor()
     {
         return propertyCursor;
+    }
+
+    public NodeValueIndexCursor nodeValueIndexCursor()
+    {
+        return nodeValueIndexCursor;
+    }
+
+    public DefaultNodeLabelIndexCursor nodeLabelIndexCursor()
+    {
+        return nodeLabelIndexCursor;
     }
 }

@@ -73,6 +73,7 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
         writer.println("+--------------------------------------------+")
       }
     }
+    query.resources.close(true)
   }
 
   def createString(columnSizes: Map[String, Int], m: Map[String, Any])(implicit query: QueryContext): String = {

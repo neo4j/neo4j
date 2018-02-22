@@ -22,6 +22,8 @@ package org.neo4j.kernel.api;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -207,6 +209,10 @@ public interface KernelTransaction extends Transaction
     NodeCursor nodeCursor();
 
     PropertyCursor propertyCursor();
+
+    NodeValueIndexCursor nodeValueIndexCursor();
+
+    NodeLabelIndexCursor nodeLabelIndexCursor();
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

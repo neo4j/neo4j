@@ -71,8 +71,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     val input = evaluateArguments(ctx, params)
 
     val taskCloser = new TaskCloser
-    taskCloser.addTask(ctx.resources.close)
     taskCloser.addTask(ctx.transactionalContext.close)
+    taskCloser.addTask(ctx.resources.close)
 
     planType match {
       case NormalMode => createNormalExecutionResult(ctx, taskCloser, input, planType)

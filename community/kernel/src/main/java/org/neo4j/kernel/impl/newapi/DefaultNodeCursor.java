@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 
 import static java.util.Collections.emptySet;
 
-class DefaultNodeCursor extends NodeRecord implements NodeCursor
+public class DefaultNodeCursor extends NodeRecord implements NodeCursor
 {
     private Read read;
     private RecordCursor<DynamicRecord> labelCursor;
@@ -54,6 +54,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
 
     void scan( Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( getId() != NO_ID )
         {
             reset();
@@ -71,6 +75,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
 
     void single( long reference, Read read )
     {
+        if ( isClosed() )
+        {
+            read.acquireCursor( this );
+        }
         if ( getId() != NO_ID )
         {
             reset();
@@ -242,6 +250,10 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
     @Override
     public void close()
     {
+        if ( !isClosed() )
+        {
+            read.releaseCursor( this );
+        }
         if ( pageCursor != null )
         {
             pageCursor.close();
