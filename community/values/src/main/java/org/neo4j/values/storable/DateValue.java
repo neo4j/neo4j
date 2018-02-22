@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -140,39 +141,33 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             @Override
             protected DateValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
             {
-                assertDefinedInOrder( year, "year", month, "month", day, "day" );
-                int yearI = (int) safeCastIntegral( "year", year, 0 );
-                int monthI = (int) safeCastIntegral( "month", month, 1 );
-                int dayI = (int) safeCastIntegral( "day", day, 1 );
-                return date( yearI, monthI, dayI );
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( month, "month" ), Pair.of( day, "day" ) );
+                return date(
+                        (int) safeCastIntegral( "year", year, 0 ),
+                        (int) safeCastIntegral( "month", month, 1 ),
+                        (int) safeCastIntegral( "day", day, 1 ) );
             }
 
             @Override
             protected DateValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
             {
-                assertDefinedInOrder( year, "year", week, "week", dayOfWeek, "dayOfWeek" );
-                int yearI = (int) safeCastIntegral( "year", year, 0 );
-                int weekI = (int) safeCastIntegral( "week", week, 1 );
-                int dayOfWeekI = (int) safeCastIntegral( "dayOfWeek", dayOfWeek, 1 );
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( week, "week"), Pair.of( dayOfWeek, "dayOfWeek" ) );
                 return new DateValue(
                         LocalDate.now()
-                                .withYear( yearI )
-                                .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, weekI )
-                                .with( ChronoField.DAY_OF_WEEK, dayOfWeekI ) );
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, (int) safeCastIntegral( "week", week, 1 ) )
+                                .with( ChronoField.DAY_OF_WEEK, (int) safeCastIntegral( "dayOfWeek", dayOfWeek, 1 ) ) );
             }
 
             @Override
             protected DateValue constructQuarterDate( AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
             {
-                assertDefinedInOrder( year, "year", quarter, "quarter", dayOfQuarter, "dayOfQuarter" );
-                int yearI = (int) safeCastIntegral( "year", year, 0 );
-                int quarterI = (int) safeCastIntegral( "quarter", quarter, 1 );
-                int dayOfQuarterI = (int) safeCastIntegral( "dayOfQuarter", dayOfQuarter, 1 );
+                assertDefinedInOrder( Pair.of( year, "year" ), Pair.of( quarter, "quarter" ), Pair.of( dayOfQuarter, "dayOfQuarter" ) );
                 return new DateValue(
                     LocalDate.now()
-                            .withYear( yearI )
-                            .with( IsoFields.QUARTER_OF_YEAR, quarterI )
-                            .with( IsoFields.DAY_OF_QUARTER, dayOfQuarterI ) );
+                            .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                            .with( IsoFields.QUARTER_OF_YEAR, (int) safeCastIntegral( "quarter", quarter, 1 ) )
+                            .with( IsoFields.DAY_OF_QUARTER, (int) safeCastIntegral( "dayOfQuarter", dayOfQuarter, 1 ) ) );
             }
 
             @Override
@@ -180,9 +175,7 @@ public final class DateValue extends TemporalValue<LocalDate,DateValue>
             {
                 if ( year instanceof LongValue && ordinalDay instanceof LongValue )
                 {
-                    int yearI = (int) ((LongValue) year).value();
-                    int ordinalDayI = (int) ((LongValue) ordinalDay).value();
-                    return new DateValue( LocalDate.ofYearDay( yearI, ordinalDayI ) );
+                    return new DateValue( LocalDate.ofYearDay( (int) ((LongValue) year).value(), (int) ((LongValue) ordinalDay).value() ) );
                 }
                 throw new IllegalArgumentException( String.format( "Cannot construct date from: %s %s", year, ordinalDay ) );
             }

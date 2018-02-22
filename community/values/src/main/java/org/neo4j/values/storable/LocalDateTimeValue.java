@@ -25,11 +25,14 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -42,8 +45,10 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalTimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
+import static org.neo4j.values.storable.TimeValue.validNano;
 
 public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalDateTimeValue>
 {
@@ -151,13 +156,13 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
             @Override
             protected LocalDateTimeValue constructYear( AnyValue year )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructCalendarDateWithConstructedTime( year, null, null, null, null, null, null, null, null );
             }
 
             @Override
             protected LocalDateTimeValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructCalendarDateWithConstructedTime( year, month, day, null, null, null, null, null, null );
             }
 
             @Override
@@ -179,13 +184,28 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( month, "month" ),
+                        Pair.of( day, "day" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return localDateTime(
+                        (int) safeCastIntegral( "year", year, 0 ),
+                        (int) safeCastIntegral( "month", month, 1 ),
+                        (int) safeCastIntegral( "day", day, 1 ),
+                        (int) safeCastIntegral( "hour", hour, 0 ),
+                        (int) safeCastIntegral( "minute", minute, 0 ),
+                        (int) safeCastIntegral( "second", second, 0 ),
+                        validNano( millisecond, microsecond, nanosecond ) );
             }
 
             @Override
             protected LocalDateTimeValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructWeekDateWithConstructedTime( year, week, dayOfWeek, null, null, null, null, null, null );
             }
 
             @Override
@@ -207,14 +227,31 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( week, "week" ),
+                        Pair.of( dayOfWeek, "dayOfWeek" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return localDateTime(
+                        LocalDateTime.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, (int) safeCastIntegral( "week", week, 1 ) )
+                                .with( ChronoField.DAY_OF_WEEK, (int) safeCastIntegral( "dayOfWeek", dayOfWeek, 1 ) )
+                                .withHour( (int) safeCastIntegral( "hour", hour, 0 ) )
+                                .withMinute( (int) safeCastIntegral( "minute", minute, 0 ) )
+                                .withSecond( (int) safeCastIntegral( "second", second, 0 ) )
+                                .withNano( validNano( millisecond, microsecond, nanosecond ) )
+                         );
             }
 
             @Override
             protected LocalDateTimeValue constructQuarterDate(
                     AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructQuarterDateWithConstructedTime( year, quarter, dayOfQuarter, null, null, null, null, null, null );
             }
 
             @Override
@@ -236,13 +273,30 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( quarter, "quarter" ),
+                        Pair.of( dayOfQuarter, "dayOfQuarter" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return localDateTime(
+                        LocalDateTime.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .with( IsoFields.QUARTER_OF_YEAR, (int) safeCastIntegral( "quarter", quarter, 1 ) )
+                                .with( IsoFields.DAY_OF_QUARTER, (int) safeCastIntegral( "dayOfQuarter", dayOfQuarter, 1 ) )
+                                .withHour( (int) safeCastIntegral( "hour", hour, 0 ) )
+                                .withMinute( (int) safeCastIntegral( "minute", minute, 0 ) )
+                                .withSecond( (int) safeCastIntegral( "second", second, 0 ) )
+                                .withNano( validNano( millisecond, microsecond, nanosecond ) )
+                );
             }
 
             @Override
             protected LocalDateTimeValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                return constructOrdinalDateWithConstructedTime( year, ordinalDay, null, null, null, null, null, null );
             }
 
             @Override
@@ -263,7 +317,22 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder(
+                        Pair.of( year, "year" ),
+                        Pair.of( ordinalDay, "ordinalDay" ),
+                        Pair.of( hour, "hour" ),
+                        Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ),
+                        Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return localDateTime(
+                        LocalDateTime.now()
+                                .withYear( (int) safeCastIntegral( "year", year, 0 ) )
+                                .withDayOfYear( (int) safeCastIntegral( "ordinalDay", ordinalDay, 1 ) )
+                                .withHour( (int) safeCastIntegral( "hour", hour, 0 ) )
+                                .withMinute( (int) safeCastIntegral( "minute", minute, 0 ) )
+                                .withSecond( (int) safeCastIntegral( "second", second, 0 ) )
+                                .withNano( validNano( millisecond, microsecond, nanosecond ) )
+                );
             }
         };
     }

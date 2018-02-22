@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -59,12 +60,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return time( hour, minute, second, nanosOfSecond, parseOffset( offset ) );
     }
 
-    public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneOffset offset )
+    public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneId offset )
     {
-        return new TimeValue( OffsetTime.of( hour, minute, second, nanosOfSecond, offset ) );
+        return new TimeValue(
+                OffsetTime.ofInstant( Instant.ofEpochSecond( hour * 3600 + minute * 60 + second, nanosOfSecond ), offset) );
     }
 
-    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
+    public static TimeValue time( long nanosOfDayUTC, ZoneId offset )
     {
         return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
     }
@@ -149,7 +151,14 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                throw new UnsupportedOperationException( "not implemented" );
+                assertDefinedInOrder( Pair.of( hour, "hour" ), Pair.of( minute, "minute" ),
+                        Pair.of( second, "second"), Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond" ) );
+                return time(
+                        (int) safeCastIntegral( "hour", hour, 0 ),
+                        (int) safeCastIntegral( "minute", minute, 0 ),
+                        (int) safeCastIntegral( "second", second, 0 ),
+                        validNano( millisecond, microsecond, nanosecond ),
+                        timezone() );
             }
 
             private OffsetTime offsetTime( AnyValue value )

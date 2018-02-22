@@ -55,6 +55,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.NumberType.NO_NUMBER;
+import static org.neo4j.values.storable.NumberValue.safeCastFloatingPoint;
 
 /**
  * We use our own implementation because neither {@link java.time.Duration} nor {@link java.time.Period} fits our needs.
@@ -172,17 +173,18 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
                     AnyValue microseconds,
                     AnyValue nanoseconds )
             {
-                return duration(
-                        safeCastIntegral( "years", years, 0 ) * 12
-                                + safeCastIntegral( "months", months, 0 ),
-                        safeCastIntegral( "weeks", weeks, 0 ) * 7
-                                + safeCastIntegral( "days", days, 0 ),
-                        safeCastIntegral( "hours", hours, 0 ) * 3600
-                                + safeCastIntegral( "minutes", minutes, 0 ) * 60
-                                + safeCastIntegral( "seconds", seconds, 0 ),
-                        safeCastIntegral( "milliseconds", milliseconds, 0 ) * 1_000_000
-                                + safeCastIntegral( "microseconds", microseconds, 0 ) * 1_000
-                                + safeCastIntegral( "nanoseconds", nanoseconds, 0 ) );
+                return approximate(
+                        safeCastFloatingPoint( "years", years, 0 ) * 12 +
+                                safeCastFloatingPoint( "months", months, 0 ),
+                        safeCastFloatingPoint( "weeks", weeks, 0 ) * 7 +
+                                safeCastFloatingPoint( "days", days, 0 ),
+                        safeCastFloatingPoint( "hours", hours, 0 ) * 3600 +
+                                safeCastFloatingPoint( "minutes", minutes, 0 ) * 60 +
+                                safeCastFloatingPoint( "seconds", seconds, 0 ),
+                        safeCastFloatingPoint( "milliseconds", milliseconds, 0 ) * 1_000_000 +
+                                safeCastFloatingPoint( "microseconds", microseconds, 0 ) * 1_000 +
+                                safeCastFloatingPoint( "nanoseconds", nanoseconds, 0 )
+                );
             }
         };
     }

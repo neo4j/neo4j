@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
@@ -128,7 +129,8 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
                     AnyValue microsecond,
                     AnyValue nanosecond )
             {
-                assertDefinedInOrder( hour, "hour", minute, "minute", second, "second", oneOf( millisecond, microsecond, nanosecond ), "subsecond" );
+                assertDefinedInOrder( Pair.of( hour, "hour" ), Pair.of( minute, "minute" ),
+                        Pair.of( second, "second" ), Pair.of( oneOf( millisecond, microsecond, nanosecond ), "subsecond") );
                 return localTime(
                         (int) safeCastIntegral( "hour", hour, 0 ),
                         (int) safeCastIntegral( "minute", minute, 0 ),

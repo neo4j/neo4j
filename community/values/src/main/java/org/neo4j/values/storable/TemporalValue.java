@@ -38,6 +38,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
 
@@ -804,7 +805,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
                 Builder<Input,Result> builder,
                 Input hour, Input minute, Input second, Input millisecond, Input microsecond, Input nanosecond )
         {
-            throw new IllegalStateException( "Cannot specify time for a year." );
+            throw new IllegalArgumentException( "Cannot specify time for a year." );
         }
     }
 
@@ -1017,41 +1018,32 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
         return newValue;
     }
 
-    static void assertDefinedInOrder( AnyValue a, String aName, AnyValue b, String bName,
-            AnyValue c, String cName)
+    static void assertDefinedInOrder( Pair<AnyValue, String>... values )
     {
-        assertDefinedInOrder( a, aName, b, bName, c, cName, null, "" );
-    }
+        if ( values[0].first() == null )
+        {
+            throw new IllegalArgumentException( values[0].other() + " must be specified" );
+        }
 
-    static void assertDefinedInOrder( AnyValue a, String aName, AnyValue b, String bName,
-            AnyValue c, String cName, AnyValue d, String dName )
-    {
-        if ( a == null )
+        String firstNotAssigned = null;
+
+        for ( Pair<AnyValue,String> value : values )
         {
-            throw new IllegalArgumentException(
-                    aName + " must be specified");
-        }
-        if ( b == null )
-        {
-            if( c != null )
+            if ( value.first() == null )
             {
-                throw new IllegalArgumentException(
-                        cName + " cannot be specified without " + bName);
+                if ( firstNotAssigned == null )
+                {
+                    firstNotAssigned = value.other();
+                }
             }
-            else if( d != null )
+            else if ( firstNotAssigned != null )
             {
-                throw new IllegalArgumentException(
-                        dName + " cannot be specified without " + bName);
+                throw new IllegalArgumentException( value.other() + " cannot be specified without " + firstNotAssigned );
             }
-        }
-        else if( c == null && d != null)
-        {
-            throw new IllegalArgumentException(
-                    dName + " cannot be specified without " + cName);
         }
     }
 
-    static AnyValue oneOf(AnyValue a, AnyValue b, AnyValue c)
+    static AnyValue oneOf( AnyValue a, AnyValue b, AnyValue c )
     {
         return a != null ? a : b != null ? b : c;
     }
