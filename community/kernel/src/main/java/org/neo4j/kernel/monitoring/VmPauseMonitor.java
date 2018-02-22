@@ -30,6 +30,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
 import org.neo4j.util.VisibleForTesting;
 
+import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.lang.Thread.currentThread;
@@ -98,7 +99,7 @@ public class VmPauseMonitor
         {
             NANOSECONDS.sleep( measurementDurationNs );
             final long now = nanoTime();
-            final long pauseNs = now - nextCheckPoint;
+            final long pauseNs = max( 0L, now - nextCheckPoint );
             nextCheckPoint = now + measurementDurationNs;
 
             final GcStats gcStats = getGcStats();
