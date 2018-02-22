@@ -160,7 +160,7 @@ public class PointValue extends ScalarValue implements Point
             int cmpVal = Double.compare( this.coordinate[i], other.coordinate[i] );
             if ( cmpVal != 0 && cmpVal != result )
             {
-                if((cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0))
+                if ( (cmpVal < 0 && result > 0) || (cmpVal > 0 && result < 0) )
                 {
                     return null;
                 }

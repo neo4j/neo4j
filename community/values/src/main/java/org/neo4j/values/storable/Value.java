@@ -176,7 +176,7 @@ public abstract class Value extends AnyValue implements Comparable<Value>
      * Should return {@code null} for values that cannot be compared
      * under Comparability semantics.
      */
-    public Integer ternaryCompareTo( Value other)
+    public Integer ternaryCompareTo( Value other )
     {
         return compareTo( other );
     }
