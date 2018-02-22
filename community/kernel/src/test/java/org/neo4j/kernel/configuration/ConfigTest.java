@@ -384,9 +384,9 @@ public class ConfigTest
         config.updateDynamicSetting( settingName, "" );
 
         InOrder order = inOrder( log );
-        order.verify( log ).info( changedMessage, settingName, "true", "false" );
+        order.verify( log ).info( changedMessage, settingName, "default (true)", "false" );
         order.verify( log ).info( changedMessage, settingName, "false", "true" );
-        order.verify( log ).info( changedMessage, settingName, "true", "true" );
+        order.verify( log ).info( changedMessage, settingName, "true", "default (true)" );
         verifyNoMoreInteractions( log );
     }
 
