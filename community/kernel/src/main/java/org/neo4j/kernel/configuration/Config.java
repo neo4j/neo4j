@@ -596,8 +596,8 @@ public class Config implements DiagnosticsProvider, Configuration
 
         synchronized ( params )
         {
-            boolean oldDefault = false;
-            boolean newDefault = false;
+            boolean oldValueIsDefault = false;
+            boolean newValueIsDefault = false;
             String oldValue;
             String newValue;
             if ( update == null || update.isEmpty() )
@@ -607,7 +607,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 boolean hasDefault = overriddenDefault != null;
                 oldValue = hasDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
                 newValue = getDefaultValueOf( setting );
-                newDefault = true;
+                newValueIsDefault = true;
             }
             else
             {
@@ -621,16 +621,21 @@ public class Config implements DiagnosticsProvider, Configuration
                     validator.validate( newEntry, ignore -> {} ); // Throws if invalid
                 }
 
-                oldValue = getDefaultValueOf( setting );
-                if ( params.put( setting, update ) == null )
+                String previousValue = params.put( setting, update );
+                if ( previousValue != null )
                 {
-                    oldDefault = true;
+                    oldValue = previousValue;
+                }
+                else
+                {
+                    oldValue = getDefaultValueOf( setting );
+                    oldValueIsDefault = true;
                 }
                 newValue = update;
             }
             log.info( "Setting changed: '%s' changed from '%s' to '%s'",
-                    setting, oldDefault ? "default (" + oldValue + ")" : oldValue,
-                    newDefault ? "default (" + newValue + ")" : newValue );
+                    setting, oldValueIsDefault ? "default (" + oldValue + ")" : oldValue,
+                    newValueIsDefault ? "default (" + newValue + ")" : newValue );
             updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
     }
