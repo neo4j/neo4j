@@ -682,6 +682,114 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         } );
     }
 
+    @Test
+    public void groupCursorShouldSeeNewTypes() throws Exception
+    {
+        try (Transaction tx = session.beginTransaction())
+        {
+            Write write = tx.dataWrite();
+            long start = write.nodeCreate();
+            long out = write.relationshipCreate( start,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "OUT" ),
+                    write.nodeCreate() );
+            long in1 = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "IN" ),
+                    start );
+            long in2 = write.relationshipCreate( write.nodeCreate(),
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "IN" ),
+                    start );
+            long loop = write.relationshipCreate( start,
+                    tx.tokenWrite().relationshipTypeGetOrCreateForName( "LOOP" ),
+                    start );
+            try (  NodeCursor node = cursors.allocateNodeCursor();
+                   RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
+                   RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor() )
+            {
+                Read read = tx.dataRead();
+                read.singleNode( start, node );
+                assertTrue( node.next() );
+                node.relationships( group );
+
+                //Outgoing
+                assertTrue( group.next() );
+                assertEquals( 1, group.outgoingCount() );
+                assertEquals( 0, group.incomingCount() );
+                assertEquals( 0, group.loopCount() );
+                assertRelationships(OUT, group, traversal, out);
+                assertNoRelationships(IN, group, traversal);
+                assertNoRelationships(LOOP, group, traversal);
+
+                //Incoming
+                assertTrue( group.next() );
+                assertEquals( 0, group.outgoingCount() );
+                assertEquals( 2, group.incomingCount() );
+                assertEquals( 0, group.loopCount() );
+                assertRelationships(IN, group, traversal, in1, in2);
+                assertNoRelationships(OUT, group, traversal);
+                assertNoRelationships(LOOP, group, traversal);
+
+                //Loop
+                assertTrue( group.next() );
+                assertEquals( 0, group.outgoingCount() );
+                assertEquals( 0, group.incomingCount() );
+                assertEquals( 1, group.loopCount() );
+                assertRelationships(LOOP, group, traversal, loop);
+                assertNoRelationships(OUT, group, traversal);
+                assertNoRelationships(IN, group, traversal);
+
+                assertFalse( group.next() );
+            }
+        }
+    }
+
+    void assertRelationships( RelationshipDirection direction, RelationshipGroupCursor group,
+            RelationshipTraversalCursor traversal, long...relationships )
+    {
+        switch ( direction )
+        {
+        case OUT:
+            group.outgoing( traversal );
+            break;
+        case IN:
+            group.incoming( traversal );
+            break;
+        case LOOP:
+            group.loops( traversal );
+            break;
+        default:
+            throw new AssertionError( "Where is your god now!" );
+        }
+
+        for ( long relationship : relationships )
+        {
+            assertTrue( traversal.next() );
+            assertEquals( relationship, traversal.relationshipReference() );
+        }
+        assertFalse( traversal.next() );
+    }
+
+    void assertNoRelationships( RelationshipDirection direction, RelationshipGroupCursor group,
+            RelationshipTraversalCursor traversal )
+    {
+        switch ( direction )
+        {
+        case OUT:
+            group.outgoing( traversal );
+            assertFalse( traversal.next() );
+            break;
+        case IN:
+            group.incoming( traversal );
+            assertFalse( traversal.next() );
+            break;
+        case LOOP:
+            group.loops( traversal );
+            assertFalse( traversal.next() );
+            break;
+        default:
+            throw new AssertionError( "Where is your god now!" );
+        }
+    }
+
     private void traverseWithoutGroups( RelationshipTestSupport.StartNode start, boolean detached ) throws Exception
     {
         try ( Transaction tx = session.beginTransaction() )

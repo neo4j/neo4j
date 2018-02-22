@@ -272,11 +272,8 @@ abstract class Read implements TxStateHolder,
             long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
         ktx.assertOpen();
-        if ( reference == NO_ID ) // there are no relationships for this node
-        {
-            cursor.close();
-        }
-        else if ( isRelationship( reference ) ) // the relationships for this node are not grouped in the store
+        // the relationships for this node are not grouped in the store
+        if ( reference != NO_ID && isRelationship( reference ) )
         {
             ((DefaultRelationshipGroupCursor) cursor).buffer( nodeReference, clearEncoding( reference ), this );
         }
