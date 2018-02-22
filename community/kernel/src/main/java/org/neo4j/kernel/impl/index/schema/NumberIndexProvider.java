@@ -74,7 +74,7 @@ public class NumberIndexProvider extends IndexProvider<SchemaIndexDescriptor>
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return null;
     }

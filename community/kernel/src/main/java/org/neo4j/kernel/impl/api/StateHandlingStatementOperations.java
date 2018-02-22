@@ -747,9 +747,10 @@ public class StateHandlingStatementOperations implements
         Iterator<IndexDescriptor> rules = iterator( schemaIndexDescriptor );
         if ( state.hasTxStateWithChanges() )
         {
+            //TODO ugly zero index
             rules = filter(
                     SchemaDescriptor.equalTo( descriptor ),
-                    state.txState().indexDiffSetsByLabel( descriptor.keyId() ).apply( rules ) );
+                    state.txState().indexDiffSetsByLabel( descriptor.getEntityTokenIds()[0] ).apply( rules ) );
         }
         return singleOrNull( rules );
     }
@@ -785,6 +786,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( state.hasTxStateWithChanges() )
         {
+            //TODO Invalid keyID
             if ( checkIndexState( descriptor,
                     state.txState().indexDiffSetsByLabel( descriptor.schema().keyId() ) ) )
             {

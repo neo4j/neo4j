@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.Before;
 import org.junit.Rule;
 
-import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -36,20 +34,16 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextAccessor;
 import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextIndexProviderFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -68,12 +62,6 @@ public class LuceneFulltextTestSupport
     protected static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
     protected String analyzer = ANALYZER;
-    protected AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
-//    protected GraphDatabaseAPI db;
-    protected JobScheduler scheduler;
-    protected FileSystemAbstraction fs;
-    protected File storeDir;
-    private TransactionIdStore transactionIdStore;
     protected FulltextAccessor fulltextAccessor;
 
 //    @Before
@@ -92,13 +80,14 @@ public class LuceneFulltextTestSupport
         fulltextAccessor = getAccessor();
     }
 
-    protected FulltextProviderImpl createProvider() throws IOException
+    public void applySetting( Setting<String> setting, String value ) throws IOException
     {
-        return new FulltextProviderImpl( db, LOG, availabilityGuard, scheduler, transactionIdStore,
-                fs, storeDir, analyzer );
+        db.restartDatabase( setting.name(), value  );
+        db.ensureStarted();
+        fulltextAccessor = getAccessor();
     }
 
-    private FulltextAccessor getAccessor() throws IOException
+    private FulltextAccessor getAccessor()
     {
         return (FulltextAccessor) db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
     }

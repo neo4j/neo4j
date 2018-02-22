@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.kernel;
 
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,6 +54,8 @@ public class FulltextIndexProviderTest
 {
     @Rule
     public DatabaseRule db = new EmbeddedDatabaseRule();
+    private static final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+
     private Node node1;
     private Node node2;
 
@@ -90,7 +93,8 @@ public class FulltextIndexProviderTest
         IndexDescriptor fulltextIndexDescriptor;
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[0], EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[0], EntityType.NODE, new int[]{2, 3, 4}), "fulltext",
+                    ENGLISH );
             assertThat( fulltextIndexDescriptor, is( instanceOf( FulltextIndexDescriptor.class ) ) );
         }
         assertThat( indexProviderMap.getProviderFor( fulltextIndexDescriptor ), is( instanceOf( FulltextIndexProvider.class ) ) );
@@ -103,7 +107,8 @@ public class FulltextIndexProviderTest
         IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
+                    ENGLISH );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -122,7 +127,8 @@ public class FulltextIndexProviderTest
         IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext");
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.NODE, new int[]{2, 3, 4} ), "fulltext",
+                    ENGLISH );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -147,7 +153,8 @@ public class FulltextIndexProviderTest
         IndexProvider provider = db.resolveDependency( IndexProviderMap.class ).apply( FulltextIndexProviderFactory.DESCRIPTOR );
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
-            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels");
+            fulltextIndexDescriptor = provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{7, 8, 9}, EntityType.RELATIONSHIP, new int[]{2, 3, 4} ), "rels",
+                    ENGLISH );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -173,7 +180,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{0, 1, 2}, EntityType.NODE, new int[]{0, 1, 2, 3} ), "fulltext" );
+                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{0, 1, 2}, EntityType.NODE, new int[]{0, 1, 2, 3} ), "fulltext", ENGLISH );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -240,7 +247,8 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ), "fulltext" );
+                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[]{0, 1, 2}, EntityType.RELATIONSHIP, new int[]{0, 1, 2, 3} ), "fulltext",
+                            ENGLISH );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }
@@ -307,7 +315,7 @@ public class FulltextIndexProviderTest
         try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
         {
             fulltextIndexDescriptor =
-                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[0], EntityType.NODE, new int[]{0, 1, 2, 3} ), "fulltext" );
+                    provider.indexDescriptorFor( new NonSchemaSchemaDescriptor( new int[0], EntityType.NODE, new int[]{0, 1, 2, 3} ), "fulltext", ENGLISH );
             stmt.schemaWriteOperations().nonSchemaIndexCreate( fulltextIndexDescriptor );
             transaction.success();
         }

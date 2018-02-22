@@ -112,7 +112,7 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 }
 
                 @Override
-                public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+                public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
                 {
                     return SchemaIndexDescriptorFactory.forSchema( schema );
                 }
@@ -156,7 +156,8 @@ public abstract class IndexProvider<DESCRIPTOR extends IndexDescriptor> extends 
                 }
             };
 
-    public abstract DESCRIPTOR indexDescriptorFor( SchemaDescriptor schema, String name );
+    // Used by deserialization
+    public abstract DESCRIPTOR indexDescriptorFor( SchemaDescriptor schema, String name, String metadata );
 
     public interface Monitor
     {

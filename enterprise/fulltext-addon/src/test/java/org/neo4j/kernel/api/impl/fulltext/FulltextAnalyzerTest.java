@@ -24,125 +24,126 @@ import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.impl.fulltext.integrations.kernel.FulltextConfig;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextTestSupport;
-import org.neo4j.kernel.api.impl.fulltext.lucene.ReadOnlyFulltext;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
-import static java.util.Collections.singletonList;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexType.NODES;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
+import static org.neo4j.storageengine.api.EntityType.NODE;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
     private static final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
     private static final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
 
-//    @Test
-//    public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
-//    {
-//        analyzer = ENGLISH;
-//        try ( FulltextProvider provider = createProvider() )
-//        {
-//            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-//            provider.registerTransactionEventHandler();
-//
-//            long id;
-//            try ( Transaction tx = db.beginTx() )
-//            {
-//                createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
-//                id = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
-//
-//                tx.success();
-//            }
-//
-//            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
-//            {
-//                assertExactQueryFindsNothing( reader, "and" );
-//                assertExactQueryFindsNothing( reader, "in" );
-//                assertExactQueryFindsNothing( reader, "the" );
-//                assertExactQueryFindsIds( reader, "en", false, id );
-//                assertExactQueryFindsIds( reader, "och", false, id );
-//                assertExactQueryFindsIds( reader, "ett", false, id );
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
-//    {
-//        analyzer = SWEDISH;
-//        try ( FulltextProvider provider = createProvider(); )
-//        {
-//            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-//            provider.registerTransactionEventHandler();
-//
-//            long id;
-//            try ( Transaction tx = db.beginTx() )
-//            {
-//                id = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
-//                createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
-//
-//                tx.success();
-//            }
-//
-//            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
-//            {
-//                assertExactQueryFindsIds( reader, "and", false, id );
-//                assertExactQueryFindsIds( reader, "in", false, id );
-//                assertExactQueryFindsIds( reader, "the", false, id );
-//                assertExactQueryFindsNothing( reader, "en" );
-//                assertExactQueryFindsNothing( reader, "och" );
-//                assertExactQueryFindsNothing( reader, "ett" );
-//            }
-//        }
-//    }
-//
-//    @Test
-//    public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
-//    {
-//        long firstID;
-//        long secondID;
-//        analyzer = ENGLISH;
-//        try ( FulltextProvider provider = createProvider() )
-//        {
-//            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-//            provider.registerTransactionEventHandler();
-//
-//            try ( Transaction tx = db.beginTx() )
-//            {
-//                firstID = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
-//                secondID = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
-//
-//                tx.success();
-//            }
-//
-//            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
-//            {
-//
-//                assertExactQueryFindsNothing( reader, "and" );
-//                assertExactQueryFindsNothing( reader, "in" );
-//                assertExactQueryFindsNothing( reader, "the" );
-//                assertExactQueryFindsIds( reader, "en", false, secondID );
-//                assertExactQueryFindsIds( reader, "och", false, secondID );
-//                assertExactQueryFindsIds( reader, "ett", false, secondID );
-//            }
-//        }
-//
-//        analyzer = SWEDISH;
-//        try ( FulltextProvider provider = createProvider() )
-//        {
-//            provider.createIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
-//            provider.registerTransactionEventHandler();
-//            provider.awaitPopulation();
-//
-//            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
-//            {
-//                assertExactQueryFindsIds( reader, "and",  false, firstID );
-//                assertExactQueryFindsIds( reader, "in",  false, firstID );
-//                assertExactQueryFindsIds( reader, "the",  false, firstID );
-//                assertExactQueryFindsNothing( reader, "en" );
-//                assertExactQueryFindsNothing( reader, "och" );
-//                assertExactQueryFindsNothing( reader, "ett" );
-//            }
-//        }
-//    }
+    @Test
+    public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
+    {
+        applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
+
+        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
+            transaction.success();
+        }
+        await( descriptor );
+
+        long id;
+        try ( Transaction tx = db.beginTx() )
+        {
+            createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+            id = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertExactQueryFindsNothing( "nodes", "and" );
+            assertExactQueryFindsNothing( "nodes", "in" );
+            assertExactQueryFindsNothing( "nodes", "the" );
+            assertExactQueryFindsIds( "nodes", "en", false, id );
+            assertExactQueryFindsIds( "nodes", "och", false, id );
+            assertExactQueryFindsIds( "nodes", "ett", false, id );
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
+    {
+        applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
+        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
+            transaction.success();
+        }
+        await( descriptor );
+
+        long id;
+        try ( Transaction tx = db.beginTx() )
+        {
+            id = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+            createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertExactQueryFindsIds( "nodes", "and", false, id );
+            assertExactQueryFindsIds( "nodes", "in", false, id );
+            assertExactQueryFindsIds( "nodes", "the", false, id );
+            assertExactQueryFindsNothing( "nodes", "en" );
+            assertExactQueryFindsNothing( "nodes", "och" );
+            assertExactQueryFindsNothing( "nodes", "ett" );
+        }
+    }
+
+    @Test
+    public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
+    {
+        long firstID;
+        long secondID;
+        applySetting( FulltextConfig.fulltext_default_analyzer, ENGLISH );
+        IndexDescriptor descriptor = fulltextAccessor.indexDescriptorFor( "nodes", NODE, new String[0], PROP );
+        try ( Transaction transaction = db.beginTx(); Statement stmt = db.statement() )
+        {
+            stmt.schemaWriteOperations().nonSchemaIndexCreate( descriptor );
+            transaction.success();
+        }
+        await( descriptor );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            firstID = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+            secondID = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
+
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+
+            assertExactQueryFindsNothing( "nodes", "and" );
+            assertExactQueryFindsNothing( "nodes", "in" );
+            assertExactQueryFindsNothing( "nodes", "the" );
+            assertExactQueryFindsIds( "nodes", "en", false, secondID );
+            assertExactQueryFindsIds( "nodes", "och", false, secondID );
+            assertExactQueryFindsIds( "nodes", "ett", false, secondID );
+        }
+
+        applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
+        try ( Transaction tx = db.beginTx(); Statement stmt = db.statement() )
+        {
+            await( stmt.readOperations().indexGetForName( "nodes" ) );
+            assertExactQueryFindsIds( "nodes", "and", false, firstID );
+            assertExactQueryFindsIds( "nodes", "in", false, firstID );
+            assertExactQueryFindsIds( "nodes", "the", false, firstID );
+            assertExactQueryFindsNothing( "nodes", "en" );
+            assertExactQueryFindsNothing( "nodes", "och" );
+            assertExactQueryFindsNothing( "nodes", "ett" );
+        }
+    }
 }

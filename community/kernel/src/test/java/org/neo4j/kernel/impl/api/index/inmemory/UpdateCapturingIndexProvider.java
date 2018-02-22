@@ -53,9 +53,9 @@ public class UpdateCapturingIndexProvider extends IndexProvider<SchemaIndexDescr
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
-        return actual.indexDescriptorFor( schema, name );
+        return actual.indexDescriptorFor( schema, name, "" );
     }
 
     @Override

@@ -70,7 +70,7 @@ public class FusionSchemaIndexProvider extends IndexProvider<SchemaIndexDescript
     }
 
     @Override
-    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    public SchemaIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forSchema( schema );
     }

@@ -46,6 +46,11 @@ public abstract class IndexDescriptor implements SchemaDescriptorSupplier
         return this instanceof SchemaIndexDescriptor ? (SchemaIndexDescriptor) this : null;
     }
 
+    public String metadata()
+    {
+        return "";
+    }
+
     public enum Type
     {
         GENERAL,

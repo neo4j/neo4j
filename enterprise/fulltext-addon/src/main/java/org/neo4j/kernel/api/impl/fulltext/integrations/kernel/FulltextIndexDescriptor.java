@@ -33,16 +33,24 @@ public class FulltextIndexDescriptor extends IndexDescriptor
 {
     private final Set<String> propertyNames;
     private final String identifier;
+    private final String analyzer;
 
-    public FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder ) throws TokenNotFoundException
+    public FulltextIndexDescriptor( SchemaDescriptor schema, String name, PropertyKeyTokenHolder propertyKeyTokenHolder, String analyzer ) throws TokenNotFoundException
     {
         super( schema, Type.NON_SCHEMA );
+        this.analyzer = analyzer;
         propertyNames = new HashSet<>();
         this.identifier = name;
         for ( int propertyId : schema.getPropertyIds() )
         {
             propertyNames.add( propertyKeyTokenHolder.getTokenById( propertyId ).name() );
         }
+    }
+
+    @Override
+    public String metadata()
+    {
+        return analyzer();
     }
 
     @Override
@@ -54,5 +62,10 @@ public class FulltextIndexDescriptor extends IndexDescriptor
     public Collection<String> propertyNames()
     {
         return Collections.unmodifiableSet( propertyNames );
+    }
+
+    public String analyzer()
+    {
+        return analyzer;
     }
 }

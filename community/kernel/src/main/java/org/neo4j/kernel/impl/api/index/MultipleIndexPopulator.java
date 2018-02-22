@@ -166,11 +166,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         int[] entityTokenIds = entityTokenIds();
         int[] propertyKeyIds = propertyKeyIds();
         IntPredicate propertyKeyIdFilter;
-        if ( propertyKeyIds.length == 0 )
-        {
-            propertyKeyIdFilter = Predicates.ALWAYS_TRUE_INT;
-        }
-        else
         {
             propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
         }
@@ -317,6 +312,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             try
             {
+                Thread.sleep( 1000 );
                 population.flip();
                 populations.remove( population );
             }
@@ -329,11 +325,6 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] propertyKeyIds()
     {
-        if ( populations.stream().anyMatch( indexPopulation -> indexPopulation.schema().getEntityTokenIds().length == 0 ) )
-        {
-            //No token is any token
-            return new int[0];
-        }
         return populations.stream().flatMapToInt( this::propertyKeyIds ).distinct().toArray();
     }
 
@@ -344,6 +335,11 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private int[] entityTokenIds()
     {
+        if ( populations.stream().anyMatch( indexPopulation -> indexPopulation.schema().getEntityTokenIds().length == 0 ) )
+        {
+            //No token is any token
+            return new int[0];
+        }
         return populations.stream().flatMapToInt( population -> Arrays.stream( population.schema().getEntityTokenIds() ) ).toArray();
     }
 

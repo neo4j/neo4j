@@ -195,6 +195,7 @@ public class SchemaRuleSerialization
 
         length += indexDescriptor.schema().computeWith( schemaSizeComputer );
         length += UTF8.computeRequiredByteBufferSize( indexRule.getName() );
+        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.metadata() );
         return length;
     }
 
@@ -235,7 +236,7 @@ public class SchemaRuleSerialization
         case GENERAL_INDEX:
             schema = readLabelSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            return IndexRule.indexRule( id, indexProviderMap.apply( indexProvider ).indexDescriptorFor( schema, name ), indexProvider, name );
+            return IndexRule.indexRule( id, indexProviderMap.apply( indexProvider ).indexDescriptorFor( schema, name, "" ), indexProvider, name );
 
         case UNIQUE_INDEX:
             long owningConstraint = source.getLong();
@@ -249,7 +250,8 @@ public class SchemaRuleSerialization
             //TODO typing is ugly here
             NonSchemaSchemaDescriptor nonSchema = readNonSchemaSchema( source );
             name = readRuleName( id, IndexRule.class, source );
-            IndexDescriptor indexDescriptor = indexProviderMap.apply( indexProvider ).indexDescriptorFor( nonSchema, name );
+            String metadata = readMetaData( source );
+            IndexDescriptor indexDescriptor = indexProviderMap.apply( indexProvider ).indexDescriptorFor( nonSchema, name, metadata );
             return IndexRule.indexRule( id, indexDescriptor, indexProvider, name );
 
         default:
@@ -331,6 +333,16 @@ public class SchemaRuleSerialization
             ruleName = SchemaRule.generateName( id, type );
         }
         return ruleName;
+    }
+
+    private static String readMetaData( ByteBuffer source )
+    {
+        String metadata = "";
+        if ( source.remaining() >= UTF8.MINIMUM_SERIALISED_LENGTH_BYTES )
+        {
+            metadata = UTF8.getDecodedStringFrom( source );
+        }
+        return metadata;
     }
 
     // READ HELP

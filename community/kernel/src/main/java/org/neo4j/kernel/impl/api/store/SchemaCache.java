@@ -322,7 +322,7 @@ public class SchemaCache
                     forLabel.remove( rule.getIndexDescriptor() );
                     if ( forLabel.isEmpty() )
                     {
-                        indexDescriptorsByLabel.remove( schema.keyId() );
+                        indexDescriptorsByLabel.remove( entityTokenId );
                     }
                 }
 

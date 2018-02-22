@@ -26,45 +26,59 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.fulltext.lucene.FulltextFactory;
+import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltext;
 import org.neo4j.kernel.api.impl.fulltext.lucene.WritableFulltext;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.NonSchemaSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.EntityType;
 
 class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> implements FulltextAccessor
 {
     private final FulltextFactory factory;
+    private final IndexStorageFactory indexStorageFactory;
+
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final Map<FulltextIndexDescriptor,FulltextIndexAccessor> accessors;
     private final Map<String,FulltextIndexAccessor> accessorsByName;
+    private final Config config;
+    private final String analyzerClassName;
 
     FulltextIndexProvider( Descriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory, FileSystemAbstraction fileSystem,
-            String analyzerClassName, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
-            RelationshipTypeTokenHolder relationshipTypeTokenHolder ) throws IOException
+            Config config, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
+            RelationshipTypeTokenHolder relationshipTypeTokenHolder, DirectoryFactory directoryFactory ) throws IOException
     {
         super( descriptor, priority, directoryStructureFactory );
+        this.config = config;
+
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.indexStorageFactory = new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
+
+        analyzerClassName = config.get( FulltextConfig.fulltext_default_analyzer );
         factory = new FulltextFactory( fileSystem, directoryStructure().rootDirectory(), analyzerClassName );
         accessors = new HashMap<>();
         accessorsByName = new HashMap<>();
@@ -76,11 +90,11 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     }
 
     @Override
-    public FulltextIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    public FulltextIndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         try
         {
-            return new FulltextIndexDescriptor( schema, name, propertyKeyTokenHolder );
+            return new FulltextIndexDescriptor( schema, name, propertyKeyTokenHolder, metadata );
         }
         catch ( TokenNotFoundException e )
         {
@@ -116,8 +130,42 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
     @Override
     public InternalIndexState getInitialState( long indexId, FulltextIndexDescriptor descriptor )
     {
-        System.out.println( "internal index state" );
-        return InternalIndexState.ONLINE;
+        PartitionedIndexStorage indexStorage = getIndexStorage( indexId );
+        String failure = indexStorage.getStoredIndexFailure();
+        if ( failure != null )
+        {
+            return InternalIndexState.FAILED;
+        }
+        if ( descriptor.analyzer() != analyzerClassName )
+        {
+            return InternalIndexState.POPULATING;
+        }
+        try
+        {
+            return indexIsOnline( descriptor ) ? InternalIndexState.ONLINE : InternalIndexState.POPULATING;
+        }
+        catch ( IOException e )
+        {
+            return InternalIndexState.POPULATING;
+        }
+    }
+
+    private PartitionedIndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId, config.get( GraphDatabaseSettings.archive_failed_index ) );
+    }
+
+    private boolean indexIsOnline( FulltextIndexDescriptor descriptor ) throws IOException
+    {
+        try ( LuceneFulltext index = factory.createFulltextIndex( descriptor ) )
+        {
+            if ( index.exists() )
+            {
+                index.open();
+                return index.isOnline();
+            }
+            return false;
+        }
     }
 
     @Override
@@ -157,7 +205,7 @@ class FulltextIndexProvider extends IndexProvider<FulltextIndexDescriptor> imple
             entityTokenIds = Arrays.stream( entityTokens ).mapToInt( relationshipTypeTokenHolder::getOrCreateId ).toArray();
         }
         int[] propertyIds = Arrays.stream(properties).mapToInt( propertyKeyTokenHolder::getOrCreateId ).toArray();
-        return indexDescriptorFor( new NonSchemaSchemaDescriptor( entityTokenIds, type, propertyIds ), name );
+        return indexDescriptorFor( new NonSchemaSchemaDescriptor( entityTokenIds, type, propertyIds), name, analyzerClassName );
     }
 
     @Override

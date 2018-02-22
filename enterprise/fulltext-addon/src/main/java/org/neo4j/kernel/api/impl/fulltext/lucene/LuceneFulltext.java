@@ -182,4 +182,9 @@ public class LuceneFulltext extends AbstractLuceneIndex implements Closeable
     {
         state = InternalIndexState.FAILED;
     }
+
+    public boolean isOnline()
+    {
+        return state == InternalIndexState.ONLINE;
+    }
 }

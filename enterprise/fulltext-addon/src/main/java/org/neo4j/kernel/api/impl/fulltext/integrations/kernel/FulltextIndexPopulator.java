@@ -23,8 +23,6 @@ import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.fulltext.lucene.LuceneFulltextDocumentStructure;
@@ -35,7 +33,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.values.storable.Value;
 
 public class FulltextIndexPopulator implements IndexPopulator
 {
@@ -68,15 +65,7 @@ public class FulltextIndexPopulator implements IndexPopulator
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        System.out.println( "Got updates!!" + updates.size() );
         index.getIndexWriter().addDocuments( updates.size(), () -> updates.stream().map( this::updateAsDocument ).iterator() );
-        //Ingore for now
-//        throw new UnsupportedOperationException( "not implemented" );
-//        for ( IndexEntryUpdate<?> update : updates )
-//        {
-//            update.updateMode()
-//        }
-
     }
 
     @Override
@@ -89,7 +78,7 @@ public class FulltextIndexPopulator implements IndexPopulator
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
         System.out.println( "tried to get populating updater" );
-        throw new UnsupportedOperationException( "not implemented" );
+        return new PopulatingFulltextIndexUpdater();
     }
 
     @Override
@@ -101,15 +90,12 @@ public class FulltextIndexPopulator implements IndexPopulator
             index.markAsOnline();
         }
         index.close();
-
-        System.out.println("close population");
-
     }
 
     @Override
     public void markAsFailed( String failure ) throws IOException
     {
-        //TODO whatever
+        //TODO whatever??
         System.out.println( "Mark as failed" );
         System.out.println( failure );
 
@@ -130,5 +116,42 @@ public class FulltextIndexPopulator implements IndexPopulator
     private Document updateAsDocument( IndexEntryUpdate<?> update )
     {
         return LuceneFulltextDocumentStructure.documentRepresentingProperties( update.getEntityId(), descriptor.propertyNames(), update.values() );
+    }
+
+    private class PopulatingFulltextIndexUpdater implements IndexUpdater
+    {
+
+        @Override
+        public void process( IndexEntryUpdate<?> update ) throws IOException
+        {
+            //TODO is this comment copy pasted? What does it mean?
+            // we do not support adding partial entries
+            assert update.indexKey().schema().equals( descriptor.schema() );
+
+            switch ( update.updateMode() )
+            {
+            case ADDED:
+
+                long nodeId = update.getEntityId();
+                index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId ),
+                        LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId, descriptor.propertyNames(), update.values() ) );
+
+            case CHANGED:
+                long nodeId1 = update.getEntityId();
+                index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( nodeId1 ),
+                        LuceneFulltextDocumentStructure.documentRepresentingProperties( nodeId1, descriptor.propertyNames(), update.values() ) );
+                break;
+            case REMOVED:
+                index.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ) );
+                break;
+            default:
+                throw new UnsupportedOperationException();
+            }
+        }
+
+        @Override
+        public void close()
+        {
+        }
     }
 }

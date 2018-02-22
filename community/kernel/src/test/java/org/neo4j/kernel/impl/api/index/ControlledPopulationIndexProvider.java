@@ -91,7 +91,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name )
+    public IndexDescriptor indexDescriptorFor( SchemaDescriptor schema, String name, String metadata )
     {
         return SchemaIndexDescriptorFactory.forSchema( schema );
     }

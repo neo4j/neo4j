@@ -35,6 +35,6 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class FulltextConfig implements LoadableConfig
 {
     @Description( "Define the analyzer to use for the fulltext index. Expects the fully qualified classname of the analyzer to use" )
-    static final Setting<String> fulltext_default_analyzer = setting( "unsupported.dbms.fulltext_default_analyzer", STRING,
+    public static final Setting<String> fulltext_default_analyzer = setting( "unsupported.dbms.fulltext_default_analyzer", STRING,
             "org.apache.lucene.analysis.standard.StandardAnalyzer" );
 }

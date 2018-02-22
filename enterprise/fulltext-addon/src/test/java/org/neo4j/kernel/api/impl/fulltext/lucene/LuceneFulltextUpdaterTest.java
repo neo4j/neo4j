@@ -844,7 +844,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         race.addContestant( changeConfig );
         race.addContestants( bobThreads, bobWork );
         race.go();
-
         try ( Transaction tx = db.beginTx() )
         {
             PrimitiveLongIterator bob = fulltextAccessor.query( "nodes", "bob" );
