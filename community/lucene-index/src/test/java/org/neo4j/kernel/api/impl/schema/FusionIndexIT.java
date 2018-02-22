@@ -141,7 +141,7 @@ public class FusionIndexIT
             db.createNode( label ).setProperty( propKey, "string" );
             tx.success();
         }
-        db.shutdown();
+        db.shutdownAndKeepStore();
     }
 
     private void createIndex()
