@@ -194,7 +194,7 @@ public class ServerSettings implements LoadableConfig
                   "endpoints. This setting is in the 'unsupported' namespace, because the scripting feature might be " +
                   "removed entirely in a future release." )
     public static final Setting<Boolean> script_enabled =
-            setting("unsupported.dbms.security.script_enabled", BOOLEAN, TRUE );
+            setting("unsupported.dbms.security.script_enabled", BOOLEAN, FALSE );
 
     @Deprecated
     @Internal
