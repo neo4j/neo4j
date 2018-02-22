@@ -19,13 +19,14 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.Clock;
-import java.time.DateTimeException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalUnit;
@@ -43,7 +44,6 @@ import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DurationValue.SECONDS_PER_DAY;
-import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalTimeValue.optInt;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
@@ -61,10 +61,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     public static TimeValue time( int hour, int minute, int second, int nanosOfSecond, ZoneOffset offset )
     {
-        return new TimeValue( OffsetTime.of( hour, minute, second, nanosOfSecond, offset ) );
+        return new TimeValue(
+                OffsetTime.of( LocalTime.of( hour, minute, second, nanosOfSecond ), offset ) );
     }
 
-    public static TimeValue time( long nanosOfDayUTC, ZoneOffset offset )
+    public static TimeValue time( long nanosOfDayUTC, ZoneId offset )
     {
         return new TimeValue( OffsetTime.ofInstant( Instant.ofEpochSecond( 0, nanosOfDayUTC ), offset ) );
     }
@@ -94,6 +95,11 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static TimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectTime( from );
+    }
+
     public static TimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -103,78 +109,73 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static int validNano( AnyValue millisecond, AnyValue microsecond, AnyValue nanosecond )
+    static TimeBuilder<TimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        long ms = safeCastIntegral( "millisecond", millisecond, 0 );
-        long us = safeCastIntegral( "microsecond", microsecond, 0 );
-        long ns = safeCastIntegral( "nanosecond", nanosecond, 0 );
-        if ( ms < 0 || ms >= 1000 )
+        return new TimeBuilder<TimeValue>( defaultZone )
         {
-            throw new IllegalArgumentException( "Invalid millisecond: " + ms );
-        }
-        if ( us < 0 || us >= (millisecond != null || nanosecond != null ? 1000 : 1000_000) )
-        {
-            throw new IllegalArgumentException( "Invalid microsecond: " + us );
-        }
-        if ( ns < 0 || ns >= ((millisecond != null || microsecond != null) ? 1000 : 1000_000_000) )
-        {
-            throw new IllegalArgumentException( "Invalid nanosecond: " + ns );
-        }
-        return (int) (ms * 1000_000 + us * 1000 + ns);
-    }
 
-    static StructureBuilder<AnyValue,TimeValue> builder( Supplier<ZoneId> defaultZone )
-    {
-        return new TimeBuilder<AnyValue,TimeValue>()
-        {
-            @Override
-            protected ZoneId timezone( AnyValue timezone )
-            {
-                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
-            }
+            private final OffsetTime defaulTime =
+                    OffsetTime.of( Field.hour.defaultValue, Field.minute.defaultValue, Field.second.defaultValue, Field.nanosecond.defaultValue,
+                            ZoneOffset.of( timezone().toString() ) );
 
             @Override
-            protected TimeValue selectTime( AnyValue temporal )
+            public TimeValue buildInternal()
             {
-                OffsetTime time = offsetTime( temporal );
-                return time != null ? time( time ) : null;
-            }
-
-            @Override
-            protected TimeValue constructTime(
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            private OffsetTime offsetTime( AnyValue value )
-            {
-                if ( value instanceof TemporalValue )
+                boolean selecting = fields.containsKey( Field.time );
+                OffsetTime result;
+                if ( selecting )
                 {
-                    try
+                    AnyValue time = fields.get( Field.time );
+                    if ( !(time instanceof TemporalValue) )
                     {
-                        return OffsetTime.from( ((TemporalValue) value).temporal() );
+                        throw new IllegalArgumentException( String.format( "Cannot construct time from: %s", time ) );
                     }
-                    catch ( DateTimeException e )
-                    {
-                        return null;
-                    }
+                    result = ((TemporalValue) time).getTimePart( defaultZone );
                 }
                 else
                 {
-                    return null;
+                    result = defaulTime;
                 }
+
+                result = assignAllFields( result );
+                if ( timezone != null )
+                {
+                    ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezone() ).getOffset();
+                    if ( selecting )
+                    {
+                        result = result.withOffsetSameInstant( currentOffset );
+                    }
+                    else
+                    {
+                        result = result.withOffsetSameLocal( currentOffset );
+                    }
+                }
+                return time( result );
+            }
+            @Override
+            protected TimeValue selectTime(
+                    AnyValue temporal )
+            {
+                if ( !(temporal instanceof TemporalValue) )
+                {
+                    throw new IllegalArgumentException( String.format( "Cannot construct time from: %s", temporal ) );
+                }
+                if ( temporal instanceof TimeValue &&
+                        timezone == null )
+                {
+                    return (TimeValue) temporal;
+                }
+
+                TemporalValue v = (TemporalValue) temporal;
+                OffsetTime time = v.getTimePart(defaultZone);
+                if ( timezone != null )
+                {
+                    ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), timezone() ).getOffset();
+                    time = time.withOffsetSameInstant( currentOffset );
+                }
+                return time( time );
             }
         };
-    }
-
-    public abstract static class Compiler<Input> extends TimeBuilder<Input,MethodHandle>
-    {
     }
 
     private final OffsetTime value;
@@ -193,6 +194,24 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
 
     @Override
     OffsetTime temporal()
+    {
+        return value;
+    }
+
+    @Override
+    LocalDate getDatePart()
+    {
+        throw new IllegalArgumentException( String.format( "Cannot get the date of: %s", this ) );
+    }
+
+    @Override
+    LocalTime getLocalTimePart()
+    {
+        return value.toLocalTime();
+    }
+
+    @Override
+    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
     {
         return value;
     }
@@ -306,8 +325,13 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
         return offset;
     }
 
-    abstract static class TimeBuilder<Input, Result> extends Builder<Input,Result>
+    abstract static class TimeBuilder<Result> extends Builder<Result>
     {
+        TimeBuilder( Supplier<ZoneId> defaultZone )
+        {
+            super( defaultZone );
+        }
+
         @Override
         protected final boolean supportsDate()
         {
@@ -320,152 +344,6 @@ public final class TimeValue extends TemporalValue<OffsetTime,TimeValue>
             return true;
         }
 
-        @Override
-        protected Result selectDateTime( Input temporal )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result selectDateAndTime( Input date, Input time )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result selectDateWithConstructedTime(
-                Input date,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result selectDate( Input temporal )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructYear( Input year )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructCalendarDate( Input year, Input month, Input day )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructCalendarDateWithSelectedTime( Input year, Input month, Input day, Input time )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructCalendarDateWithConstructedTime(
-                Input year,
-                Input month,
-                Input day,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructWeekDate( Input year, Input week, Input dayOfWeek )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructWeekDateWithSelectedTime( Input year, Input week, Input dayOfWeek, Input time )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructWeekDateWithConstructedTime(
-                Input year,
-                Input week,
-                Input dayOfWeek,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructQuarterDate( Input year, Input quarter, Input dayOfQuarter )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructQuarterDateWithSelectedTime(
-                Input year,
-                Input quarter,
-                Input dayOfQuarter,
-                Input time )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructQuarterDateWithConstructedTime(
-                Input year,
-                Input quarter,
-                Input dayOfQuarter,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructOrdinalDate( Input year, Input ordinalDay )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructOrdinalDateWithSelectedTime( Input year, Input ordinalDay, Input time )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
-
-        @Override
-        protected Result constructOrdinalDateWithConstructedTime(
-                Input year,
-                Input ordinalDay,
-                Input hour,
-                Input minute,
-                Input second,
-                Input millisecond,
-                Input microsecond,
-                Input nanosecond )
-        {
-            throw new IllegalStateException( "date not supported" );
-        }
+        protected abstract Result selectTime( AnyValue time );
     }
 }

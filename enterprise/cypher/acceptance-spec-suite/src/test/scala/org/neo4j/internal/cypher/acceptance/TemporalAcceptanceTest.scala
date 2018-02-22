@@ -439,8 +439,10 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   private def shouldNotConstructWithArg(func: String, args: Seq[String]): Unit = {
     for (arg <- args) {
       val query = s"RETURN $func($arg)"
-      an[IllegalArgumentException] shouldBe thrownBy {
-        println(graph.execute(query).next())
+      withClue(s"Executing $query") {
+        an[IllegalArgumentException] shouldBe thrownBy {
+          println(graph.execute(query).next())
+        }
       }
     }
   }

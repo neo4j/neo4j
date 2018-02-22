@@ -19,12 +19,18 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -42,6 +48,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
 import static org.neo4j.values.storable.DateValue.DATE_PATTERN;
 import static org.neo4j.values.storable.DateValue.parseDate;
+import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
 import static org.neo4j.values.storable.LocalTimeValue.TIME_PATTERN;
 import static org.neo4j.values.storable.LocalTimeValue.parseTime;
 
@@ -98,6 +105,11 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static LocalDateTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectDateTime( from );
+    }
+
     public static LocalDateTimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -107,169 +119,68 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static StructureBuilder<AnyValue,LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
+    static DateTimeValue.DateTimeBuilder<LocalDateTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new DateTimeValue.DateTimeBuilder<AnyValue,LocalDateTimeValue>()
+        return new DateTimeValue.DateTimeBuilder<LocalDateTimeValue>( defaultZone )
         {
+            private final LocalDateTime defaulLocalDateTime =
+                    LocalDateTime.of( Field.year.defaultValue, Field.month.defaultValue, Field.day.defaultValue, Field.hour.defaultValue,
+                            Field.minute.defaultValue );
+
             @Override
-            protected ZoneId timezone( AnyValue timezone )
+            public LocalDateTimeValue buildInternal()
             {
-                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
+                LocalDateTime result;
+                if ( fields.containsKey( Field.time ) || fields.containsKey( Field.date ) || fields.containsKey( Field.datetime ) )
+                {
+//                    AnyValue time = fields.get( Field.time );
+//                    if ( !(time instanceof TemporalValue) )
+//                    {
+//                        throw new IllegalArgumentException( String.format( "Cannot construct local date time from: %s", time ) );
+//                    }
+                    // TODO select date, time, or both
+                    throw new UnsupportedOperationException(  );
+                }
+                else if ( fields.containsKey( Field.week ) )
+                {
+                    // Be sure to be in the start of the week based year (which can be later than 1st Jan)
+                    result = defaulLocalDateTime
+                            .with( IsoFields.WEEK_BASED_YEAR, safeCastIntegral( Field.year.name(), fields.get( Field.year ),
+                                    Field.year.defaultValue ) )
+                            .with( IsoFields.WEEK_OF_WEEK_BASED_YEAR, 1 )
+                            .with( ChronoField.DAY_OF_WEEK, 1 );
+                }
+                else
+                {
+                    result = defaulLocalDateTime;
+                }
+
+                result = assignAllFields( result );
+                return localDateTime( result );
+            }
+
+            private LocalDateTime getLocalDateTimeOf( AnyValue temporal )
+            {
+                if ( temporal instanceof TemporalValue )
+                {
+                    TemporalValue v = (TemporalValue) temporal;
+                    LocalDate datePart = v.getDatePart();
+                    LocalTime timePart = v.getLocalTimePart();
+                    return LocalDateTime.of( datePart, timePart );
+                }
+                throw new IllegalArgumentException( String.format( "Cannot construct date from: %s", temporal ) );
             }
 
             @Override
-            protected LocalDateTimeValue selectDateTime( AnyValue temporal )
+            protected LocalDateTimeValue selectDateTime( AnyValue datetime )
             {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue selectDateAndTime( AnyValue date, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue selectDateWithConstructedTime(
-                    AnyValue date,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue selectDate( AnyValue temporal )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructYear( AnyValue year )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructCalendarDate( AnyValue year, AnyValue month, AnyValue day )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructCalendarDateWithSelectedTime(
-                    AnyValue year, AnyValue month, AnyValue day, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructCalendarDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue month,
-                    AnyValue day,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructWeekDate( AnyValue year, AnyValue week, AnyValue dayOfWeek )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructWeekDateWithSelectedTime(
-                    AnyValue year, AnyValue week, AnyValue dayOfWeek, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructWeekDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue week,
-                    AnyValue dayOfWeek,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructQuarterDate(
-                    AnyValue year, AnyValue quarter, AnyValue dayOfQuarter )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructQuarterDateWithSelectedTime(
-                    AnyValue year, AnyValue quarter, AnyValue dayOfQuarter, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructQuarterDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue quarter,
-                    AnyValue dayOfQuarter,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructOrdinalDate( AnyValue year, AnyValue ordinalDay )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructOrdinalDateWithSelectedTime(
-                    AnyValue year, AnyValue ordinalDay, AnyValue time )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
-            }
-
-            @Override
-            protected LocalDateTimeValue constructOrdinalDateWithConstructedTime(
-                    AnyValue year,
-                    AnyValue ordinalDay,
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
-            {
-                throw new UnsupportedOperationException( "not implemented" );
+                if ( datetime instanceof LocalDateTimeValue )
+                {
+                    return (LocalDateTimeValue) datetime;
+                }
+                return localDateTime( getLocalDateTimeOf( datetime ) );
             }
         };
-    }
-
-    public abstract static class Compiler<Input> extends DateTimeValue.DateTimeBuilder<Input,MethodHandle>
-    {
     }
 
     private final LocalDateTime value;
@@ -290,6 +201,25 @@ public final class LocalDateTimeValue extends TemporalValue<LocalDateTime,LocalD
     LocalDateTime temporal()
     {
         return value;
+    }
+
+    @Override
+    LocalDate getDatePart()
+    {
+        return value.toLocalDate();
+    }
+
+    @Override
+    LocalTime getLocalTimePart()
+    {
+        return value.toLocalTime();
+    }
+
+    @Override
+    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
+    {
+        ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ).getOffset();
+        return OffsetTime.of(value.toLocalTime(), currentOffset);
     }
 
     @Override

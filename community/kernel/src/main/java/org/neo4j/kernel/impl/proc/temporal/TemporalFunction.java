@@ -73,6 +73,8 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
     protected abstract T build( MapValue map, Supplier<ZoneId> defaultZone );
 
+    protected abstract T select( AnyValue from, Supplier<ZoneId> defaultZone );
+
     protected abstract T positionalCreate( AnyValue[] input );
 
     protected abstract T truncate( TemporalUnit unit, TemporalValue input, MapValue fields, Supplier<ZoneId> defaultZone );
@@ -100,6 +102,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         procedures.register( new Now<>( base, "statement" ) );
         procedures.register( new Now<>( base, "realtime" ) );
         procedures.register( new Truncate<>( base ) );
+        base.registerMore( procedures );
     }
 
     private static String basename( Class<? extends TemporalFunction> function )
@@ -129,6 +132,11 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         throw new IllegalArgumentException( name + " should be a string, not: " + value );
     }
 
+    void registerMore( Procedures procedures ) throws ProcedureException
+    {
+        // Empty by default
+    }
+
     @Override
     public final UserFunctionSignature signature()
     {
@@ -149,6 +157,10 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         else if ( input[0] instanceof TextValue )
         {
             return parse( (TextValue) input[0], defaultZone( ctx ) );
+        }
+        else if ( input[0] instanceof TemporalValue )
+        {
+            return select( input[0], defaultZone( ctx ) );
         }
         else if ( input[0] instanceof MapValue )
         {

@@ -19,8 +19,28 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.AnyValue;
+
 public abstract class NumberValue extends ScalarValue
 {
+    public static double safeCastFloatingPoint( String name, AnyValue value, double defaultValue )
+    {
+        if ( value == null )
+        {
+            return defaultValue;
+        }
+        if ( value instanceof IntegralValue )
+        {
+            return ((IntegralValue) value).doubleValue();
+        }
+        if ( value instanceof FloatingPointValue )
+        {
+            return ((FloatingPointValue) value).doubleValue();
+        }
+        throw new IllegalArgumentException(
+                name + " must be a number value, but was a " + value.getClass().getSimpleName() );
+    }
+
     public abstract double doubleValue();
 
     public abstract long longValue();

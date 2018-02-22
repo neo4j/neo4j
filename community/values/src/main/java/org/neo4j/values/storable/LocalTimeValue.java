@@ -19,10 +19,14 @@
  */
 package org.neo4j.values.storable;
 
-import java.lang.invoke.MethodHandle;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.OffsetTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalUnit;
@@ -39,8 +43,6 @@ import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
-import static org.neo4j.values.storable.IntegralValue.safeCastIntegral;
-import static org.neo4j.values.storable.TimeValue.validNano;
 
 public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue>
 {
@@ -89,6 +91,11 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         return StructureBuilder.build( builder( defaultZone ), map );
     }
 
+    public static LocalTimeValue select( AnyValue from, Supplier<ZoneId> defaultZone )
+    {
+        return builder( defaultZone ).selectTime( from );
+    }
+
     public static LocalTimeValue truncate(
             TemporalUnit unit,
             TemporalValue input,
@@ -98,48 +105,49 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static StructureBuilder<AnyValue,LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
+    static TimeValue.TimeBuilder<LocalTimeValue> builder( Supplier<ZoneId> defaultZone )
     {
-        return new TimeValue.TimeBuilder<AnyValue,LocalTimeValue>()
+        return new TimeValue.TimeBuilder<LocalTimeValue>( defaultZone )
         {
-            @Override
-            protected ZoneId timezone( AnyValue timezone )
-            {
-                return timezone == null ? defaultZone.get() : timezoneOf( timezone );
-            }
+
+            private final LocalTime defaulLocalTime = LocalTime.of( Field.hour.defaultValue, Field.minute.defaultValue );
 
             @Override
-            protected LocalTimeValue selectTime( AnyValue temporal )
+            public LocalTimeValue buildInternal()
             {
-                // TODO other cases, e.g. DateTimeValue
-                if ( temporal instanceof LocalTimeValue )
+                LocalTime result;
+                if ( fields.containsKey( Field.time ) )
                 {
-                    return (LocalTimeValue) temporal;
+                    AnyValue time = fields.get( Field.time );
+                    if ( !(time instanceof TemporalValue) )
+                    {
+                        throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                    }
+                    result = ((TemporalValue) time).getLocalTimePart();
                 }
-                throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", temporal ) );
+                else
+                {
+                    result = defaulLocalTime;
+                }
+
+                result = assignAllFields( result );
+                return localTime( result );
             }
 
             @Override
-            protected LocalTimeValue constructTime(
-                    AnyValue hour,
-                    AnyValue minute,
-                    AnyValue second,
-                    AnyValue millisecond,
-                    AnyValue microsecond,
-                    AnyValue nanosecond )
+            protected LocalTimeValue selectTime(
+                    AnyValue time )
             {
-                assertDefinedInOrder( hour, "hour", minute, "minute", second, "second", oneOf( millisecond, microsecond, nanosecond ), "subsecond" );
-                return localTime(
-                        (int) safeCastIntegral( "hour", hour, 0 ),
-                        (int) safeCastIntegral( "minute", minute, 0 ),
-                        (int) safeCastIntegral( "second", second, 0 ),
-                        validNano( millisecond, microsecond, nanosecond ) );
+
+                if ( !(time instanceof TemporalValue) )
+                {
+                    throw new IllegalArgumentException( String.format( "Cannot construct local time from: %s", time ) );
+                }
+                TemporalValue v = (TemporalValue) time;
+                LocalTime lt = v.getLocalTimePart();
+                return localTime( lt );
             }
         };
-    }
-
-    public abstract static class Compiler<Input> extends TimeValue.TimeBuilder<Input,MethodHandle>
-    {
     }
 
     private final LocalTime value;
@@ -160,6 +168,25 @@ public final class LocalTimeValue extends TemporalValue<LocalTime,LocalTimeValue
     LocalTime temporal()
     {
         return value;
+    }
+
+    @Override
+    LocalDate getDatePart()
+    {
+        throw new IllegalArgumentException( String.format( "Cannot get the date of: %s", this ) );
+    }
+
+    @Override
+    LocalTime getLocalTimePart()
+    {
+        return value;
+    }
+
+    @Override
+    OffsetTime getTimePart( Supplier<ZoneId> defaultZone )
+    {
+        ZoneOffset currentOffset = ZonedDateTime.ofInstant( Instant.now(), defaultZone.get() ).getOffset();
+        return OffsetTime.of( value, currentOffset );
     }
 
     @Override
