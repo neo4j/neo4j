@@ -403,6 +403,58 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
     ))
   }
 
+  test("array of 3D cartesian points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({x: num, y: num, z: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.0, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 2.0, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 3.0, 3.0, 3.0)
+    ))
+  }
+
+  test("array of 3D WGS84 points should be readable from node property") {
+    // Given
+    createLabeledNode("Place")
+    graph.execute(
+      """
+        |UNWIND [1,2,3] as num
+        |WITH point({longitude: num, latitude: num, height: num}) as p
+        |WITH collect(p) as points
+        |MATCH (place:Place) SET place.location = points
+        |RETURN place.location as points
+      """.stripMargin)
+
+    // When
+    val result = executeWith(Configs.All, "MATCH (p:Place) RETURN p.location as points",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorWithText("Projection", "point"),
+        expectPlansToFail = Configs.AllRulePlanners))
+
+    // Then
+    val points = result.columnAs("points").toList.head.asInstanceOf[Array[_]]
+    points should equal(Array(
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 1.0, 1.0, 1.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 2.0, 2.0, 2.0),
+      Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 3.0, 3.0, 3.0)
+    ))
+  }
+
   test("array of wgs84 points should be readable from node property") {
     // Given
     createLabeledNode("Place")
