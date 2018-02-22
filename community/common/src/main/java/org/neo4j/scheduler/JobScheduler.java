@@ -197,6 +197,11 @@ public interface JobScheduler extends Lifecycle
          */
         public static Group cypherWorker = new Group( "CypherWorker" );
 
+        /**
+         * VM pause monitor
+         */
+        public static Group vmPauseMonitor = new Group( "VmPauseMonitor" );
+
         private Groups()
         {
         }
