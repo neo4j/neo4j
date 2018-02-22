@@ -72,6 +72,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
     // where the uncompressed profile is 87.5 KiB. A 35% reduction.
     private static final String COMPRESSION_FORMAT = CompressorStreamFactory.getDeflate();
     private static final int IO_PARALLELISM = Runtime.getRuntime().availableProcessors();
+    private static final CompressorStreamFactory COMPRESSOR_FACTORY = new CompressorStreamFactory( true, 1024 );
 
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
@@ -278,7 +279,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         InputStream source = fs.openAsInputStream( input );
         try
         {
-            return compressors().createCompressorInputStream( COMPRESSION_FORMAT, source );
+            return COMPRESSOR_FACTORY.createCompressorInputStream( COMPRESSION_FORMAT, source );
         }
         catch ( CompressorException e )
         {
@@ -292,18 +293,13 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         OutputStream sink = fs.openAsOutputStream( output, false );
         try
         {
-            return compressors().createCompressorOutputStream( COMPRESSION_FORMAT, sink );
+            return COMPRESSOR_FACTORY.createCompressorOutputStream( COMPRESSION_FORMAT, sink );
         }
         catch ( CompressorException e )
         {
             IOUtils.closeAllSilently( sink );
             throw new IOException( "Exception when building compressor.", e );
         }
-    }
-
-    private CompressorStreamFactory compressors()
-    {
-        return new CompressorStreamFactory( true, 1024 );
     }
 
     private File profileOutputFileFinal( PagedFile file )
