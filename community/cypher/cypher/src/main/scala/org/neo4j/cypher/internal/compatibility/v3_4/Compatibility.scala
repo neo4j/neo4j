@@ -86,18 +86,20 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
   private def queryGraphSolver = LatestRuntimeVariablePlannerCompatibility.
     createQueryGraphSolver(maybePlannerNameV3_4.getOrElse(CostBasedPlannerName.default), monitors, config)
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, preparationTracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
+    // The "preparationTracer" can get closed, even if a ParsedQuery is cached and reused. It should not
+    // be used inside ParsedQuery.plan. There, use the "planningTracer" instead
     val preparedSyntacticQueryForV_3_4 =
       Try(compiler.parseQuery(preParsedQuery.statement,
                               preParsedQuery.rawStatement,
                               notificationLogger, preParsedQuery.planner.name,
                               preParsedQuery.debugOptions,
-                              Some(preParsedQuery.offset), tracer))
+                              Some(preParsedQuery.offset), preparationTracer))
     new ParsedQuery {
-      override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
+      override def plan(transactionalContext: TransactionalContextWrapper, planningTracer: CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any], Seq[String]) = runSafely {
         val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
@@ -105,7 +107,7 @@ case class Compatibility[CONTEXT <: CommunityRuntimeContext,
         val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(transactionalContext, notificationLogger))
         //Context used to create logical plans
         val logicalPlanIdGen = new SequentialIdGen()
-        val context = contextCreatorV3_4.create(tracer, notificationLogger, planContext,
+        val context = contextCreatorV3_4.create(planningTracer, notificationLogger, planContext,
                                                         syntacticQuery.queryText, preParsedQuery.debugOptions,
                                                         Some(preParsedQuery.offset), monitors,
                                                         CachedMetricsFactory(SimpleMetricsFactory), queryGraphSolver,
