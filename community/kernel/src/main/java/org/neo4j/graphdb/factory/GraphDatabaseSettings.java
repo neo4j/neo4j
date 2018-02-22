@@ -570,7 +570,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Description( "The profiling frequency for the page cache. Accurate profiles allow the page cache to do active " +
                   "warmup after a restart, reducing the mean time to performance." )
-    public static Setting<Duration> pagecache_warmup_profiling_interval =
+    public static final Setting<Duration> pagecache_warmup_profiling_interval =
             setting( "unsupported.dbms.memory.pagecache.warmup.profile.interval", DURATION, "1m" );
 
     /**
