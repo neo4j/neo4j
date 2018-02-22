@@ -248,7 +248,7 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
     graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
 
     // When
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners,
+    val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
       "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should useOperatorWithText("Projection", "point")
@@ -259,7 +259,7 @@ class SpatialIndexResultsAcceptanceTest extends ExecutionEngineFunSuite with Cyp
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
     point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
     // And CRS names should equal
-    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/7203/")
+    point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/9157/")
   }
 
   test("with multiple 3D indexed points only exact match should be returned") {

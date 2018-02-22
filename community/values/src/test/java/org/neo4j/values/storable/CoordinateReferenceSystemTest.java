@@ -48,7 +48,7 @@ public class CoordinateReferenceSystemTest
         }
         catch ( IllegalArgumentException e )
         {
-            assertEquals( "Unknown CRS code: 42", e.getMessage() );
+            assertEquals( "Unknown coordinate reference system code: 42", e.getMessage() );
         }
     }
 

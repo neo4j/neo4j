@@ -24,7 +24,17 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
 import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
+import scala.language.implicitConversions
+
 class DistanceFunctionTest extends CypherFunSuite {
+
+  implicit def javaToScalaPair(pair: org.neo4j.helpers.collection.Pair[PointValue, PointValue]): (PointValue, PointValue) = (pair.first(), pair.other())
+
+  def boundingBox(center: PointValue, distance: Double): (PointValue, PointValue) =
+    center.getCoordinateReferenceSystem.getCalculator.boundingBox(center, distance)
+
+  def distance(p1: PointValue, p2: PointValue): Double =
+    p1.getCoordinateReferenceSystem.getCalculator.distance(p1, p2)
 
   test("should calculate correct bounding box") {
     val southPole = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90)
@@ -37,8 +47,9 @@ class DistanceFunctionTest extends CypherFunSuite {
     val distances = Seq(1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0)
 
     for (point <- points; distance <- distances) {
+      val calculator = point.getCoordinateReferenceSystem.getCalculator
       withClue(s"Calculating bounding box with distance $distance of $point\n") {
-        val (bottomLeft, topRight) = HaversinCalculator.boundingBox(point, distance)
+        val (bottomLeft, topRight) = boundingBox(point, distance)
         var minLat = Double.MaxValue
         var maxLat = Double.MinValue
         var minLong = Double.MaxValue
@@ -56,8 +67,8 @@ class DistanceFunctionTest extends CypherFunSuite {
           if (destLong < minLong) minLong = destLong
           if (destLong > maxLong) maxLong = destLong
         }
-        val southPoleIncluded = HaversinCalculator(point, southPole) <= distance
-        val northPoleIncluded = HaversinCalculator(point, northPole) <= distance
+        val southPoleIncluded = calculator.distance(point, southPole) <= distance
+        val northPoleIncluded = calculator.distance(point, northPole) <= distance
 
         // Test that values slightly further apart are not in the bounding box
         val delta = 1.0
@@ -89,14 +100,14 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("distance zero bounding box returns same point") {
     val point = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 0)
-    val (bottomLeft, topRight) = HaversinCalculator.boundingBox(point, 0.0)
+    val (bottomLeft, topRight) = boundingBox(point, 0.0)
     bottomLeft should equal(point)
     topRight should equal(point)
   }
 
   test("bounding box touching the date line should extend to the whole longitude") {
     val point = Values.pointValue(CoordinateReferenceSystem.WGS84, -180, 0)
-    val (bottomLeft, topRight) = HaversinCalculator.boundingBox(point, 1000.0)
+    val (bottomLeft, topRight) = boundingBox(point, 1000.0)
     bottomLeft.coordinate()(0) should be(-180)
     topRight.coordinate()(0) should be(180)
   }
@@ -105,12 +116,12 @@ class DistanceFunctionTest extends CypherFunSuite {
     val farWest = Values.pointValue(CoordinateReferenceSystem.WGS84, -179.99, 0)
     val farEast = Values.pointValue(CoordinateReferenceSystem.WGS84, 179.99, 0)
 
-    HaversinCalculator((farEast, farWest)) should be < HaversinCalculator.EARTH_RADIUS_METERS
+    distance(farEast, farWest) should be < CoordinateReferenceSystem.GeographicCalculator.EARTH_RADIUS_METERS
   }
 
   test("bounding box including the north pole should be extended to all longitudes") {
     val farNorth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 90.0)
-    val (bottomLeft, topRight) = HaversinCalculator.boundingBox(farNorth, 100.0)
+    val (bottomLeft, topRight) = boundingBox(farNorth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     topRight.coordinate()(0) should be(180)
     topRight.coordinate()(1) should be(90)
@@ -118,7 +129,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
   test("bounding box including the south pole should be extended to all longitudes") {
     val farSouth = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90.0)
-    val (bottomLeft, topRight) = HaversinCalculator.boundingBox(farSouth, 100.0)
+    val (bottomLeft, topRight) = boundingBox(farSouth, 100.0)
     bottomLeft.coordinate()(0) should be(-180)
     bottomLeft.coordinate()(1) should be(-90)
     topRight.coordinate()(0) should be(180)
@@ -129,7 +140,7 @@ class DistanceFunctionTest extends CypherFunSuite {
     val np = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, -90)
     val alsoNP = Values.pointValue(CoordinateReferenceSystem.WGS84, -180, -90)
 
-    HaversinCalculator((np, alsoNP)) should equal(0.0)
+    distance(np, alsoNP) should equal(0.0)
   }
 
   private def insideBoundingBox(point: PointValue, bottomLeft: PointValue, topRight: PointValue, tolerant: Boolean): Boolean = {
@@ -175,7 +186,7 @@ class DistanceFunctionTest extends CypherFunSuite {
 
     val lat1 = Math.toRadians(startingPoint.coordinate()(1))
     val long1 = Math.toRadians(startingPoint.coordinate()(0))
-    val R = HaversinCalculator.EARTH_RADIUS_METERS
+    val R = CoordinateReferenceSystem.GeographicCalculator.EARTH_RADIUS_METERS
     val lat2 = Math.asin(Math.sin(lat1) * Math.cos(d / R) + Math.cos(lat1) * Math.sin(d / R) * Math.cos(brng))
     val long2 = long1 + Math.atan2(Math.sin(brng) * Math.sin(d / R) * Math.cos(lat1), Math.cos(d / R) - Math.sin(lat1) * Math.sin(lat2))
     val normLong2 = (long2 + 3 * Math.PI) % (2 * Math.PI) - Math.PI

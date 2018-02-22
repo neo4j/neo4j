@@ -50,8 +50,8 @@ public class CoordinateReferenceSystem implements CRS
     {
         for ( CoordinateReferenceSystem crs : TYPES )
         {
-            all_by_name.put( crs.name, crs );
-            all_by_href.put( crs.href, crs );
+            all_by_name.put( crs.name.toLowerCase(), crs );
+            all_by_href.put( crs.href.toLowerCase(), crs );
         }
     }
 
@@ -59,13 +59,13 @@ public class CoordinateReferenceSystem implements CRS
     {
         CRSTable table = CRSTable.find( tableId );
         String href = table.href( code );
-        if ( all_by_href.containsKey( href ) )
+        if ( all_by_href.containsKey( href.toLowerCase() ) )
         {
-            return all_by_href.get( href );
+            return all_by_href.get( href.toLowerCase() );
         }
         else
         {
-            throw new IllegalArgumentException( "Unknown Coordinate Reference System: " + tableId + "-" + code );
+            throw new IllegalArgumentException( "Unknown coordinate reference system: " + tableId + "-" + code );
         }
     }
 
@@ -77,42 +77,39 @@ public class CoordinateReferenceSystem implements CRS
 
     public static CoordinateReferenceSystem byName( String name )
     {
-        if ( all_by_name.containsKey( name ) )
+        if ( all_by_name.containsKey( name.toLowerCase() ) )
         {
-            return all_by_name.get( name );
+            return all_by_name.get( name.toLowerCase() );
         }
         else
         {
-            throw new IllegalArgumentException( "Unknown Coordinate Reference System: " + name );
+            throw new IllegalArgumentException( "Unknown coordinate reference system: " + name );
         }
     }
 
     public static CoordinateReferenceSystem get( String href )
     {
-        if ( all_by_href.containsKey( href ) )
+        if ( all_by_href.containsKey( href.toLowerCase() ) )
         {
-            return all_by_href.get( href );
+            return all_by_href.get( href.toLowerCase() );
         }
         else
         {
-            throw new IllegalArgumentException( "Unknown Coordinate Reference System: " + href );
+            throw new IllegalArgumentException( "Unknown coordinate reference system: " + href );
         }
     }
 
     public static CoordinateReferenceSystem get( int code )
     {
-        if ( WGS84.code == code )
+        for ( CRSTable table : CRSTable.values() )
         {
-            return WGS84;
+            String href = table.href( code );
+            if ( all_by_href.containsKey( href.toLowerCase() ) )
+            {
+                return all_by_href.get( href.toLowerCase() );
+            }
         }
-        else if ( Cartesian.code == code )
-        {
-            return Cartesian;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown CRS code: " + code );
-        }
+        throw new IllegalArgumentException( "Unknown coordinate reference system code: " + code );
     }
 
     private final String name;
@@ -261,7 +258,7 @@ public class CoordinateReferenceSystem implements CRS
         return sqrt( sqrSum );
     }
 
-    private static class CartesianCalculator implements Calculator
+    public static class CartesianCalculator implements Calculator
     {
         int dimension;
 
@@ -295,9 +292,9 @@ public class CoordinateReferenceSystem implements CRS
         }
     }
 
-    private static class GeographicCalculator implements Calculator
+    public static class GeographicCalculator implements Calculator
     {
-        private static final double EARTH_RADIUS_METERS = 6378140.0;
+        public static final double EARTH_RADIUS_METERS = 6378140.0;
         private static final double EXTENSION_FACTOR = 1.0001;
         int dimension;
 

@@ -156,11 +156,6 @@ class SpatialDistanceAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     result.toList should equal(List(Map("dist" -> null)))
   }
 
-  test("distance function should fail on wrong type") {
-    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
-    failWithError(config, "RETURN distance(1, 2) as dist", List("Type mismatch: expected Point or Geometry but was Integer"))
-  }
-
   test("points with distance query and mixed crs") {
     // Given
     graph.execute("CREATE (p:Place) SET p.location = point({y: 56.7, x: 12.78, crs: 'cartesian'})")

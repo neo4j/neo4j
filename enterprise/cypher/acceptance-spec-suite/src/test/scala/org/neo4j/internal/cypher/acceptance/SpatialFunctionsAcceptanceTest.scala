@@ -88,13 +88,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should not work with literal map of 2 coordinates and incorrect WGS84-3D crs") {
-    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS84-3D'}) as point", List(
-      "'WGS84-3D' is not a supported coordinate reference system for points",
+    failWithError(pointConfig, "RETURN point({x: 2.3, y: 4.5, crs: 'WGS-84-3D'}) as point", List(
+      "'WGS-84-3D' is not a supported coordinate reference system for points",
       "Cannot create 3D point with 2 coordinates"))
   }
 
   test("point function should not work with literal map of 3 coordinates and incorrect WGS84 crs") {
-    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'WGS84'}) as point", List(
+    failWithError(pointConfig - Configs.Version3_1 - Configs.AllRulePlanners, "RETURN point({x: 2.3, y: 4.5, z: 6.7, crs: 'wgs-84'}) as point", List(
       "Cannot create 2D point with 3 coordinates"))
   }
 
