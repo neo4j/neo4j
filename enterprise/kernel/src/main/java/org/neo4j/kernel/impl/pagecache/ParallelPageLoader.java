@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
-class ParallelPageLoader extends PageLoader
+class ParallelPageLoader implements PageLoader
 {
     private final PagedFile file;
     private final Executor executor;
@@ -71,7 +71,7 @@ class ParallelPageLoader extends PageLoader
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         while ( processed.get() < received.get() )
         {

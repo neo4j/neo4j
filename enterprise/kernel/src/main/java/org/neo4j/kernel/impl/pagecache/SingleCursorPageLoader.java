@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 
-class SingleCursorPageLoader extends PageLoader
+class SingleCursorPageLoader implements PageLoader
 {
     private final PageCursor cursor;
 
@@ -42,7 +42,7 @@ class SingleCursorPageLoader extends PageLoader
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         cursor.close();
     }

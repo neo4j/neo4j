@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.pagecache;
 import java.io.Closeable;
 import java.io.IOException;
 
-abstract class PageLoader implements Closeable
+interface PageLoader extends Closeable
 {
-    public abstract void load( long pageId ) throws IOException;
+    void load( long pageId ) throws IOException;
 }
