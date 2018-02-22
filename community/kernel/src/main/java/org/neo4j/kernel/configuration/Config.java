@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -85,6 +86,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
+    private final Map<String,BaseSetting<?>> settingsMap; // Only contains fixed settings and not groups
 
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log = new BufferingLog();
@@ -381,6 +383,13 @@ public class Config implements DiagnosticsProvider, Configuration
                 .flatMap( List::stream )
                 .collect( Collectors.toList() );
 
+        settingsMap = new HashMap<>();
+        configOptions.stream()
+                .map( ConfigOptions::settingGroup )
+                .filter( BaseSetting.class::isInstance )
+                .map( BaseSetting.class::cast )
+                .forEach( setting -> settingsMap.put( setting.name(), setting ) );
+
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
         this.overriddenDefaults.putAll( overriddenDefaults );
@@ -587,6 +596,8 @@ public class Config implements DiagnosticsProvider, Configuration
 
         synchronized ( params )
         {
+            boolean oldValueIsDefault = false;
+            boolean newValueIsDefault = false;
             String oldValue;
             String newValue;
             if ( update == null || update.isEmpty() )
@@ -596,6 +607,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 boolean hasDefault = overriddenDefault != null;
                 oldValue = hasDefault ? params.put( setting, overriddenDefault ) : params.remove( setting );
                 newValue = getDefaultValueOf( setting );
+                newValueIsDefault = true;
             }
             else
             {
@@ -609,11 +621,21 @@ public class Config implements DiagnosticsProvider, Configuration
                     validator.validate( newEntry, ignore -> {} ); // Throws if invalid
                 }
 
-                oldValue = getDefaultValueOf( setting );
-                params.put( setting, update );
+                String previousValue = params.put( setting, update );
+                if ( previousValue != null )
+                {
+                    oldValue = previousValue;
+                }
+                else
+                {
+                    oldValue = getDefaultValueOf( setting );
+                    oldValueIsDefault = true;
+                }
                 newValue = update;
             }
-            log.info( "Setting changed: '%s' changed from '%s' to '%s'", setting, oldValue, newValue );
+            log.info( "Setting changed: '%s' changed from '%s' to '%s'",
+                    setting, oldValueIsDefault ? "default (" + oldValue + ")" : oldValue,
+                    newValueIsDefault ? "default (" + newValue + ")" : newValue );
             updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
     }
@@ -636,7 +658,15 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private String getDefaultValueOf( String setting )
     {
-        return getValue( setting ).map( Object::toString ).orElse( "<no default>" );
+        if ( overriddenDefaults.containsKey( setting ) )
+        {
+            return overriddenDefaults.get( setting );
+        }
+        if ( settingsMap.containsKey( setting ) )
+        {
+            return settingsMap.get( setting ).getDefaultValue();
+        }
+        return "<no default>";
     }
 
     private Optional<ConfigValue> findConfigValue( String setting )
