@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_4.logical.plans
+package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 
-/**
-  * Consumes and buffers all source rows, marks the transaction as stable, and then produces all rows.
-  */
-case class Eager(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class ActiveReadPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
 
-  override val availableSymbols: Set[String] = source.availableSymbols
+  override def createResults(state: QueryState): Iterator[ExecutionContext] = {
+    val activeState = state.withQueryContext(state.query.withActiveRead)
+    val sourceResult = source.createResults(activeState)
 
-  override def lhs: Option[LogicalPlan] = Some(source)
+    state.decorator.decorate(this, state)
+    state.decorator.decorate(this, sourceResult)
+  }
 
-  override def rhs: Option[LogicalPlan] = None
+  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    throw new UnsupportedOperationException("This method should never be called on ActiveReadPipe")
 }

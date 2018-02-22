@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.util.v3_4.attribution.IdGen
 
 /**
-  * Consumes and buffers all source rows, marks the transaction as stable, and then produces all rows.
+  * Change the reads of all source plans to target the active tx-state instead of the stable. This is used for MERGE
+  * to make sure that each merge row can observe the writes of previous rows.
   */
-case class Eager(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan {
+case class ActiveRead(source: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+
+  val lhs = Some(source)
+  val rhs = None
 
   override val availableSymbols: Set[String] = source.availableSymbols
-
-  override def lhs: Option[LogicalPlan] = Some(source)
-
-  override def rhs: Option[LogicalPlan] = None
 }

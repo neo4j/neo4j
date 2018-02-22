@@ -41,6 +41,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def entityAccessor: EmbeddedProxySPI = inner.entityAccessor
 
+  override def withActiveRead: QueryContext = inner.withActiveRead
+
   override def resources: CloseableResource = inner.resources
 
   override def transactionalContext =

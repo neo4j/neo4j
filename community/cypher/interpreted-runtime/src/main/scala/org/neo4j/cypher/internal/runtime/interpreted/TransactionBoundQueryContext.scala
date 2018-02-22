@@ -71,11 +71,11 @@ import scala.collection.Iterator
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-final class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper)
+sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
+                                          val resources: ResourceManager = new ResourceManager)
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
   extends TransactionBoundTokenContext(transactionalContext.statement) with QueryContext with
     IndexDescriptorCompatibility {
-  override val resources: ResourceManager = new ResourceManager
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
   override lazy val entityAccessor: EmbeddedProxySPI =
@@ -102,13 +102,19 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     val neo4jTransactionalContext = new Neo4jTransactionalContext(context.graph, statementProvider, guard, statementProvider, locker, newTx, statementProvider.get(), query)
     new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
   }
+
   //We cannot assign to value because of periodic commit
+  protected def reads(): Read = transactionalContext.stableDataRead
   private def writes() = transactionalContext.dataWrite
-  private def reads() = transactionalContext.dataRead
   private val nodeCursor = allocateAndTraceNodeCursor()
   private val propertyCursor = allocateAndTracePropertyCursor()
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
   private def tokenWrite = transactionalContext.kernelTransaction.tokenWrite()
+
+  lazy val withActiveRead: TransactionBoundQueryContext =
+    new TransactionBoundQueryContext(transactionalContext, resources)(indexSearchMonitor) {
+      override def reads(): Read = transactionalContext.dataRead
+    }
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
     if (transactionalContext.isOpen) {

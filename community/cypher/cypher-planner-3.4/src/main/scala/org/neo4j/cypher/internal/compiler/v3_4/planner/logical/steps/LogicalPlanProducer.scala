@@ -318,6 +318,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, solveds: Solv
     annotate(Optional(inputPlan, ids), solved, context)
   }
 
+  def planActiveRead(inputPlan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inputPlan.id)
+    annotate(ActiveRead(inputPlan), solved, context)
+  }
+
   def planLeftOuterHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Set[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).amendQueryGraph(_.withAddedOptionalMatch(solveds.get(right.id).queryGraph.addHints(hints)))
     annotate(LeftOuterHashJoin(nodes, left, right), solved, context)
