@@ -49,7 +49,7 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
     private PageCursor edgePage;
     private boolean hasCheckedTxState;
     private PrimitiveIntSet txTypes = Primitive.intSet();
-    private PrimitiveIntIterator txTypeIterator = null;
+    private PrimitiveIntIterator txTypeIterator;
 
     DefaultRelationshipGroupCursor()
     {
@@ -215,11 +215,11 @@ class DefaultRelationshipGroupCursor extends RelationshipGroupRecord implements 
      */
     private void checkTxStateForUpdates()
     {
-        if (read.hasTxStateWithChanges())
+        if ( read.hasTxStateWithChanges() )
         {
             NodeState nodeState = read.txState().getNodeState( getOwningNode() );
             PrimitiveLongIterator addedRelationships = nodeState.getAddedRelationships();
-            while (addedRelationships.hasNext())
+            while ( addedRelationships.hasNext() )
             {
                 RelationshipState relationshipState = read.txState().getRelationshipState( addedRelationships.next() );
                 relationshipState.accept(

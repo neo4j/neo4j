@@ -667,13 +667,15 @@ public class NodeProxy implements Node
     @Override
     public int getDegree()
     {
-        try ( Statement statement = spi.statement() )
+        KernelTransaction transaction = safeAcquireTransaction();
+
+        try ( Statement ignore = transaction.acquireStatement();
+              RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();)
         {
-            return statement.readOperations().nodeGetDegree( nodeId, Direction.BOTH );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( "Node not found.", e );
+            NodeCursor nodes = transaction.nodeCursor();
+            singleNode( transaction, nodes );
+
+            return Nodes.countAll( nodes, group );
         }
     }
 
@@ -687,11 +689,11 @@ public class NodeProxy implements Node
             return 0;
         }
 
-        try ( Statement ignore = transaction.acquireStatement() )
+        try ( Statement ignore = transaction.acquireStatement();
+              RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();)
         {
             NodeCursor nodes = transaction.nodeCursor();
             singleNode( transaction, nodes );
-            RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();
 
             return Nodes.countAll( nodes, group, typeId );
         }
@@ -701,11 +703,12 @@ public class NodeProxy implements Node
     public int getDegree( Direction direction )
     {
         KernelTransaction transaction = safeAcquireTransaction();
-        try ( Statement ignore = transaction.acquireStatement() )
+        try ( Statement ignore = transaction.acquireStatement();
+              RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();)
         {
             NodeCursor nodes = transaction.nodeCursor();
             singleNode( transaction, nodes );
-            RelationshipGroupCursor group = transaction.cursors().allocateRelationshipGroupCursor();
+
             switch ( direction )
             {
             case OUTGOING:
