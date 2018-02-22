@@ -250,7 +250,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 if ( cursor.getCurrentPageId() != PageCursor.UNBOUND_PAGE_ID )
                 {
                     pagesInMemory++;
-                    b |= (1 << stepper);
+                    b |= 1 << stepper;
                 }
                 stepper++;
                 if ( stepper == 8 )
