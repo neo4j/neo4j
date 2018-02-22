@@ -54,6 +54,8 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def statistics: GraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
+
+  def twoLayerTransactionState(): Boolean
 }
 
 trait ProcedureSignatureResolver {

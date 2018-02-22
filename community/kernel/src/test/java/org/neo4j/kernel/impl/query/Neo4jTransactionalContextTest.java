@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
@@ -79,6 +80,7 @@ public class Neo4jTransactionalContextTest
     public void checkKernelStatementOnCheck()
     {
         InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
+        Kernel kernel = mock( Kernel.class);
 
         Neo4jTransactionalContext transactionalContext =
             new Neo4jTransactionalContext(
@@ -88,7 +90,8 @@ public class Neo4jTransactionalContextTest
                 null,
                 null,
                 initialTransaction, initialStatement,
-                null
+                null,
+                kernel
             );
 
         transactionalContext.check();
@@ -127,6 +130,7 @@ public class Neo4jTransactionalContextTest
         when( txBridge.get() ).thenReturn( secondStatement );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
+        Kernel kernel = mock( Kernel.class);
         Neo4jTransactionalContext context = new Neo4jTransactionalContext( queryService,
                 null,
                 guard,
@@ -134,7 +138,8 @@ public class Neo4jTransactionalContextTest
                 locker,
                 initialTransaction,
                 initialStatement,
-                executingQuery
+                executingQuery,
+                kernel
         );
 
         // When
@@ -210,6 +215,7 @@ public class Neo4jTransactionalContextTest
         when( txBridge.get() ).thenReturn( secondStatement );
         when( secondStatement.queryRegistration() ).thenReturn( secondQueryRegistry );
 
+        Kernel kernel = mock( Kernel.class );
         Neo4jTransactionalContext context = new Neo4jTransactionalContext(
             queryService,
             null,
@@ -218,7 +224,8 @@ public class Neo4jTransactionalContextTest
             locker,
             initialTransaction,
             initialStatement,
-            executingQuery
+            executingQuery,
+            kernel
         );
 
         // When
@@ -269,9 +276,10 @@ public class Neo4jTransactionalContextTest
     {
         InternalTransaction initialTransaction = mock( InternalTransaction.class, new ReturnsDeepStubs() );
         when( initialTransaction.terminationReason() ).thenReturn( Optional.empty() );
+        Kernel kernel = mock( Kernel.class);
         Neo4jTransactionalContext transactionalContext = new Neo4jTransactionalContext( queryService, null,
                 guard, txBridge, null, initialTransaction,
-                initialStatement, null );
+                initialStatement, null, kernel );
 
         tracer.setFaults( 2 );
         tracer.setHits( 5 );
@@ -466,7 +474,7 @@ public class Neo4jTransactionalContextTest
     private Neo4jTransactionalContext newContext( InternalTransaction initialTx )
     {
         return new Neo4jTransactionalContext( queryService, null, guard,
-                txBridge, new PropertyContainerLocker(), initialTx, initialStatement, null );
+                txBridge, new PropertyContainerLocker(), initialTx, initialStatement, null, null );
     }
 
     private class ConfiguredPageCursorTracer extends DefaultPageCursorTracer

@@ -28,6 +28,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -155,6 +156,12 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     public GraphDatabaseQueryService queryService()
     {
         return platform.dependencies.resolveDependency( GraphDatabaseQueryService.class );
+    }
+
+    @Override
+    public Kernel kernel()
+    {
+        return resolver().resolveDependency( Kernel.class );
     }
 
     @Override
