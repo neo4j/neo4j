@@ -235,7 +235,7 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
         try ( OutputStream outputStream = compressedOutputStream( outputNext );
               PageCursor cursor = file.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT ) )
         {
-            int stepper = 7;
+            int stepper = 0;
             int b = 0;
             for ( ; ; )
             {
@@ -247,24 +247,19 @@ public class PageCacheWarmer implements NeoStoreFileListing.StoreFileProvider
                 {
                     break; // Exit the loop if there are no more pages.
                 }
-                b >>= 1;
                 if ( cursor.getCurrentPageId() != PageCursor.UNBOUND_PAGE_ID )
                 {
                     pagesInMemory++;
-                    b += 0b1000_0000;
+                    b |= (1 << stepper);
                 }
-                if ( stepper == 0 )
+                stepper++;
+                if ( stepper == 8 )
                 {
                     outputStream.write( b );
                     b = 0;
-                    stepper = 7;
-                }
-                else
-                {
-                    stepper--;
+                    stepper = 0;
                 }
             }
-            b >>= stepper + 1;
             outputStream.write( b );
             outputStream.flush();
         }
