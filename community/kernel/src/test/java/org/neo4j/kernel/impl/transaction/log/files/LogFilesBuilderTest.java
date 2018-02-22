@@ -160,32 +160,24 @@ public class LogFilesBuilderTest
     @Test
     public void failToBuildFullContextWithoutLogVersionRepo()
     {
-        assertThrows( NullPointerException.class, () -> {
-            builder( storeDirectory, fileSystem ).withTransactionIdStore( new SimpleTransactionIdStore() ).buildContext();
-        } );
+        assertThrows( NullPointerException.class, () -> builder( storeDirectory, fileSystem ).withTransactionIdStore( new SimpleTransactionIdStore() ).buildContext() );
     }
 
     @Test
     public void failToBuildFullContextWithoutTransactionIdStore()
     {
-        assertThrows( NullPointerException.class, () -> {
-            builder( storeDirectory, fileSystem ).withLogVersionRepository( new SimpleLogVersionRepository( 2 ) ).buildContext();
-        } );
+        assertThrows( NullPointerException.class, () -> builder( storeDirectory, fileSystem ).withLogVersionRepository( new SimpleLogVersionRepository( 2 ) ).buildContext() );
     }
 
     @Test
     public void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess()
     {
-        assertThrows( UnsupportedOperationException.class, () -> {
-            logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLastCommittedTransactionId();
-        } );
+        assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLastCommittedTransactionId() );
     }
 
     @Test
     public void fileBasedOperationsContextFailOnLogVersionRepositoryAccess()
     {
-        assertThrows( UnsupportedOperationException.class, () -> {
-            logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLogVersionRepository();
-        } );
+        assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLogVersionRepository() );
     }
 }

@@ -42,9 +42,7 @@ public class ListenersTest
     @Test
     public void copyConstructorWithNull()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<>( null );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<>( null ) );
     }
 
     @Test
@@ -60,9 +58,7 @@ public class ListenersTest
     @Test
     public void addNull()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<>().add( null );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<>().add( null ) );
     }
 
     @Test
@@ -78,9 +74,7 @@ public class ListenersTest
     @Test
     public void removeNull()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<>().remove( null );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<>().remove( null ) );
     }
 
     @Test
@@ -104,9 +98,7 @@ public class ListenersTest
     @Test
     public void notifyWithNullNotification()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<>().notify( null );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<>().notify( null ) );
     }
 
     @Test
@@ -130,25 +122,19 @@ public class ListenersTest
     @Test
     public void notifyWithNullExecutorAndNullNotification()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<>().notify( null, null );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<>().notify( null, null ) );
     }
 
     @Test
     public void notifyWithNullExecutorAndNotification()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<Listener>().notify( null, listener -> listener.process( "foo" ) );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<Listener>().notify( null, listener -> listener.process( "foo" ) ) );
     }
 
     @Test
     public void notifyWithExecutorAndNullNotification()
     {
-        assertThrows( NullPointerException.class, () -> {
-            new Listeners<Listener>().notify( newSingleThreadExecutor(), null );
-        } );
+        assertThrows( NullPointerException.class, () -> new Listeners<Listener>().notify( newSingleThreadExecutor(), null ) );
     }
 
     @Test

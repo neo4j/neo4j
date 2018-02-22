@@ -85,10 +85,7 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.server.helpers.ServerHelper.cleanTheDatabase;
-import static org.neo4j.server.rest.domain.TraverserReturnType.fullpath;
 import static org.neo4j.server.rest.domain.TraverserReturnType.node;
-import static org.neo4j.server.rest.domain.TraverserReturnType.path;
-import static org.neo4j.server.rest.domain.TraverserReturnType.relationship;
 import static org.neo4j.server.rest.repr.RelationshipRepresentationTest.verifySerialisation;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
 import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
@@ -668,7 +665,8 @@ public class DatabaseActionsTest
 
         for ( Object indexedNode : indexedNodes )
         {
-            @SuppressWarnings( "unchecked" ) Map<String,Object> serialized = (Map<String,Object>) indexedNode;
+            @SuppressWarnings( "unchecked" )
+            Map<String,Object> serialized = (Map<String,Object>) indexedNode;
             NodeRepresentationTest.verifySerialisation( serialized );
             assertNotNull( serialized.get( "indexed" ) );
             counter++;
@@ -905,7 +903,8 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings( "unchecked" ) Map<String,Object> map = (Map<String,Object>) hit;
+            @SuppressWarnings( "unchecked" )
+            Map<String,Object> map = (Map<String,Object>) hit;
             verifySerialisation( map );
         }
     }
@@ -924,7 +923,8 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings( "unchecked" ) Map<String,Object> map = (Map<String,Object>) hit;
+            @SuppressWarnings( "unchecked" )
+            Map<String,Object> map = (Map<String,Object>) hit;
             assertThat( map, hasKey( "start" ) );
             assertThat( map, hasKey( "end" ) );
             assertThat( map, hasKey( "length" ) );
@@ -945,17 +945,22 @@ public class DatabaseActionsTest
 
         for ( Object hit : hits )
         {
-            @SuppressWarnings( "unchecked" ) Map<String,Object> map = (Map<String,Object>) hit;
-            @SuppressWarnings( "unchecked" ) Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
+            @SuppressWarnings( "unchecked" )
+            Map<String,Object> map = (Map<String,Object>) hit;
+            @SuppressWarnings( "unchecked" )
+            Collection<Object> relationships = (Collection<Object>) map.get( "relationships" );
             for ( Object rel : relationships )
             {
-                @SuppressWarnings( "unchecked" ) Map<String,Object> relationship = (Map<String,Object>) rel;
+                @SuppressWarnings( "unchecked" )
+                Map<String,Object> relationship = (Map<String,Object>) rel;
                 verifySerialisation( relationship );
             }
-            @SuppressWarnings( "unchecked" ) Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
+            @SuppressWarnings( "unchecked" )
+            Collection<Object> nodes = (Collection<Object>) map.get( "nodes" );
             for ( Object n : nodes )
             {
-                @SuppressWarnings( "unchecked" ) Map<String,Object> node = (Map<String,Object>) n;
+                @SuppressWarnings( "unchecked" )
+                Map<String,Object> node = (Map<String,Object>) n;
                 NodeRepresentationTest.verifySerialisation( node );
             }
             assertThat( map, hasKey( "start" ) );
@@ -1138,7 +1143,8 @@ public class DatabaseActionsTest
         assertEquals( numPaths, result.size() );
         for ( Object path : result )
         {
-            @SuppressWarnings( "unchecked" ) Map<String,Object> serialized = (Map<String,Object>) path;
+            @SuppressWarnings( "unchecked" )
+            Map<String,Object> serialized = (Map<String,Object>) path;
             assertTrue( serialized.get( "start" ).toString().endsWith( "/" + nodes[0] ) );
             assertTrue( serialized.get( "end" ).toString().endsWith( "/" + nodes[1] ) );
             assertEquals( length, serialized.get( "length" ) );
@@ -1236,7 +1242,8 @@ public class DatabaseActionsTest
         actions.dropPropertyUniquenessConstraint( labelName, asList( propertyKey ) );
 
         // THEN
-        assertFalse( Iterables.asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) ).contains( index ), "Constraint should have been dropped" );
+        assertFalse( Iterables.asSet( graphdbHelper.getPropertyUniquenessConstraints( labelName, propertyKey ) )
+                .contains( index ), "Constraint should have been dropped" );
     }
 
     @Test

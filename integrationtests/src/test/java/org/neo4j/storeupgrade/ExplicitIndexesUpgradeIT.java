@@ -71,7 +71,6 @@ public class ExplicitIndexesUpgradeIT
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-
     @Test
     public void successfulMigrationWithoutExplicitIndexes() throws Exception
     {

@@ -128,7 +128,6 @@ public class TestIndexProviderStore
                 assertTrue( e.getMessage().contains( olderVersion ) );
                 throw e;
             }
-            ;
         } );
     }
 
@@ -151,7 +150,6 @@ public class TestIndexProviderStore
                 assertTrue( e.getMessage().contains( olderVersion ) );
                 throw e;
             }
-            ;
         } );
     }
 

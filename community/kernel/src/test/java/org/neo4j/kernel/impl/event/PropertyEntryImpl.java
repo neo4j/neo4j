@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.event;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.helpers.ArrayUtil;
-import org.neo4j.helpers.Strings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.ArrayUtil.BOXING_AWARE_ARRAY_EQUALITY;
@@ -111,7 +111,7 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
         String entityDescription = "For " + entity + " and " + key;
         if ( o1 == null || o2 == null )
         {
-            assertTrue( o1 == o2, entityDescription + ". " + prettyPrint( o1 ) + " != " + prettyPrint( o2 ) );
+            assertSame( o1, o2, entityDescription + ". " + prettyPrint( o1 ) + " != " + prettyPrint( o2 ) );
         }
         else
         {
@@ -119,7 +119,8 @@ class PropertyEntryImpl<T extends PropertyContainer> implements PropertyEntry<T>
             if ( o1.getClass().isArray() )
             {
                 assertTrue( ArrayUtil.equals( o1, o2, BOXING_AWARE_ARRAY_EQUALITY ),
-                        entityDescription + " (" + o1.getClass().getComponentType().getSimpleName() + ") " + prettyPrint( o1 ) + " not equal to " + prettyPrint( o2 ) );
+                        entityDescription + " (" + o1.getClass().getComponentType().getSimpleName() + ") " +
+                                prettyPrint( o1 ) + " not equal to " + prettyPrint( o2 ) );
             }
             else
             {

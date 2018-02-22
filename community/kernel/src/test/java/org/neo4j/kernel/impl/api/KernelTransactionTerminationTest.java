@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -34,7 +32,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
@@ -47,7 +44,6 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.newapi.DefaultCursors;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.resources.CpuClock;
@@ -61,10 +57,10 @@ import static java.lang.Thread.currentThread;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -72,14 +68,8 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.exceptions.Status.Transaction;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionMarkedAsFailed;
-import static org.neo4j.kernel.api.explicitindex.AutoIndexing.UNSUPPORTED;
-import static org.neo4j.kernel.impl.locking.LockTracer.NONE;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
-import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
-import static org.neo4j.resources.CpuClock.NOT_AVAILABLE;
-import static org.neo4j.time.Clocks.fakeClock;
 
 public class KernelTransactionTerminationTest
 {
@@ -88,13 +78,11 @@ public class KernelTransactionTerminationTest
     @Test
     public void transactionCantBeTerminatedAfterItIsClosed()
     {
-        assertTimeout( ofMillis( TEST_RUN_TIME_MS * 20 ), () -> {
-            runTwoThreads( tx -> tx.markForTermination( TransactionMarkedAsFailed ), tx -> {
-                close( tx );
-                assertFalse( tx.getReasonIfTerminated().isPresent() );
-                tx.initialize();
-            } );
-        } );
+        assertTimeout( ofMillis( TEST_RUN_TIME_MS * 20 ), () -> runTwoThreads( tx -> tx.markForTermination( TransactionMarkedAsFailed ), tx -> {
+            close( tx );
+            assertFalse( tx.getReasonIfTerminated().isPresent() );
+            tx.initialize();
+        } ) );
     }
 
     @Test

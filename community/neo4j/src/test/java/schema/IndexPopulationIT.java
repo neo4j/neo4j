@@ -148,7 +148,6 @@ public class IndexPopulationIT
                     assertEquals( 1, count( nodes ) );
                 }
             }
-            ;
         } );
     }
 

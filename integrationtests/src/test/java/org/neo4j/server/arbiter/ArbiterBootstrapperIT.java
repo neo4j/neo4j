@@ -130,7 +130,6 @@ public class ArbiterBootstrapperIT
         life.shutdown();
     }
 
-
     @Test
     public void canJoinWithExplicitInitialHosts() throws Exception
     {

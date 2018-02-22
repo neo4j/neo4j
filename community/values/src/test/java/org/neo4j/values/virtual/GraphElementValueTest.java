@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertNotEqual;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.rel;
-import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.node;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.path;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.rel;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 
 public class GraphElementValueTest
 {
@@ -85,9 +85,7 @@ public class GraphElementValueTest
     @Test
     public void pathShouldNotOnlyContainRelationship()
     {
-        assertThrows( AssertionError.class, () -> {
-            VirtualValues.path( nodes(), relationships( 1L ) );
-        } );
+        assertThrows( AssertionError.class, () -> VirtualValues.path( nodes(), relationships( 1L ) ) );
     }
 
     @Test
@@ -107,24 +105,18 @@ public class GraphElementValueTest
     @Test
     public void pathShouldHandleNulls()
     {
-        assertThrows( AssertionError.class, () -> {
-            VirtualValues.path( null, null );
-        } );
+        assertThrows( AssertionError.class, () -> VirtualValues.path( null, null ) );
     }
 
     @Test
     public void pathShouldHandleNullEdge()
     {
-        assertThrows( AssertionError.class, () -> {
-            VirtualValues.path( nodes( 1L ), null );
-        } );
+        assertThrows( AssertionError.class, () -> VirtualValues.path( nodes( 1L ), null ) );
     }
 
     @Test
     public void pathShouldHandleNullNodes()
     {
-        assertThrows( AssertionError.class, () -> {
-            VirtualValues.path( null, relationships( 1L ) );
-        } );
+        assertThrows( AssertionError.class, () -> VirtualValues.path( null, relationships( 1L ) ) );
     }
 }

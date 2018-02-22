@@ -352,7 +352,8 @@ public class CsvInputBatchImportIT
             {
                 RelationshipCountKey key = count.first();
                 assertEquals( count.other().longValue(), neoStores.getCounts()
-                        .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() ).readSecond(), "Label count mismatch for label " + key );
+                        .relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() )
+                        .readSecond(), "Label count mismatch for label " + key );
             }
 
             tx.success();

@@ -62,7 +62,7 @@ public class ServerMessageEncodingTest
     }
 
     @ParameterizedTest
-    @MethodSource(value = "data")
+    @MethodSource( value = "data" )
     public void shouldCompleteEncodingRoundTrip( ServerMessage message ) throws Throwable
     {
         //when

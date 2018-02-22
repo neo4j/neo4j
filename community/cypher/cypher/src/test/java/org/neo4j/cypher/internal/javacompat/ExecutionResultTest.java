@@ -109,9 +109,7 @@ public class ExecutionResultTest
     @Test
     public void shouldThrowAppropriateExceptionAlsoWhenVisiting()
     {
-        assertThrows( org.neo4j.cypher.ArithmeticException.class, () -> {
-            db.execute( "RETURN rand()/0" ).accept( row -> true );
-        } );
+        assertThrows( org.neo4j.cypher.ArithmeticException.class, () -> db.execute( "RETURN rand()/0" ).accept( row -> true ) );
     }
 
     private void createNode()

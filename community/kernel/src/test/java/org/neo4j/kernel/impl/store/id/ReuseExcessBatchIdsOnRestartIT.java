@@ -117,7 +117,6 @@ public class ReuseExcessBatchIdsOnRestartIT
                 }
                 tx.success();
             }
-            ;
         } );
     }
 

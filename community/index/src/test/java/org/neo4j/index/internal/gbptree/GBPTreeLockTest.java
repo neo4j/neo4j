@@ -135,9 +135,7 @@ public class GBPTreeLockTest
     @Test
     public void test_race_ULvsUL()
     {
-        assertTimeout( ofMillis( 10_000 ), () -> {
-            assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock );
-        } );
+        assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock ) );
     }
 
     @Test
@@ -149,33 +147,25 @@ public class GBPTreeLockTest
     @Test
     public void test_race_ULvsLL()
     {
-        assertTimeout( ofMillis( 10_000 ), () -> {
-            assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock );
-        } );
+        assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock ) );
     }
 
     @Test
     public void test_race_LUvsLU()
     {
-        assertTimeout( ofMillis( 10_000 ), () -> {
-            assertOnlyOneSucceeds( lock::writerLock, lock::writerLock );
-        } );
+        assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerLock ) );
     }
 
     @Test
     public void test_race_LUvsLL()
     {
-        assertTimeout( ofMillis( 10_000 ), () -> {
-            assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock );
-        } );
+        assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock ) );
     }
 
     @Test
     public void test_race_LLvsLL()
     {
-        assertTimeout( ofMillis( 10_000 ), () -> {
-            assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock );
-        } );
+        assertTimeout( ofMillis( 10_000 ), () -> assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock ) );
     }
 
     private void assertOnlyOneSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
@@ -225,7 +215,8 @@ public class GBPTreeLockTest
 
     private String withState( String message, Pair<Boolean,Boolean> c1State, Pair<Boolean,Boolean> c2State )
     {
-        return format( "%s c1.lockAcquired=%b, c1.started=%b, c2.lockAcquired=%b, c2.started=%b", message, c1State.first(), c1State.other(), c2State.first(), c2State.other() );
+        return format( "%s c1.lockAcquired=%b, c1.started=%b, c2.lockAcquired=%b, c2.started=%b", message,
+                c1State.first(), c1State.other(), c2State.first(), c2State.other() );
     }
 
     private static class LockContestant implements Runnable

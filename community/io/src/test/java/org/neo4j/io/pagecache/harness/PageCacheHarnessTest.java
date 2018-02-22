@@ -126,7 +126,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
 
                 harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
             }
-            ;
         } );
     }
 
@@ -153,7 +152,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
 
                 harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
             }
-            ;
         } );
     }
 
@@ -180,7 +178,6 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
 
                 harness.run( LONG_TIMEOUT_MILLIS, MILLISECONDS );
             }
-            ;
         } );
     }
 
